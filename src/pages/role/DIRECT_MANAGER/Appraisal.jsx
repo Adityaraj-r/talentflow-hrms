@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useAuth } from "../../../contexts/AuthContext"
-import { useRole } from "../../../contexts/RoleContext"
+import { useAuth } from "@/contexts/AuthContext"
+import { useRole } from "@/contexts/RoleContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -10,39 +10,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { FileText, Check, X, Search } from "lucide-react"
+import { FileText, Search } from "lucide-react"
 import { toast } from "sonner"
 
 const Appraisal = () => {
   const { user } = useAuth()
   const { hasRole } = useRole()
-  const canConductAppraisal = hasRole(["HR Manager", "Department Manager", "Direct Manager"])
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Performance Appraisal</h1>
-        <p className="text-muted-foreground">Manage employee performance reviews and feedback</p>
+        <h1 className="text-3xl font-bold tracking-tight">Performance Appraisal (Direct Manager)</h1>
+        <p className="text-muted-foreground">Conduct performance reviews for your direct reports</p>
       </div>
 
-      <Tabs defaultValue={canConductAppraisal ? "conduct" : "history"}>
+      <Tabs defaultValue="conduct">
         <TabsList>
-          {canConductAppraisal && <TabsTrigger value="conduct">Conduct Appraisal</TabsTrigger>}
-          {canConductAppraisal && <TabsTrigger value="pending">Pending Reviews</TabsTrigger>}
+          <TabsTrigger value="conduct">Conduct Appraisal</TabsTrigger>
           <TabsTrigger value="history">Appraisal History</TabsTrigger>
         </TabsList>
 
-        {canConductAppraisal && (
-          <TabsContent value="conduct">
-            <AppraisalForm />
-          </TabsContent>
-        )}
-
-        {canConductAppraisal && (
-          <TabsContent value="pending">
-            <PendingAppraisals />
-          </TabsContent>
-        )}
+        <TabsContent value="conduct">
+          <AppraisalForm />
+        </TabsContent>
 
         <TabsContent value="history">
           <AppraisalHistory />
@@ -82,7 +72,6 @@ const AppraisalForm = () => {
   const handleSubmit = (e) => {
     e.preventDefault()
 
-    // Validation
     if (
       !formData.employeeId ||
       !formData.employeeName ||
@@ -96,12 +85,9 @@ const AppraisalForm = () => {
 
     setIsSubmitting(true)
 
-    // Simulate API call
     setTimeout(() => {
       toast.success("Appraisal submitted successfully")
       setIsSubmitting(false)
-
-      // Reset form
       setFormData({
         employeeId: "",
         employeeName: "",
@@ -118,7 +104,7 @@ const AppraisalForm = () => {
     <Card>
       <CardHeader>
         <CardTitle>Conduct Performance Appraisal</CardTitle>
-        <CardDescription>Submit a performance review for an employee</CardDescription>
+        <CardDescription>Submit a performance review for a direct report</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -245,97 +231,6 @@ const AppraisalForm = () => {
   )
 }
 
-const PendingAppraisals = () => {
-  const pendingAppraisals = [
-    {
-      id: 1,
-      employeeName: "John Doe",
-      employeeId: "EMP001",
-      department: "IT",
-      appraisalPeriod: "2025-03",
-      performanceRating: "Good",
-      submittedBy: "Jane Smith",
-      submissionDate: "2025-04-15",
-    },
-    {
-      id: 2,
-      employeeName: "Alice Johnson",
-      employeeId: "EMP002",
-      department: "HR",
-      appraisalPeriod: "2025-03",
-      performanceRating: "Excellent",
-      submittedBy: "Bob Williams",
-      submissionDate: "2025-04-10",
-    },
-  ]
-
-  const handleApprove = (id) => {
-    toast.success(`Appraisal #${id} approved successfully`)
-  }
-
-  const handleReject = (id) => {
-    toast.success(`Appraisal #${id} rejected successfully`)
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Pending Appraisal Reviews</CardTitle>
-        <CardDescription>Review and approve performance appraisals</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
-          <div className="grid grid-cols-7 bg-muted/50 p-3 text-sm font-medium">
-            <div>Employee</div>
-            <div>Employee ID</div>
-            <div>Department</div>
-            <div>Period</div>
-            <div>Rating</div>
-            <div>Submitted By</div>
-            <div>Actions</div>
-          </div>
-          <div className="divide-y">
-            {pendingAppraisals.map((appraisal) => (
-              <div key={appraisal.id} className="grid grid-cols-7 p-3 text-sm">
-                <div className="font-medium">{appraisal.employeeName}</div>
-                <div>{appraisal.employeeId}</div>
-                <div>{appraisal.department}</div>
-                <div>{appraisal.appraisalPeriod}</div>
-                <div>{appraisal.performanceRating}</div>
-                <div>{appraisal.submittedBy}</div>
-                <div className="flex space-x-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 text-green-600"
-                    onClick={() => handleApprove(appraisal.id)}
-                  >
-                    <Check className="h-4 w-4" />
-                    <span className="sr-only">Approve</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 text-red-600"
-                    onClick={() => handleReject(appraisal.id)}
-                  >
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Reject</span>
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8">
-                    <FileText className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
 const AppraisalHistory = () => {
   const appraisalHistory = [
     {
@@ -368,7 +263,7 @@ const AppraisalHistory = () => {
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>Appraisal History</CardTitle>
-          <CardDescription>View history of all performance appraisals</CardDescription>
+          <CardDescription>View history of performance appraisals for your direct reports</CardDescription>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">

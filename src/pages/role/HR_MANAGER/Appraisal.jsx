@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useAuth } from "../../../contexts/AuthContext"
-import { useRole } from "../../../contexts/RoleContext"
+import { useAuth } from "@/contexts/AuthContext"
+import { useRole } from "@/contexts/RoleContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -13,55 +13,49 @@ import { Textarea } from "@/components/ui/textarea"
 import { FileText, Check, X, Search } from "lucide-react"
 import { toast } from "sonner"
 
-const DisciplinaryActions = () => {
+const Appraisal = () => {
   const { user } = useAuth()
   const { hasRole } = useRole()
-  const canRecordAction = hasRole(["HR Manager", "Department Manager", "Direct Manager"])
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Disciplinary Actions</h1>
-        <p className="text-muted-foreground">Manage employee disciplinary actions and records</p>
+        <h1 className="text-3xl font-bold tracking-tight">Performance Appraisal (HR Manager)</h1>
+        <p className="text-muted-foreground">Manage employee performance reviews and feedback</p>
       </div>
 
-      <Tabs defaultValue={canRecordAction ? "record" : "history"}>
+      <Tabs defaultValue="conduct">
         <TabsList>
-          {canRecordAction && <TabsTrigger value="record">Record Action</TabsTrigger>}
-          {canRecordAction && <TabsTrigger value="pending">Pending Approvals</TabsTrigger>}
-          <TabsTrigger value="history">Action History</TabsTrigger>
+          <TabsTrigger value="conduct">Conduct Appraisal</TabsTrigger>
+          <TabsTrigger value="pending">Pending Reviews</TabsTrigger>
+          <TabsTrigger value="history">Appraisal History</TabsTrigger>
         </TabsList>
 
-        {canRecordAction && (
-          <TabsContent value="record">
-            <ActionForm />
-          </TabsContent>
-        )}
+        <TabsContent value="conduct">
+          <AppraisalForm />
+        </TabsContent>
 
-        {canRecordAction && (
-          <TabsContent value="pending">
-            <PendingActions />
-          </TabsContent>
-        )}
+        <TabsContent value="pending">
+          <PendingAppraisals />
+        </TabsContent>
 
         <TabsContent value="history">
-          <ActionHistory />
+          <AppraisalHistory />
         </TabsContent>
       </Tabs>
     </div>
   )
 }
 
-const ActionForm = () => {
+const AppraisalForm = () => {
   const [formData, setFormData] = useState({
     employeeId: "",
     employeeName: "",
     department: "",
-    actionType: "",
-    incidentDate: "",
-    description: "",
-    actionDate: "",
-    notes: "",
+    appraisalPeriod: "",
+    performanceRating: "",
+    comments: "",
+    goals: "",
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -83,15 +77,12 @@ const ActionForm = () => {
   const handleSubmit = (e) => {
     e.preventDefault()
 
-    // Validation
     if (
       !formData.employeeId ||
       !formData.employeeName ||
       !formData.department ||
-      !formData.actionType ||
-      !formData.incidentDate ||
-      !formData.description ||
-      !formData.actionDate
+      !formData.appraisalPeriod ||
+      !formData.performanceRating
     ) {
       toast.error("Please fill in all required fields")
       return
@@ -99,21 +90,17 @@ const ActionForm = () => {
 
     setIsSubmitting(true)
 
-    // Simulate API call
     setTimeout(() => {
-      toast.success("Disciplinary action recorded successfully")
+      toast.success("Appraisal submitted successfully")
       setIsSubmitting(false)
-
-      // Reset form
       setFormData({
         employeeId: "",
         employeeName: "",
         department: "",
-        actionType: "",
-        incidentDate: "",
-        description: "",
-        actionDate: "",
-        notes: "",
+        appraisalPeriod: "",
+        performanceRating: "",
+        comments: "",
+        goals: "",
       })
     }, 1500)
   }
@@ -121,8 +108,8 @@ const ActionForm = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Record Disciplinary Action</CardTitle>
-        <CardDescription>Submit a new disciplinary action for an employee</CardDescription>
+        <CardTitle>Conduct Performance Appraisal</CardTitle>
+        <CardDescription>Submit a performance review for an employee</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -178,77 +165,61 @@ const ActionForm = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="actionType">
-                Action Type <span className="text-red-500">*</span>
+              <Label htmlFor="appraisalPeriod">
+                Appraisal Period <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="appraisalPeriod"
+                name="appraisalPeriod"
+                type="month"
+                value={formData.appraisalPeriod}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="performanceRating">
+                Performance Rating <span className="text-red-500">*</span>
               </Label>
               <Select
-                value={formData.actionType}
-                onValueChange={(value) => handleSelectChange("actionType", value)}
+                value={formData.performanceRating}
+                onValueChange={(value) => handleSelectChange("performanceRating", value)}
                 required
               >
-                <SelectTrigger id="actionType">
-                  <SelectValue placeholder="Select action type" />
+                <SelectTrigger id="performanceRating">
+                  <SelectValue placeholder="Select rating" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="verbal-warning">Verbal Warning</SelectItem>
-                  <SelectItem value="written-warning">Written Warning</SelectItem>
-                  <SelectItem value="suspension">Suspension</SelectItem>
-                  <SelectItem value="termination">Termination</SelectItem>
+                  <SelectItem value="excellent">Excellent</SelectItem>
+                  <SelectItem value="good">Good</SelectItem>
+                  <SelectItem value="satisfactory">Satisfactory</SelectItem>
+                  <SelectItem value="needs-improvement">Needs Improvement</SelectItem>
+                  <SelectItem value="unsatisfactory">Unsatisfactory</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="incidentDate">
-                Incident Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="incidentDate"
-                name="incidentDate"
-                type="date"
-                value={formData.incidentDate}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="actionDate">
-                Action Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="actionDate"
-                name="actionDate"
-                type="date"
-                value={formData.actionDate}
-                onChange={handleChange}
-                required
-              />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">
-              Incident Description <span className="text-red-500">*</span>
-            </Label>
+            <Label htmlFor="comments">Comments</Label>
             <Textarea
-              id="description"
-              name="description"
-              placeholder="Describe the incident"
-              value={formData.description}
+              id="comments"
+              name="comments"
+              placeholder="Enter performance comments"
+              value={formData.comments}
               onChange={handleChange}
               rows={4}
-              required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Additional Notes</Label>
+            <Label htmlFor="goals">Future Goals</Label>
             <Textarea
-              id="notes"
-              name="notes"
-              placeholder="Enter any additional notes"
-              value={formData.notes}
+              id="goals"
+              name="goals"
+              placeholder="Enter goals for next period"
+              value={formData.goals}
               onChange={handleChange}
               rows={4}
             />
@@ -258,22 +229,22 @@ const ActionForm = () => {
       <CardFooter className="flex justify-between">
         <Button variant="outline">Cancel</Button>
         <Button onClick={handleSubmit} disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : "Record Action"}
+          {isSubmitting ? "Submitting..." : "Submit Appraisal"}
         </Button>
       </CardFooter>
     </Card>
   )
 }
 
-const PendingActions = () => {
-  const pendingActions = [
+const PendingAppraisals = () => {
+  const pendingAppraisals = [
     {
       id: 1,
       employeeName: "John Doe",
       employeeId: "EMP001",
       department: "IT",
-      actionType: "Written Warning",
-      incidentDate: "2025-04-01",
+      appraisalPeriod: "2025-03",
+      performanceRating: "Good",
       submittedBy: "Jane Smith",
       submissionDate: "2025-04-15",
     },
@@ -282,26 +253,26 @@ const PendingActions = () => {
       employeeName: "Alice Johnson",
       employeeId: "EMP002",
       department: "HR",
-      actionType: "Suspension",
-      incidentDate: "2025-03-20",
+      appraisalPeriod: "2025-03",
+      performanceRating: "Excellent",
       submittedBy: "Bob Williams",
       submissionDate: "2025-04-10",
     },
   ]
 
   const handleApprove = (id) => {
-    toast.success(`Disciplinary action #${id} approved successfully`)
+    toast.success(`Appraisal #${id} approved successfully`)
   }
 
   const handleReject = (id) => {
-    toast.success(`Disciplinary action #${id} rejected successfully`)
+    toast.success(`Appraisal #${id} rejected successfully`)
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pending Disciplinary Actions</CardTitle>
-        <CardDescription>Review and approve disciplinary actions</CardDescription>
+        <CardTitle>Pending Appraisal Reviews</CardTitle>
+        <CardDescription>Review and approve performance appraisals</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
@@ -309,26 +280,26 @@ const PendingActions = () => {
             <div>Employee</div>
             <div>Employee ID</div>
             <div>Department</div>
-            <div>Action Type</div>
-            <div>Incident Date</div>
+            <div>Period</div>
+            <div>Rating</div>
             <div>Submitted By</div>
             <div>Actions</div>
           </div>
           <div className="divide-y">
-            {pendingActions.map((action) => (
-              <div key={action.id} className="grid grid-cols-7 p-3 text-sm">
-                <div className="font-medium">{action.employeeName}</div>
-                <div>{action.employeeId}</div>
-                <div>{action.department}</div>
-                <div>{action.actionType}</div>
-                <div>{action.incidentDate}</div>
-                <div>{action.submittedBy}</div>
+            {pendingAppraisals.map((appraisal) => (
+              <div key={appraisal.id} className="grid grid-cols-7 p-3 text-sm">
+                <div className="font-medium">{appraisal.employeeName}</div>
+                <div>{appraisal.employeeId}</div>
+                <div>{appraisal.department}</div>
+                <div>{appraisal.appraisalPeriod}</div>
+                <div>{appraisal.performanceRating}</div>
+                <div>{appraisal.submittedBy}</div>
                 <div className="flex space-x-1">
                   <Button
                     variant="outline"
                     size="icon"
                     className="h-8 w-8 text-green-600"
-                    onClick={() => handleApprove(action.id)}
+                    onClick={() => handleApprove(appraisal.id)}
                   >
                     <Check className="h-4 w-4" />
                     <span className="sr-only">Approve</span>
@@ -337,7 +308,7 @@ const PendingActions = () => {
                     variant="outline"
                     size="icon"
                     className="h-8 w-8 text-red-600"
-                    onClick={() => handleReject(action.id)}
+                    onClick={() => handleReject(appraisal.id)}
                   >
                     <X className="h-4 w-4" />
                     <span className="sr-only">Reject</span>
@@ -356,30 +327,30 @@ const PendingActions = () => {
   )
 }
 
-const ActionHistory = () => {
-  const actionHistory = [
+const AppraisalHistory = () => {
+  const appraisalHistory = [
     {
       id: 1,
       employeeName: "John Doe",
       employeeId: "EMP001",
       department: "IT",
-      actionType: "Written Warning",
-      incidentDate: "2025-02-01",
+      appraisalPeriod: "2025-02",
+      performanceRating: "Good",
       status: "Approved",
       approvedBy: "Jane Smith",
-      approvalDate: "2025-02-25",
+      approvalDate: "2025-03-01",
     },
     {
       id: 2,
       employeeName: "Alice Johnson",
       employeeId: "EMP002",
       department: "HR",
-      actionType: "Suspension",
-      incidentDate: "2025-01-15",
+      appraisalPeriod: "2025-01",
+      performanceRating: "Satisfactory",
       status: "Rejected",
       approvedBy: "Bob Williams",
-      approvalDate: "2025-02-10",
-      reason: "Insufficient evidence",
+      approvalDate: "2025-02-15",
+      reason: "Incomplete feedback",
     },
   ]
 
@@ -387,13 +358,13 @@ const ActionHistory = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Disciplinary Action History</CardTitle>
-          <CardDescription>View history of all disciplinary actions</CardDescription>
+          <CardTitle>Appraisal History</CardTitle>
+          <CardDescription>View history of all performance appraisals</CardDescription>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search actions..." className="pl-8 w-[200px] md:w-[300px]" />
+            <Input type="search" placeholder="Search appraisals..." className="pl-8 w-[200px] md:w-[300px]" />
           </div>
         </div>
       </CardHeader>
@@ -403,30 +374,30 @@ const ActionHistory = () => {
             <div>Employee</div>
             <div>Employee ID</div>
             <div>Department</div>
-            <div>Action Type</div>
-            <div>Incident Date</div>
+            <div>Period</div>
+            <div>Rating</div>
             <div>Status</div>
             <div>Actions</div>
           </div>
           <div className="divide-y">
-            {actionHistory.map((action) => (
-              <div key={action.id} className="grid grid-cols-7 p-3 text-sm">
-                <div className="font-medium">{action.employeeName}</div>
-                <div>{action.employeeId}</div>
-                <div>{action.department}</div>
-                <div>{action.actionType}</div>
-                <div>{action.incidentDate}</div>
+            {appraisalHistory.map((appraisal) => (
+              <div key={appraisal.id} className="grid grid-cols-7 p-3 text-sm">
+                <div className="font-medium">{appraisal.employeeName}</div>
+                <div>{appraisal.employeeId}</div>
+                <div>{appraisal.department}</div>
+                <div>{appraisal.appraisalPeriod}</div>
+                <div>{appraisal.performanceRating}</div>
                 <div>
                   <span
                     className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                      action.status === "Approved"
+                      appraisal.status === "Approved"
                         ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                        : action.status === "Rejected"
+                        : appraisal.status === "Rejected"
                         ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
                         : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
                     }`}
                   >
-                    {action.status}
+                    {appraisal.status}
                   </span>
                 </div>
                 <div>
@@ -444,4 +415,4 @@ const ActionHistory = () => {
   )
 }
 
-export default DisciplinaryActions
+export default Appraisal

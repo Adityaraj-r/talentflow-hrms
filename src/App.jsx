@@ -1,8 +1,9 @@
 "use client"
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import { Toaster } from "sonner"
 import { ThemeProvider } from "./contexts/ThemeContext"
-// import { AuthProvider, useAuth } from "./contexts/AuthContext"
+import { AuthProvider, useAuth } from "./contexts/AuthContext"
 import { RoleProvider, useRole } from "./contexts/RoleContext"
 
 // Auth Pages
@@ -21,15 +22,31 @@ import Dashboard from "./pages/dashboard/Dashboard"
 import Recruitment from "./pages/modules/recruitment/Recruitment"
 import Onboarding from "./pages/modules/recruitment/Recruitment"
 import StaffRequisition from "./pages/modules/recruitment/StaffRequisition"
-import LeaveManagement from "./pages/modules/leave/LeaveManagement"
 import EmployeeTransfer from "./pages/modules/transfer/EmployeeTransfer"
-import Payroll from "./pages/modules/payroll/Payroll" 
+import Payroll from "./pages/modules/payroll/Payroll"
 import Tickets from "./pages/modules/payroll/Tickets"
 import Indemnity from "./pages/modules/payroll/Indemnity"
-import Appraisal from "./pages/modules/appraisal/Appraisal"
-import DisciplinaryActions from "./pages/modules/disciplinary/DisciplinaryActions"
-import DocumentRequests from "./pages/modules/documents/DocumentRequests"
-import { AuthProvider, useAuth } from "./contexts/AuthContext"
+
+// Role-Specific Appraisal Pages
+import HRManagerAppraisal from "./pages/role/HR_MANAGER/Appraisal"
+import DepartmentManagerAppraisal from "./pages/role/DEPARTMENT_MANAGER/Appraisal"
+import DirectManagerAppraisal from "./pages/role/DIRECT_MANAGER/Appraisal"
+import EmployeeAppraisal from "./pages/role/EMPLOYEE/Appraisal"
+
+// Role-Specific DisciplinaryActions Pages
+import HRManagerDisciplinaryActions from "./pages/role/HR_MANAGER/DisciplinaryActions"
+import DepartmentManagerDisciplinaryActions from "./pages/role/DEPARTMENT_MANAGER/DisciplinaryActions"
+import DirectManagerDisciplinaryActions from "./pages/role/DIRECT_MANAGER/DisciplinaryActions"
+
+// Role-Specific DocumentRequests Pages
+import DocumentRequestsHRManager from "./pages/role/HR_MANAGER/DocumentRequests"
+import DocumentRequestsHROfficer from "./pages/role/HR_OFFICER/DocumentRequests"
+import DocumentRequestsEmployee from "./pages/role/EMPLOYEE/DocumentRequests"
+
+// Role-Specific LeaveManagement Pages
+import CEOLLeaveManagement from "./pages/role/CEO/LeaveManagement"
+import HRManagerLeaveManagement from "./pages/role/HR_MANAGER/LeaveManagement"
+import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -114,12 +131,35 @@ function App() {
                 }
               />
 
+              {/* Role-Specific Leave Management Routes */}
               <Route
-                path="/leave-management"
+                path="/role/ceo/leave-management"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={["CEO"]}>
                     <DashboardLayout>
-                      <LeaveManagement />
+                      <CEOLLeaveManagement />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/role/hr_manager/leave-management"
+                element={
+                  <ProtectedRoute allowedRoles={["HR Manager"]}>
+                    <DashboardLayout>
+                      <HRManagerLeaveManagement />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/role/employee/leave-management"
+                element={
+                  <ProtectedRoute allowedRoles={["Employee"]}>
+                    <DashboardLayout>
+                      <EmployeeLeaveManagement />
                     </DashboardLayout>
                   </ProtectedRoute>
                 }
@@ -171,34 +211,114 @@ function App() {
                 }
               />
 
+              {/* Role-Specific Appraisal Routes */}
               <Route
-                path="/appraisal"
+                path="/role/hr_manager/appraisal"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={["HR Manager"]}>
                     <DashboardLayout>
-                      <Appraisal />
+                      <HRManagerAppraisal />
                     </DashboardLayout>
                   </ProtectedRoute>
                 }
               />
 
               <Route
-                path="/disciplinary-actions"
+                path="/role/department_manager/appraisal"
                 element={
-                  <ProtectedRoute allowedRoles={["HR Manager", "HR Officer", "Department Manager"]}>
+                  <ProtectedRoute allowedRoles={["Department Manager"]}>
                     <DashboardLayout>
-                      <DisciplinaryActions />
+                      <DepartmentManagerAppraisal />
                     </DashboardLayout>
                   </ProtectedRoute>
                 }
               />
 
               <Route
-                path="/document-requests"
+                path="/role/direct_manager/appraisal"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={["Direct Manager"]}>
                     <DashboardLayout>
-                      <DocumentRequests />
+                      <DirectManagerAppraisal />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/role/employee/appraisal"
+                element={
+                  <ProtectedRoute allowedRoles={["Employee"]}>
+                    <DashboardLayout>
+                      <EmployeeAppraisal />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Role-Specific DisciplinaryActions Routes */}
+              <Route
+                path="/role/hr_manager/disciplinary-actions"
+                element={
+                  <ProtectedRoute allowedRoles={["HR Manager"]}>
+                    <DashboardLayout>
+                      <HRManagerDisciplinaryActions />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/role/department_manager/disciplinary-actions"
+                element={
+                  <ProtectedRoute allowedRoles={["Department Manager"]}>
+                    <DashboardLayout>
+                      <DepartmentManagerDisciplinaryActions />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/role/direct_manager/disciplinary-actions"
+                element={
+                  <ProtectedRoute allowedRoles={["Direct Manager"]}>
+                    <DashboardLayout>
+                      <DirectManagerDisciplinaryActions />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Role-Specific DocumentRequests Routes */}
+              <Route
+                path="/role/hr_manager/document-requests"
+                element={
+                  <ProtectedRoute allowedRoles={["HR Manager"]}>
+                    <DashboardLayout>
+                      <DocumentRequestsHRManager />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/role/hr_officer/document-requests"
+                element={
+                  <ProtectedRoute allowedRoles={["HR Officer"]}>
+                    <DashboardLayout>
+                      <DocumentRequestsHROfficer />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/role/employee/document-requests"
+                element={
+                  <ProtectedRoute allowedRoles={["Employee"]}>
+                    <DashboardLayout>
+                      <DocumentRequestsEmployee />
                     </DashboardLayout>
                   </ProtectedRoute>
                 }

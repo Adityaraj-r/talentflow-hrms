@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useAuth } from "../../../contexts/AuthContext"
-import { useRole } from "../../../contexts/RoleContext"
+import { useAuth } from "@/contexts/AuthContext"
+import { useRole } from "@/contexts/RoleContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -16,12 +16,12 @@ import { toast } from "sonner"
 const DocumentRequests = () => {
   const { user } = useAuth()
   const { hasRole } = useRole()
-  const canProcessRequest = hasRole(["HR Manager", "HR Officer"])
+  const canProcessRequest = hasRole(["HR Manager"])
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Document Requests</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Document Requests (HR Manager)</h1>
         <p className="text-muted-foreground">Manage employee requests for official documents</p>
       </div>
 
@@ -81,7 +81,6 @@ const RequestForm = () => {
   const handleSubmit = (e) => {
     e.preventDefault()
 
-    // Validation
     if (
       !formData.employeeId ||
       !formData.employeeName ||
@@ -95,12 +94,10 @@ const RequestForm = () => {
 
     setIsSubmitting(true)
 
-    // Simulate API call
     setTimeout(() => {
       toast.success("Document request submitted successfully")
       setIsSubmitting(false)
 
-      // Reset form
       setFormData({
         employeeId: "",
         employeeName: "",
