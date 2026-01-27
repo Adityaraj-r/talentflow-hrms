@@ -1,0 +1,58 @@
+import express, { Application, Request, Response } from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+const app: Application = express();
+const PORT = process.env.PORT || 5000;
+
+// Basic middleware
+app.use(cors());
+app.use(express.json());
+
+// Routes FIRST - before any database connections
+app.get('/health', (req: Request, res: Response) => {
+  console.log('✅ Health check endpoint hit!');
+  res.status(200).json({
+    success: true,
+    message: 'HRMS API is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+  });
+});
+
+app.get('/api', (req: Request, res: Response) => {
+  console.log('✅ API root endpoint hit!');
+  res.status(200).json({
+    success: true,
+    message: 'Welcome to HRMS API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      api: '/api',
+    },
+  });
+});
+
+// 404 handler
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    success: false,
+    error: `Route ${req.method} ${req.path} not found`,
+  });
+});
+
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log('=================================');
+  console.log('🚀 HRMS Backend Server Started');
+  console.log('=================================');
+  console.log(`📍 Port: ${PORT}`);
+  console.log(`🌐 Health: http://localhost:${PORT}/health`);
+  console.log(`🔗 API: http://localhost:${PORT}/api`);
+  console.log('=================================');
+});
+
+export default app;
