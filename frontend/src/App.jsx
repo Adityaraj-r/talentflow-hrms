@@ -25,8 +25,6 @@ import Onboarding from "./pages/dashboard/Onboarding"
 import ProjectManagerDashboard from "./pages/dashboard/ProjectManagerDashboard"
 
 // Employee Role Pages
-import MyAttendance from "./pages/role/employee/MyAttendance"
-import MyTasks from "./pages/role/employee/MyTasks"
 
 // Project Manager Role Pages
 import TaskBoard from "./pages/role/PROJECT_MANAGER/TaskBoard"
@@ -61,6 +59,8 @@ import DocumentRequestsEmployee from "./pages/role/EMPLOYEE/DocumentRequests"
 import CEOLLeaveManagement from "./pages/role/CEO/LeaveManagement"
 import HRManagerLeaveManagement from "./pages/role/HR_MANAGER/LeaveManagement"
 import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
+import MyAttendance from "./pages/role/EMPLOYEE/MyAttendance"
+import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 
 // Protected Route Component with Case-Insensitive Role Check
 const ProtectedRoute = ({ children, allowedRoles }) => {
