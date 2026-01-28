@@ -1,0 +1,5 @@
+firstName,lastName,email,password,role,department,phoneNumber
+Vishal,Sharma,vishal@hrms.com,TempPass123!,EMPLOYEE,IT,+919876543210
+Pankaj,Gupta,pankaj@hrms.com,TempPass123!,HR_OFFICER,HR,+919876543211
+Vijju,Kumar,vijju@hrms.com,TempPass123!,OPERATIONS_MANAGER,Operations,+919876543212
+Niraj,Singh,niraj@hrms.com,TempPass123!,PROJECT_MANAGER,IT,+919876543213
