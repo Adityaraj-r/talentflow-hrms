@@ -5,8 +5,10 @@ import { useRole } from "../../../contexts/RoleContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FileText, Users, Briefcase } from "lucide-react"
+
 import { Link } from "react-router-dom"
+import { FileText, Users, Briefcase, UserCheck, Calendar } from "lucide-react"
+
 
 const Recruitment = () => {
   const { user } = useAuth()
@@ -15,7 +17,10 @@ const Recruitment = () => {
   const canViewOnboarding = hasRole(["HR Manager", "HR Officer"])
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 w-full max-w-none">
+
+
+
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Recruitment Management</h1>
         <p className="text-muted-foreground">Manage recruitment processes, requisitions, and onboarding</p>
@@ -50,69 +55,174 @@ const Recruitment = () => {
 
 const RecruitmentOverview = () => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recruitment Overview</CardTitle>
-        <CardDescription>Summary of recruitment activities and status</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Open Requisitions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-muted-foreground">Pending approval</p>
-              <Button variant="link" className="mt-2 p-0" asChild>
-                <Link to="/staff-requisition">View Requisitions</Link>
-              </Button>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Active Onboarding</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">8</div>
-              <p className="text-xs text-muted-foreground">New hires in progress</p>
-              <Button variant="link" className="mt-2 p-0" asChild>
-                <Link to="/onboarding">View Onboarding</Link>
-              </Button>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Recent Hires</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">15</div>
-              <p className="text-xs text-muted-foreground">Last 30 days</p>
-            </CardContent>
-          </Card>
-        </div>
 
-        <div className="mt-6 bg-muted/50 p-4 rounded-md">
-          <h3 className="font-medium mb-2">Quick Actions</h3>
-          <div className="flex space-x-2">
-            <Button asChild>
-              <Link to="/staff-requisition">
-                <Briefcase className="mr-2 h-4 w-4" />
+    // ❗ GRID YAHAN LAGNA CHAHIYE
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      {/* LEFT SIDE (2 columns lega) */}
+      <div className="lg:col-span-2 space-y-6">
+
+        {/* Recruitment Overview Cards */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recruitment Overview</CardTitle>
+            <CardDescription>
+              Summary of recruitment activities and status
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+
+            {/* SMALL CARDS */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+<Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Open Requisitions</CardTitle>
+                </CardHeader>
+<CardContent>
+  <div className="text-3xl font-bold">12</div>
+  <Briefcase className="absolute right-4 top-4 h-8 w-8 text-blue-400 opacity-40" />
+
+
+  <p className="text-xs text-muted-foreground mb-2">
+    Pending approval
+  </p>
+
+  <Button variant="link" className="p-0 h-auto" asChild>
+    <Link to="/staff-requisition">
+      View Requisitions 
+    </Link>
+  </Button>
+</CardContent>
+
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Active Onboarding</CardTitle>
+                </CardHeader>
+<CardContent>
+  <div className="text-3xl font-bold">8</div>
+                    <UserCheck className="absolute right-4 top-4 h-8 w-8 text-blue-400 opacity-40" />
+
+
+  <p className="text-xs text-muted-foreground mb-2">
+    New hires in progress
+  </p>
+
+  <Button variant="link" className="p-0 h-auto" asChild>
+<Link to="/dashboard/active-onboarding">
+      View Onboarding 
+    </Link>
+  </Button>
+</CardContent>
+
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Recent Hires</CardTitle>
+                </CardHeader>
+                <CardContent>
+    <div className="text-3xl font-bold">15</div>
+                      <Users className="absolute right-4 top-4 h-8 w-8 text-blue-400 opacity-40" />
+
+
+    <p className="text-xs text-muted-foreground mb-2">
+      Last 30 days
+    </p>
+
+    <Button variant="link" className="p-0 h-auto" asChild>
+<Link to="/dashboard/recent-hires">
+        View Hires 
+      </Link>
+    </Button>
+
+  </CardContent>
+
+              </Card>
+
+            </div>
+          </CardContent>
+        </Card>
+
+
+        {/* Recent Candidates */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Candidates</CardTitle>
+          </CardHeader>
+          <CardContent>
+
+            <p className="text-sm text-muted-foreground">
+              Latest applicants for open positions
+            </p>
+
+          </CardContent>
+        </Card>
+
+      </div>
+
+
+      {/* ✅ RIGHT SIDE — QUICK ACTION */}
+      <div>
+
+<Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+
+          <CardContent className="space-y-3">
+
+            <Button className="w-full" asChild>
+<Link to="/dashboard/create-requisition">
                 Create Requisition
               </Link>
             </Button>
-            <Button variant="outline" asChild>
-              <Link to="/onboarding">
-                <Users className="mr-2 h-4 w-4" />
+
+            <Button variant="outline" className="w-full" asChild>
+<Link to="/dashboard/manage-onboarding">
                 Manage Onboarding
               </Link>
             </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6">
+  <CardHeader>
+    <CardTitle>Hiring Pipeline</CardTitle>
+    <CardDescription>Current recruitment stages</CardDescription>
+  </CardHeader>
+
+  <CardContent className="space-y-4">
+
+    <div className="flex justify-between">
+      <span>Screening</span>
+      <span className="font-bold">14</span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>Interview</span>
+      <span className="font-bold">6</span>
+    </div>
+
+    <div className="flex justify-between">
+      <span>Offer</span>
+      <span className="font-bold">3</span>
+    </div>
+
+  </CardContent>
+</Card>
+
+
+      </div>
+
+    </div>
   )
 }
+
 
 const RequisitionSummary = () => {
   const requisitions = [
