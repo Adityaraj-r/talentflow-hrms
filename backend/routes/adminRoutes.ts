@@ -10,6 +10,7 @@ import {
   getAllUsers,
   toggleUserStatus,
 } from '../controllers/adminController';
+import { getSettings, updateSettings } from '../controllers/settingsController';
 import { protect, authorize } from '../middleware/auth.middleware';
 
 const router: Router = express.Router()
@@ -24,7 +25,6 @@ router.use(authorize('ADMIN', 'Admin', 'Super Admin'));
 
 // Update your route list
 router.post('/bulk-upload', upload.single('file'), bulkUploadUsers);
-
 
 /**
  * @route   GET /api/admin/metrics
@@ -68,5 +68,17 @@ router.get('/users', getAllUsers);
  * @desc    deactivate or reactivate a user account
  */
 router.patch('/users/:id/toggle-status', toggleUserStatus);
+
+/**
+ * @route   GET /api/admin/settings
+ * @desc    Get system settings
+ */
+router.get('/settings', getSettings);
+
+/**
+ * @route   PUT /api/admin/settings
+ * @desc    Update system settings
+ */
+router.put('/settings', updateSettings);
 
 export default router;

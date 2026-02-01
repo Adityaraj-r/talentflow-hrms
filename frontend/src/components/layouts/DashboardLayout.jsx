@@ -3,6 +3,7 @@ import Sidebar from "../ui/Sidebar"
 import Header from "../ui/Header"
 import { useAuth } from "../../contexts/AuthContext"
 import { useTheme } from "../../contexts/ThemeContext"
+import { useSettings } from "../../contexts/SettingsContext"
 import { useNavigate } from "react-router-dom"
 
 const DashboardLayout = ({ children }) => {
@@ -10,6 +11,7 @@ const DashboardLayout = ({ children }) => {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const { settings } = useSettings()
   const navigate = useNavigate()
 
   const handleLogout = () => {
@@ -25,6 +27,7 @@ const DashboardLayout = ({ children }) => {
         userRole={user?.role}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
+        companyName={settings.companyName}
       />
 
       {/* Main Content - Dynamically adjust margin based on sidebar state */}
@@ -42,7 +45,6 @@ const DashboardLayout = ({ children }) => {
         />
         
         <main className="w-full px-6">
-
           {children}
         </main>
       </div>
