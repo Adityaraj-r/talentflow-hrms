@@ -64,6 +64,17 @@ import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
 import MyAttendance from "./pages/role/EMPLOYEE/MyAttendance"
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 
+// Role-Specific Recruitment pages
+import RecentHires from "./pages/modules/recruitment/RecentHires"
+import CreateRequisition from "./pages/modules/recruitment/CreateRequisition"
+import ManageOnboarding from "./pages/modules/recruitment/ManageOnboarding"
+import ActiveOnboarding from "./pages/modules/recruitment/ActiveOnboarding"
+
+
+
+
+
+
 // Protected Route Component with Case-Insensitive Role Check
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, isAuthenticated, loading } = useAuth()
@@ -207,6 +218,52 @@ function App() {
                 }
               />
 
+<Route
+  path="/dashboard/manage-onboarding"
+  element={
+    <ProtectedRoute allowedRoles={["admin", "HR Manager", "HR Officer"]}>
+      <DashboardLayout>
+        <ManageOnboarding />
+      </DashboardLayout>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/dashboard/active-onboarding"
+  element={
+    <ProtectedRoute allowedRoles={["admin", "HR Manager", "HR Officer"]}>
+      <DashboardLayout>
+        <ActiveOnboarding />
+      </DashboardLayout>
+    </ProtectedRoute>
+  }
+/>
+
+
+
+              <Route
+  path="/dashboard/recent-hires"
+  element={
+    <ProtectedRoute allowedRoles={["admin", "HR Manager", "HR Officer"]}>
+      <DashboardLayout>
+        <RecentHires />
+      </DashboardLayout>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/dashboard/onboarding"
+  element={
+    <DashboardLayout>
+      <ManageOnboarding />
+    </DashboardLayout>
+  }
+/>
+
+
+
               <Route
                 path="/dashboard/project-manager"
                 element={
@@ -297,6 +354,16 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+
+              <Route
+  path="/dashboard/create-requisition"
+  element={
+    <DashboardLayout>
+      <CreateRequisition />
+    </DashboardLayout>
+  }
+/>
+
 
               {/* Attendance - Admin only */}
               <Route

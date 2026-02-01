@@ -18,7 +18,7 @@ const DashboardLayout = ({ children }) => {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
+    <div className="w-full">
       <Sidebar
         isOpen={sidebarOpen}
         toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
@@ -41,7 +41,8 @@ const DashboardLayout = ({ children }) => {
           onLogout={handleLogout}
         />
         
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="w-full px-6">
+
           {children}
         </main>
       </div>

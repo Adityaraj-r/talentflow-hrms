@@ -13,6 +13,7 @@ import {
   Home,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Briefcase,
   Plane,
   Calculator,
@@ -955,7 +956,7 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
             onClick={toggleCollapse}
             className="hidden lg:block p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
           >
-            {isCollapsed ? <ChevronRight size={20} /> : <ChevronDown size={20} />}
+            {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>
         </div>
 
