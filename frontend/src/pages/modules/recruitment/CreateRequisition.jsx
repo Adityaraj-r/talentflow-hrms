@@ -10,14 +10,46 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useState } from "react";
+import axios from "axios";
+
 
 
 
 
 const CreateRequisition = () => {
+
+    const [position, setPosition] = useState("");
+const [department, setDepartment] = useState("");
+const [experience, setExperience] = useState("");
+const [salaryRange, setSalaryRange] = useState("");
+const [reason, setReason] = useState("");
+
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  console.log("SUBMIT CLICKED ✅");
+
+  try {
+    await axios.post("http://localhost:5001/api/requisitions", {
+      position,
+      department,
+      experience,
+      salaryRange,
+      reason,
+    });
+
+    alert("Requisition Created Successfully ✅");
+  } catch (error) {
+    console.error(error);
+    alert("Failed to create requisition ❌");
+  }
+};
+
+
   return (
     <div className="p-8">
-
+<form onSubmit={handleSubmit}>
 <Card className="w-full">
         
         <CardHeader>
@@ -32,73 +64,97 @@ const CreateRequisition = () => {
           {/* Position */}
           <div className="space-y-2">
             <Label>Position Title</Label>
-<Select>
-<SelectTrigger className="w-full">
+<Select onValueChange={setPosition}>
+<SelectTrigger className="w-full cursor-pointer">
     <SelectValue placeholder="Select Position" />
   </SelectTrigger>
-
   <SelectContent>
-    <SelectItem value="frontend">Frontend Developer</SelectItem>
-    <SelectItem value="backend">Backend Developer</SelectItem>
-    <SelectItem value="fullstack">Full Stack Developer</SelectItem>
-    <SelectItem value="hr">HR Executive</SelectItem>
-    <SelectItem value="designer">UI/UX Designer</SelectItem>
+<SelectItem
+  value="frontend"
+  className="cursor-pointer"
+>
+  Frontend Developer
+</SelectItem>
+    <SelectItem value="Backend Developer"   className="cursor-pointer">Backend Developer</SelectItem>
+    <SelectItem value="Full Stack Developer"  className="cursor-pointer"
+>Full Stack Developer</SelectItem>
+    <SelectItem value="HR Executive"  className="cursor-pointer"
+>HR Executive</SelectItem>
+    <SelectItem value="UI/UX Designer"  className="cursor-pointer"
+>UI/UX Designer</SelectItem>
   </SelectContent>
 </Select>
+
+
           </div>
 
           {/* Department */}
           <div className="space-y-2">
             <Label>Department</Label>
-<Select>
-<SelectTrigger className="w-full">
+<Select onValueChange={setDepartment}>
+<SelectTrigger className="w-full cursor-pointer">
     <SelectValue placeholder="Select Department" />
   </SelectTrigger>
-
   <SelectContent>
-    <SelectItem value="engineering">Engineering</SelectItem>
-    <SelectItem value="hr">Human Resources</SelectItem>
-    <SelectItem value="finance">Finance</SelectItem>
-    <SelectItem value="marketing">Marketing</SelectItem>
-    <SelectItem value="sales">Sales</SelectItem>
+    <SelectItem value="Engineering" className="cursor-pointer">Engineering</SelectItem>
+    <SelectItem value="Human Resources" className="cursor-pointer">Human Resources</SelectItem>
+    <SelectItem value="Finance"  className="cursor-pointer">Finance</SelectItem>
+    <SelectItem value="Marketing"  className="cursor-pointer"
+>Marketing</SelectItem>
+    <SelectItem value="Sales"  className="cursor-pointer"
+>Sales</SelectItem>
   </SelectContent>
 </Select>
+
+
           </div>
 
           {/* Experience */}
           <div className="space-y-2">
             <Label>Experience Required</Label>
-<Select>
-<SelectTrigger className="w-full">
+<Select onValueChange={setExperience}>
+<SelectTrigger className="w-full cursor-pointer">
     <SelectValue placeholder="Select Experience" />
   </SelectTrigger>
-
   <SelectContent>
-    <SelectItem value="0-1">0-1 Years</SelectItem>
-    <SelectItem value="1-3">1-3 Years</SelectItem>
-    <SelectItem value="3-5">3-5 Years</SelectItem>
-    <SelectItem value="5-8">5-8 Years</SelectItem>
-    <SelectItem value="8+">8+ Years</SelectItem>
+    <SelectItem value="0-1 Years"  className="cursor-pointer"
+>0-1 Years</SelectItem>
+    <SelectItem value="1-3 Years"  className="cursor-pointer"
+>1-3 Years</SelectItem>
+    <SelectItem value="3-5 Years"  className="cursor-pointer"
+>3-5 Years</SelectItem>
+    <SelectItem value="5-8 Years"  className="cursor-pointer"
+>5-8 Years</SelectItem>
+    <SelectItem value="8+ Years"  className="cursor-pointer"
+>8+ Years</SelectItem>
   </SelectContent>
 </Select>
+
+
           </div>
 
           {/* Salary */}
           <div className="space-y-2">
             <Label>Salary Range</Label>
-<Select>
-<SelectTrigger className="w-full">
+<Select onValueChange={setSalaryRange}>
+<SelectTrigger className="w-full cursor-pointer">
     <SelectValue placeholder="Select Salary Range" />
   </SelectTrigger>
-
   <SelectContent>
-    <SelectItem value="3-5">3 LPA - 5 LPA</SelectItem>
-    <SelectItem value="5-8">5 LPA - 8 LPA</SelectItem>
-    <SelectItem value="8-12">8 LPA - 12 LPA</SelectItem>
-    <SelectItem value="12-18">12 LPA - 18 LPA</SelectItem>
-    <SelectItem value="18+">18+ LPA</SelectItem>
+    <SelectItem value="3-5 LPA"  className="cursor-pointer"
+>3 LPA - 5 LPA</SelectItem>
+    <SelectItem value="5-8 LPA"  className="cursor-pointer"
+>5 LPA - 8 LPA</SelectItem>
+    <SelectItem value="8-12 LPA"  className="cursor-pointer"
+>8 LPA - 12 LPA</SelectItem>
+    <SelectItem value="12-18 LPA"  className="cursor-pointer"
+>12 LPA - 18 LPA</SelectItem>
+    <SelectItem value="18+ LPA"  className="cursor-pointer"
+>18+ LPA</SelectItem>
   </SelectContent>
 </Select>
+
+
           </div>
 
           {/* Reason */}
@@ -106,23 +162,40 @@ const CreateRequisition = () => {
 <div className="md:col-span-2">
 
 
-            <Input placeholder="Project expansion / Replacement / New role" />
+<Input
+  value={reason}
+  onChange={(e) => setReason(e.target.value)}
+  placeholder="Project expansion / Replacement / New role"
+/>
+
+
           </div>
 
           {/* Buttons */}
           <div className="flex gap-3 pt-4">
-          <Button className="w-full md:w-auto px-8">
+          <Button
+  type="submit"
+  className="cursor-pointer"
+>
   Create Requisition
 </Button>
 
-            <Button variant="outline" className="flex-1">
+
+
+
+
+
+
+            <Button     className="cursor-pointer"
+
+>
               Cancel
             </Button>
           </div>
 
         </CardContent>
       </Card>
-
+      </form>
     </div>
   )
 }
