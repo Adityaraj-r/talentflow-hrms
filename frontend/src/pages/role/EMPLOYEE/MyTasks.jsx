@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import taskService from "../../../services/taskService"
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card"
 import { Badge } from "../../../components/ui/badge"
 import { Button } from "../../../components/ui/button"
@@ -15,59 +16,27 @@ import {
 } from "lucide-react"
 
 const MyTasks = () => {
-  const [tasks] = useState([
-    { 
-      id: "TASK-1024", 
-      title: "Dashboard UI Fix", 
-      description: "Fix alignment issues on mobile view for the sidebar.",
-      assignedBy: "John Smith", 
-      assignedDate: "20 Sep 2025", 
-      dueDate: "25 Sep 2025", 
-      status: "Pending",
-      priority: "High"
-    },
-    { 
-      id: "TASK-1025", 
-      title: "API Integration", 
-      description: "Connect the frontend attendance widget to the backend API.",
-      assignedBy: "Project Manager", 
-      assignedDate: "15 Sep 2025", 
-      dueDate: "18 Sep 2025", 
-      status: "Completed",
-      priority: "Medium"
-    },
-    { 
-      id: "TASK-1026", 
-      title: "Bug Fix – Login Module", 
-      description: "Users are getting 403 error when resetting password.",
-      assignedBy: "Team Lead", 
-      assignedDate: "28 Sep 2025", 
-      dueDate: "30 Sep 2025", 
-      status: "Overdue",
-      priority: "High"
-    },
-    { 
-      id: "TASK-1027", 
-      title: "Update Documentation", 
-      description: "Update the HR policy PDF in the document locker.",
-      assignedBy: "HR Head", 
-      assignedDate: "01 Oct 2025", 
-      dueDate: "05 Oct 2025", 
-      status: "In Progress",
-      priority: "Low"
-    },
-    { 
-      id: "TASK-1028", 
-      title: "Quarterly Report", 
-      description: "Compile Q3 performance stats for the department.",
-      assignedBy: "Director", 
-      assignedDate: "10 Oct 2025", 
-      dueDate: "15 Oct 2025", 
-      status: "Pending",
-      priority: "Medium"
-    },
-  ])
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
 
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const res = await taskService.getMyTasks();
+        if (res.data) {
+          setTasks(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch tasks:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTasks();
+  }, []);
+
+  // We derive these stats directly from the 'tasks' array rather than storing them in a separate state.
+  // This ensures the numbers (top cards) and the table (bottom list) are always perfectly in sync.
   const stats = {
     total: tasks.length,
     completed: tasks.filter(t => t.status === "Completed").length,
@@ -75,6 +44,29 @@ const MyTasks = () => {
     overdue: tasks.filter(t => t.status === "Overdue").length
   }
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    // Using en-GB (DD/MM/YYYY) is often preferred in enterprise apps over the US format 
+    // to avoid confusion between Jan 2nd and Feb 1st.
+    return new Date(dateString).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
+  }
+
+  const getAssignerName = (assignedBy) => {
+    if (!assignedBy) return "Unknown";
+    
+    // Safety check: The backend 'populate' might fail or return just an ID string.
+    // We handle both cases to prevent the app from crashing.
+    if (assignedBy.firstName) return `${assignedBy.firstName} ${assignedBy.lastName}`;
+    
+    return "Manager"; 
+  }
+
+  // Visual cues (colors) process faster than reading text. 
+  // We use "Red" for Overdue to trigger immediate user action.
   const getStatusColor = (status) => {
     switch (status) {
       case "Completed": return "bg-green-100 text-green-700 border-green-200 hover:bg-green-200"
@@ -94,6 +86,10 @@ const MyTasks = () => {
     }
   }
 
+  if (loading) {
+    return <div className="p-8 text-center text-muted-foreground">Loading tasks...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -102,6 +98,7 @@ const MyTasks = () => {
           <p className="text-muted-foreground">Manage your assigned work and deadlines.</p>
         </div>
         <div className="flex gap-2">
+           {/* Placeholder for future Kanban board toggle */}
            <Button><ListTodo className="mr-2 h-4 w-4" /> View Kanban</Button>
         </div>
       </div>
@@ -148,6 +145,10 @@ const MyTasks = () => {
         </CardHeader>
         <CardContent className="p-0">
           <div className="relative w-full overflow-auto">
+            {/* Empty state handling: Important UX to reassure new employees that nothing is 'broken' */}
+            {tasks.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">No tasks assigned to you yet.</div>
+            ) : (
             <table className="w-full caption-bottom text-sm">
               <thead className="[&_tr]:border-b">
                 <tr className="border-b transition-colors hover:bg-muted/50">
@@ -161,12 +162,15 @@ const MyTasks = () => {
               </thead>
               <tbody className="[&_tr:last-child]:border-0">
                 {tasks.map((task) => (
-                  <tr key={task.id} className="border-b transition-colors hover:bg-muted/50">
+                  <tr key={task._id} className="border-b transition-colors hover:bg-muted/50">
                     <td className="p-4 align-middle">
                       <div className="flex flex-col">
                         <span className="font-semibold text-foreground">{task.title}</span>
                         <span className="text-xs text-muted-foreground line-clamp-1">{task.description}</span>
-                        <span className="text-[10px] text-muted-foreground mt-1 bg-muted w-fit px-1.5 py-0.5 rounded">{task.id}</span>
+                        {/* Displaying the ID is helpful for debugging or referencing specific tickets in chat */}
+                        <span className="text-[10px] text-muted-foreground mt-1 bg-muted w-fit px-1.5 py-0.5 rounded">
+                            {task._id.slice(-6).toUpperCase()}
+                        </span>
                       </div>
                     </td>
                     <td className="p-4 align-middle">
@@ -177,16 +181,16 @@ const MyTasks = () => {
                     <td className="p-4 align-middle">
                       <div className="flex items-center gap-2">
                         <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                          {task.assignedBy.charAt(0)}
+                          {getAssignerName(task.assignedBy).charAt(0)}
                         </div>
-                        <span className="text-sm font-medium">{task.assignedBy}</span>
+                        <span className="text-sm font-medium">{getAssignerName(task.assignedBy)}</span>
                       </div>
                     </td>
                     <td className="p-4 align-middle">
                       <div className="flex flex-col text-sm">
                         <span className="text-muted-foreground text-xs">Due:</span>
                         <span className="font-medium flex items-center gap-1">
-                          <Calendar className="h-3 w-3" /> {task.dueDate}
+                          <Calendar className="h-3 w-3" /> {formatDate(task.dueDate)}
                         </span>
                       </div>
                     </td>
@@ -196,6 +200,7 @@ const MyTasks = () => {
                       </Badge>
                     </td>
                     <td className="p-4 align-middle text-right">
+                      {/* Action menu for future features like 'Mark Complete' or 'Add Comment' */}
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
@@ -204,6 +209,7 @@ const MyTasks = () => {
                 ))}
               </tbody>
             </table>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -11,6 +11,7 @@ export interface IUser extends Document {
   lastName: string;
   phoneNumber?: string;
   employeeId?: mongoose.Types.ObjectId;
+  currentShift?: mongoose.Types.ObjectId;   //✅ NEW ADD
   isActive: boolean;
   isEmailVerified: boolean;
   lastLogin?: Date;
@@ -72,6 +73,12 @@ const UserSchema = new Schema<IUser>(
     employeeId: {
       type: Schema.Types.ObjectId,
       ref: 'Employee',
+    },
+    // ✅ ADD THIS 2: Schema Definition
+    currentShift: {
+      type: Schema.Types.ObjectId,
+      ref: 'Shift',
+      default: null 
     },
     isActive: {
       type: Boolean,

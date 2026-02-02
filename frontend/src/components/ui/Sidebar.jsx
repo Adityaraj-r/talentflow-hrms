@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   Users,
   Calendar,
+  CalendarClock, // <--- Add this
   RefreshCw,
   DollarSign,
   Award,
@@ -53,7 +54,27 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
     if (propIsCollapsed !== undefined) {
       setIsCollapsed(propIsCollapsed)
     }
+  }, [propIsCollapsed])// Sync local collapsed state with prop
+  useEffect(() => {
+    if (propIsCollapsed !== undefined) {
+      setIsCollapsed(propIsCollapsed)
+    }
   }, [propIsCollapsed])
+
+  // ✅ FIX: Automatically open the active dropdown based on the current URL
+  useEffect(() => {
+    if (isCollapsed) return; // Don't auto-open if the whole sidebar is collapsed
+
+    const path = location.pathname;
+
+    setOpenGroups((prev) => ({
+      ...prev,
+      // 1. Keep 'Time & Attendance' open for these paths
+      timeAttendance: path.startsWith("/attendance") || path.includes("leave-management"),
+
+      
+    }));
+  }, [location.pathname, isCollapsed]);
 
   if (!userRole) {
     console.log("No user role detected, sidebar will not render")
@@ -280,6 +301,8 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
               </div>
               {!isCollapsed && (openGroups.timeAttendance ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />)}
             </button>
+            
+            {/* ✅ THIS IS THE UPDATED LIST */}
             {openGroups.timeAttendance && !isCollapsed && (
               <ul className="ml-6 space-y-1 border-l pl-4 dark:border-gray-700">
                 <li>
@@ -296,6 +319,23 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                     <span className="truncate">Attendance Records</span>
                   </Link>
                 </li>
+                
+                {/* ✅ NEW SHIFT ROSTER LINK */}
+                <li>
+                  <Link
+                    to="/attendance/shifts"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                      location.pathname === "/attendance/shifts"
+                        ? "text-primary font-medium"
+                        : "hover:text-primary text-muted-foreground"
+                    )}
+                  >
+                    {/* Optional Icon inside list */}
+                    Shift Roster
+                  </Link>
+                </li>
+
                 <li>
                   <Link
                     to="/role/admin/leave-management"

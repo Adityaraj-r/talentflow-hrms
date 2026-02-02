@@ -6,6 +6,10 @@ import mongoose from 'mongoose';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import adminRoutes from './routes/adminRoutes';  // ← ADD THIS LINE
+import attendanceRoutes from "./routes/attendance.routes";
+import taskRoutes from "./routes/task.routes";
+import leaveRoutes from "./routes/leave.routes";
+import shiftRoutes from "./routes/shift.routes";
 
 import employeeRoutes from "./routes/employee.routes";
 import requisitionRoutes from "./routes/requisition.routes";
@@ -66,7 +70,14 @@ app.use('/api/users', userRoutes);
 app.use("/api/employees", employeeRoutes);
 
 app.use('/api/admin', adminRoutes);  // ← ADD THIS LINE
+<<<<<<< Updated upstream
 app.use("/api/requisitions", requisitionRoutes);
+=======
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/tasks", taskRoutes);
+app.use("/api/leaves", leaveRoutes);
+app.use("/api/shifts", shiftRoutes);
+>>>>>>> Stashed changes
 
 // 404 handler
 app.use((req, res) => {

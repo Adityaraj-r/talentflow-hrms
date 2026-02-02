@@ -66,11 +66,19 @@ import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
 import MyAttendance from "./pages/role/EMPLOYEE/MyAttendance"
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 
+<<<<<<< Updated upstream
 // Role-Specific Recruitment pages
 import RecentHires from "./pages/modules/recruitment/RecentHires"
 import CreateRequisition from "./pages/modules/recruitment/CreateRequisition"
 import ManageOnboarding from "./pages/modules/recruitment/ManageOnboarding"
 import ActiveOnboarding from "./pages/modules/recruitment/ActiveOnboarding"
+=======
+// ✅ UPDATED IMPORT PATH (matches your folder structure)
+import AttendanceRecords from "./pages/role/admin/AttendanceRecords"
+import AdminLeaveManagement from "./pages/role/ADMIN/LeaveManagement"
+import ShiftManagement from "./pages/role/ADMIN/ShiftManagement"
+
+>>>>>>> Stashed changes
 
 // Protected Route Component with Case-Insensitive Role Check
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -92,7 +100,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   if (allowedRoles && allowedRoles.length > 0) {
     const userRole = user?.role?.toUpperCase()
     const normalizedAllowedRoles = allowedRoles.map(role => role.toUpperCase())
-    
+
     if (!normalizedAllowedRoles.includes(userRole)) {
       return <Navigate to="/unauthorized" />
     }
@@ -125,7 +133,7 @@ const DashboardRouter = () => {
 
   // Case-insensitive role routing
   const role = user.role?.toUpperCase()
-  
+
   if (role === 'ADMIN') {
     return <Navigate to="/admin/dashboard" replace />
   } else if (role === 'EMPLOYEE') {
@@ -681,9 +689,9 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={["employee", "EMPLOYEE"]}>
                     <DashboardLayout>
-                      <EmployeeDashboard 
-                        stats={{ leaveRequests: 3, documentsRequested: 2 }} 
-                        isLoading={false} 
+                      <EmployeeDashboard
+                        stats={{ leaveRequests: 3, documentsRequested: 2 }}
+                        isLoading={false}
                       />
                     </DashboardLayout>
                   </ProtectedRoute>
@@ -862,6 +870,7 @@ function App() {
                 }
               />
 
+<<<<<<< Updated upstream
               <Route
   path="/dashboard/create-requisition"
   element={
@@ -873,19 +882,35 @@ function App() {
 
 
               {/* Attendance - Admin only */}
+=======
+               {/* ✅ FIX: Add this Redirect Route so /attendance goes to the records page */}
+              <Route path="/attendance" element={<Navigate to="/attendance/records" replace />} />
+
+              {/* ✅ ATTENDANCE RECORDS (Admin / HR) */}
+>>>>>>> Stashed changes
               <Route
-                path="/attendance"
+                path="/attendance/records"
                 element={
                   <ProtectedRoute allowedRoles={["admin", "ADMIN", "HR Manager", "HR_MANAGER"]}>
                     <DashboardLayout>
-                      <div className="p-6">
-                        <h1 className="text-2xl font-bold">Attendance Records</h1>
-                        <p className="text-gray-500 mt-2">Attendance management coming soon...</p>
-                      </div>
+                      <AttendanceRecords />
                     </DashboardLayout>
                   </ProtectedRoute>
                 }
               />
+                {/* ✅ SHIFT ROSTER / MANAGEMENT (Admin / HR) */}
+              <Route
+                path="/attendance/shifts"
+                element={
+                  <ProtectedRoute allowedRoles={["admin", "ADMIN", "HR Manager", "HR_MANAGER"]}>
+                    <DashboardLayout>
+                      <ShiftManagement />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+              
 
               {/* Digital Locker - Admin only */}
               <Route
@@ -959,6 +984,7 @@ function App() {
                 }
               />
 
+<<<<<<< Updated upstream
               {/* View Cycle Details */}
               <Route
                   path="/role/admin/appraisal/view/:id"
@@ -973,15 +999,18 @@ function App() {
 
 
               {/* Admin Leave Management */}
+=======
+
+              
+
+              {/* Admin Leave Management - CONNECTED */}
+>>>>>>> Stashed changes
               <Route
                 path="/role/admin/leave-management"
                 element={
                   <ProtectedRoute allowedRoles={["admin", "ADMIN"]}>
                     <DashboardLayout>
-                      <div className="p-6">
-                        <h1 className="text-2xl font-bold">Leave Management</h1>
-                        <p className="text-gray-500 mt-2">Leave management coming soon...</p>
-                      </div>
+                      <AdminLeaveManagement />
                     </DashboardLayout>
                   </ProtectedRoute>
                 }
