@@ -2,7 +2,7 @@ import mongoose, { Document, Schema, Model } from 'mongoose';
 
 // Interface for Activity document
 export interface IActivity extends Document {
-  type: 'create' | 'update' | 'delete' | 'login' | 'logout' | 'approval' | 'rejection' | 'export' | 'import';
+  type: 'create' | 'update' | 'delete' | 'login' | 'logout' | 'approval' | 'rejection' | 'export' | 'import' |'EMPLOYEE_MANAGEMENT';
   title: string;
   description: string;
   userId: mongoose.Types.ObjectId;
@@ -24,7 +24,7 @@ const ActivitySchema = new Schema<IActivity>(
   {
     type: {
       type: String,
-      enum: ['create', 'update', 'delete', 'login', 'logout', 'approval', 'rejection', 'export', 'import'],
+      enum: ['create', 'update', 'delete', 'login', 'logout', 'approval', 'rejection', 'export', 'import','EMPLOYEE_MANAGEMENT'],
       required: true,
       index: true,
     },
