@@ -7,6 +7,10 @@ import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import adminRoutes from './routes/adminRoutes';  // ← ADD THIS LINE
 
+import employeeRoutes from "./routes/employee.routes";
+import requisitionRoutes from "./routes/requisition.routes";
+
+
 dotenv.config();
 
 const app = express();
@@ -59,7 +63,10 @@ app.get('/api', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use("/api/employees", employeeRoutes);
+
 app.use('/api/admin', adminRoutes);  // ← ADD THIS LINE
+app.use("/api/requisitions", requisitionRoutes);
 
 // 404 handler
 app.use((req, res) => {
