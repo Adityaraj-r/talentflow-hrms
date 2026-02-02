@@ -24,7 +24,9 @@ import UserManagement from "./pages/dashboard/UserManagement"
 import Onboarding from "./pages/dashboard/Onboarding"
 import ProjectManagerDashboard from "./pages/dashboard/ProjectManagerDashboard"
 
-// Employee Role Pages
+// Admin Performance Module
+import AdminPerformance from "./pages/dashboard/AdminPerformance"
+import ViewCycleDetails from "./pages/dashboard/ViewCycleDetails"
 
 // Project Manager Role Pages
 import TaskBoard from "./pages/role/PROJECT_MANAGER/TaskBoard"
@@ -438,20 +440,30 @@ function App() {
                 }
               />
 
-              {/* Admin Appraisal */}
+              {/* Admin Performance (PMS) - UPDATED */}
               <Route
                 path="/role/admin/appraisal"
                 element={
                   <ProtectedRoute allowedRoles={["admin", "ADMIN"]}>
                     <DashboardLayout>
-                      <div className="p-6">
-                        <h1 className="text-2xl font-bold">Performance (PMS)</h1>
-                        <p className="text-gray-500 mt-2">Performance management coming soon...</p>
-                      </div>
+                      <AdminPerformance />
                     </DashboardLayout>
                   </ProtectedRoute>
                 }
               />
+
+              {/* View Cycle Details */}
+              <Route
+                  path="/role/admin/appraisal/view/:id"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "ADMIN"]}>
+                      <DashboardLayout>
+                        <ViewCycleDetails />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                 }
+              />
+
 
               {/* Admin Leave Management */}
               <Route
