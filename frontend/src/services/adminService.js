@@ -127,10 +127,12 @@ const adminService = {
     }
   },
 
-  // adminService.js
-toggleUserStatus: async (userId) => {
-  return await apiClient.patch(`/admin/users/${userId}/toggle-status`);
-},
+  /**
+   * Toggle user status (Active/Inactive)
+   */
+  toggleUserStatus: async (userId) => {
+    return await apiClient.patch(`/admin/users/${userId}/toggle-status`);
+  },
 
   /**
    * Get department statistics
@@ -141,8 +143,29 @@ toggleUserStatus: async (userId) => {
     } catch (error) {
       throw error;
     }
-  }
-};
+  },
 
+  /**
+   * Get system settings
+   */
+  getSettings: async () => {
+    try {
+      return await apiClient.get('/admin/settings');
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Update system settings
+   */
+  updateSettings: async (settingsData) => {
+    try {
+      return await apiClient.put('/admin/settings', settingsData);
+    } catch (error) {
+      throw error;
+    }
+  },
+};
 
 export default adminService;
