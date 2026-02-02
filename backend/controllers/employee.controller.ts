@@ -16,3 +16,34 @@ export const getRecentHires = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+
+export const getActiveOnboarding = async (req, res) => {
+  try {
+    const employees = await Employee.find({
+      onboardingStatus: { $ne: "Completed" }
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json(employees);
+  } catch (error) {
+    console.error("Active onboarding error:", error);
+    res.status(500).json({ message: "Failed to fetch active onboarding" });
+  }
+};
+
+export const getEmployeeById = async (req, res) => {
+  try {
+    const { id } = req.params
+    const employee = await Employee.findById(id)
+
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" })
+    }
+
+    res.json(employee)
+  } catch (err) {
+    res.status(500).json({ message: "Server error" })
+  }
+}
+
