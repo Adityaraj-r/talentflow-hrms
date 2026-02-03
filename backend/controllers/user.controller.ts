@@ -1,17 +1,18 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.model';
+import admin from 'firebase-admin';
 
 // Create new user (Admin/HR only)
 export const createUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, firstName, lastName, role, phoneNumber } = req.body;
+    const { email, password, firstName, lastName, role, phoneNumber,department } = req.body;
 
     // Validation
-    if (!email || !password || !firstName || !lastName) {
+    if (!email || !password || !firstName || !lastName || !role || !phoneNumber || !department) {
       res.status(400).json({
         success: false,
-        message: 'Email, password, first name, and last name are required',
+        message: 'All fields are required',
       });
       return;
     }
@@ -26,30 +27,49 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Hash password
+   //  Create User in Firebase Authentication 
+    
+    let firebaseUser;
+    try {
+      firebaseUser = await admin.auth().createUser({
+        email: email.toLowerCase(),
+        password: password,
+        displayName: `${firstName} ${lastName}`,
+        // Firebase requires phone numbers in E.164 format (e.g., +91...)
+        phoneNumber: phoneNumber ? `+91${phoneNumber}` : undefined,
+      });
+    } catch (fbError: any) {
+      res.status(400).json({ success: false, message: `Firebase Error: ${fbError.message}` });
+      return;
+    }
+
+    // Hash password for MongoDB storage 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new user
+    // Create MongoDB User with firebaseUid 
     const user = await User.create({
-      email,
+      email: email.toLowerCase(),
       password: hashedPassword,
       firstName,
       lastName,
       role: role || 'EMPLOYEE',
       phoneNumber,
+      department,
+      firebaseUid: firebaseUser.uid, 
+      isEmailVerified: true,
     });
 
     res.status(201).json({
       success: true,
-      message: 'User created successfully',
+      message: 'User created successfully in both DB and Firebase',
       data: {
         id: user._id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        isActive: user.isActive,
+        firebaseUid: user.firebaseUid,
       },
     });
   } catch (error: any) {
@@ -209,8 +229,8 @@ export const deactivateUser = async (req: Request, res: Response): Promise<void>
 
     const user = await User.findByIdAndUpdate(
       id,
-      { isActive: false },
-      { new: true }
+      { $set: { isActive: false } }, 
+      { new: true, runValidators: true } // runValidators ensures the status stays within schema limits
     );
 
     if (!user) {
@@ -223,13 +243,13 @@ export const deactivateUser = async (req: Request, res: Response): Promise<void>
 
     res.status(200).json({
       success: true,
-      message: 'User deactivated successfully',
+      message: `User ${user.firstName} has been deactivated.`,
       data: user,
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Error deactivating user',
+      message: 'Server error during deactivation',
       error: error.message,
     });
   }

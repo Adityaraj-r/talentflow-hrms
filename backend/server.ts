@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import adminRoutes from './routes/adminRoutes';  // ← ADD THIS LINE
+import onboardingRoutes from './routes/onboardingRoutes';
 
 import employeeRoutes from "./routes/employee.routes";
 import requisitionRoutes from "./routes/requisition.routes";
@@ -67,6 +68,7 @@ app.use("/api/employees", employeeRoutes);
 
 app.use('/api/admin', adminRoutes);  // ← ADD THIS LINE
 app.use("/api/requisitions", requisitionRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 
 // 404 handler
 app.use((req, res) => {

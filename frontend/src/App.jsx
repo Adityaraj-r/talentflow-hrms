@@ -649,6 +649,7 @@ function App() {
             </Router>
           </RoleProvider>
         </SettingsProvider>
+        <SettingsProvider>
         <RoleProvider>
           <Router>
             <Toaster position="top-right" richColors />
@@ -1151,7 +1152,7 @@ function App() {
                   <ProtectedRoute allowedRoles={["HR Manager", "HR_MANAGER"]}>
                     <DashboardLayout>
                       <DocumentRequestsHRManager />
-                    </DashboardLayout>
+                      </DashboardLayout>
                   </ProtectedRoute>
                 }
               />
@@ -1184,6 +1185,7 @@ function App() {
             </Routes>
           </Router>
         </RoleProvider>
+        </SettingsProvider>
       </AuthProvider>
     </ThemeProvider>
   )

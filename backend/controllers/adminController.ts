@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import User from '../models/User.model';
 import Employee from '../models/Employee.model';
 import bcrypt from 'bcryptjs';
-import { auth } from '../config/firebase'; // Your shared firebase file
+import { auth } from '../config/firebase';
 import csv from 'csv-parser';
 import fs from 'fs';
 import mongoose from 'mongoose';
@@ -36,9 +36,6 @@ export const bulkUploadUsers = async (req: Request, res: Response): Promise<void
     try {
       const processedUsers = [];
 
-      // backend/src/controllers/adminController.ts
-
-// backend/src/controllers/adminController.ts
 
 for (const row of results) {
   try {
@@ -72,6 +69,7 @@ for (const row of results) {
       lastName: row.lastName.trim(),
       role: row.role.trim().toUpperCase(), 
       department: row.department,
+      phoneNumber: row.phoneNumber.trim(),
       isActive: true,
       isEmailVerified: true,
       isDeleted: false
@@ -467,91 +465,16 @@ function formatRelativeTime(date: Date): string {
   if (diffMonths < 12) return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
   return new Date(date).toLocaleDateString();
 }
-/**
- * Enroll a new user into the system
- * @route POST /api/admin/enroll-user
- */
-/**
- * Enroll a new user into the system
- * @route POST /api/admin/enroll-user
- */
-export const enrollNewUser = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { firstName, lastName, email, password, role, department, phoneNumber } = req.body;
 
-    // 1. Check for existing user
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      res.status(400).json({ success: false, message: 'User already exists' });
-      return;
-    }
-
-    // 2. Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // 3. Create and save new user
-    const newUser = new User({
-      firstName,
-      lastName,
-      email,
-      password: hashedPassword,
-      role,
-      department,
-      phoneNumber,
-      isActive: true,
-      isEmailVerified: true,
-      isDeleted: false 
-    });
-
-    await newUser.save();
-
-    // --- START ENHANCEMENT: Activity Logging ---
-    try {
-      if (Activity) {
-        await new Activity({
-          type: 'USER_MANAGEMENT',
-          title: 'New User Enrolled',
-          description: `Admin enrolled ${firstName} ${lastName} (${email}) to the ${department} department.`,
-          userId: (req as AuthRequest).user?.id, // Captures the ID of the Admin who performed the action
-          metadata: {
-            newUserId: newUser._id,
-            role: role,
-            department: department
-          },
-          createdAt: new Date()
-        }).save();
-      }
-    } catch (activityError) {
-      // We log the error but don't fail the whole request if activity logging fails
-      console.error('Failed to log enrollment activity:', activityError);
-    }
-    // --- END ENHANCEMENT ---
-
-    res.status(201).json({
-      success: true,
-      message: 'User enrolled successfully',
-      data: { id: newUser._id, email: newUser.email, role: newUser.role }
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: 'Enrollment failed', 
-      error: (error as Error).message 
-    });
-  }
-};
 /**
  * Get all users with filtering and search
  * @route GET /api/admin/users
  */
-// backend/src/controllers/adminController.ts
 
 export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
   try {
     const { role, search } = req.query;
 
-    // FIX: Match documents where isDeleted is false OR doesn't exist at all
     let query: any = { 
       isDeleted: { $ne: true } 
     };
@@ -559,7 +482,6 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
     if (role && role !== 'all') {
       query.role = role;
     }
-// ... rest of the code remains the same
 
     if (search) {
       query.$or = [
@@ -586,8 +508,7 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-// Deactive button logic 
-
+// Deactivate button logic 
 export const toggleUserStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
