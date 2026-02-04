@@ -74,30 +74,30 @@ const Onboarding = () => {
   }, [activeTab, formData.email]);
 
   const handleSubmit = async () => {
-  if (!isTabValid("documents")) {
-    toast.error("Please upload all mandatory documents and confirm the declaration.");
-    return;
-  }
-  
-  // Call your existing save progress function with 'Completed' status
-  await handleSaveProgress("Completed");
-};
+    if (!isTabValid("documents")) {
+      toast.error("Please upload all mandatory documents and confirm the declaration.");
+      return;
+    }
 
-// Add this at the beginning of your return statement
-if (activeTab === "Completed") {
-  return (
-    <Card className="max-w-md mx-auto mt-10 text-center p-10">
-      <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-      <h2 className="text-2xl font-bold">Profile Submitted!</h2>
-      <p className="text-muted-foreground mt-2">
-        The employee onboarding data has been successfully saved to the master database.
-      </p>
-      <Button className="mt-6" onClick={() => window.location.href = '/dashboard/users'}>
-        Back to User Management
-      </Button>
-    </Card>
-  );
-}
+    // Call your existing save progress function with 'Completed' status
+    await handleSaveProgress("Completed");
+  };
+
+  // Add this at the beginning of your return statement
+  if (activeTab === "Completed") {
+    return (
+      <Card className="max-w-md mx-auto mt-10 text-center p-10">
+        <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold">Profile Submitted!</h2>
+        <p className="text-muted-foreground mt-2">
+          The employee onboarding data has been successfully saved to the master database.
+        </p>
+        <Button className="mt-6" onClick={() => window.location.href = '/dashboard/users'}>
+          Back to User Management
+        </Button>
+      </Card>
+    );
+  }
 
   const handleChange = (field, value, section = null) => {
     if (section) {
@@ -282,7 +282,7 @@ if (activeTab === "Completed") {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+        <TabsList className="grid w-full grid-cols-4 lg:w-150">
           <TabsTrigger value="personal">Personal</TabsTrigger>
           <TabsTrigger
             value="employment"
@@ -301,10 +301,10 @@ if (activeTab === "Completed") {
             disabled={!isTabValid("personal") || !isTabValid("employment") ||
               !isTabValid("banking")}
           >
-
             Documents
           </TabsTrigger>
         </TabsList>
+        
 
         {/* PERSONAL TAB */}
         <TabsContent value="personal">
@@ -614,12 +614,26 @@ if (activeTab === "Completed") {
                 </div>
               </div>
 
+              {/* Corrected Back Button in Bank & Statutory Tab */}
               <div className="flex justify-between mt-6">
-                <Button variant="outline" onClick={() => handleSaveProgress("employment")}>
+                <Button
+                  variant="outline"
+                  type="button" // Ensure type is 'button' to avoid accidental form submission
+                  onClick={() => setActiveTab("employment")}
+                >
                   Back to Employment
                 </Button>
-                <Button disabled={loading} onClick={() => handleSaveProgress("documents")}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Next: Documents
+
+                <Button
+                  onClick={() => {
+                    if (isTabValid("banking")) {
+                      handleSaveProgress("documents");
+                    } else {
+                      toast.error("Please fill all compulsory fields marked with * correctly.");
+                    }
+                  }}
+                >
+                  Next: Documents
                 </Button>
               </div>
             </CardContent>
