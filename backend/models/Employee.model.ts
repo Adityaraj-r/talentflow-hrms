@@ -2,16 +2,18 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IEmployee extends Document {
   firstName: string;
+  MiddleName?: string; // Corrected casing to match frontend
   lastName: string;
   email: string;
   phoneNumber: string;
   alternatePhone?: string;
-  dateOfBirth: Date;
-  gender: 'Male' | 'Female' | 'Other';
-  nationality: string;
+  dateOfBirth?: Date;
+  gender?: 'Male' | 'Female' | 'Other';
+  nationality?: string;
   maritalStatus?: 'Single' | 'Married' | 'Divorced' | 'Widowed';
+  currentAddress?: string; // Added to match your UI Textarea
   
-  address: {
+  address?: {
     street: string;
     city: string;
     state: string;
@@ -19,29 +21,20 @@ export interface IEmployee extends Document {
     postalCode: string;
   };
   
-  employeeCode: string;
-  joiningDate: Date;
-  department: string;
-  designation: string;
-  employmentType: 'Full-Time' | 'Part-Time' | 'Contract' | 'Intern';
-  workLocation: string;
-  reportingManager?: mongoose.Types.ObjectId;
+  employeeCode?: string | "";
+  joiningDate?: Date;
+  department?: string;
+  designation?: string;
+  employmentType?: 'Full-Time' | 'Part-Time' | 'Contract' | 'Intern';
+  workLocation?: string;
+  reportingManager?: string;
   
-  salary: {
-    basic: number;
-    currency: string;
-    allowances?: {
-      hra?: number;
-      transport?: number;
-      medical?: number;
-      other?: number;
-    };
-    deductions?: {
-      tax?: number;
-      pf?: number;
-      insurance?: number;
-      other?: number;
-    };
+  // Salary made optional for step-by-step onboarding
+  salary?: {
+    basic?: number;
+    currency?: string;
+    allowances?: { hra?: number; transport?: number; medical?: number; other?: number; };
+    deductions?: { tax?: number; pf?: number; insurance?: number; other?: number; };
   };
   
   bankDetails?: {
@@ -51,130 +44,59 @@ export interface IEmployee extends Document {
     branchName: string;
     ifscCode: string;
   };
-  
-  documents?: {
-    type: string;
-    name: string;
-    url: string;
-    uploadedAt: Date;
-  }[];
-  
-  emergencyContact?: {
-    name: string;
-    relationship: string;
-    phoneNumber: string;
+
+  kycDetails?: { // Added to match Onboarding.jsx
+    panNumber: string;
+    aadharNumber: string;
+    uan?: string;
+    pfNumber?: string;
+  };
+
+  Documents?: { // NEW: Document File Paths
+  aadharCardPath?: string;
+  panCardPath?: string;
+  resumePath?: string;
+  educationDocsPath?: string;
+  passportPhotoPath?: string;
+  relievingLetterPath?: string;
   };
   
+  onboardingStatus: string; // Corrected interface type
   status: 'Active' | 'Inactive' | 'On Leave' | 'Terminated';
-  exitDate?: Date;
-  exitReason?: string;
-  
   createdBy?: mongoose.Types.ObjectId;
   updatedBy?: mongoose.Types.ObjectId;
 }
 
 const EmployeeSchema = new Schema<IEmployee>(
   {
-    firstName: {
-      type: String,
-      required: [true, 'First name is required'],
-      trim: true,
-    },
-    lastName: {
-      type: String,
-      required: [true, 'Last name is required'],
-      trim: true,
-    },
-    email: {
-      type: String,
-      required: [true, 'Email is required'],
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-    phoneNumber: {
-      type: String,
-      required: [true, 'Phone number is required'],
-    },
-    alternatePhone: String,
-    dateOfBirth: {
-      type: Date,
-      required: [true, 'Date of birth is required'],
-    },
-    gender: {
-      type: String,
-      enum: ['Male', 'Female', 'Other'],
-      required: true,
-    },
-    nationality: {
-      type: String,
-      required: true,
-    },
-    maritalStatus: {
-      type: String,
-      enum: ['Single', 'Married', 'Divorced', 'Widowed'],
-    },
-    
-    address: {
-      street: String,
-      city: String,
-      state: String,
-      country: { type: String, required: true },
-      postalCode: String,
-    },
-    
-    employeeCode: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    joiningDate: {
-      type: Date,
-      required: true,
-    },
-    department: {
-      type: String,
-      required: true,
-    },
-    designation: {
-      type: String,
-      required: true,
-    },
-    employmentType: {
-      type: String,
-      enum: ['Full-Time', 'Part-Time', 'Contract', 'Intern'],
-      default: 'Full-Time',
-    },
-    workLocation: {
-      type: String,
-      required: true,
-    },
-    reportingManager: {
-      type: Schema.Types.ObjectId,
-      ref: 'Employee',
-    },
+    firstName: { type: String, required: true, trim: true },
+    MiddleName: { type: String, trim: true }, // Lowercase 'm'
+    lastName: { type: String, required: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true },
+    phoneNumber: { type: String, required: true },
+    dateOfBirth: { type: Date },
+    gender: { type: String, enum: ['Male', 'Female', 'Other'] },
+    nationality: { type: String, default: 'Indian' },
+    currentAddress: { type: String }, 
+
+    // Employment - Removed 'required' for multi-step save
+    employeeCode: { type: String, unique: false, default: "", sparse: true },
+    joiningDate: { type: Date },
+    department: { type: String },
+    designation: { type: String },
+    workLocation: { type: String },
+    reportingManager: { type: String },
     
     salary: {
-      basic: {
-        type: Number,
-        required: true,
-      },
-      currency: {
-        type: String,
-        default: 'INR',
-      },
-      allowances: {
-        hra: Number,
-        transport: Number,
-        medical: Number,
-        other: Number,
-      },
-      deductions: {
-        tax: Number,
-        pf: Number,
-        insurance: Number,
-        other: Number,
-      },
+      basic: { type: Number },
+      currency: { type: String, default: 'INR' },
+    },
+
+    kycDetails: {
+      panNumber: { type: String, uppercase: true },
+      aadharNumber: String,
+      uan: String,
+      pfNumber: String,
     },
     
     bankDetails: {
@@ -184,51 +106,26 @@ const EmployeeSchema = new Schema<IEmployee>(
       branchName: String,
       ifscCode: String,
     },
-    
-    documents: [
-      {
-        type: String,
-        name: String,
-        url: String,
-        uploadedAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
-    
-    emergencyContact: {
-      name: String,
-      relationship: String,
-      phoneNumber: String,
-    },
-    
-    status: {
-      type: String,
-      enum: ['Active', 'Inactive', 'On Leave', 'Terminated'],
-      default: 'Active',
-    },
-    exitDate: Date,
-    exitReason: String,
-    
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-    },
-    updatedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-    },
-  },
-  {
-    timestamps: true,
-  }
-);
 
-// Indexes for better query performance
-EmployeeSchema.index({ email: 1 });
-EmployeeSchema.index({ employeeCode: 1 });
-EmployeeSchema.index({ department: 1 });
-EmployeeSchema.index({ status: 1 });
+    Documents:{
+    aadharCardPath: { type: String, default: null },
+    panCardPath: { type: String, default: null },
+    resumePath: { type: String, default: null },
+    educationDocsPath: { type: String, default: null },
+    passportPhotoPath: { type: String, default: null },
+    relievingLetterPath: { type: String, default: null },
+    },
+    
+    onboardingStatus: { 
+      type: String, 
+      enum: ['Personal', 'Employment', 'Banking', 'Documents', 'Completed'],
+      default: 'Personal' 
+    },
+    status: { type: String, enum: ['Active', 'Inactive', 'On Leave', 'Terminated'], default: 'Active' },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  },
+  { timestamps: true }
+);
 
 export default mongoose.model<IEmployee>('Employee', EmployeeSchema);

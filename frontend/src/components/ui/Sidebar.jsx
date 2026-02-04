@@ -13,6 +13,7 @@ import {
   Home,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Briefcase,
   Plane,
   Calculator,
@@ -27,7 +28,7 @@ import { cn } from "@/lib/utils"
 import { ROLES, PERMISSIONS } from "../../constants/roles"
 import { useAuth } from "../../contexts/AuthContext"
 
-const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: propIsCollapsed, setIsCollapsed: propSetIsCollapsed }) => {
+const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: propIsCollapsed, setIsCollapsed: propSetIsCollapsed, companyName }) => {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -167,7 +168,7 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
             title={isCollapsed ? "Dashboard" : ""}
           >
             <Home size={20} className="flex-shrink-0" />
-            {!isCollapsed && <span>Dashboard</span>}
+            {!isCollapsed && <span className="truncate">Dashboard</span>}
           </Link>
 
           {/* Employee Center - Expandable */}
@@ -180,11 +181,11 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
               )}
               title={isCollapsed ? "Employee Center" : ""}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 <Users size={20} className="flex-shrink-0" />
-                {!isCollapsed && <span>Employee Center</span>}
+                {!isCollapsed && <span className="truncate">Employee Center</span>}
               </div>
-              {!isCollapsed && (openGroups.employeeCenter ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
+              {!isCollapsed && (openGroups.employeeCenter ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />)}
             </button>
             {openGroups.employeeCenter && !isCollapsed && (
               <ul className="ml-6 space-y-1 border-l pl-4 dark:border-gray-700">
@@ -192,52 +193,56 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                   <Link
                     to="/dashboard/users"
                     className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
                       location.pathname === "/dashboard/users"
                         ? "text-primary font-medium"
                         : "hover:text-primary text-muted-foreground"
                     )}
+                    title="All Employees"
                   >
-                    All Employees
+                    <span className="truncate">All Employees</span>
                   </Link>
                 </li>
                 <li>
                   <Link
                     to="/dashboard/onboarding"
                     className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
                       location.pathname === "/dashboard/onboarding"
                         ? "text-primary font-medium"
                         : "hover:text-primary text-muted-foreground"
                     )}
+                    title="Onboarding & KYC"
                   >
-                    Onboarding & KYC
+                    <span className="truncate">Onboarding & KYC</span>
                   </Link>
                 </li>
                 <li>
                   <Link
                     to="/employee-transfer"
                     className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
                       location.pathname === "/employee-transfer"
                         ? "text-primary font-medium"
                         : "hover:text-primary text-muted-foreground"
                     )}
+                    title="Transfers & Promotions"
                   >
-                    Transfers & Promotions
+                    <span className="truncate">Transfers & Promotions</span>
                   </Link>
                 </li>
                 <li>
                   <Link
                     to="/digital-locker"
                     className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
                       location.pathname === "/digital-locker"
                         ? "text-primary font-medium"
                         : "hover:text-primary text-muted-foreground"
                     )}
+                    title="Digital Locker (Docs)"
                   >
-                    Digital Locker (Docs)
+                    <span className="truncate">Digital Locker (Docs)</span>
                   </Link>
                 </li>
               </ul>
@@ -256,7 +261,7 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
             title={isCollapsed ? "Recruitment & Staffing" : ""}
           >
             <Briefcase size={20} className="flex-shrink-0" />
-            {!isCollapsed && <span>Recruitment & Staffing</span>}
+            {!isCollapsed && <span className="truncate">Recruitment & Staffing</span>}
           </Link>
 
           {/* Time & Attendance - Expandable */}
@@ -269,11 +274,11 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
               )}
               title={isCollapsed ? "Time & Attendance" : ""}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 <Clock size={20} className="flex-shrink-0" />
-                {!isCollapsed && <span>Time & Attendance</span>}
+                {!isCollapsed && <span className="truncate">Time & Attendance</span>}
               </div>
-              {!isCollapsed && (openGroups.timeAttendance ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
+              {!isCollapsed && (openGroups.timeAttendance ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />)}
             </button>
             {openGroups.timeAttendance && !isCollapsed && (
               <ul className="ml-6 space-y-1 border-l pl-4 dark:border-gray-700">
@@ -281,26 +286,28 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                   <Link
                     to="/attendance"
                     className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
                       location.pathname === "/attendance"
                         ? "text-primary font-medium"
                         : "hover:text-primary text-muted-foreground"
                     )}
+                    title="Attendance Records"
                   >
-                    Attendance Records
+                    <span className="truncate">Attendance Records</span>
                   </Link>
                 </li>
                 <li>
                   <Link
                     to="/role/admin/leave-management"
                     className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
                       location.pathname === "/role/admin/leave-management"
                         ? "text-primary font-medium"
                         : "hover:text-primary text-muted-foreground"
                     )}
+                    title="Leave Management"
                   >
-                    Leave Management
+                    <span className="truncate">Leave Management</span>
                   </Link>
                 </li>
               </ul>
@@ -317,11 +324,11 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
               )}
               title={isCollapsed ? "Payroll & Compliance" : ""}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 <DollarSign size={20} className="flex-shrink-0" />
-                {!isCollapsed && <span>Payroll & Compliance</span>}
+                {!isCollapsed && <span className="truncate">Payroll & Compliance</span>}
               </div>
-              {!isCollapsed && (openGroups.payroll ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
+              {!isCollapsed && (openGroups.payroll ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />)}
             </button>
             {openGroups.payroll && !isCollapsed && (
               <ul className="ml-6 space-y-1 border-l pl-4 dark:border-gray-700">
@@ -329,39 +336,42 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                   <Link
                     to="/payroll"
                     className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
                       location.pathname === "/payroll"
                         ? "text-primary font-medium"
                         : "hover:text-primary text-muted-foreground"
                     )}
+                    title="Payroll Processing"
                   >
-                    Payroll Processing
+                    <span className="truncate">Payroll Processing</span>
                   </Link>
                 </li>
                 <li>
                   <Link
                     to="/tickets"
                     className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
                       location.pathname === "/tickets"
                         ? "text-primary font-medium"
                         : "hover:text-primary text-muted-foreground"
                     )}
+                    title="Tickets & Advances"
                   >
-                    Tickets & Advances
+                    <span className="truncate">Tickets & Advances</span>
                   </Link>
                 </li>
                 <li>
                   <Link
                     to="/indemnity"
                     className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
                       location.pathname === "/indemnity"
                         ? "text-primary font-medium"
                         : "hover:text-primary text-muted-foreground"
                     )}
+                    title="Indemnity Calculation"
                   >
-                    Indemnity Calculation
+                    <span className="truncate">Indemnity Calculation</span>
                   </Link>
                 </li>
               </ul>
@@ -380,7 +390,7 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
             title={isCollapsed ? "Performance (PMS)" : ""}
           >
             <Award size={20} className="flex-shrink-0" />
-            {!isCollapsed && <span>Performance (PMS)</span>}
+            {!isCollapsed && <span className="truncate">Performance (PMS)</span>}
           </Link>
 
           {/* Reports & Analytics */}
@@ -395,7 +405,7 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
             title={isCollapsed ? "Reports & Analytics" : ""}
           >
             <TrendingUp size={20} className="flex-shrink-0" />
-            {!isCollapsed && <span>Reports & Analytics</span>}
+            {!isCollapsed && <span className="truncate">Reports & Analytics</span>}
           </Link>
 
           {/* Administration - Expandable */}
@@ -408,11 +418,11 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
               )}
               title={isCollapsed ? "Administration" : ""}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 <Settings size={20} className="flex-shrink-0" />
-                {!isCollapsed && <span>Administration</span>}
+                {!isCollapsed && <span className="truncate">Administration</span>}
               </div>
-              {!isCollapsed && (openGroups.administration ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
+              {!isCollapsed && (openGroups.administration ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />)}
             </button>
             {openGroups.administration && !isCollapsed && (
               <ul className="ml-6 space-y-1 border-l pl-4 dark:border-gray-700">
@@ -420,26 +430,28 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                   <Link
                     to="/settings"
                     className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
                       location.pathname === "/settings"
                         ? "text-primary font-medium"
                         : "hover:text-primary text-muted-foreground"
                     )}
+                    title="System Settings"
                   >
-                    System Settings
+                    <span className="truncate">System Settings</span>
                   </Link>
                 </li>
                 <li>
                   <Link
                     to="/roles-permissions"
                     className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
                       location.pathname === "/roles-permissions"
                         ? "text-primary font-medium"
                         : "hover:text-primary text-muted-foreground"
                     )}
+                    title="Roles & Permissions"
                   >
-                    Roles & Permissions
+                    <span className="truncate">Roles & Permissions</span>
                   </Link>
                 </li>
               </ul>
@@ -464,7 +476,7 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
             title={isCollapsed ? "Dashboard" : ""}
           >
             <Home size={20} className="flex-shrink-0" />
-            {!isCollapsed && <span>Dashboard</span>}
+            {!isCollapsed && <span className="truncate">Dashboard</span>}
           </Link>
 
           <Link
@@ -478,7 +490,7 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
             title={isCollapsed ? "My Attendance" : ""}
           >
             <Calendar size={20} className="flex-shrink-0" />
-            {!isCollapsed && <span>My Attendance</span>}
+            {!isCollapsed && <span className="truncate">My Attendance</span>}
           </Link>
 
           <Link
@@ -492,7 +504,7 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
             title={isCollapsed ? "My Tasks" : ""}
           >
             <FileCheck size={20} className="flex-shrink-0" />
-            {!isCollapsed && <span>My Tasks</span>}
+            {!isCollapsed && <span className="truncate">My Tasks</span>}
           </Link>
 
           {permissions.leaveManagement && (
@@ -507,7 +519,7 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
               title={isCollapsed ? "Leave Management" : ""}
             >
               <Calendar size={20} className="flex-shrink-0" />
-              {!isCollapsed && <span>Leave Management</span>}
+              {!isCollapsed && <span className="truncate">Leave Management</span>}
             </Link>
           )}
 
@@ -521,11 +533,11 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                 )}
                 title={isCollapsed ? "Appraisal" : ""}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <Award size={20} className="flex-shrink-0" />
-                  {!isCollapsed && <span>Appraisal</span>}
+                  {!isCollapsed && <span className="truncate">Appraisal</span>}
                 </div>
-                {!isCollapsed && (openGroups.appraisal ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
+                {!isCollapsed && (openGroups.appraisal ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />)}
               </button>
               {openGroups.appraisal && !isCollapsed && (
                 <ul className="ml-6 space-y-1 border-l pl-2 dark:border-gray-700">
@@ -533,13 +545,14 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                     <Link
                       to="/role/employee/appraisal"
                       className={cn(
-                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                        "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                         location.pathname === "/role/employee/appraisal"
                           ? "bg-primary/10 text-primary font-medium"
                           : "hover:bg-gray-100 dark:hover:bg-gray-700 text-foreground"
                       )}
+                      title="Employee Appraisal"
                     >
-                      <span>Employee Appraisal</span>
+                      <span className="truncate">Employee Appraisal</span>
                     </Link>
                   </li>
                 </ul>
@@ -557,11 +570,11 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                 )}
                 title={isCollapsed ? "Document Requests" : ""}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <FileCheck size={20} className="flex-shrink-0" />
-                  {!isCollapsed && <span>Document Requests</span>}
+                  {!isCollapsed && <span className="truncate">Document Requests</span>}
                 </div>
-                {!isCollapsed && (openGroups.documentRequests ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
+                {!isCollapsed && (openGroups.documentRequests ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />)}
               </button>
               {openGroups.documentRequests && !isCollapsed && (
                 <ul className="ml-6 space-y-1 border-l pl-2 dark:border-gray-700">
@@ -569,13 +582,14 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                     <Link
                       to="/role/employee/document-requests"
                       className={cn(
-                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                        "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                         location.pathname === "/role/employee/document-requests"
                           ? "bg-primary/10 text-primary font-medium"
                           : "hover:bg-gray-100 dark:hover:bg-gray-700 text-foreground"
                       )}
+                      title="Employee Document Requests"
                     >
-                      <span>Employee Document Requests</span>
+                      <span className="truncate">Employee Document Requests</span>
                     </Link>
                   </li>
                 </ul>
@@ -601,11 +615,11 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                   )}
                   title={isCollapsed ? getRecruitmentLabel() : ""}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <Users size={20} className="flex-shrink-0" />
-                    {!isCollapsed && <span>{getRecruitmentLabel()}</span>}
+                    {!isCollapsed && <span className="truncate">{getRecruitmentLabel()}</span>}
                   </div>
-                  {!isCollapsed && (openGroups.recruitment ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
+                  {!isCollapsed && (openGroups.recruitment ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />)}
                 </button>
                 {openGroups.recruitment && !isCollapsed && (
                   <ul className="ml-6 space-y-1 border-l pl-2 dark:border-gray-700">
@@ -614,13 +628,14 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                         <Link
                           to="/recruitment"
                           className={cn(
-                            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                            "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                             location.pathname === "/recruitment"
                               ? "bg-primary/10 text-primary font-medium"
                               : "hover:bg-gray-100 dark:hover:bg-gray-700 text-foreground"
                           )}
+                          title="Recruitment Process"
                         >
-                          <span>Recruitment Process</span>
+                          <span className="truncate">Recruitment Process</span>
                         </Link>
                       </li>
                     )}
@@ -629,13 +644,14 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                         <Link
                           to="/staff-requisition"
                           className={cn(
-                            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                            "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                             location.pathname === "/staff-requisition"
                               ? "bg-primary/10 text-primary font-medium"
                               : "hover:bg-gray-100 dark:hover:bg-gray-700 text-foreground"
                           )}
+                          title="Staff Requisition"
                         >
-                          <span>Staff Requisition</span>
+                          <span className="truncate">Staff Requisition</span>
                         </Link>
                       </li>
                     )}
@@ -644,13 +660,14 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                         <Link
                           to="/onboarding"
                           className={cn(
-                            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                            "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                             location.pathname === "/onboarding"
                               ? "bg-primary/10 text-primary font-medium"
                               : "hover:bg-gray-100 dark:hover:bg-gray-700 text-foreground"
                           )}
+                          title="Onboarding"
                         >
-                          <span>Onboarding</span>
+                          <span className="truncate">Onboarding</span>
                         </Link>
                       </li>
                     )}
@@ -670,7 +687,7 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                 title={isCollapsed ? "Leave Management" : ""}
               >
                 <Calendar size={20} className="flex-shrink-0" />
-                {!isCollapsed && <span>Leave Management</span>}
+                {!isCollapsed && <span className="truncate">Leave Management</span>}
               </Link>
             )}
             {permissions.employeeTransfer && (
@@ -685,7 +702,7 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                 title={isCollapsed ? "Employee Transfer" : ""}
               >
                 <RefreshCw size={20} className="flex-shrink-0" />
-                {!isCollapsed && <span>Employee Transfer</span>}
+                {!isCollapsed && <span className="truncate">Employee Transfer</span>}
               </Link>
             )}
             {permissions.payroll && (
@@ -698,11 +715,11 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                   )}
                   title={isCollapsed ? getPayrollLabel() : ""}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <DollarSign size={20} className="flex-shrink-0" />
-                    {!isCollapsed && <span>{getPayrollLabel()}</span>}
+                    {!isCollapsed && <span className="truncate">{getPayrollLabel()}</span>}
                   </div>
-                  {!isCollapsed && (openGroups.payroll ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
+                  {!isCollapsed && (openGroups.payroll ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />)}
                 </button>
                 {openGroups.payroll && !isCollapsed && (
                   <ul className="ml-6 space-y-1 border-l pl-2 dark:border-gray-700">
@@ -711,13 +728,14 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                         <Link
                           to="/payroll"
                           className={cn(
-                            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                            "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                             location.pathname === "/payroll"
                               ? "bg-primary/10 text-primary font-medium"
                               : "hover:bg-gray-100 dark:hover:bg-gray-700 text-foreground"
                           )}
+                          title="Payroll Processing"
                         >
-                          <span>Payroll Processing</span>
+                          <span className="truncate">Payroll Processing</span>
                         </Link>
                       </li>
                     )}
@@ -726,14 +744,15 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                         <Link
                           to="/tickets"
                           className={cn(
-                            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                            "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                             location.pathname === "/tickets"
                               ? "bg-primary/10 text-primary font-medium"
                               : "hover:bg-gray-100 dark:hover:bg-gray-700 text-foreground"
                           )}
+                          title="Tickets & Advances"
                         >
-                          <Plane size={16} />
-                          <span>Tickets & Advances</span>
+                          <Plane size={16} className="flex-shrink-0" />
+                          <span className="truncate">Tickets & Advances</span>
                         </Link>
                       </li>
                     )}
@@ -742,14 +761,15 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                         <Link
                           to="/indemnity"
                           className={cn(
-                            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                            "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                             location.pathname === "/indemnity"
                               ? "bg-primary/10 text-primary font-medium"
                               : "hover:bg-gray-100 dark:hover:bg-gray-700 text-foreground"
                           )}
+                          title="Indemnity Calculation"
                         >
-                          <Calculator size={16} />
-                          <span>Indemnity Calculation</span>
+                          <Calculator size={16} className="flex-shrink-0" />
+                          <span className="truncate">Indemnity Calculation</span>
                         </Link>
                       </li>
                     )}
@@ -767,11 +787,11 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                   )}
                   title={isCollapsed ? "Appraisal" : ""}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <Award size={20} className="flex-shrink-0" />
-                    {!isCollapsed && <span>Appraisal</span>}
+                    {!isCollapsed && <span className="truncate">Appraisal</span>}
                   </div>
-                  {!isCollapsed && (openGroups.appraisal ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
+                  {!isCollapsed && (openGroups.appraisal ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />)}
                 </button>
                 {openGroups.appraisal && !isCollapsed && (
                   <ul className="ml-6 space-y-1 border-l pl-2 dark:border-gray-700">
@@ -779,13 +799,14 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                       <Link
                         to="/role/hr_manager/appraisal"
                         className={cn(
-                          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                          "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                           location.pathname === "/role/hr_manager/appraisal"
                             ? "bg-primary/10 text-primary font-medium"
                             : "hover:bg-gray-100 dark:hover:bg-gray-700 text-foreground"
                         )}
+                        title="HR Manager Appraisal"
                       >
-                        <span>HR Manager Appraisal</span>
+                        <span className="truncate">HR Manager Appraisal</span>
                       </Link>
                     </li>
                   </ul>
@@ -802,11 +823,11 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                   )}
                   title={isCollapsed ? "Disciplinary Actions" : ""}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <AlertTriangle size={20} className="flex-shrink-0" />
-                    {!isCollapsed && <span>Disciplinary Actions</span>}
+                    {!isCollapsed && <span className="truncate">Disciplinary Actions</span>}
                   </div>
-                  {!isCollapsed && (openGroups.disciplinaryActions ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
+                  {!isCollapsed && (openGroups.disciplinaryActions ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />)}
                 </button>
                 {openGroups.disciplinaryActions && !isCollapsed && (
                   <ul className="ml-6 space-y-1 border-l pl-2 dark:border-gray-700">
@@ -814,13 +835,14 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                       <Link
                         to="/role/hr_manager/disciplinary-actions"
                         className={cn(
-                          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                          "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                           location.pathname === "/role/hr_manager/disciplinary-actions"
                             ? "bg-primary/10 text-primary font-medium"
                             : "hover:bg-gray-100 dark:hover:bg-gray-700 text-foreground"
                         )}
+                        title="HR Manager Disciplinary Actions"
                       >
-                        <span>HR Manager Disciplinary Actions</span>
+                        <span className="truncate">HR Manager Disciplinary Actions</span>
                       </Link>
                     </li>
                   </ul>
@@ -837,11 +859,11 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                   )}
                   title={isCollapsed ? "Document Requests" : ""}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <FileCheck size={20} className="flex-shrink-0" />
-                    {!isCollapsed && <span>Document Requests</span>}
+                    {!isCollapsed && <span className="truncate">Document Requests</span>}
                   </div>
-                  {!isCollapsed && (openGroups.documentRequests ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
+                  {!isCollapsed && (openGroups.documentRequests ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />)}
                 </button>
                 {openGroups.documentRequests && !isCollapsed && (
                   <ul className="ml-6 space-y-1 border-l pl-2 dark:border-gray-700">
@@ -849,13 +871,14 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                       <Link
                         to="/role/hr_manager/document-requests"
                         className={cn(
-                          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                          "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                           location.pathname === "/role/hr_manager/document-requests"
                             ? "bg-primary/10 text-primary font-medium"
                             : "hover:bg-gray-100 dark:hover:bg-gray-700 text-foreground"
                         )}
+                        title="HR Manager Document Requests"
                       >
-                        <span>HR Manager Document Requests</span>
+                        <span className="truncate">HR Manager Document Requests</span>
                       </Link>
                     </li>
                   </ul>
@@ -883,7 +906,7 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
               title={isCollapsed ? "Dashboard" : ""}
             >
               <Home size={20} className="flex-shrink-0" />
-              {!isCollapsed && <span>Dashboard</span>}
+              {!isCollapsed && <span className="truncate">Dashboard</span>}
             </Link>
             {permissions.leaveManagement && (
               <Link
@@ -897,7 +920,7 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
                 title={isCollapsed ? "Leave Management" : ""}
               >
                 <Calendar size={20} className="flex-shrink-0" />
-                {!isCollapsed && <span>Leave Management</span>}
+                {!isCollapsed && <span className="truncate">Leave Management</span>}
               </Link>
             )}
           </>
@@ -916,7 +939,7 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
             title={isCollapsed ? "Dashboard" : ""}
           >
             <Home size={20} className="flex-shrink-0" />
-            {!isCollapsed && <span>Dashboard</span>}
+            {!isCollapsed && <span className="truncate">Dashboard</span>}
           </Link>
         )
     }
@@ -942,29 +965,55 @@ const Sidebar = ({ isOpen, toggleSidebar, userRole: propUserRole, isCollapsed: p
       >
         {/* Logo Section */}
         <div className="flex h-16 items-center justify-between border-b px-4 dark:border-gray-700">
-          {!isCollapsed && (
-            <div className="flex items-center gap-2">
-              <Briefcase className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold">HRMS</span>
-            </div>
+          {!isCollapsed ? (
+            <>
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <Briefcase className="h-6 w-6 text-primary flex-shrink-0" />
+                <span className="text-xl font-bold truncate">{companyName || 'HRMS'}</span>
+              </div>
+              
+              {/* Collapse Button - Desktop only */}
+              <button
+                onClick={toggleCollapse}
+                className="hidden lg:flex items-center justify-center h-8 w-8 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0 ml-2"
+                title="Collapse sidebar"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Expand Button - Shown when collapsed */}
+              <button
+                onClick={toggleCollapse}
+                className="hidden lg:flex items-center justify-center h-8 w-8 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors mx-auto"
+                title="Expand sidebar"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </>
           )}
-          {isCollapsed && <Briefcase className="h-6 w-6 text-primary mx-auto" />}
-          
-          {/* Collapse Button - Desktop only */}
-          <button
-            onClick={toggleCollapse}
-            className="hidden lg:block p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-          >
-            {isCollapsed ? <ChevronRight size={20} /> : <ChevronDown size={20} />}
-          </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-1">
-            {renderSidebarContent()}
-          </div>
+        {/* Navigation Links */}
+        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+          {renderSidebarContent()}
         </nav>
+
+        {/* User Profile Section */}
+        <div className="border-t p-4 dark:border-gray-700">
+          <button
+            onClick={handleLogout}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20",
+              isCollapsed ? "justify-center" : ""
+            )}
+            title={isCollapsed ? "Logout" : ""}
+          >
+            <LogOut size={20} className="flex-shrink-0" />
+            {!isCollapsed && <span className="truncate">Logout</span>}
+          </button>
+        </div>
       </aside>
     </>
   )

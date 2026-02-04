@@ -5,13 +5,13 @@ import {
   getRecentActivities,
   getUserDistribution,
   getDepartmentStats,
-  enrollNewUser,
   bulkUploadUsers,
   getAllUsers,
   toggleUserStatus,
 } from '../controllers/adminController';
+import { getSettings, updateSettings } from '../controllers/settingsController';
 import { protect, authorize } from '../middleware/auth.middleware';
-
+import { createUser } from '../controllers/user.controller';
 const router: Router = express.Router()
 const upload = multer({ dest: 'uploads/' }); // Temporary storage folder
 
@@ -24,7 +24,6 @@ router.use(authorize('ADMIN', 'Admin', 'Super Admin'));
 
 // Update your route list
 router.post('/bulk-upload', upload.single('file'), bulkUploadUsers);
-
 
 /**
  * @route   GET /api/admin/metrics
@@ -51,11 +50,11 @@ router.get('/user-distribution', getUserDistribution);
 router.get('/department-stats', getDepartmentStats);
 
 /**
- * @route   POST /api/admin/enroll-user
+ * @route   POST /api/admin/create-user
  * @desc    Create a new user account with hashed credentials
  * @body    { firstName, lastName, email, password, role, department, phoneNumber }
  */
-router.post('/enroll-user', enrollNewUser);
+router.post('/enroll-user', createUser);
 
 /**
  * @route   GET /api/admin/users
@@ -68,5 +67,17 @@ router.get('/users', getAllUsers);
  * @desc    deactivate or reactivate a user account
  */
 router.patch('/users/:id/toggle-status', toggleUserStatus);
+
+/**
+ * @route   GET /api/admin/settings
+ * @desc    Get system settings
+ */
+router.get('/settings', getSettings);
+
+/**
+ * @route   PUT /api/admin/settings
+ * @desc    Update system settings
+ */
+router.put('/settings', updateSettings);
 
 export default router;
