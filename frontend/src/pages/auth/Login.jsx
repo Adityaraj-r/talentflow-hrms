@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Building2, Mail, Lock, AlertCircle, Loader2, Shield, Users, TrendingUp, Award, CheckCircle, ArrowRight, Moon, Sun } from 'lucide-react';
+import { Building2, Mail, Lock, AlertCircle, Loader2, Shield, Users, TrendingUp, Award, CheckCircle, ArrowRight, Moon, Sun, Eye, EyeOff } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -74,8 +75,8 @@ const Login = () => {
   ];
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-500 dark:from-gray-950 dark:via-slate-950 dark:to-zinc-950 transition-all duration-500">
-      
+    <div className="min-h-screen relative overflow-hidden bg-linear-to-br from-blue-400 via-indigo-500 to-purple-500 dark:from-gray-950 dark:via-slate-950 dark:to-zinc-950 transition-all duration-500">
+
       {/* Animated Background Pattern */}
       <div className="absolute inset-0 opacity-20 dark:opacity-15 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full">
@@ -117,10 +118,10 @@ const Login = () => {
 
       {/* Content Wrapper */}
       <div className="flex min-h-screen">
-        
+
         {/* Left Side - Branding & Features */}
         <div className="hidden lg:flex lg:w-1/2 relative p-12 flex-col justify-between">
-          
+
           <div className="relative z-10">
             {/* Logo & Brand */}
             <div className="flex items-center gap-3 mb-12">
@@ -141,7 +142,7 @@ const Login = () => {
               <div>
                 <h2 className="text-5xl font-bold text-white leading-tight mb-4 drop-shadow-lg">
                   Transform Your<br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-50 to-purple-50 dark:from-blue-200 dark:via-indigo-200 dark:to-purple-200">
+                  <span className="text-transparent bg-clip-text bg-linear-to-r from-white via-blue-50 to-purple-50 dark:from-blue-200 dark:via-indigo-200 dark:to-purple-200">
                     Workforce Management
                   </span>
                 </h2>
@@ -153,7 +154,7 @@ const Login = () => {
               {/* Feature Highlights */}
               <div className="grid grid-cols-2 gap-4 mt-8">
                 {features.map((feature, index) => (
-                  <div 
+                  <div
                     key={index}
                     className="bg-white/15 dark:bg-white/5 backdrop-blur-md border border-white/30 dark:border-white/10 rounded-xl p-4 hover:bg-white/25 dark:hover:bg-white/10 hover:border-white/40 dark:hover:border-white/20 hover:scale-105 hover:shadow-2xl transition-all duration-300 cursor-pointer group"
                   >
@@ -181,17 +182,17 @@ const Login = () => {
 
         {/* Right Side - Login Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative">
-          
+
           <Card className="w-full max-w-md relative z-10 shadow-2xl border border-white/30 dark:border-white/10 bg-white/98 dark:bg-slate-900/98 backdrop-blur-2xl">
             <div className="p-8">
-              
+
               {/* Mobile Logo */}
               <div className="lg:hidden flex items-center gap-3 mb-8">
-                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-xl shadow-lg">
+                <div className="bg-linear-to-br from-blue-500 to-indigo-600 p-3 rounded-xl shadow-lg">
                   <Building2 className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  <h1 className="text-2xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                     InternsLand
                   </h1>
                   <p className="text-xs text-gray-600 dark:text-gray-400">Enterprise HRMS</p>
@@ -210,7 +211,7 @@ const Login = () => {
 
               {/* Login Form */}
               <form onSubmit={handleSubmit} className="space-y-6">
-                
+
                 {/* Error Alert */}
                 {error && (
                   <Alert variant="destructive" className="animate-shake bg-red-50 dark:bg-red-950/50 border-red-200 dark:border-red-900">
@@ -235,7 +236,7 @@ const Login = () => {
                       disabled={loading}
                       className="h-12 pl-4 pr-4 text-base border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all duration-300 bg-white dark:bg-slate-800"
                     />
-                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"></div>
+                    <div className="absolute inset-0 rounded-lg bg-linear-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"></div>
                   </div>
                 </div>
 
@@ -247,31 +248,42 @@ const Login = () => {
                   </label>
                   <div className="relative group">
                     <Input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       disabled={loading}
-                      className="h-12 pl-4 pr-4 text-base border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all duration-300 bg-white dark:bg-slate-800"
+                      className="h-12 pl-4 pr-12 text-base border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all duration-300 bg-white dark:bg-slate-800"
                     />
-                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"></div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors z-20"
+                    >
+                      {showPassword ? (
+                        <Eye className="h-5 w-5" />
+                      ) : (
+                        <EyeOff className="h-5 w-5" />
+                      )}
+                    </button>
+                    <div className="absolute inset-0 rounded-lg bg-linear-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"></div>
                   </div>
                 </div>
 
                 {/* Remember & Forgot */}
                 <div className="flex items-center justify-between text-sm">
                   <label className="flex items-center gap-2 cursor-pointer group">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     />
                     <span className="text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">
                       Remember me
                     </span>
                   </label>
-                  <a 
-                    href="#" 
+                  <a
+                    href="#"
                     className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline transition-colors"
                   >
                     Forgot password?
@@ -282,10 +294,10 @@ const Login = () => {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-14 text-base font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 relative overflow-hidden group"
+                  className="w-full h-14 text-base font-semibold bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 relative overflow-hidden group"
                 >
-                  <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
-                  
+                  <span className="absolute inset-0 w-full h-full bg-linear-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
+
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
                       <Loader2 className="h-5 w-5 animate-spin" />
