@@ -68,6 +68,7 @@ app.use("/api/employees", employeeRoutes);
 
 app.use('/api/admin', adminRoutes);  // ← ADD THIS LINE
 app.use("/api/requisitions", requisitionRoutes);
+app.use("/api/employees", employeeRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 
 // 404 handler

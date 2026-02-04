@@ -2,25 +2,42 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye } from "lucide-react"
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
-const activeEmployees = [
-  {
-    id: 1,
-    name: "Rahul Sharma",
-    role: "Frontend Developer",
-    stage: "Document Verification",
-    joining: "12 May 2025",
-  },
-  {
-    id: 2,
-    name: "Amit Verma",
-    role: "Backend Developer",
-    stage: "Bank Details Pending",
-    joining: "25 May 2025",
-  },
-]
 
 const ActiveOnboarding = () => {
+
+const [employees, setEmployees] = useState([]);
+const [loading, setLoading] = useState(true);
+const navigate = useNavigate();
+
+const fetchActiveOnboarding = async () => {
+  try {
+    const res = await axios.get(
+      "http://localhost:5001/api/employees/active-onboarding"
+    );
+    setEmployees(res.data);
+  } catch (error) {
+    console.error("Error fetching active onboarding:", error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  fetchActiveOnboarding();
+}, []);
+
+if (loading) {
+  return (
+    <p className="p-6 text-muted-foreground">
+      Loading active onboarding...
+    </p>
+  );
+}
+
   return (
 <Card className="bg-card/60 backdrop-blur-xl border border-white/10 shadow-xl">
       <CardHeader>
@@ -42,41 +59,68 @@ const ActiveOnboarding = () => {
             <div>Action</div>
           </div>
 
+{employees.length === 0 && (
+  <div className="p-4 text-center text-muted-foreground">
+    No active onboarding employees found
+  </div>
+)}
+
+
           {/* BODY */}
           <div className="divide-y">
-            {activeEmployees.map(emp => (
+{employees.map(emp => (
+
+
               <div key={emp.id} className="grid grid-cols-5 p-3 items-center text-sm">
                 
 <div className="flex items-center gap-3">
   <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center font-semibold text-blue-400">
-    {emp.name.charAt(0)}
+{emp?.firstName?.charAt(0) || "?"}
   </div>
 
   <div>
-    <p className="font-medium">{emp.name}</p>
-    <p className="text-xs text-muted-foreground">{emp.role}</p>
+  <p className="font-medium">
+  {emp?.firstName || "Unknown"} {emp?.lastName || ""}
+</p>
+
+
+<p className="text-xs text-muted-foreground">
+  {emp.designation}
+</p>
+
   </div>
 </div>
-                <div>{emp.role}</div>
+<div>{emp.designation}</div>
 
                 <div>
-                  <Badge
+                 <Badge
   className={
-    emp.stage.includes("Verification")
+    emp.onboardingStatus === "Documents"
       ? "bg-yellow-500/20 text-yellow-400"
       : "bg-blue-500/20 text-blue-400"
   }
 >
-  {emp.stage}
+  {emp.onboardingStatus}
 </Badge>
+
 
                 </div>
 
-                <div>{emp.joining}</div>
+<div>
+  {emp.joiningDate
+    ? new Date(emp.joiningDate).toLocaleDateString()
+    : "-"}
+</div>
 
-                <Button size="icon" variant="ghost">
-                  <Eye className="h-4 w-4"/>
-                </Button>
+                <Button
+  size="icon"
+  variant="ghost"
+  className="cursor-pointer"
+  onClick={() => navigate(`/dashboard/onboarding/${emp._id}`)}
+>
+  <Eye className="h-4 w-4"/>
+</Button>
+
 
               </div>
             ))}
