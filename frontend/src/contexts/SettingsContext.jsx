@@ -13,84 +13,83 @@ export const useSettings = () => {
 
 export const SettingsProvider = ({ children }) => {
   const [settings, setSettings] = useState(() => {
-    // Try to load from localStorage first (instant, no flash)
-    const cached = localStorage.getItem('systemSettings')
-    if (cached) {
-      try {
+    // Safe localStorage parsing
+    try {
+      const cached = localStorage.getItem('systemSettings')
+      if (cached && cached !== 'undefined' && cached !== 'null') {
         return JSON.parse(cached)
-      } catch (e) {
-        return {
-          companyName: 'HRMS',
-          companyEmail: '',
-          companyPhone: '',
-          companyAddress: '',
-          timezone: 'Asia/Kolkata',
-          dateFormat: 'DD/MM/YYYY',
-          currency: 'INR',
-          language: 'en',
-          emailNotifications: true,
-          smsNotifications: false,
-          pushNotifications: true,
-          weeklyReports: true,
-          sessionTimeout: 30,
-          passwordExpiry: 90,
-          twoFactorAuth: false,
-        }
       }
+    } catch (error) {
+      console.error('Failed to parse cached settings:', error)
+      localStorage.removeItem('systemSettings') // Clear corrupted data
     }
+    
+    // Default settings
     return {
       companyName: 'HRMS',
       companyEmail: '',
-      companyPhone: '',
-      companyAddress: '',
-      timezone: 'Asia/Kolkata',
+      timezone: 'UTC',
       dateFormat: 'DD/MM/YYYY',
-      currency: 'INR',
+      currency: 'USD',
       language: 'en',
-      emailNotifications: true,
-      smsNotifications: false,
-      pushNotifications: true,
-      weeklyReports: true,
+      enableEmailNotifications: true,
+      enablePushNotifications: false,
+      enableSMSNotifications: false,
       sessionTimeout: 30,
-      passwordExpiry: 90,
-      twoFactorAuth: false,
+      requireMFA: false,
+      passwordExpiryDays: 90,
     }
   })
-  const [isLoading, setIsLoading] = useState(true)
+  
+  const [loading, setLoading] = useState(false)
 
-  // Load settings on mount
+  // Fetch settings only when authenticated
   useEffect(() => {
-    loadSettings()
+    const token = localStorage.getItem('token') || localStorage.getItem('idToken')
+    
+    // Only fetch if user is logged in
+    if (token) {
+      fetchSettings()
+    }
   }, [])
 
-  const loadSettings = async () => {
+  const fetchSettings = async () => {
     try {
-      const response = await adminService.getSettings()
-      if (response.success && response.data) {
-        setSettings(response.data)
-        // Cache in localStorage for instant load next time
-        localStorage.setItem('systemSettings', JSON.stringify(response.data))
+      setLoading(true)
+      const data = await adminService.getSettings()
+      if (data && data.settings) {
+        setSettings(data.settings)
+        // Cache in localStorage
+        localStorage.setItem('systemSettings', JSON.stringify(data.settings))
       }
     } catch (error) {
-      console.error('Failed to load settings:', error)
+      console.error('Failed to fetch settings:', error)
+      // Use cached settings on error
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  // Update settings (call this after saving in SystemSettings)
-  const refreshSettings = async () => {
-    await loadSettings()
-  }
-
-  const value = {
-    settings,
-    isLoading,
-    refreshSettings,
+  const updateSettings = async (newSettings) => {
+    try {
+      setLoading(true)
+      const data = await adminService.updateSettings(newSettings)
+      if (data && data.settings) {
+        setSettings(data.settings)
+        // Update cache
+        localStorage.setItem('systemSettings', JSON.stringify(data.settings))
+      }
+      return { success: true }
+    } catch (error) {
+      console.error('Failed to update settings:', error)
+      return { success: false, error: error.message }
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <SettingsContext.Provider value={value}>
+    <SettingsContext.Provider value={{ settings, loading, updateSettings, fetchSettings }}>
       {children}
     </SettingsContext.Provider>
   )

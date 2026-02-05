@@ -87,24 +87,17 @@ const adminService = {
     return await apiClient.get('/admin/user-distribution');
   },
 
-<<<<<<< Updated upstream
   /**
    * Toggle user status (Active/Inactive)
    */
   toggleUserStatus: async (userId) => {
     return await apiClient.patch(`/admin/users/${userId}/toggle-status`);
-=======
-  // Data for Department widgets
-  getDepartmentStats: async () => {
-    return await apiClient.get('/admin/department-stats');
->>>>>>> Stashed changes
   },
 
   /**
    * ATTENDANCE ADDITION: Get all attendance records for Admin View
    * This connects the attendance controller logic to the Admin Dashboard
    */
-<<<<<<< Updated upstream
   getDepartmentStats: async () => {
     try {
       return await apiClient.get('/admin/department-stats');
@@ -137,11 +130,3 @@ const adminService = {
 };
 
 export default adminService;
-=======
-  getAllAttendance: async (params = {}) => {
-    return await apiClient.get('/attendance/all', { params });
-  }
-};
-
-export default adminService;
->>>>>>> Stashed changes

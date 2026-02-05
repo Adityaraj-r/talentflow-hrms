@@ -10,7 +10,7 @@ import attendanceRoutes from "./routes/attendance.routes";
 import taskRoutes from "./routes/task.routes";
 import leaveRoutes from "./routes/leave.routes";
 import shiftRoutes from "./routes/shift.routes";
-
+import onboardingRoutes from './routes/onboardingRoutes';
 import employeeRoutes from "./routes/employee.routes";
 import requisitionRoutes from "./routes/requisition.routes";
 
@@ -41,8 +41,8 @@ app.use((req, res, next) => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     message: 'HRMS Backend is running',
     mongodb: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
     timestamp: new Date().toISOString()
@@ -70,14 +70,13 @@ app.use('/api/users', userRoutes);
 app.use("/api/employees", employeeRoutes);
 
 app.use('/api/admin', adminRoutes);  // ← ADD THIS LINE
-<<<<<<< Updated upstream
 app.use("/api/requisitions", requisitionRoutes);
-=======
+app.use('/api/onboarding', onboardingRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/shifts", shiftRoutes);
->>>>>>> Stashed changes
+
 
 // 404 handler
 app.use((req, res) => {
@@ -106,7 +105,7 @@ const startServer = async () => {
     }
 
     console.log('🔄 Connecting to MongoDB...');
-    
+
     // Connect to MongoDB with proper options
     await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 30000,

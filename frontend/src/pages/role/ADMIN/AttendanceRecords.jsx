@@ -5,11 +5,11 @@ import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
-import { 
-  Search, 
-  Calendar, 
-  Download, 
-  Filter, 
+import {
+  Search,
+  Calendar,
+  Download,
+  Filter,
   RefreshCcw,
   User
 } from "lucide-react";
@@ -17,9 +17,9 @@ import {
 const AttendanceRecords = () => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Date filter defaults to the current local date for immediate oversight.
-  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]); 
+  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
   const [searchTerm, setSearchTerm] = useState("");
 
   const fetchRecords = async () => {
@@ -69,31 +69,31 @@ const AttendanceRecords = () => {
           <p className="text-muted-foreground">Monitor employee check-ins and working hours.</p>
         </div>
         <div className="flex gap-2">
-           {/* Future feature: CSV export of the current filtered view */}
-           <Button variant="outline"><Download className="mr-2 h-4 w-4" /> Export CSV</Button>
+          {/* Future feature: CSV export of the current filtered view */}
+          <Button variant="outline"><Download className="mr-2 h-4 w-4" /> Export CSV</Button>
         </div>
       </div>
 
-      <Card>
+      <Card className="sticky top-6 border-slate-200 dark:border-slate-800">
         <CardHeader className="border-b p-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <CardTitle>Daily Logs</CardTitle>
-            
+
             <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
               <div className="relative">
-                <Input 
-                  type="date" 
+                <Input
+                  type="date"
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  className="w-full md:w-[180px]"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </div>
 
               <div className="relative w-full md:w-64">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search employee..." 
-                  className="pl-8" 
+                <Input
+                  placeholder="Search employee..."
+                  className="pl-8"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -121,11 +121,11 @@ const AttendanceRecords = () => {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                   <TableRow>
-                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                       Fetching latest logs...
-                     </TableCell>
-                   </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      Fetching latest logs...
+                    </TableCell>
+                  </TableRow>
                 ) : filteredRecords.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
@@ -139,7 +139,7 @@ const AttendanceRecords = () => {
                         <div className="flex items-center gap-3">
                           {/* Profile Avatar fallback using the first initial */}
                           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
-                             {record.userId?.firstName?.charAt(0) || "U"}
+                            {record.userId?.firstName?.charAt(0) || "U"}
                           </div>
                           <div className="flex flex-col">
                             <span className="font-medium text-sm">
@@ -151,10 +151,10 @@ const AttendanceRecords = () => {
                       </TableCell>
                       <TableCell>{record.userId?.department || "General"}</TableCell>
                       <TableCell className="font-mono text-xs">
-                        {record.checkIn ? new Date(record.checkIn).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "-"}
+                        {record.checkIn ? new Date(record.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-"}
                       </TableCell>
                       <TableCell className="font-mono text-xs">
-                        {record.checkOut ? new Date(record.checkOut).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "-"}
+                        {record.checkOut ? new Date(record.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-"}
                       </TableCell>
                       <TableCell className="font-bold">
                         {record.totalHours || "-"}

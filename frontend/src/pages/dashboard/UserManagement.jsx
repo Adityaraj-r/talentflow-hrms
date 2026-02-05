@@ -41,6 +41,8 @@ const UserManagement = () => {
     department: '',
     phoneNumber: ''
   })
+
+  const [loading, setLoading] = useState(false);
   // NEW: Fetch users from backend
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
@@ -75,20 +77,79 @@ const UserManagement = () => {
     fetchUsers();
   }, [fetchUsers]);
 
-  const handleCreateUser = async (e) => {
-    e.preventDefault();
-    try {
-      // This calls the code you provided in adminService.js
-      const response = await adminService.enrollUser(formData);
-      toast.success(response.message);
+  //  reusable reset and close function
+const handleCloseAndReset = () => {
+  setFormData({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    role:'', 
+    department:'',
+    phoneNumber: ''
+  });
+  setIsCreateOpen(false); 
+};
+
+
+const handleCreateUser = async () => {
+ 
+  if (!formData.firstName || formData.firstName.trim() === "") {
+    toast.error("Please enter First Name.");
+    return;
+  }
+  if (!formData.lastName || formData.lastName.trim() === "") {
+    toast.error("Please enter Last Name.");
+    return;
+  }
+  if (!formData.email || formData.email.trim() === "") {
+    toast.error("A valid Work Email is required.");
+    return;
+  }
+  if (!formData.password || formData.password.length < 6) {
+    toast.error("Password must be at least 6 characters long.");
+    return;
+  }
+  if (!formData.role || formData.role === "Select Role") {
+    toast.error("Please select a User Role.");
+    return;
+  }
+  if (!formData.department || formData.department === "Select Dept") {
+    toast.error("Please select a Department.");
+    return;
+  }
+  if (!formData.phoneNumber || formData.phoneNumber.length !== 10) {
+    toast.error("A valid 10-digit Phone Number is required.");
+    return;
+  }
+
+  setLoading(true);
+  try {
+    // 2. Ensure you pass 'formData' to your service
+    const response = await adminService.enrollUser(formData); 
+    
+    if (response.success) {
+      toast.success("User created successfully!");
       setIsCreateOpen(false);
-      fetchUsers();
-      // Suggestion: call a function here to refresh your metrics/user list
-      // fetchMetrics(); 
-    } catch (err) {
-      toast.error(err.message);
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        role: '',
+        department: '',
+        phoneNumber: ''
+      });
+      handleCloseAndReset();
+      fetchUsers(); // Refresh user list
+      
     }
-  };
+  } catch (error) {
+    toast.error(error.message || "Enrollment failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Bulk User Upload state declarations
   const [selectedFile, setSelectedFile] = useState(null);
@@ -295,12 +356,20 @@ const UserManagement = () => {
                     type="tel"
                     placeholder="+91"
                     value={formData.phoneNumber}
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                    onChange={(e) => {
+                      // Remove any non-numeric characters
+                      const value = e.target.value.replace(/\D/g, "");
+
+                      // Limit to 10 digits
+                      if (value.length <= 10) {
+                        setFormData({ ...formData, phoneNumber: value });
+                      }
+                    }}
                   />
                 </div>
               </form>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={handleCloseAndReset}>Cancel</Button>
                 <Button onClick={handleCreateUser}>Create User</Button>
               </DialogFooter>
             </DialogContent>
@@ -427,8 +496,8 @@ const UserManagement = () => {
                           variant="ghost"
                           size="icon"
                           className={`h-8 w-8 ${user.status === 'Active'
-                              ? 'text-red-500 hover:bg-red-50'    // Red when user is Active (Deactivation action)
-                              : 'text-green-500 hover:bg-green-50' // Green when user is Inactive (Activation action)
+                            ? 'text-red-500 hover:bg-red-50'    // Red when user is Active (Deactivation action)
+                            : 'text-green-500 hover:bg-green-50' // Green when user is Inactive (Activation action)
                             }`}
                           onClick={() => handleToggleStatus(user.id)}
                           title={user.status === 'Active' ? 'Deactivate User' : 'Activate User'}

@@ -4,13 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui
 import { Badge } from "../../../components/ui/badge"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
-import { 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle, 
-  ListTodo, 
-  Search, 
-  Filter, 
+import {
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  ListTodo,
+  Search,
+  Filter,
   Calendar,
   MoreHorizontal
 } from "lucide-react"
@@ -57,12 +57,12 @@ const MyTasks = () => {
 
   const getAssignerName = (assignedBy) => {
     if (!assignedBy) return "Unknown";
-    
+
     // Safety check: The backend 'populate' might fail or return just an ID string.
     // We handle both cases to prevent the app from crashing.
     if (assignedBy.firstName) return `${assignedBy.firstName} ${assignedBy.lastName}`;
-    
-    return "Manager"; 
+
+    return "Manager";
   }
 
   // Visual cues (colors) process faster than reading text. 
@@ -98,34 +98,34 @@ const MyTasks = () => {
           <p className="text-muted-foreground">Manage your assigned work and deadlines.</p>
         </div>
         <div className="flex gap-2">
-           {/* Placeholder for future Kanban board toggle */}
-           <Button><ListTodo className="mr-2 h-4 w-4" /> View Kanban</Button>
+          {/* Placeholder for future Kanban board toggle */}
+          <Button><ListTodo className="mr-2 h-4 w-4" /> View Kanban</Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatsCard 
-          title="Total Tasks" 
-          value={stats.total} 
-          icon={<ListTodo className="h-4 w-4 text-purple-500" />} 
+        <StatsCard
+          title="Total Tasks"
+          value={stats.total}
+          icon={<ListTodo className="h-4 w-4 text-purple-500" />}
           className="text-purple-600"
         />
-        <StatsCard 
-          title="Completed" 
-          value={stats.completed} 
-          icon={<CheckCircle2 className="h-4 w-4 text-green-500" />} 
+        <StatsCard
+          title="Completed"
+          value={stats.completed}
+          icon={<CheckCircle2 className="h-4 w-4 text-green-500" />}
           className="text-green-600"
         />
-        <StatsCard 
-          title="Pending" 
-          value={stats.pending} 
-          icon={<Clock className="h-4 w-4 text-orange-500" />} 
+        <StatsCard
+          title="Pending"
+          value={stats.pending}
+          icon={<Clock className="h-4 w-4 text-orange-500" />}
           className="text-orange-600"
         />
-        <StatsCard 
-          title="Overdue" 
-          value={stats.overdue} 
-          icon={<AlertCircle className="h-4 w-4 text-red-500" />} 
+        <StatsCard
+          title="Overdue"
+          value={stats.overdue}
+          icon={<AlertCircle className="h-4 w-4 text-red-500" />}
           className="text-red-600"
         />
       </div>
@@ -147,68 +147,68 @@ const MyTasks = () => {
           <div className="relative w-full overflow-auto">
             {/* Empty state handling: Important UX to reassure new employees that nothing is 'broken' */}
             {tasks.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">No tasks assigned to you yet.</div>
+              <div className="p-8 text-center text-muted-foreground">No tasks assigned to you yet.</div>
             ) : (
-            <table className="w-full caption-bottom text-sm">
-              <thead className="[&_tr]:border-b">
-                <tr className="border-b transition-colors hover:bg-muted/50">
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Task Info</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Priority</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Assigned By</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Timelines</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
-                  <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Action</th>
-                </tr>
-              </thead>
-              <tbody className="[&_tr:last-child]:border-0">
-                {tasks.map((task) => (
-                  <tr key={task._id} className="border-b transition-colors hover:bg-muted/50">
-                    <td className="p-4 align-middle">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-foreground">{task.title}</span>
-                        <span className="text-xs text-muted-foreground line-clamp-1">{task.description}</span>
-                        {/* Displaying the ID is helpful for debugging or referencing specific tickets in chat */}
-                        <span className="text-[10px] text-muted-foreground mt-1 bg-muted w-fit px-1.5 py-0.5 rounded">
-                            {task._id.slice(-6).toUpperCase()}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="p-4 align-middle">
-                      <Badge variant="outline" className={getPriorityColor(task.priority)}>
-                        {task.priority}
-                      </Badge>
-                    </td>
-                    <td className="p-4 align-middle">
-                      <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                          {getAssignerName(task.assignedBy).charAt(0)}
-                        </div>
-                        <span className="text-sm font-medium">{getAssignerName(task.assignedBy)}</span>
-                      </div>
-                    </td>
-                    <td className="p-4 align-middle">
-                      <div className="flex flex-col text-sm">
-                        <span className="text-muted-foreground text-xs">Due:</span>
-                        <span className="font-medium flex items-center gap-1">
-                          <Calendar className="h-3 w-3" /> {formatDate(task.dueDate)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="p-4 align-middle">
-                      <Badge variant="outline" className={getStatusColor(task.status)}>
-                        {task.status}
-                      </Badge>
-                    </td>
-                    <td className="p-4 align-middle text-right">
-                      {/* Action menu for future features like 'Mark Complete' or 'Add Comment' */}
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </td>
+              <table className="w-full caption-bottom text-sm">
+                <thead className="[&_tr]:border-b">
+                  <tr className="border-b transition-colors hover:bg-muted/50">
+                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Task Info</th>
+                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Priority</th>
+                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Assigned By</th>
+                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Timelines</th>
+                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
+                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="[&_tr:last-child]:border-0">
+                  {tasks.map((task) => (
+                    <tr key={task._id} className="border-b transition-colors hover:bg-muted/50">
+                      <td className="p-4 align-middle">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-foreground">{task.title}</span>
+                          <span className="text-xs text-muted-foreground line-clamp-1">{task.description}</span>
+                          {/* Displaying the ID is helpful for debugging or referencing specific tickets in chat */}
+                          <span className="text-[10px] text-muted-foreground mt-1 bg-muted w-fit px-1.5 py-0.5 rounded">
+                            {task._id.slice(-6).toUpperCase()}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="p-4 align-middle">
+                        <Badge variant="outline" className={getPriorityColor(task.priority)}>
+                          {task.priority}
+                        </Badge>
+                      </td>
+                      <td className="p-4 align-middle">
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                            {getAssignerName(task.assignedBy).charAt(0)}
+                          </div>
+                          <span className="text-sm font-medium">{getAssignerName(task.assignedBy)}</span>
+                        </div>
+                      </td>
+                      <td className="p-4 align-middle">
+                        <div className="flex flex-col text-sm">
+                          <span className="text-muted-foreground text-xs">Due:</span>
+                          <span className="font-medium flex items-center gap-1">
+                            <Calendar className="h-3 w-3" /> {formatDate(task.dueDate)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="p-4 align-middle">
+                        <Badge variant="outline" className={getStatusColor(task.status)}>
+                          {task.status}
+                        </Badge>
+                      </td>
+                      <td className="p-4 align-middle text-right">
+                        {/* Action menu for future features like 'Mark Complete' or 'Add Comment' */}
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         </CardContent>

@@ -7,7 +7,65 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
-import { Download, Briefcase, CheckCircle, XCircle, Clock, User } from "lucide-react";
+import { Download, Briefcase, CheckCircle, XCircle, Clock, User, Calendar } from "lucide-react";
+
+// --- HELPER FUNCTIONS ---
+
+// 1. Format Date: 03/02/26
+const formatDate = (dateString) => {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+  }).format(date);
+};
+
+// 2. Format Time: 09:30 AM
+const formatTime = (dateString) => {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+// 3. Calculate Total Hours: 8h 30m
+const calculateTotalHours = (checkIn, checkOut) => {
+  if (!checkIn || !checkOut) return "-";
+
+  const start = new Date(checkIn);
+  const end = new Date(checkOut);
+  const diffMs = end - start;
+
+  if (diffMs < 0) return "-";
+
+  const totalMinutes = Math.floor(diffMs / 1000 / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${hours}h ${minutes}m`;
+};
+
+// 4. Status Badge Logic
+const getStatusBadge = (status) => {
+  const styles = {
+    Present: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
+    Late: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800",
+    Absent: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800",
+    "Half Day": "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800",
+    Holiday: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800",
+  };
+
+  return (
+    <Badge variant="outline" className={`${styles[status] || "bg-slate-100 text-slate-700"} px-2 py-0.5 border`}>
+      {status || "Unknown"}
+    </Badge>
+  );
+};
 
 const MyAttendance = () => {
   const { user } = useUser();
@@ -21,27 +79,23 @@ const MyAttendance = () => {
   });
   const [history, setHistory] = useState([]);
 
-  // Fallback to "Full-Time" ensures the UI doesn't crash if the profile data is incomplete.
   const employeeType = user?.employeeType || "Full-Time";
 
   const getRequiredHours = (type) => {
     switch (type) {
       case "Part-Time": return 4;
       case "Intern": return 6;
-      default: return 9; // Standard 9-hour shift
+      default: return 9;
     }
   };
 
-  // Calculates working days (Mon-Fri) in a date range.
-  // NOTE: This currently does NOT account for Public Holidays. 
-  // TODO: In the future, pass a list of holidays to exclude them from this count.
+  // Basic Business Days Logic (Mon-Fri)
   const getBusinessDays = (endDate) => {
     let count = 0;
     const curDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
-    
+
     while (curDate <= endDate) {
       const dayOfWeek = curDate.getDay();
-      // 0 = Sunday, 6 = Saturday. Count only if NOT weekend.
       if (dayOfWeek !== 0 && dayOfWeek !== 6) {
         count++;
       }
@@ -59,27 +113,19 @@ const MyAttendance = () => {
         const data = Array.isArray(res?.data) ? res.data : [];
         setHistory(data);
 
-        // --- DYNAMIC STATS CALCULATION ---
+        // --- STATS CALCULATION ---
         const today = new Date();
-        
-        // 1. How many days *should* they have worked so far?
         const businessDaysSoFar = getBusinessDays(today);
 
-        // 2. Count actual logged events from the DB.
         const present = data.filter((d) => d.status === "Present").length;
         const late = data.filter((d) => d.status === "Late").length;
         const halfDay = data.filter((d) => d.status === "Half Day").length;
-        
-        const totalAttended = present + late + halfDay;
 
-        // 3. Calculate Absent
-        // Since the DB doesn't store "Absent" records explicitly, we infer it:
-        // (Days Passed) - (Days Attended).
-        // Math.max(0, ...) acts as a safety net so we never display negative numbers.
+        const totalAttended = present + late + halfDay;
         const absent = Math.max(0, businessDaysSoFar - totalAttended);
 
         setStats({
-          workingDays: businessDaysSoFar, 
+          workingDays: businessDaysSoFar,
           present,
           late,
           absent,
@@ -95,87 +141,158 @@ const MyAttendance = () => {
     fetchAttendance();
   }, []);
 
-  // Visual helper: Returns red text if under-hours, green if target met.
-  const checkHoursStatus = (total) => {
-    if (!total || total === "00:00") return "text-gray-400";
-    
-    // Simple integer parsing. If you need minute-level precision later, convert to totalMinutes.
-    const hours = parseInt(total.split(":")[0]);
-    if (hours >= requiredHours) return "text-green-600 font-bold";
-    return "text-red-500 font-bold";
-  };
-
   if (loading) {
     return <div className="p-6 text-muted-foreground">Loading attendance...</div>;
   }
 
   return (
     <div className="space-y-6">
-      {/* Header with Role & Target Context */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-3xl font-bold">My Attendance</h1>
-            <Badge variant="secondary" className="text-blue-700 bg-blue-50 border-blue-200">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">My Attendance</h1>
+            <Badge variant="secondary" className="text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">
               <User className="w-3 h-3 mr-1" /> {employeeType}
             </Badge>
           </div>
-          <p className="text-muted-foreground">
-            Target: <span className="font-medium text-foreground">{requiredHours} Hours/Day</span>
+          <p className="text-slate-500 dark:text-slate-400">
+            Target: <span className="font-medium text-slate-900 dark:text-white">{requiredHours} Hours/Day</span>
           </p>
         </div>
-        <Button variant="outline">
+        <Button variant="outline" className="dark:bg-slate-800 dark:text-white dark:border-slate-700">
           <Download className="mr-2 h-4 w-4" /> Export Report
         </Button>
       </div>
 
-      {/* High-level stats at a glance */}
+      {/* Stats Cards */}
+      {/* Stats Cards - Updated to match 'My Tasks' Color Scheme */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatsCard title="Working Days" value={stats.workingDays} icon={<Briefcase />} />
-        <StatsCard title="Present" value={stats.present} icon={<CheckCircle />} className="text-green-600" />
-        <StatsCard title="Absent" value={stats.absent} icon={<XCircle />} className="text-red-600" />
-        <StatsCard title="Late" value={stats.late} icon={<Clock />} className="text-yellow-600" />
+        <StatsCard
+          title="Working Days"
+          value={stats.workingDays}
+          // Matching 'Total Tasks' (Purple) style
+          icon={<Briefcase className="h-4 w-4 text-purple-500" />}
+          className="text-purple-600"
+        />
+        <StatsCard
+          title="Present"
+          value={stats.present}
+          // Matching 'Completed' (Green) style
+          icon={<CheckCircle className="h-4 w-4 text-green-500" />}
+          className="text-green-600"
+        />
+        <StatsCard
+          title="Late"
+          value={stats.late}
+          // Matching 'Pending' (Orange) style
+          icon={<Clock className="h-4 w-4 text-orange-500" />}
+          className="text-orange-600"
+        />
+        <StatsCard
+          title="Absent"
+          value={stats.absent}
+          // Matching 'Overdue' (Red) style
+          icon={<XCircle className="h-4 w-4 text-red-500" />}
+          className="text-red-600"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* The clock-in/out widget lives here */}
+        {/* Widget */}
         <AttendanceWidget employeeName={user?.firstName || "Employee"} />
 
+        {/* --- RECENT HISTORY TABLE (UPDATED) --- */}
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Recent History</CardTitle>
+          <CardHeader className="border-b p-4">
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-muted-foreground" /> Recent History
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {history.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No attendance records yet.</p>
+              <div className="p-8 text-center text-muted-foreground">No attendance records found.</div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>In</TableHead>
-                    <TableHead>Out</TableHead>
-                    <TableHead className="text-right">Total Hrs</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {history.map((day, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{day.date}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{day.status}</Badge>
-                      </TableCell>
-                      <TableCell>{day.checkIn || "-"}</TableCell>
-                      <TableCell>{day.checkOut || "-"}</TableCell>
-                      {/* Applying the conditional color styling here */}
-                      <TableCell className={`text-right font-mono ${checkHoursStatus(day.total)}`}>
-                        {day.total || "00:00"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="relative w-full overflow-auto">
+                <table className="w-full caption-bottom text-sm">
+                  <thead className="[&_tr]:border-b">
+                    {/* HEADER ROW: 
+          - Light Mode: Border gray-200, Text gray-500
+          - Dark Mode: Border slate-800, Text slate-400 
+      */}
+                    <tr className="border-b transition-colors hover:bg-transparent border-gray-200 dark:border-slate-800">
+
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 w-[25%]">
+                        Date
+                      </th>
+
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 w-[15%]">
+                        Status
+                      </th>
+
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 w-[25%]">
+                        In
+                      </th>
+
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 w-[25%]">
+                        Out
+                      </th>
+
+                      <th className="h-12 px-4 text-right align-middle font-medium text-gray-500 dark:text-slate-400 w-[15%] whitespace-nowrap">
+                        Total Hrs
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="[&_tr:last-child]:border-0">
+                    {history.map((day, i) => (
+                      /* DATA ROWS:
+                         - Light Mode: White bg, gray-100 border, dark text
+                         - Dark Mode: Transparent bg, slate-800 border, light text
+                      */
+                      <tr key={i} className="border-b transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/50 border-gray-100 dark:border-slate-800">
+
+                        {/* Date: Strong Black in Light Mode / White in Dark Mode */}
+                        <td className="p-4 align-middle font-medium text-gray-900 dark:text-slate-200">
+                          {formatDate(day.date || day.checkIn)}
+                        </td>
+
+                        <td className="p-4 align-middle">
+                          {getStatusBadge(day.status)}
+                        </td>
+
+                        {/* Time: Medium Gray in Light Mode / Light Gray in Dark Mode */}
+                        <td className="p-4 align-middle text-gray-600 dark:text-slate-400">
+                          {day.checkIn ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+                              {formatTime(day.checkIn)}
+                            </div>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+
+                        <td className="p-4 align-middle text-gray-600 dark:text-slate-400">
+                          {day.checkOut ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></div>
+                              {formatTime(day.checkOut)}
+                            </div>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+
+                        {/* Total Hrs: Darker Blue in Light Mode / Neon Blue in Dark Mode */}
+                        <td className="p-4 align-middle text-right font-mono text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                          {calculateTotalHours(day.checkIn, day.checkOut)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -187,11 +304,11 @@ const MyAttendance = () => {
 const StatsCard = ({ title, value, icon, className }) => (
   <Card>
     <CardContent className="p-6">
-      <div className="flex items-center justify-between pb-2">
-        <p className="text-sm text-muted-foreground">{title}</p>
+      <div className="flex items-center justify-between space-y-0 pb-2">
+        <p className="text-sm font-medium text-muted-foreground">{title}</p>
         {icon}
       </div>
-      <div className={`text-2xl font-bold ${className || ""}`}>{value}</div>
+      <div className={`text-3xl font-bold ${className}`}>{value}</div>
     </CardContent>
   </Card>
 );

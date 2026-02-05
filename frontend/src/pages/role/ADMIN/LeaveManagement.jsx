@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 // ✅ FIXED: 3 levels up for service
-import leaveService from "../../../services/leaveService"; 
+import leaveService from "../../../services/leaveService";
 // ✅ FIXED: 3 levels up for all UI components
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -40,7 +40,7 @@ const AdminLeaveManagement = () => {
     try {
       await leaveService.updateLeaveStatus(id, newStatus);
       toast.success(`Leave ${newStatus}`);
-      fetchRecords(); // Reloading the full list to ensure data consistency
+      fetchLeaves();// Reloading the full list to ensure data consistency
     } catch (err) {
       toast.error("Failed to update status");
     }
@@ -69,7 +69,7 @@ const AdminLeaveManagement = () => {
           <h1 className="text-3xl font-bold tracking-tight">Leave Management</h1>
           <p className="text-muted-foreground">Review and manage employee time-off applications.</p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -86,7 +86,7 @@ const AdminLeaveManagement = () => {
         </div>
       </div>
 
-      <Card>
+      <Card className="sticky top-6 border-slate-200 dark:border-slate-800">
         <CardHeader>
           <CardTitle>Request History</CardTitle>
           <CardDescription>Actions are only available for 'Pending' requests.</CardDescription>
@@ -95,7 +95,7 @@ const AdminLeaveManagement = () => {
           <div className="relative w-full overflow-auto">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b-2 border-gray-200">
                   <TableHead>Employee</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>From</TableHead>
@@ -107,7 +107,7 @@ const AdminLeaveManagement = () => {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                   <TableRow><TableCell colSpan={7} className="text-center py-8">Updating list...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center py-8">Updating list...</TableCell></TableRow>
                 ) : filteredLeaves.length === 0 ? (
                   <TableRow><TableCell colSpan={7} className="text-center py-8">No leave requests found for this filter.</TableCell></TableRow>
                 ) : (
