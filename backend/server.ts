@@ -5,11 +5,11 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
-import adminRoutes from './routes/adminRoutes';  // ← ADD THIS LINE
+import adminRoutes from './routes/adminRoutes';
+import settingsRoutes from './routes/settings.routes';  // ✅ ADD THIS
 
 import employeeRoutes from "./routes/employee.routes";
 import requisitionRoutes from "./routes/requisition.routes";
-
 
 dotenv.config();
 
@@ -55,7 +55,8 @@ app.get('/api', (req, res) => {
       health: '/health',
       auth: '/api/auth',
       users: '/api/users',
-      admin: '/api/admin'  // ← ADD THIS LINE
+      admin: '/api/admin',
+      settings: '/api/admin/settings'  // ✅ ADD THIS
     }
   });
 });
@@ -65,7 +66,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use("/api/employees", employeeRoutes);
 
-app.use('/api/admin', adminRoutes);  // ← ADD THIS LINE
+app.use('/api/admin', adminRoutes);
+app.use('/api/admin', settingsRoutes);  // ✅ ADD THIS
 app.use("/api/requisitions", requisitionRoutes);
 
 // 404 handler
@@ -96,7 +98,6 @@ const startServer = async () => {
 
     console.log('🔄 Connecting to MongoDB...');
     
-    // Connect to MongoDB with proper options
     await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 30000,
       socketTimeoutMS: 45000,
@@ -105,7 +106,6 @@ const startServer = async () => {
     console.log('✅ MongoDB connected successfully');
     console.log('📊 Database:', mongoose.connection.db?.databaseName || 'Unknown');
 
-    // Start server only after MongoDB is connected
     app.listen(PORT, () => {
       console.log('\n============================================================');
       console.log('🚀 HRMS BACKEND SERVER STARTED SUCCESSFULLY!');
