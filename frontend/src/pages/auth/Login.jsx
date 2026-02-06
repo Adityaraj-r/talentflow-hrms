@@ -74,7 +74,7 @@ const Login = () => {
   ];
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-500 dark:from-gray-950 dark:via-slate-950 dark:to-zinc-950 transition-all duration-500">
+    <div className="h-screen w-screen fixed inset-0 overflow-hidden bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-500 dark:from-gray-950 dark:via-slate-950 dark:to-zinc-950 transition-all duration-500">
       
       {/* Animated Background Pattern */}
       <div className="absolute inset-0 opacity-20 dark:opacity-15 pointer-events-none">
@@ -116,10 +116,10 @@ const Login = () => {
       </button>
 
       {/* Content Wrapper */}
-      <div className="flex min-h-screen">
+      <div className="flex h-full">
         
         {/* Left Side - Branding & Features */}
-        <div className="hidden lg:flex lg:w-1/2 relative p-12 flex-col justify-between">
+        <div className="hidden lg:flex lg:w-1/2 relative p-12 flex-col justify-between overflow-hidden">
           
           <div className="relative z-10">
             {/* Logo & Brand */}
@@ -137,7 +137,7 @@ const Login = () => {
             </div>
 
             {/* Hero Content */}
-            <div className="space-y-6 mb-12">
+            <div className="space-y-6 mb-8">
               <div>
                 <h2 className="text-5xl font-bold text-white leading-tight mb-4 drop-shadow-lg">
                   Transform Your<br />
@@ -151,25 +151,38 @@ const Login = () => {
               </div>
 
               {/* Feature Highlights */}
-              <div className="grid grid-cols-2 gap-4 mt-8">
+              <div className="grid grid-cols-2 gap-3 mt-6">
                 {features.map((feature, index) => (
                   <div 
                     key={index}
-                    className="bg-white/15 dark:bg-white/5 backdrop-blur-md border border-white/30 dark:border-white/10 rounded-xl p-4 hover:bg-white/25 dark:hover:bg-white/10 hover:border-white/40 dark:hover:border-white/20 hover:scale-105 hover:shadow-2xl transition-all duration-300 cursor-pointer group"
+                    className="relative bg-white/15 dark:bg-white/5 backdrop-blur-md border border-white/30 dark:border-white/10 rounded-xl p-3 hover:bg-white/25 dark:hover:bg-white/10 hover:border-white/40 dark:hover:border-white/20 transition-all duration-500 cursor-pointer group overflow-hidden"
+                    style={{
+                      animation: `slideInUp 0.6s ease-out ${index * 0.1}s backwards`
+                    }}
                   >
-                    <div className="text-white mb-2 group-hover:scale-110 transition-transform duration-300">
+                    {/* Shine effect */}
+                    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                    
+                    {/* Icon with rotation and scale */}
+                    <div className="text-white mb-2 transform group-hover:scale-125 group-hover:rotate-12 transition-all duration-500">
                       {feature.icon}
                     </div>
-                    <h3 className="text-white font-semibold text-sm mb-1 group-hover:translate-x-1 transition-transform duration-300 drop-shadow">{feature.title}</h3>
-                    <p className="text-blue-50 dark:text-gray-300 text-xs leading-relaxed group-hover:text-white transition-colors duration-300">{feature.description}</p>
+                    
+                    {/* Title with slide effect */}
+                    <h3 className="text-white font-semibold text-sm mb-1 transform group-hover:translate-x-2 transition-all duration-300 drop-shadow">
+                      {feature.title}
+                    </h3>
+                    
+                    {/* Description */}
+                    <p className="text-blue-50 dark:text-gray-300 text-xs leading-relaxed group-hover:text-white transition-colors duration-300">
+                      {feature.description}
+                    </p>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
 
-          {/* Stats Footer */}
-          <div className="relative z-10 grid grid-cols-4 gap-6 pt-8 border-t border-white/30 dark:border-white/10">
+            {/* Stats Footer */}
+          <div className="relative z-8 grid grid-cols-4 gap-6 pt-4 border-t border-white/30 dark:border-white/10">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="text-3xl font-bold text-white mb-1 drop-shadow-lg">{stat.value}</div>
@@ -177,16 +190,18 @@ const Login = () => {
               </div>
             ))}
           </div>
+            </div>
+          </div>
         </div>
 
         {/* Right Side - Login Form */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative">
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-8 relative overflow-hidden">
           
-          <Card className="w-full max-w-md relative z-10 shadow-2xl border border-white/30 dark:border-white/10 bg-white/98 dark:bg-slate-900/98 backdrop-blur-2xl">
-            <div className="p-8">
+          <Card className="w-full max-w-[420px] relative z-10 shadow-2xl border border-white/30 dark:border-white/10 bg-white/98 dark:bg-slate-900/98 backdrop-blur-2xl">
+            <div className="p-6">
               
               {/* Mobile Logo */}
-              <div className="lg:hidden flex items-center gap-3 mb-8">
+              <div className="lg:hidden flex items-center gap-3 mb-6">
                 <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-xl shadow-lg">
                   <Building2 className="h-8 w-8 text-white" />
                 </div>
@@ -199,17 +214,17 @@ const Login = () => {
               </div>
 
               {/* Form Header */}
-              <div className="mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                   Welcome Back
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Sign in to access your dashboard and manage your workforce
                 </p>
               </div>
 
               {/* Login Form */}
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 
                 {/* Error Alert */}
                 {error && (
@@ -220,9 +235,9 @@ const Login = () => {
                 )}
 
                 {/* Email Field */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <Mail className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                     Email Address
                   </label>
                   <div className="relative group">
@@ -233,16 +248,16 @@ const Login = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       disabled={loading}
-                      className="h-12 pl-4 pr-4 text-base border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all duration-300 bg-white dark:bg-slate-800"
+                      className="h-11 pl-3.5 pr-3.5 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all duration-300 bg-white dark:bg-slate-800"
                     />
                     <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"></div>
                   </div>
                 </div>
 
                 {/* Password Field */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                    <Lock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <Lock className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                     Password
                   </label>
                   <div className="relative group">
@@ -253,14 +268,14 @@ const Login = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       disabled={loading}
-                      className="h-12 pl-4 pr-4 text-base border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all duration-300 bg-white dark:bg-slate-800"
+                      className="h-11 pl-3.5 pr-3.5 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all duration-300 bg-white dark:bg-slate-800"
                     />
                     <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"></div>
                   </div>
                 </div>
 
                 {/* Remember & Forgot */}
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-sm pt-1">
                   <label className="flex items-center gap-2 cursor-pointer group">
                     <input 
                       type="checkbox" 
@@ -282,7 +297,7 @@ const Login = () => {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-14 text-base font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 relative overflow-hidden group"
+                  className="w-full h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 relative overflow-hidden group mt-2"
                 >
                   <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
                   
@@ -300,29 +315,29 @@ const Login = () => {
                 </Button>
 
                 {/* Divider */}
-                <div className="relative my-6">
+                <div className="relative my-5">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
                   </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-4 bg-white dark:bg-slate-900 text-gray-500 dark:text-gray-400">
+                  <div className="relative flex justify-center text-xs">
+                    <span className="px-3 bg-white dark:bg-slate-900 text-gray-500 dark:text-gray-400">
                       Trusted by enterprises worldwide
                     </span>
                   </div>
                 </div>
 
                 {/* Trust Badges */}
-                <div className="flex items-center justify-center gap-6 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center justify-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                   <div className="flex items-center gap-1">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-3.5 w-3.5 text-green-500" />
                     <span>ISO Certified</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-3.5 w-3.5 text-green-500" />
                     <span>GDPR Compliant</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-3.5 w-3.5 text-green-500" />
                     <span>SOC 2 Type II</span>
                   </div>
                 </div>
@@ -331,7 +346,7 @@ const Login = () => {
             </div>
 
             {/* Footer */}
-            <div className="px-8 pb-8 text-center">
+            <div className="px-6 pb-5 text-center">
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 © 2026 InternsLand. All rights reserved.
               </p>
@@ -341,7 +356,17 @@ const Login = () => {
       </div>
 
       {/* Custom Animations */}
-      <style jsx>{`
+      <style>{`
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
         @keyframes float {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           33% { transform: translate(30px, -30px) rotate(120deg); }
