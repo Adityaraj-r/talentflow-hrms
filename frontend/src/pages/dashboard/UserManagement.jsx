@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react" // Add useEffect and useCallback
+import { useState, useEffect, useCallback } from "react" 
 import { Button } from "../../components/ui/button"
 import { Card, CardContent } from "../../components/ui/card"
 import { Input } from "../../components/ui/input"
@@ -28,9 +28,9 @@ import { ROLES } from "../../constants/roles"
 const UserManagement = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isBulkOpen, setIsBulkOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(true) // Add loading state
-  const [users, setUsers] = useState([]) // Initialize as empty array
-  const [filters, setFilters] = useState({ search: '', role: 'all' }) // For dynamic filtering
+  const [isLoading, setIsLoading] = useState(true) 
+  const [users, setUsers] = useState([]) 
+  const [filters, setFilters] = useState({ search: '', role: 'all' }) 
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -43,15 +43,14 @@ const UserManagement = () => {
   })
 
   const [loading, setLoading] = useState(false);
-  // NEW: Fetch users from backend
+
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await adminService.getUsers(filters);
 
-      // Check if the backend response structure is response.data
+    
       const userData = response.data || [];
-      // Add this at Line 53 of UserManagement.jsx
       console.log("DEBUG: Raw Response from Service:", response);
 
       const formattedUsers = userData.map(u => ({
@@ -60,7 +59,6 @@ const UserManagement = () => {
         email: u.email,
         role: u.role,
         status: u.isActive ? 'Active' : 'Inactive',
-        // Generates initials 
         avatar: (u.firstName?.[0] || 'U') + (u.lastName?.[0] || 'S')
       }));
       setUsers(formattedUsers);
@@ -72,12 +70,11 @@ const UserManagement = () => {
     }
   }, [filters]);
 
-  // Initial load
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
-  //  reusable reset and close function
+  
 const handleCloseAndReset = () => {
   setFormData({
     firstName: '',
@@ -125,7 +122,7 @@ const handleCreateUser = async () => {
 
   setLoading(true);
   try {
-    // 2. Ensure you pass 'formData' to your service
+
     const response = await adminService.enrollUser(formData); 
     
     if (response.success) {
@@ -141,7 +138,7 @@ const handleCreateUser = async () => {
         phoneNumber: ''
       });
       handleCloseAndReset();
-      fetchUsers(); // Refresh user list
+      fetchUsers(); 
       
     }
   } catch (error) {
@@ -162,19 +159,27 @@ const handleCreateUser = async () => {
       toast.info(`Selected: ${file.name}`);
     }
   };
-  const handleToggleStatus = async (userId) => {
-    try {
-      // This calls the toggle-status endpoint we discussed
-      const response = await adminService.toggleUserStatus(userId);
-      toast.success(response.message);
 
-      // Refresh the table so user status changes immediately
-      fetchUsers();
-    } catch (error) {
-      console.error("Toggle Error:", error);
-      toast.error(error.message || "Failed to update user status");
+  const handleToggleStatus = async (userId) => {
+  try {
+
+    const response = await adminService.toggleUserStatus(userId);
+    
+    if (response.success) {
+      toast.success(response.message);
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.id === userId 
+            ? { ...user, status: user.status === 'Active' ? 'Inactive' : 'Active' } 
+            : user
+        )
+      );
     }
-  };
+  } catch (error) {
+    console.error("Toggle Error:", error);
+    toast.error(error.message || "Failed to update user status");
+  }
+};
 
   const handleProcessUpload = async () => {
     if (!selectedFile) {
@@ -196,10 +201,9 @@ const handleCreateUser = async () => {
       setIsUploading(false);
     }
   };
-  // Add this before the 'return (' in UserManagement.jsx
+
   const activeCount = users.filter(u => u.status === 'Active').length;
   const inactiveCount = users.filter(u => u.status === 'Inactive').length;
-  // Note: If you have a 'Deactivated' status in your DB, filter for it specifically
   const deactivatedCount = users.filter(u => u.status === 'Deactivated').length;
 
 
@@ -357,7 +361,7 @@ const handleCreateUser = async () => {
                     placeholder="+91"
                     value={formData.phoneNumber}
                     onChange={(e) => {
-                      // Remove any non-numeric characters
+                      // Remove non-numeric characters
                       const value = e.target.value.replace(/\D/g, "");
 
                       // Limit to 10 digits

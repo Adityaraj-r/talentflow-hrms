@@ -1,13 +1,11 @@
-// backend/src/server.ts
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
-import adminRoutes from './routes/adminRoutes';  // ← ADD THIS LINE
+import adminRoutes from './routes/adminRoutes';  
 import onboardingRoutes from './routes/onboardingRoutes';
-
 import employeeRoutes from "./routes/employee.routes";
 import requisitionRoutes from "./routes/requisition.routes";
 
@@ -56,7 +54,7 @@ app.get('/api', (req, res) => {
       health: '/health',
       auth: '/api/auth',
       users: '/api/users',
-      admin: '/api/admin'  // ← ADD THIS LINE
+      admin: '/api/admin'  
     }
   });
 });
