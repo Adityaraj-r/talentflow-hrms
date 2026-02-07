@@ -1,78 +1,72 @@
-import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth.middleware';
+import { Request, Response } from 'express';
 import Settings from '../models/Settings.model';
 
 /**
- * Get system settings (returns single settings document)
+ * GET /api/admin/settings
+ * Get system settings
  */
-export const getSettings = async (req: AuthRequest, res: Response) => {
+export const getSettings = async (req: Request, res: Response) => {
   try {
-    console.log('📋 Fetching system settings...');
-    
-    // Find or create settings (only one document should exist)
     let settings = await Settings.findOne();
-    
+
     if (!settings) {
-      console.log('⚠️ No settings found, creating default settings...');
-      settings = await Settings.create({});
+      settings = await Settings.create({
+        companyName: 'InternsLand',
+        companyEmail: 'admin@internsland.com',
+        phone: '+91 0000000000',
+        address: 'Pune, Maharashtra, India',
+      });
     }
-    
-    console.log('✅ Settings retrieved successfully');
-    
-    return res.json({
+
+    res.status(200).json({
       success: true,
-      data: settings
+      settings,
     });
   } catch (error: any) {
-    console.error('❌ Get settings error:', error);
-    return res.status(500).json({
+    console.error('Get settings error:', error);
+    res.status(500).json({
       success: false,
-      error: 'Failed to fetch settings'
+      message: 'Failed to fetch settings',
+      error: error.message,
     });
   }
 };
 
 /**
+ * PUT /api/admin/settings
  * Update system settings
  */
-export const updateSettings = async (req: AuthRequest, res: Response) => {
+export const updateSettings = async (req: Request, res: Response) => {
   try {
-    console.log('🔄 Updating system settings...');
-    console.log('📦 Update data:', req.body);
-    
-    const userId = req.user?.id;
-    const updateData = {
-      ...req.body,
-      updatedBy: userId,
-      updatedAt: new Date()
-    };
-    
-    // Find and update, or create if doesn't exist
+    const settingsData = req.body;
+    const userId = (req as any).user?.uid || 'system';
+
     let settings = await Settings.findOne();
-    
-    if (!settings) {
-      console.log('⚠️ No settings found, creating new...');
-      settings = await Settings.create(updateData);
+
+    if (settings) {
+      Object.assign(settings, {
+        ...settingsData,
+        updatedBy: userId,
+      });
+      await settings.save();
     } else {
-      settings = await Settings.findOneAndUpdate(
-        {},
-        updateData,
-        { new: true, runValidators: true }
-      );
+      settings = await Settings.create({
+        ...settingsData,
+        updatedBy: userId,
+      });
     }
-    
-    console.log('✅ Settings updated successfully');
-    
-    return res.json({
+
+    res.status(200).json({
       success: true,
       message: 'Settings updated successfully',
-      data: settings
+      settings,
     });
   } catch (error: any) {
-    console.error('❌ Update settings error:', error);
-    return res.status(500).json({
+    console.error('Update settings error:', error);
+    res.status(500).json({
       success: false,
-      error: 'Failed to update settings'
+      message: 'Failed to update settings',
+      error: error.message,
     });
   }
 };

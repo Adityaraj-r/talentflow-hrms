@@ -71,7 +71,9 @@ import RecentHires from "./pages/modules/recruitment/RecentHires"
 import CreateRequisition from "./pages/modules/recruitment/CreateRequisition"
 import ManageOnboarding from "./pages/modules/recruitment/ManageOnboarding"
 import ActiveOnboarding from "./pages/modules/recruitment/ActiveOnboarding"
-import OnboardingDetails from "@/pages/modules/recruitment/OnboardingDetails";
+import AttendanceRecords from "./pages/role/ADMIN/AttendanceRecords"
+import AdminLeaveManagement from "./pages/role/ADMIN/LeaveManagement"
+import ShiftManagement from "./pages/role/ADMIN/ShiftManagement"
 
 // Protected Route Component with Case-Insensitive Role Check
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -93,7 +95,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   if (allowedRoles && allowedRoles.length > 0) {
     const userRole = user?.role?.toUpperCase()
     const normalizedAllowedRoles = allowedRoles.map(role => role.toUpperCase())
-    
+
     if (!normalizedAllowedRoles.includes(userRole)) {
       return <Navigate to="/unauthorized" />
     }
@@ -126,7 +128,7 @@ const DashboardRouter = () => {
 
   // Case-insensitive role routing
   const role = user.role?.toUpperCase()
-  
+
   if (role === 'ADMIN') {
     return <Navigate to="/admin/dashboard" replace />
   } else if (role === 'EMPLOYEE') {
@@ -173,9 +175,9 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["employee", "EMPLOYEE"]}>
                       <DashboardLayout>
-                        <EmployeeDashboard 
-                          stats={{ leaveRequests: 3, documentsRequested: 2 }} 
-                          isLoading={false} 
+                        <EmployeeDashboard
+                          stats={{ leaveRequests: 3, documentsRequested: 2 }}
+                          isLoading={false}
                         />
                       </DashboardLayout>
                     </ProtectedRoute>
@@ -344,9 +346,11 @@ function App() {
                 <Route
                   path="/dashboard/create-requisition"
                   element={
-                    <DashboardLayout>
-                      <CreateRequisition />
-                    </DashboardLayout>
+                    <ProtectedRoute allowedRoles={["admin", "ADMIN", "HR Manager", "HR_MANAGER"]}>
+                      <DashboardLayout>
+                        <CreateRequisition />
+                      </DashboardLayout>
+                    </ProtectedRoute>
                   }
                 />
 
@@ -356,10 +360,19 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["admin", "ADMIN", "HR Manager", "HR_MANAGER"]}>
                       <DashboardLayout>
-                        <div className="p-6">
-                          <h1 className="text-2xl font-bold">Attendance Records</h1>
-                          <p className="text-gray-500 mt-2">Attendance management coming soon...</p>
-                        </div>
+                        <AttendanceRecords />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* shift - Admin only */}
+                <Route
+                  path="/attendance/shifts"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "ADMIN", "HR Manager", "HR_MANAGER"]}>
+                      <DashboardLayout>
+                        <ShiftManagement />
                       </DashboardLayout>
                     </ProtectedRoute>
                   }
@@ -452,10 +465,7 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["admin", "ADMIN"]}>
                       <DashboardLayout>
-                        <div className="p-6">
-                          <h1 className="text-2xl font-bold">Leave Management</h1>
-                          <p className="text-gray-500 mt-2">Leave management coming soon...</p>
-                        </div>
+                        <AdminLeaveManagement />
                       </DashboardLayout>
                     </ProtectedRoute>
                   }

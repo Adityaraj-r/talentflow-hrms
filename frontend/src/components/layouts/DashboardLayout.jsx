@@ -20,7 +20,7 @@ const DashboardLayout = ({ children }) => {
   }
 
   return (
-    <div className="w-full">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
       <Sidebar
         isOpen={sidebarOpen}
         toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
@@ -30,21 +30,20 @@ const DashboardLayout = ({ children }) => {
         companyName={settings.companyName}
       />
 
-      {/* Main Content - Dynamically adjust margin based on sidebar state */}
       <div 
-        className={`flex flex-1 flex-col overflow-hidden transition-all duration-300 ${
-          isCollapsed ? "lg:ml-16" : "lg:ml-64"
+        className={`flex h-full flex-1 flex-col bg-background transition-all duration-300 ease-in-out ${
+          isCollapsed ? "lg:ml-20" : "lg:ml-72" 
         }`}
       >
-        <Header 
-          toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+        <Header
+          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           user={user}
           theme={theme}
           toggleTheme={toggleTheme}
           onLogout={handleLogout}
         />
-        
-        <main className="w-full px-6">
+
+        <main className="flex-1 overflow-y-auto px-6 pb-6 pt-4">
           {children}
         </main>
       </div>
