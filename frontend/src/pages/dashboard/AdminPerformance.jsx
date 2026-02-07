@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { TrendingUp, Plus, Calendar, Users, FileText, X } from "lucide-react";
 import { toast } from "sonner";
 import PerformanceAnalytics from "./PerformanceAnalytics";
+import EmployeeOverview from "./EmployeeOverview";
+
 
 // Mock data defined outside component to prevent re-initialization
 const mockCycles = [
@@ -16,16 +18,32 @@ const mockCycles = [
   { id: 2, name: "Annual 2025", startDate: "2025-01-01", endDate: "2025-12-31", status: "completed", totalReviews: 20, avgScore: 3.8, description: "Annual performance review for 2025" }
 ];
 
+
 const AdminPerformance = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("cycles");
-  const [performanceData, setPerformanceData] = useState({ 
-    totalCycles: 2, 
-    activeCycles: 1, 
-    totalReviews: 45, 
-    avgScore: 4.2, 
-    cycles: mockCycles  // Initialize directly with mock data
+  
+  // ✅ FIX: Initialize cycles from localStorage or fallback to mock data
+  const [cycles, setCycles] = useState(() => {
+    const saved = localStorage.getItem('performanceCycles');
+    return saved ? JSON.parse(saved) : mockCycles;
   });
+
+  const [performanceData, setPerformanceData] = useState(() => {
+    const savedCycles = localStorage.getItem('performanceCycles');
+    const initialCycles = savedCycles ? JSON.parse(savedCycles) : mockCycles;
+    
+    return {
+      totalCycles: initialCycles.length,
+      activeCycles: initialCycles.filter(c => c.status === 'active').length,
+      totalReviews: initialCycles.reduce((sum, c) => sum + (c.totalReviews || 0), 0),
+      avgScore: initialCycles.length > 0 
+        ? (initialCycles.reduce((sum, c) => sum + (c.avgScore || 0), 0) / initialCycles.length).toFixed(1)
+        : null,
+      cycles: initialCycles
+    };
+  });
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingCycle, setEditingCycle] = useState(null);
@@ -38,6 +56,12 @@ const AdminPerformance = () => {
   });
   const [formErrors, setFormErrors] = useState({});
 
+  // ✅ FIX: Save to localStorage whenever cycles change
+  useEffect(() => {
+    localStorage.setItem('performanceCycles', JSON.stringify(performanceData.cycles));
+  }, [performanceData.cycles]);
+
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -46,9 +70,11 @@ const AdminPerformance = () => {
     }
   };
 
+
   const handleStatusChange = (value) => {
     setFormData(prev => ({ ...prev, status: value }));
   };
+
 
   const validateForm = () => {
     const errors = {};
@@ -74,6 +100,7 @@ const AdminPerformance = () => {
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
+
 
   const handleCreateCycle = () => {
     if (!validateForm()) {
@@ -108,6 +135,7 @@ const AdminPerformance = () => {
     toast.success(`Cycle "${newCycle.name}" created successfully!`);
   };
 
+
   const handleEditClick = (cycle) => {
     setEditingCycle(cycle);
     setFormData({
@@ -119,6 +147,7 @@ const AdminPerformance = () => {
     });
     setShowEditModal(true);
   };
+
 
   const handleUpdateCycle = () => {
     if (!validateForm()) {
@@ -155,6 +184,7 @@ const AdminPerformance = () => {
     toast.success(`Cycle "${formData.name}" updated successfully!`);
   };
 
+
   const handleDeleteCycle = (cycleId, cycleName) => {
     if (window.confirm(`Are you sure you want to delete "${cycleName}"?\n\nThis action cannot be undone.`)) {
       const updatedCycles = performanceData.cycles.filter(cycle => cycle.id !== cycleId);
@@ -171,6 +201,7 @@ const AdminPerformance = () => {
     }
   };
 
+
   const handleCloseModal = () => {
     setShowCreateModal(false);
     setShowEditModal(false);
@@ -179,9 +210,11 @@ const AdminPerformance = () => {
     setFormErrors({});
   };
 
+
   const handleViewCycle = (cycle) => {
     navigate(`/role/admin/appraisal/view/${cycle.id}`, { state: { cycle } });
   };
+
 
   return (
     <div className="space-y-6 p-6">
@@ -264,6 +297,16 @@ const AdminPerformance = () => {
         >
           Analytics & Insights
         </button>
+        <button
+          onClick={() => setActiveTab("employees")}
+          className={`px-6 py-3 font-semibold transition-all ${
+            activeTab === "employees"
+              ? "border-b-2 border-green-500 text-green-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Employee Overview
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -341,8 +384,10 @@ const AdminPerformance = () => {
             </div>
           </CardContent>
         </Card>
-      ) : (
+      ) : activeTab === "analytics" ? (
         <PerformanceAnalytics />
+      ) : (
+        <EmployeeOverview />
       )}
 
       {/* Create Cycle Modal */}
