@@ -1,50 +1,36 @@
 import { useState } from "react"
 import Sidebar from "../ui/Sidebar"
 import Header from "../ui/Header"
-import { useAuth } from "../../contexts/AuthContext"
-import { useTheme } from "../../contexts/ThemeContext"
-import { useSettings } from "../../contexts/SettingsContext"
-import { useNavigate } from "react-router-dom"
 
 const DashboardLayout = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const { user, logout } = useAuth()
-  const { theme, toggleTheme } = useTheme()
-  const { settings } = useSettings()
-  const navigate = useNavigate()
 
-  const handleLogout = () => {
-    logout()
-    navigate("/login")
-  }
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div className="min-h-screen bg-muted/10">
+      {/* 1. Sidebar (Fixed Left) */}
       <Sidebar
-        isOpen={sidebarOpen}
-        toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        userRole={user?.role}
+        isOpen={isSidebarOpen}
+        toggleSidebar={toggleSidebar}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
-        companyName={settings.companyName}
       />
 
+      {/* 2. Main Content Wrapper*/}
       <div 
-        className={`flex h-full flex-1 flex-col bg-background transition-all duration-300 ease-in-out ${
-          isCollapsed ? "lg:ml-20" : "lg:ml-72" 
-        }`}
+        className={`
+          flex flex-col min-h-screen transition-all duration-300 ease-in-out
+          ${isCollapsed ? 'lg:ml-[80px]' : 'lg:ml-[280px]'}
+        `}
       >
-        <Header
-          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          user={user}
-          theme={theme}
-          toggleTheme={toggleTheme}
-          onLogout={handleLogout}
-        />
+        {/* 3. Header (Sticky Top) */}
+        <Header toggleSidebar={toggleSidebar} />
 
-        <main className="flex-1 overflow-y-auto px-6 pb-6 pt-4">
-          {children}
+        {/* 4. Page Content */}
+        <main className="flex-1 p-6">
+           {children}
         </main>
       </div>
     </div>
