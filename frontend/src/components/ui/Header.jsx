@@ -23,10 +23,15 @@ import {
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { useAuth } from "../../contexts/AuthContext"
+import { useTheme } from "../../contexts/ThemeContext"
 
-const Header = ({ toggleSidebar, user, theme, toggleTheme, onLogout }) => {
+const Header = ({ toggleSidebar }) => {
   const navigate = useNavigate()
   const location = useLocation()
+  const { user, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
+
   const [notifications, setNotifications] = useState([
     { id: 1, message: "New leave request from John Doe", read: false },
     { id: 2, message: "Staff requisition approved", read: false },
@@ -48,11 +53,10 @@ const Header = ({ toggleSidebar, user, theme, toggleTheme, onLogout }) => {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-background px-4 transition-all duration-300 sm:px-6",
+        "sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between border-b bg-background px-4 transition-all duration-300 sm:px-6 shadow-sm",
       )}
     >
       <div className="flex items-center gap-2">
-        {/* Mobile hamburger */}
         <Button
           variant="ghost"
           size="icon"
@@ -75,35 +79,17 @@ const Header = ({ toggleSidebar, user, theme, toggleTheme, onLogout }) => {
           </Button>
         )}
 
-        <h1 className="hidden text-lg font-bold text-foreground sm:block sm:text-xl">
+        <h1 className="text-lg font-bold text-foreground">
           HRMS System
-        </h1>
-
-        <h1 className="text-lg font-bold text-foreground sm:hidden">
-          HRMS
         </h1>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">
-        {canGoBack && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-            className="sm:hidden"
-            title="Go back"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        )}
-
-        {/* Theme Toggle - This correctly passes the event 'e' to start the ripple */}
         <Button variant="ghost" size="icon" onClick={toggleTheme}>
           {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           <span className="sr-only">Toggle theme</span>
         </Button>
 
-        {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -113,11 +99,10 @@ const Header = ({ toggleSidebar, user, theme, toggleTheme, onLogout }) => {
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <Badge className="absolute -right-1 -top-1 px-1.5 py-0.5 text-xs">
+                <Badge className="absolute -right-1 -top-1 px-1.5 py-0.5 text-[10px] flex h-4 min-w-[16px] items-center justify-center">
                   {unreadCount}
                 </Badge>
               )}
-              <span className="sr-only">Notifications</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="z-50 w-80">
@@ -135,54 +120,49 @@ const Header = ({ toggleSidebar, user, theme, toggleTheme, onLogout }) => {
               )}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {notifications.length > 0 ? (
-              notifications.map((notification) => (
-                <DropdownMenuItem
-                  key={notification.id}
-                  className={cn(
-                    "flex cursor-pointer flex-col items-start",
-                    !notification.read && "bg-muted/50",
-                  )}
-                >
-                  <span className="text-sm">{notification.message}</span>
-                  <span className="text-xs text-muted-foreground">2 hours ago</span>
-                </DropdownMenuItem>
-              ))
-            ) : (
-              <div className="py-2 px-4 text-center text-sm text-muted-foreground">
-                No notifications
-              </div>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/notifications" className="w-full cursor-pointer text-center text-sm">
-                View all notifications
-              </Link>
-            </DropdownMenuItem>
+            <div className="max-h-[300px] overflow-y-auto">
+                {notifications.length > 0 ? (
+                notifications.map((notification) => (
+                    <DropdownMenuItem
+                    key={notification.id}
+                    className={cn(
+                        "flex cursor-pointer flex-col items-start p-3",
+                        !notification.read && "bg-muted/50",
+                    )}
+                    >
+                    <span className="text-sm">{notification.message}</span>
+                    <span className="text-xs text-muted-foreground mt-1">2 hours ago</span>
+                    </DropdownMenuItem>
+                ))
+                ) : (
+                <div className="py-4 px-4 text-center text-sm text-muted-foreground">
+                    No notifications
+                </div>
+                )}
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-2 px-2 hover:bg-accent focus:outline-none focus:ring-0 focus-visible:ring-0"
+              className="flex items-center gap-2 px-2 hover:bg-accent focus:outline-none focus:ring-0 focus-visible:ring-0 rounded-full border border-transparent hover:border-border"
             >
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground">
+                <AvatarFallback className="bg-primary/10 text-primary font-bold">
                   {(user?.name || user?.firstName || "A").charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="hidden flex-col items-start md:flex">
-                <span className="text-sm font-medium">
+              <div className="hidden flex-col items-start md:flex text-left">
+                <span className="text-sm font-medium leading-none">
                   {user?.firstName || user?.name || "Admin"}
                 </span>
-                <span className="text-xs capitalize text-muted-foreground">
+                <span className="text-[10px] uppercase text-muted-foreground">
                   {user?.role?.toLowerCase() || "Admin"}
                 </span>
               </div>
-              <ChevronDown className="hidden h-4 w-4 md:block" />
+              <ChevronDown className="hidden h-4 w-4 md:block text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="z-50 w-56">
@@ -202,7 +182,7 @@ const Header = ({ toggleSidebar, user, theme, toggleTheme, onLogout }) => {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={onLogout}
+              onClick={logout}
               className="cursor-pointer text-red-600 focus:text-red-600"
             >
               <LogOut className="mr-2 h-4 w-4" />

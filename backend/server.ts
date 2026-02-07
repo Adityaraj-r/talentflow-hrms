@@ -13,6 +13,8 @@ import settingsRoutes from './routes/settings.routes';
 import onboardingRoutes from './routes/onboardingRoutes';
 import employeeRoutes from "./routes/employee.routes";
 import requisitionRoutes from "./routes/requisition.routes";
+import roleRoutes from './routes/role.routes';
+import { seedRoles } from './utils/roleSeeder';
 
 dotenv.config();
 
@@ -60,6 +62,7 @@ app.get('/api', (req, res) => {
       users: '/api/users',
       admin: '/api/admin',
       settings: '/api/admin/settings',
+      roles: '/api/roles',
       onboarding: '/api/onboarding'
     }
   });
@@ -70,9 +73,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use("/api/employees", employeeRoutes);
 
-// Admin & Settings
+// Admin, Settings & Roles
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin', settingsRoutes);
+app.use('/api/roles', roleRoutes);
 
 // Team Features
 app.use("/api/requisitions", requisitionRoutes);
@@ -102,7 +106,6 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-// Connect to MongoDB and start server
 const startServer = async () => {
   try {
     if (!MONGODB_URI) {
@@ -119,6 +122,8 @@ const startServer = async () => {
 
     console.log('✅ MongoDB connected successfully');
     console.log('📊 Database:', mongoose.connection.db?.databaseName || 'Unknown');
+
+    await seedRoles();
 
     app.listen(PORT, () => {
       console.log('\n============================================================');
@@ -138,7 +143,6 @@ const startServer = async () => {
   }
 };
 
-// Handle MongoDB connection events
 mongoose.connection.on('error', (err) => {
   console.error('❌ MongoDB connection error:', err);
 });
@@ -147,14 +151,12 @@ mongoose.connection.on('disconnected', () => {
   console.log('🔌 MongoDB disconnected');
 });
 
-// Graceful shutdown
 process.on('SIGINT', async () => {
   await mongoose.connection.close();
   console.log('🔌 MongoDB connection closed due to app termination');
   process.exit(0);
 });
 
-// Start the server
 startServer();
 
 export default app;
