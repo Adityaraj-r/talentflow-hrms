@@ -71,6 +71,7 @@ import RecentHires from "./pages/modules/recruitment/RecentHires"
 import CreateRequisition from "./pages/modules/recruitment/CreateRequisition"
 import ManageOnboarding from "./pages/modules/recruitment/ManageOnboarding"
 import ActiveOnboarding from "./pages/modules/recruitment/ActiveOnboarding"
+import OnboardingDetails from "@/pages/modules/recruitment/OnboardingDetails";
 
 // Protected Route Component with Case-Insensitive Role Check
 const ProtectedRoute = ({ children, allowedRoles }) => {

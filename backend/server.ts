@@ -1,4 +1,3 @@
-// backend/src/server.ts
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -6,8 +5,8 @@ import mongoose from 'mongoose';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import adminRoutes from './routes/adminRoutes';
-import settingsRoutes from './routes/settings.routes';  // ✅ ADD THIS
-
+import settingsRoutes from './routes/settings.routes';  // ✅ Kept your Settings
+import onboardingRoutes from './routes/onboardingRoutes'; // ✅ Kept team's Onboarding
 import employeeRoutes from "./routes/employee.routes";
 import requisitionRoutes from "./routes/requisition.routes";
 
@@ -56,19 +55,24 @@ app.get('/api', (req, res) => {
       auth: '/api/auth',
       users: '/api/users',
       admin: '/api/admin',
-      settings: '/api/admin/settings'  // ✅ ADD THIS
+      settings: '/api/admin/settings',
+      onboarding: '/api/onboarding'
     }
   });
 });
 
-// API routes
+// --- API ROUTES ---
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use("/api/employees", employeeRoutes);
 
+// Admin & Settings
 app.use('/api/admin', adminRoutes);
-app.use('/api/admin', settingsRoutes);  // ✅ ADD THIS
+app.use('/api/admin', settingsRoutes);
+
+// Team Features
 app.use("/api/requisitions", requisitionRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -115,16 +119,11 @@ const startServer = async () => {
       console.log(`✅ Health: http://localhost:${PORT}/health`);
       console.log(`📡 API Info: http://localhost:${PORT}/api`);
       console.log(`🗄️  Database: Connected to MongoDB Atlas`);
-      console.log(`🔥 Firebase Admin: Initialized`);
       console.log('============================================================\n');
     });
 
   } catch (error: any) {
     console.error('❌ Failed to start server:', error.message);
-    console.error('\n🔍 Troubleshooting:');
-    console.error('1. Check your MONGODB_URI in .env file');
-    console.error('2. Verify your MongoDB Atlas IP whitelist');
-    console.error('3. Check your MongoDB Atlas username and password');
     process.exit(1);
   }
 };
