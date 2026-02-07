@@ -4,8 +4,8 @@ export interface ISettings extends Document {
   // Company Information
   companyName: string;
   companyEmail: string;
-  companyPhone: string;
-  companyAddress: string;
+  phone: string;              // Changed from companyPhone
+  address: string;            // Changed from companyAddress
   
   // System Preferences
   timezone: string;
@@ -14,27 +14,27 @@ export interface ISettings extends Document {
   language: string;
   
   // Notifications
-  emailNotifications: boolean;
-  smsNotifications: boolean;
-  pushNotifications: boolean;
-  weeklyReports: boolean;
+  enableEmailNotifications: boolean;  // Changed from emailNotifications
+  enableSMSNotifications: boolean;    // Changed from smsNotifications
+  enablePushNotifications: boolean;   // Changed from pushNotifications
   
   // Security
   sessionTimeout: number;
-  passwordExpiry: number;
-  twoFactorAuth: boolean;
+  passwordExpiryDays: number;         // Changed from passwordExpiry
+  requireMFA: boolean;                // Changed from twoFactorAuth
   
   // Metadata
   updatedBy?: string;
+  createdAt: Date;
   updatedAt: Date;
 }
 
 const SettingsSchema = new Schema<ISettings>({
   // Company Information
-  companyName: { type: String, default: 'InternsLand HRMS' },
+  companyName: { type: String, default: 'InternsLand' },
   companyEmail: { type: String, default: 'admin@internsland.com' },
-  companyPhone: { type: String, default: '+91 9876543210' },
-  companyAddress: { type: String, default: 'Pune, Maharashtra, India' },
+  phone: { type: String, default: '+91 0000000000' },
+  address: { type: String, default: 'Pune, Maharashtra, India' },
   
   // System Preferences
   timezone: { type: String, default: 'Asia/Kolkata' },
@@ -43,23 +43,20 @@ const SettingsSchema = new Schema<ISettings>({
   language: { type: String, default: 'en' },
   
   // Notifications
-  emailNotifications: { type: Boolean, default: true },
-  smsNotifications: { type: Boolean, default: false },
-  pushNotifications: { type: Boolean, default: true },
-  weeklyReports: { type: Boolean, default: true },
+  enableEmailNotifications: { type: Boolean, default: true },
+  enableSMSNotifications: { type: Boolean, default: false },
+  enablePushNotifications: { type: Boolean, default: true },
   
   // Security
   sessionTimeout: { type: Number, default: 30 },
-  passwordExpiry: { type: Number, default: 90 },
-  twoFactorAuth: { type: Boolean, default: false },
+  passwordExpiryDays: { type: Number, default: 90 },
+  requireMFA: { type: Boolean, default: false },
   
   // Metadata
   updatedBy: { type: String },
-  updatedAt: { type: Date, default: Date.now }
+}, {
+  timestamps: true  // This auto-creates createdAt and updatedAt
 });
-
-// Ensure only one settings document exists
-SettingsSchema.index({}, { unique: true });
 
 const Settings = mongoose.model<ISettings>('Settings', SettingsSchema);
 

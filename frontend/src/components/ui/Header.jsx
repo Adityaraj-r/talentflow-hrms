@@ -1,8 +1,17 @@
-"use client"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { Link, useNavigate, useLocation } from "react-router-dom"
-import { Bell, Menu, Sun, Moon, User, LogOut, Settings, ChevronDown, ArrowLeft } from "lucide-react"
+import {
+  Bell,
+  Menu,
+  Sun,
+  Moon,
+  User,
+  LogOut,
+  Settings,
+  ChevronDown,
+  ArrowLeft,
+} from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 
 const Header = ({ toggleSidebar, user, theme, toggleTheme, onLogout }) => {
@@ -30,31 +39,30 @@ const Header = ({ toggleSidebar, user, theme, toggleTheme, onLogout }) => {
     setNotifications(notifications.map((n) => ({ ...n, read: true })))
   }
 
-  // Check if we can go back (not on home/dashboard)
-  const canGoBack = location.pathname !== "/" && 
-                    location.pathname !== "/dashboard" && 
-                    location.pathname !== "/admin/dashboard" && 
-                    location.pathname !== "/employee/dashboard"
+  const canGoBack =
+    location.pathname !== "/" &&
+    location.pathname !== "/dashboard" &&
+    location.pathname !== "/admin/dashboard" &&
+    location.pathname !== "/employee/dashboard"
 
   return (
-    <header 
+    <header
       className={cn(
-        "sticky top-0 z-10 flex items-center justify-between h-16 px-4 sm:px-6 border-b bg-white dark:bg-gray-800 dark:border-gray-700 transition-all duration-300"
+        "sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-background px-4 transition-all duration-300 sm:px-6",
       )}
     >
       <div className="flex items-center gap-2">
-        {/* Mobile Menu Toggle */}
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={toggleSidebar} 
+        {/* Mobile hamburger */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSidebar}
           className="lg:hidden"
         >
           <Menu className="h-6 w-6" />
           <span className="sr-only">Toggle sidebar</span>
         </Button>
 
-        {/* Back Button - Shows when not on main dashboards */}
         {canGoBack && (
           <Button
             variant="ghost"
@@ -66,20 +74,17 @@ const Header = ({ toggleSidebar, user, theme, toggleTheme, onLogout }) => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
         )}
-        
-        {/* HRMS Title - Hidden on mobile to avoid overlap */}
-        <h1 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white hidden sm:block">
+
+        <h1 className="hidden text-lg font-bold text-foreground sm:block sm:text-xl">
           HRMS System
         </h1>
-        
-        {/* Mobile-only simplified title */}
-        <h1 className="text-lg font-bold text-gray-800 dark:text-white sm:hidden">
+
+        <h1 className="text-lg font-bold text-foreground sm:hidden">
           HRMS
         </h1>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">
-        {/* Back Button Mobile - Shows on mobile when applicable */}
         {canGoBack && (
           <Button
             variant="ghost"
@@ -92,7 +97,7 @@ const Header = ({ toggleSidebar, user, theme, toggleTheme, onLogout }) => {
           </Button>
         )}
 
-        {/* Theme Toggle */}
+        {/* Theme Toggle - This correctly passes the event 'e' to start the ripple */}
         <Button variant="ghost" size="icon" onClick={toggleTheme}>
           {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           <span className="sr-only">Toggle theme</span>
@@ -101,21 +106,30 @@ const Header = ({ toggleSidebar, user, theme, toggleTheme, onLogout }) => {
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative focus:outline-none focus:ring-0"
+            >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 px-1.5 py-0.5 text-xs">
+                <Badge className="absolute -right-1 -top-1 px-1.5 py-0.5 text-xs">
                   {unreadCount}
                 </Badge>
               )}
               <span className="sr-only">Notifications</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuContent align="end" className="z-50 w-80">
             <DropdownMenuLabel className="flex items-center justify-between">
               <span>Notifications</span>
               {unreadCount > 0 && (
-                <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-xs">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={markAllAsRead}
+                  className="h-auto py-1 text-xs"
+                >
                   Mark all as read
                 </Button>
               )}
@@ -126,8 +140,8 @@ const Header = ({ toggleSidebar, user, theme, toggleTheme, onLogout }) => {
                 <DropdownMenuItem
                   key={notification.id}
                   className={cn(
-                    "flex flex-col items-start",
-                    !notification.read && "bg-muted/50"
+                    "flex cursor-pointer flex-col items-start",
+                    !notification.read && "bg-muted/50",
                   )}
                 >
                   <span className="text-sm">{notification.message}</span>
@@ -141,7 +155,7 @@ const Header = ({ toggleSidebar, user, theme, toggleTheme, onLogout }) => {
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link to="/notifications" className="w-full text-center text-sm">
+              <Link to="/notifications" className="w-full cursor-pointer text-center text-sm">
                 View all notifications
               </Link>
             </DropdownMenuItem>
@@ -151,44 +165,46 @@ const Header = ({ toggleSidebar, user, theme, toggleTheme, onLogout }) => {
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 px-2">
+            <Button
+              variant="ghost"
+              className="flex items-center gap-2 px-2 hover:bg-accent focus:outline-none focus:ring-0 focus-visible:ring-0"
+            >
               <Avatar className="h-8 w-8">
-                <AvatarImage 
-                  src={user?.profileImage || "/placeholder.svg"} 
-                  alt={user?.name || user?.firstName || 'User'} 
-                />
-                <AvatarFallback>
-                  {(user?.name || user?.firstName || 'U').charAt(0).toUpperCase()}
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {(user?.name || user?.firstName || "A").charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="hidden md:flex md:flex-col md:items-start">
+              <div className="hidden flex-col items-start md:flex">
                 <span className="text-sm font-medium">
-                  {user?.firstName || user?.name || 'User'}
+                  {user?.firstName || user?.name || "Admin"}
                 </span>
-                <span className="text-xs text-muted-foreground capitalize">
-                  {user?.role?.toLowerCase() || 'Employee'}
+                <span className="text-xs capitalize text-muted-foreground">
+                  {user?.role?.toLowerCase() || "Admin"}
                 </span>
               </div>
-              <ChevronDown className="h-4 w-4 hidden md:block" />
+              <ChevronDown className="hidden h-4 w-4 md:block" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuContent align="end" className="z-50 w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link to="/profile" className="flex items-center cursor-pointer">
+              <Link to="/profile" className="flex cursor-pointer items-center">
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to="/settings" className="flex items-center cursor-pointer">
+              <Link to="/settings" className="flex cursor-pointer items-center">
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onLogout} className="cursor-pointer text-red-600">
+            <DropdownMenuItem
+              onClick={onLogout}
+              className="cursor-pointer text-red-600 focus:text-red-600"
+            >
               <LogOut className="mr-2 h-4 w-4" />
               <span>Logout</span>
             </DropdownMenuItem>

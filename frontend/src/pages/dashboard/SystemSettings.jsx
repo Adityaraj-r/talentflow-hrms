@@ -1,364 +1,394 @@
-import { useState, useEffect } from "react"
-import { Button } from "../../components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
-import { Input } from "../../components/ui/input"
-import { Label } from "../../components/ui/label"
-import { Switch } from "../../components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
-import { Building2, Bell, Shield, Save } from "lucide-react"
-import { toast } from "sonner"
-import adminService from "../../services/adminService"
-import { useSettings } from "../../contexts/SettingsContext"
+import { useState, useEffect } from 'react';
+import { Save, RefreshCw, Building2, Globe, Bell, Shield, Check } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Switch } from '../../components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { toast } from 'sonner';
+import { useSettings } from '../../contexts/SettingsContext';
 
 const SystemSettings = () => {
-  const { refreshSettings } = useSettings() // Add this line
-  const [isLoading, setIsLoading] = useState(false)
-  const [isFetching, setIsFetching] = useState(true)
-  const [settings, setSettings] = useState({
-    // Company Info
+  const { settings, loading, updateSettings, fetchSettings } = useSettings();
+  
+  const [formData, setFormData] = useState({
     companyName: '',
     companyEmail: '',
-    companyPhone: '',
-    companyAddress: '',
-    
-    // System Preferences
-    timezone: '',
-    dateFormat: '',
-    currency: '',
-    language: '',
-    
-    // Notifications
-    emailNotifications: true,
-    smsNotifications: false,
-    pushNotifications: true,
-    weeklyReports: true,
-    
-    // Security
-    sessionTimeout: '30',
-    passwordExpiry: '90',
-    twoFactorAuth: false,
-  })
+    phone: '',
+    address: '',
+    timezone: 'UTC',
+    dateFormat: 'DD/MM/YYYY',
+    currency: 'USD',
+    language: 'en',
+    enableEmailNotifications: true,
+    enableSMSNotifications: false,
+    enablePushNotifications: true,
+    sessionTimeout: 30,
+    passwordExpiryDays: 90,
+    requireMFA: false,
+  });
 
-  // Fetch settings on component mount
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
-    fetchSettings()
-  }, [])
-
-  const fetchSettings = async () => {
-    setIsFetching(true)
-    try {
-      const response = await adminService.getSettings()
-      console.log('📥 Fetched settings:', response)
-      
-      if (response.success && response.data) {
-        setSettings({
-          companyName: response.data.companyName || '',
-          companyEmail: response.data.companyEmail || '',
-          companyPhone: response.data.companyPhone || '',
-          companyAddress: response.data.companyAddress || '',
-          timezone: response.data.timezone || 'Asia/Kolkata',
-          dateFormat: response.data.dateFormat || 'DD/MM/YYYY',
-          currency: response.data.currency || 'INR',
-          language: response.data.language || 'en',
-          emailNotifications: response.data.emailNotifications ?? true,
-          smsNotifications: response.data.smsNotifications ?? false,
-          pushNotifications: response.data.pushNotifications ?? true,
-          weeklyReports: response.data.weeklyReports ?? true,
-          sessionTimeout: response.data.sessionTimeout?.toString() || '30',
-          passwordExpiry: response.data.passwordExpiry?.toString() || '90',
-          twoFactorAuth: response.data.twoFactorAuth ?? false,
-        })
-      }
-    } catch (error) {
-      console.error('Failed to fetch settings:', error)
-      toast.error("Failed to load settings")
-    } finally {
-      setIsFetching(false)
+    if (settings) {
+      setFormData({
+        companyName: settings.companyName || '',
+        companyEmail: settings.companyEmail || '',
+        phone: settings.phone || '',
+        address: settings.address || '',
+        timezone: settings.timezone || 'UTC',
+        dateFormat: settings.dateFormat || 'DD/MM/YYYY',
+        currency: settings.currency || 'USD',
+        language: settings.language || 'en',
+        enableEmailNotifications: settings.enableEmailNotifications ?? true,
+        enableSMSNotifications: settings.enableSMSNotifications ?? false,
+        enablePushNotifications: settings.enablePushNotifications ?? true,
+        sessionTimeout: settings.sessionTimeout || 30,
+        passwordExpiryDays: settings.passwordExpiryDays || 90,
+        requireMFA: settings.requireMFA ?? false,
+      });
     }
-  }
+  }, [settings]);
+
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleSave = async () => {
-    setIsLoading(true)
     try {
-      const response = await adminService.updateSettings({
-        ...settings,
-        sessionTimeout: parseInt(settings.sessionTimeout),
-        passwordExpiry: parseInt(settings.passwordExpiry)
-      })
-      
-      if (response.success) {
-        await refreshSettings() // Add this line - refresh global settings
-        toast.success("Settings saved successfully!")
+      setIsSaving(true);
+      const result = await updateSettings(formData);
+
+      if (result.success) {
+        toast.success('Settings saved successfully', {
+          description: 'Your changes have been applied.',
+          icon: <Check className="h-4 w-4" />,
+        });
+        await fetchSettings();
+      } else {
+        throw new Error(result.error || 'Failed to update settings');
       }
     } catch (error) {
-      console.error('Save error:', error)
-      toast.error("Failed to save settings")
+      console.error('Save error:', error);
+      toast.error('Failed to save settings', {
+        description: error.message || 'Please try again.',
+      });
     } finally {
-      setIsLoading(false)
+      setIsSaving(false);
     }
-  }
+  };
 
-  const updateSetting = (key, value) => {
-    setSettings(prev => ({ ...prev, [key]: value }))
-  }
-
-  if (isFetching) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading settings...</p>
-        </div>
+      <div className="flex items-center justify-center h-screen">
+        <RefreshCw className="h-8 w-8 animate-spin text-primary" />
       </div>
-    )
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">System Settings</h1>
-          <p className="text-muted-foreground">Configure your HRMS system preferences</p>
+    <div className="h-full bg-gray-50 dark:bg-gray-900">
+      {/* Header Bar */}
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b px-6 py-4">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Manage your organization's system configuration
+            </p>
+          </div>
+          <Button onClick={handleSave} disabled={isSaving} size="lg" className="gap-2">
+            {isSaving ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                Save Changes
+              </>
+            )}
+          </Button>
         </div>
-        <Button onClick={handleSave} disabled={isLoading}>
-          <Save className="mr-2 h-4 w-4" />
-          {isLoading ? "Saving..." : "Save Changes"}
-        </Button>
       </div>
 
-      <Tabs defaultValue="company" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="company">
-            <Building2 className="mr-2 h-4 w-4" />
-            Company
-          </TabsTrigger>
-          <TabsTrigger value="system">System</TabsTrigger>
-          <TabsTrigger value="notifications">
-            <Bell className="mr-2 h-4 w-4" />
-            Notifications
-          </TabsTrigger>
-          <TabsTrigger value="security">
-            <Shield className="mr-2 h-4 w-4" />
-            Security
-          </TabsTrigger>
-        </TabsList>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto p-6">
+        <Tabs defaultValue="company" className="space-y-6">
+          {/* Tabs Navigation */}
+          <TabsList className="bg-white dark:bg-gray-800 p-1 h-auto rounded-lg shadow-sm border">
+            <TabsTrigger value="company" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Building2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Company</span>
+            </TabsTrigger>
+            <TabsTrigger value="preferences" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Globe className="h-4 w-4" />
+              <span className="hidden sm:inline">Preferences</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Bell className="h-4 w-4" />
+              <span className="hidden sm:inline">Notifications</span>
+            </TabsTrigger>
+            <TabsTrigger value="security" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Shield className="h-4 w-4" />
+              <span className="hidden sm:inline">Security</span>
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Company Information */}
-        <TabsContent value="company">
-          <Card>
-            <CardHeader>
-              <CardTitle>Company Information</CardTitle>
-              <CardDescription>Update your organization's basic details</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="companyName">Company Name</Label>
-                  <Input
-                    id="companyName"
-                    value={settings.companyName}
-                    onChange={(e) => updateSetting('companyName', e.target.value)}
-                  />
+          {/* Company Tab */}
+          <TabsContent value="company" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Company Information</CardTitle>
+                <CardDescription>
+                  Update your organization's basic details and contact information
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="companyName">Company Name *</Label>
+                    <Input
+                      id="companyName"
+                      value={formData.companyName}
+                      onChange={(e) => handleChange('companyName', e.target.value)}
+                      placeholder="Enter company name"
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="companyEmail">Email Address *</Label>
+                    <Input
+                      id="companyEmail"
+                      type="email"
+                      value={formData.companyEmail}
+                      onChange={(e) => handleChange('companyEmail', e.target.value)}
+                      placeholder="admin@company.com"
+                      className="h-11"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="companyEmail">Company Email</Label>
-                  <Input
-                    id="companyEmail"
-                    type="email"
-                    value={settings.companyEmail}
-                    onChange={(e) => updateSetting('companyEmail', e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="companyPhone">Phone Number</Label>
-                  <Input
-                    id="companyPhone"
-                    value={settings.companyPhone}
-                    onChange={(e) => updateSetting('companyPhone', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="companyAddress">Address</Label>
-                  <Input
-                    id="companyAddress"
-                    value={settings.companyAddress}
-                    onChange={(e) => updateSetting('companyAddress', e.target.value)}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        {/* System Preferences */}
-        <TabsContent value="system">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Preferences</CardTitle>
-              <CardDescription>Configure regional and display settings</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="timezone">Timezone</Label>
-                  <Select value={settings.timezone} onValueChange={(v) => updateSetting('timezone', v)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Asia/Kolkata">Asia/Kolkata (IST)</SelectItem>
-                      <SelectItem value="America/New_York">America/New_York (EST)</SelectItem>
-                      <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
-                      <SelectItem value="Asia/Dubai">Asia/Dubai (GST)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => handleChange('phone', e.target.value)}
+                      placeholder="+91 0000000000"
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input
+                      id="address"
+                      value={formData.address}
+                      onChange={(e) => handleChange('address', e.target.value)}
+                      placeholder="City, State, Country"
+                      className="h-11"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dateFormat">Date Format</Label>
-                  <Select value={settings.dateFormat} onValueChange={(v) => updateSetting('dateFormat', v)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                      <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                      <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Currency</Label>
-                  <Select value={settings.currency} onValueChange={(v) => updateSetting('currency', v)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="INR">INR (₹)</SelectItem>
-                      <SelectItem value="USD">USD ($)</SelectItem>
-                      <SelectItem value="EUR">EUR (€)</SelectItem>
-                      <SelectItem value="GBP">GBP (£)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="language">Language</Label>
-                  <Select value={settings.language} onValueChange={(v) => updateSetting('language', v)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="hi">Hindi</SelectItem>
-                      <SelectItem value="mr">Marathi</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Notifications */}
-        <TabsContent value="notifications">
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification Settings</CardTitle>
-              <CardDescription>Manage how you receive system notifications</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Receive updates via email</p>
-                </div>
-                <Switch
-                  checked={settings.emailNotifications}
-                  onCheckedChange={(v) => updateSetting('emailNotifications', v)}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>SMS Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Get text message alerts</p>
-                </div>
-                <Switch
-                  checked={settings.smsNotifications}
-                  onCheckedChange={(v) => updateSetting('smsNotifications', v)}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Push Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Browser push notifications</p>
-                </div>
-                <Switch
-                  checked={settings.pushNotifications}
-                  onCheckedChange={(v) => updateSetting('pushNotifications', v)}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Weekly Reports</Label>
-                  <p className="text-sm text-muted-foreground">Receive weekly summary reports</p>
-                </div>
-                <Switch
-                  checked={settings.weeklyReports}
-                  onCheckedChange={(v) => updateSetting('weeklyReports', v)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+          {/* Preferences Tab */}
+          <TabsContent value="preferences" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Regional Settings</CardTitle>
+                <CardDescription>
+                  Configure timezone, date format, currency, and language preferences
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="timezone">Timezone</Label>
+                    <Select value={formData.timezone} onValueChange={(value) => handleChange('timezone', value)}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="UTC">UTC</SelectItem>
+                        <SelectItem value="Asia/Kolkata">Asia/Kolkata (IST)</SelectItem>
+                        <SelectItem value="America/New_York">America/New York (EST)</SelectItem>
+                        <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-        {/* Security */}
-        <TabsContent value="security">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-              <CardDescription>Configure security and access policies</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
-                  <Input
-                    id="sessionTimeout"
-                    type="number"
-                    value={settings.sessionTimeout}
-                    onChange={(e) => updateSetting('sessionTimeout', e.target.value)}
+                  <div className="space-y-2">
+                    <Label htmlFor="dateFormat">Date Format</Label>
+                    <Select value={formData.dateFormat} onValueChange={(value) => handleChange('dateFormat', value)}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                        <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                        <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">Currency</Label>
+                    <Select value={formData.currency} onValueChange={(value) => handleChange('currency', value)}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                        <SelectItem value="EUR">EUR (€)</SelectItem>
+                        <SelectItem value="GBP">GBP (£)</SelectItem>
+                        <SelectItem value="INR">INR (₹)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="language">Language</Label>
+                    <Select value={formData.language} onValueChange={(value) => handleChange('language', value)}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="es">Spanish</SelectItem>
+                        <SelectItem value="fr">French</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Notifications Tab */}
+          <TabsContent value="notifications" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Notification Preferences</CardTitle>
+                <CardDescription>
+                  Choose how you want to receive system notifications
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium">Email Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive important updates via email
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.enableEmailNotifications}
+                    onCheckedChange={(checked) => handleChange('enableEmailNotifications', checked)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="passwordExpiry">Password Expiry (days)</Label>
-                  <Input
-                    id="passwordExpiry"
-                    type="number"
-                    value={settings.passwordExpiry}
-                    onChange={(e) => updateSetting('passwordExpiry', e.target.value)}
+
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium">SMS Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Get text messages for critical alerts
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.enableSMSNotifications}
+                    onCheckedChange={(checked) => handleChange('enableSMSNotifications', checked)}
                   />
                 </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Two-Factor Authentication</Label>
-                  <p className="text-sm text-muted-foreground">Require 2FA for all admin users</p>
+
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium">Push Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive browser push notifications
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.enablePushNotifications}
+                    onCheckedChange={(checked) => handleChange('enablePushNotifications', checked)}
+                  />
                 </div>
-                <Switch
-                  checked={settings.twoFactorAuth}
-                  onCheckedChange={(v) => updateSetting('twoFactorAuth', v)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Security Tab */}
+          <TabsContent value="security" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Security Settings</CardTitle>
+                <CardDescription>
+                  Manage authentication and session security policies
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
+                    <Input
+                      id="sessionTimeout"
+                      type="number"
+                      value={formData.sessionTimeout}
+                      onChange={(e) => handleChange('sessionTimeout', parseInt(e.target.value))}
+                      min="5"
+                      max="120"
+                      className="h-11"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Automatically log out inactive users
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="passwordExpiryDays">Password Expiry (days)</Label>
+                    <Input
+                      id="passwordExpiryDays"
+                      type="number"
+                      value={formData.passwordExpiryDays}
+                      onChange={(e) => handleChange('passwordExpiryDays', parseInt(e.target.value))}
+                      min="30"
+                      max="365"
+                      className="h-11"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Force password reset after this period
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium">Multi-Factor Authentication</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Require MFA for all user accounts
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.requireMFA}
+                    onCheckedChange={(checked) => handleChange('requireMFA', checked)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default SystemSettings
+export default SystemSettings;

@@ -1,16 +1,14 @@
-// backend/src/server.ts
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
-import adminRoutes from './routes/adminRoutes';  // ← ADD THIS LINE
-import onboardingRoutes from './routes/onboardingRoutes';
-
+import adminRoutes from './routes/adminRoutes';
+import settingsRoutes from './routes/settings.routes';  // ✅ Kept your Settings
+import onboardingRoutes from './routes/onboardingRoutes'; // ✅ Kept team's Onboarding
 import employeeRoutes from "./routes/employee.routes";
 import requisitionRoutes from "./routes/requisition.routes";
-
 
 dotenv.config();
 
@@ -56,19 +54,24 @@ app.get('/api', (req, res) => {
       health: '/health',
       auth: '/api/auth',
       users: '/api/users',
-      admin: '/api/admin'  // ← ADD THIS LINE
+      admin: '/api/admin',
+      settings: '/api/admin/settings',
+      onboarding: '/api/onboarding'
     }
   });
 });
 
-// API routes
+// --- API ROUTES ---
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use("/api/employees", employeeRoutes);
 
-app.use('/api/admin', adminRoutes);  // ← ADD THIS LINE
+// Admin & Settings
+app.use('/api/admin', adminRoutes);
+app.use('/api/admin', settingsRoutes);
+
+// Team Features
 app.use("/api/requisitions", requisitionRoutes);
-app.use("/api/employees", employeeRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 
 // 404 handler
@@ -99,7 +102,6 @@ const startServer = async () => {
 
     console.log('🔄 Connecting to MongoDB...');
     
-    // Connect to MongoDB with proper options
     await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 30000,
       socketTimeoutMS: 45000,
@@ -108,7 +110,6 @@ const startServer = async () => {
     console.log('✅ MongoDB connected successfully');
     console.log('📊 Database:', mongoose.connection.db?.databaseName || 'Unknown');
 
-    // Start server only after MongoDB is connected
     app.listen(PORT, () => {
       console.log('\n============================================================');
       console.log('🚀 HRMS BACKEND SERVER STARTED SUCCESSFULLY!');
@@ -118,16 +119,11 @@ const startServer = async () => {
       console.log(`✅ Health: http://localhost:${PORT}/health`);
       console.log(`📡 API Info: http://localhost:${PORT}/api`);
       console.log(`🗄️  Database: Connected to MongoDB Atlas`);
-      console.log(`🔥 Firebase Admin: Initialized`);
       console.log('============================================================\n');
     });
 
   } catch (error: any) {
     console.error('❌ Failed to start server:', error.message);
-    console.error('\n🔍 Troubleshooting:');
-    console.error('1. Check your MONGODB_URI in .env file');
-    console.error('2. Verify your MongoDB Atlas IP whitelist');
-    console.error('3. Check your MongoDB Atlas username and password');
     process.exit(1);
   }
 };
