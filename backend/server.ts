@@ -4,7 +4,11 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
-import adminRoutes from './routes/adminRoutes';
+import adminRoutes from './routes/adminRoutes';  // ← ADD THIS LINE
+import attendanceRoutes from "./routes/attendance.routes";
+import taskRoutes from "./routes/task.routes";
+import leaveRoutes from "./routes/leave.routes";
+import shiftRoutes from "./routes/shift.routes";
 import settingsRoutes from './routes/settings.routes';
 import onboardingRoutes from './routes/onboardingRoutes';
 import employeeRoutes from "./routes/employee.routes";
@@ -38,8 +42,8 @@ app.use((req, res, next) => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     message: 'HRMS Backend is running',
     mongodb: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
     timestamp: new Date().toISOString()
@@ -77,6 +81,11 @@ app.use('/api/roles', roleRoutes);
 // Team Features
 app.use("/api/requisitions", requisitionRoutes);
 app.use('/api/onboarding', onboardingRoutes);
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/tasks", taskRoutes);
+app.use("/api/leaves", leaveRoutes);
+app.use("/api/shifts", shiftRoutes);
+
 
 // 404 handler
 app.use((req, res) => {
@@ -104,7 +113,8 @@ const startServer = async () => {
     }
 
     console.log('🔄 Connecting to MongoDB...');
-    
+
+    // Connect to MongoDB with proper options
     await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 30000,
       socketTimeoutMS: 45000,

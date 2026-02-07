@@ -1,10 +1,10 @@
 import axios from 'axios';
 
-// Use Vite environment variables (VITE_ prefix)
+// 1. Configuration using Vite environment variables
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 /**
- * Axios Instance Configuration
+ * Axios Instance Configuration for the Cloned Repo
  */
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -14,7 +14,7 @@ const apiClient = axios.create({
   },
 });
 
-// Request interceptor to add auth token
+// Interceptor: Automatically attaches the token for Admin requests
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token') || localStorage.getItem('idToken');
@@ -26,105 +26,65 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor for centralized error handling
+// Interceptor: Centralized error handling and session management
 apiClient.interceptors.response.use(
-  (response) => response.data, // Directly return data property
+  (response) => response.data, 
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('idToken');
       window.location.href = '/login';
     }
-    // Return a consistent error object
     return Promise.reject(error.response?.data || { message: error.message });
   }
 );
 
 /**
- * Admin Service
+ * Integrated Admin Service
  */
 const adminService = {
-  /**
-   * Get admin dashboard metrics (Total users, active, pending, etc.)
-   */
+  // Get dashboard metrics
   getMetrics: async () => {
-    try {
-      return await apiClient.get('/admin/metrics');
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.get('/admin/metrics');
   },
 
-  /**
-   * Get full list of users with filtering/pagination
-   * @param {Object} params - { page, limit, role, search, status }
-   */
+  // Get users - Mapped to /admin/users to match current backend structure
   getUsers: async (params = {}) => {
-    try {
-      return await apiClient.get('/admin/users', { params });
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.get('/admin/users', { params });
   },
 
-  /**
-   * Get recent system activities/logs
-   */
+  // Get system logs/activities
   getActivities: async (params = {}) => {
-    try {
-      return await apiClient.get('/admin/activities', { params });
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.get('/admin/activities', { params });
   },
 
-  /**
-   * Enroll a new user into the system (POST /admin/enroll-user)
-   */
+  // Enroll new employee
   enrollUser: async (userData) => {
-    try {
-      return await apiClient.post('/admin/enroll-user', userData);
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.post('/admin/enroll-user', userData);
   },
 
-  /**
-   * Bulk upload users via CSV/Excel
-   * @param {File} file - The file object from input
-   */
+  // Bulk upload via CSV
   bulkUploadUsers: async (file) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      return await apiClient.post('/admin/bulk-upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-    } catch (error) {
-      throw error;
-    }
+    const formData = new FormData();
+    formData.append('file', file);
+    return await apiClient.post('/admin/bulk-upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
   },
 
-  /**
-   * Update user status (Active/Inactive/Deactivated)
-   */
+  // Update status (Active/Inactive)
   updateUserStatus: async (userId, status) => {
-    try {
-      return await apiClient.patch(`/admin/users/${userId}/status`, { status });
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.patch(`/admin/users/${userId}/status`, { status });
   },
 
-  /**
-   * Get user distribution by role for charts
-   */
+  // Change status (Toggle)
+  toggleUserStatus: async (userId) => {
+    return await apiClient.patch(`/admin/users/${userId}/toggle-status`);
+  },
+
+  // Data for Chart widgets
   getUserDistribution: async () => {
-    try {
-      return await apiClient.get('/admin/user-distribution');
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.get('/admin/user-distribution');
   },
 
   /**
@@ -135,7 +95,8 @@ const adminService = {
   },
 
   /**
-   * Get department statistics
+   * ATTENDANCE ADDITION: Get all attendance records for Admin View
+   * This connects the attendance controller logic to the Admin Dashboard
    */
   getDepartmentStats: async () => {
     try {

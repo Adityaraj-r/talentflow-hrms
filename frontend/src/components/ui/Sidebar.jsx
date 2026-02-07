@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { Link, useLocation } from "react-router-dom"
 import {
-  Users, Calendar, RefreshCw, DollarSign, Award, AlertTriangle,
+  Users, Calendar, CalendarClock, RefreshCw, DollarSign, Award, AlertTriangle,
   FileCheck, Home, ChevronDown, ChevronRight, ChevronLeft,
   Briefcase, Plane, Calculator, Clock, Settings, TrendingUp, Shield,
   Building, Database, FileText, Layers, LogOut
@@ -32,10 +32,39 @@ const Sidebar = ({
   const dbPermissions = user?.permissions || {} // ✅ Permissions from Matrix
 
   useEffect(() => {
-    if (isCollapsed) setOpenGroups({})
-  }, [isCollapsed])
+    if (isCollapsed) {
+      setOpenGroups({
+        employeeCenter: false, recruitment: false, timeAttendance: false,
+        payroll: false, administration: false, appraisal: false,
+        disciplinaryActions: false, documentRequests: false,
+      })
+    }
+  }, [propIsCollapsed])// Sync local collapsed state with prop
+  useEffect(() => {
+    if (propIsCollapsed !== undefined) {
+      setIsCollapsed(propIsCollapsed)
+    }
+  }, [propIsCollapsed])
 
-  if (!userRole) return null
+  // ✅ FIX: Automatically open the active dropdown based on the current URL
+  useEffect(() => {
+    if (isCollapsed) return; // Don't auto-open if the whole sidebar is collapsed
+
+    const path = location.pathname;
+
+    setOpenGroups((prev) => ({
+      ...prev,
+      // 1. Keep 'Time & Attendance' open for these paths
+      timeAttendance: path.startsWith("/attendance") || path.includes("leave-management"),
+
+      
+    }));
+  }, [location.pathname, isCollapsed]);
+
+  if (!userRole) {
+    console.log("No user role detected, sidebar will not render")
+    return null
+  }
 
   // --- 1. THE PERMISSION CHECKER ---
   // Returns TRUE if the user has 'read' access in the Matrix
@@ -74,20 +103,191 @@ const Sidebar = ({
     </Link>
   )
 
-  const SubLink = ({ to, label, icon: Icon }) => (
-    <li>
-      <Link
-        to={to}
-        className={cn(
-          "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
-          location.pathname === to ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-accent hover:text-foreground"
-        )}
-      >
-        {Icon && <Icon className="h-4 w-4 shrink-0" />}
-        <span className="truncate">{label}</span>
-      </Link>
-    </li>
-  )
+    // Admin role - Show ALL options
+    if (userRole === 'ADMIN') {
+      return (
+        <>
+          {/* Dashboard */}
+          <Link
+            to="/admin/dashboard"
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+              location.pathname === "/admin/dashboard"
+                ? "bg-primary/10 text-primary font-medium"
+                : "hover:bg-gray-100 dark:hover:bg-gray-700 text-foreground"
+            )}
+            title={isCollapsed ? "Dashboard" : ""}
+          >
+            <Home size={20} className="flex-shrink-0" />
+            {!isCollapsed && <span className="truncate">Dashboard</span>}
+          </Link>
+
+          {/* Employee Center - Expandable */}
+          <div className="space-y-1">
+            <button
+              onClick={() => toggleGroup("employeeCenter")}
+              className={cn(
+                "flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700",
+                openGroups.employeeCenter ? "bg-gray-100 dark:bg-gray-700" : ""
+              )}
+              title={isCollapsed ? "Employee Center" : ""}
+            >
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <Users size={20} className="flex-shrink-0" />
+                {!isCollapsed && <span className="truncate">Employee Center</span>}
+              </div>
+              {!isCollapsed && (openGroups.employeeCenter ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />)}
+            </button>
+            {openGroups.employeeCenter && !isCollapsed && (
+              <ul className="ml-6 space-y-1 border-l pl-4 dark:border-gray-700">
+                <li>
+                  <Link
+                    to="/dashboard/users"
+                    className={cn(
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
+                      location.pathname === "/dashboard/users"
+                        ? "text-primary font-medium"
+                        : "hover:text-primary text-muted-foreground"
+                    )}
+                    title="All Employees"
+                  >
+                    <span className="truncate">All Employees</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/dashboard/onboarding"
+                    className={cn(
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
+                      location.pathname === "/dashboard/onboarding"
+                        ? "text-primary font-medium"
+                        : "hover:text-primary text-muted-foreground"
+                    )}
+                    title="Onboarding & KYC"
+                  >
+                    <span className="truncate">Onboarding & KYC</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/employee-transfer"
+                    className={cn(
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
+                      location.pathname === "/employee-transfer"
+                        ? "text-primary font-medium"
+                        : "hover:text-primary text-muted-foreground"
+                    )}
+                    title="Transfers & Promotions"
+                  >
+                    <span className="truncate">Transfers & Promotions</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/digital-locker"
+                    className={cn(
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
+                      location.pathname === "/digital-locker"
+                        ? "text-primary font-medium"
+                        : "hover:text-primary text-muted-foreground"
+                    )}
+                    title="Digital Locker (Docs)"
+                  >
+                    <span className="truncate">Digital Locker (Docs)</span>
+                  </Link>
+                </li>
+              </ul>
+            )}
+          </div>
+
+          {/* Recruitment & Staffing */}
+          <Link
+            to="/recruitment"
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+              location.pathname === "/recruitment"
+                ? "bg-primary/10 text-primary font-medium"
+                : "hover:bg-gray-100 dark:hover:bg-gray-700 text-foreground"
+            )}
+            title={isCollapsed ? "Recruitment & Staffing" : ""}
+          >
+            <Briefcase size={20} className="flex-shrink-0" />
+            {!isCollapsed && <span className="truncate">Recruitment & Staffing</span>}
+          </Link>
+
+          {/* Time & Attendance - Expandable */}
+          <div className="space-y-1">
+            <button
+              onClick={() => toggleGroup("timeAttendance")}
+              className={cn(
+                "flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700",
+                openGroups.timeAttendance ? "bg-gray-100 dark:bg-gray-700" : ""
+              )}
+              title={isCollapsed ? "Time & Attendance" : ""}
+            >
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <Clock size={20} className="flex-shrink-0" />
+                {!isCollapsed && <span className="truncate">Time & Attendance</span>}
+              </div>
+              {!isCollapsed && (openGroups.timeAttendance ? <ChevronDown className="h-4 w-4 flex-shrink-0" /> : <ChevronRight className="h-4 w-4 flex-shrink-0" />)}
+            </button>
+            
+            {/* ✅ THIS IS THE UPDATED LIST */}
+            {openGroups.timeAttendance && !isCollapsed && (
+              <ul className="ml-6 space-y-1 border-l pl-4 dark:border-gray-700">
+                <li>
+                  <Link
+                    to="/attendance"
+                    className={cn(
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
+                      location.pathname === "/attendance"
+                        ? "text-primary font-medium"
+                        : "hover:text-primary text-muted-foreground"
+                    )}
+                    title="Attendance Records"
+                  >
+                    <span className="truncate">Attendance Records</span>
+                  </Link>
+                </li>
+                
+                {/* ✅ NEW SHIFT ROSTER LINK */}
+                <li>
+                  <Link
+                    to="/attendance/shifts"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                      location.pathname === "/attendance/shifts"
+                        ? "text-primary font-medium"
+                        : "hover:text-primary text-muted-foreground"
+                    )}
+                  >
+                    {/* Optional Icon inside list */}
+                    Shift Roster
+                  </Link>
+                </li>
+
+                <li>
+                  <Link
+                    to="/role/admin/leave-management"
+                    className={cn(
+                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
+                      location.pathname === "/role/admin/leave-management"
+                        ? "text-primary font-medium"
+                        : "hover:text-primary text-muted-foreground"
+                    )}
+                    title="Leave Management"
+                  >
+                    <span className="truncate">Leave Management</span>
+                  </Link>
+                </li>
+              </ul>
+            )}
+          </div>
+
+    const SidebarGroup = ({ id, icon: Icon, label, children }) => {
+      const isActive = children && Array.isArray(children) 
+        ? children.some(child => child?.props?.to === location.pathname)
+        : children?.props?.to === location.pathname;
 
   const SidebarGroup = ({ id, icon: Icon, label, children }) => {
     const isActive = children && Array.isArray(children) 

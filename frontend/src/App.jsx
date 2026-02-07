@@ -73,7 +73,9 @@ import RecentHires from "./pages/modules/recruitment/RecentHires"
 import CreateRequisition from "./pages/modules/recruitment/CreateRequisition"
 import ManageOnboarding from "./pages/modules/recruitment/ManageOnboarding"
 import ActiveOnboarding from "./pages/modules/recruitment/ActiveOnboarding"
-import OnboardingDetails from "@/pages/modules/recruitment/OnboardingDetails";
+import AttendanceRecords from "./pages/role/ADMIN/AttendanceRecords"
+import AdminLeaveManagement from "./pages/role/ADMIN/LeaveManagement"
+import ShiftManagement from "./pages/role/ADMIN/ShiftManagement"
 
 // Protected Route Component with Case-Insensitive Role Check
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -98,7 +100,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     const userRole = userRoleStr.toUpperCase();
     
     const normalizedAllowedRoles = allowedRoles.map(role => role.toUpperCase())
-    
+
     if (!normalizedAllowedRoles.includes(userRole)) {
       // Allow "Super Admin" to access "Admin" routes automatically
       if (userRole === "SUPER ADMIN" && normalizedAllowedRoles.includes("ADMIN")) {
