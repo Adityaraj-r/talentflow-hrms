@@ -4,7 +4,7 @@ import { ThemeProvider } from "./contexts/ThemeContext"
 import { AuthProvider, useAuth } from "./contexts/AuthContext"
 import { RoleProvider } from "./contexts/RoleContext"
 import { SettingsProvider } from "./contexts/SettingsContext"
-import { UserProvider } from "./contexts/UserContext" //
+import { UserProvider } from "./contexts/UserContext"
 
 // Auth Pages
 import Login from "./pages/auth/Login"
@@ -27,6 +27,7 @@ import SystemSettings from "./pages/dashboard/SystemSettings"
 import Onboarding from "./pages/dashboard/Onboarding"
 import ProjectManagerDashboard from "./pages/dashboard/ProjectManagerDashboard"
 import RoleManagement from "./pages/dashboard/RoleManagement"
+import CompanyStructure from "./pages/dashboard/CompanyStructure"
 
 // Admin Performance Module
 import AdminPerformance from "./pages/dashboard/AdminPerformance"
@@ -73,9 +74,12 @@ import RecentHires from "./pages/modules/recruitment/RecentHires"
 import CreateRequisition from "./pages/modules/recruitment/CreateRequisition"
 import ManageOnboarding from "./pages/modules/recruitment/ManageOnboarding"
 import ActiveOnboarding from "./pages/modules/recruitment/ActiveOnboarding"
+
+// ✅ MERGED IMPORTS (Team + Yours)
 import AttendanceRecords from "./pages/role/ADMIN/AttendanceRecords"
 import AdminLeaveManagement from "./pages/role/ADMIN/LeaveManagement"
 import ShiftManagement from "./pages/role/ADMIN/ShiftManagement"
+import OnboardingDetails from "@/pages/modules/recruitment/OnboardingDetails"
 
 // Protected Route Component with Case-Insensitive Role Check
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -420,7 +424,7 @@ function App() {
                     }
                   />
 
-                  {/* ✅ ROLES & PERMISSIONS - NEW ROUTE ADDED HERE */}
+                  {/* ROLES & PERMISSIONS */}
                   <Route
                     path="/admin/roles"
                     element={
@@ -432,7 +436,19 @@ function App() {
                     }
                   />
 
-                  {/* Admin Performance (PMS) - UPDATED */}
+                   {/* COMPANY STRUCTURE (DEPARTMENTS) */}
+                   <Route
+                    path="/admin/company-structure"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin", "ADMIN", "Super Admin", "SUPER ADMIN"]}>
+                        <DashboardLayout>
+                          <CompanyStructure />
+                        </DashboardLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Admin Performance (PMS) */}
                   <Route
                     path="/role/admin/appraisal"
                     element={
