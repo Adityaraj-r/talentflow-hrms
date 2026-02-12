@@ -1,15 +1,21 @@
-// backend/src/server.ts
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
-import adminRoutes from './routes/adminRoutes';
-import settingsRoutes from './routes/settings.routes';  // ✅ ADD THIS
-
+import adminRoutes from './routes/adminRoutes';  // ← ADD THIS LINE
+import attendanceRoutes from "./routes/attendance.routes";
+import taskRoutes from "./routes/task.routes";
+import leaveRoutes from "./routes/leave.routes";
+import shiftRoutes from "./routes/shift.routes";
+import settingsRoutes from './routes/settings.routes';
+import onboardingRoutes from './routes/onboardingRoutes';
 import employeeRoutes from "./routes/employee.routes";
 import requisitionRoutes from "./routes/requisition.routes";
+import roleRoutes from './routes/role.routes';
+import departmentRoutes from './routes/department.routes';
+import { seedRoles } from './utils/roleSeeder';
 
 dotenv.config();
 
@@ -17,7 +23,6 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 const MONGODB_URI = process.env.MONGODB_URI || '';
 
-// CORS Configuration
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
@@ -25,27 +30,23 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
-// Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     message: 'HRMS Backend is running',
     mongodb: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
     timestamp: new Date().toISOString()
   });
 });
 
-// API Info
 app.get('/api', (req, res) => {
   res.json({
     success: true,
@@ -56,21 +57,31 @@ app.get('/api', (req, res) => {
       auth: '/api/auth',
       users: '/api/users',
       admin: '/api/admin',
-      settings: '/api/admin/settings'  // ✅ ADD THIS
+      settings: '/api/settings',
+      roles: '/api/roles',
+      onboarding: '/api/onboarding',
+      departments: '/api/departments'
     }
   });
 });
 
-// API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use("/api/employees", employeeRoutes);
 
 app.use('/api/admin', adminRoutes);
-app.use('/api/admin', settingsRoutes);  // ✅ ADD THIS
-app.use("/api/requisitions", requisitionRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/departments', departmentRoutes);
 
-// 404 handler
+app.use("/api/requisitions", requisitionRoutes);
+app.use('/api/onboarding', onboardingRoutes);
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/tasks", taskRoutes);
+app.use("/api/leaves", leaveRoutes);
+app.use("/api/shifts", shiftRoutes);
+
+
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -79,7 +90,6 @@ app.use((req, res) => {
   });
 });
 
-// Error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Server error:', err);
   res.status(500).json({
@@ -89,7 +99,6 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-// Connect to MongoDB and start server
 const startServer = async () => {
   try {
     if (!MONGODB_URI) {
@@ -97,7 +106,8 @@ const startServer = async () => {
     }
 
     console.log('🔄 Connecting to MongoDB...');
-    
+
+    // Connect to MongoDB with proper options
     await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 30000,
       socketTimeoutMS: 45000,
@@ -105,6 +115,8 @@ const startServer = async () => {
 
     console.log('✅ MongoDB connected successfully');
     console.log('📊 Database:', mongoose.connection.db?.databaseName || 'Unknown');
+
+    await seedRoles();
 
     app.listen(PORT, () => {
       console.log('\n============================================================');
@@ -115,21 +127,15 @@ const startServer = async () => {
       console.log(`✅ Health: http://localhost:${PORT}/health`);
       console.log(`📡 API Info: http://localhost:${PORT}/api`);
       console.log(`🗄️  Database: Connected to MongoDB Atlas`);
-      console.log(`🔥 Firebase Admin: Initialized`);
       console.log('============================================================\n');
     });
 
   } catch (error: any) {
     console.error('❌ Failed to start server:', error.message);
-    console.error('\n🔍 Troubleshooting:');
-    console.error('1. Check your MONGODB_URI in .env file');
-    console.error('2. Verify your MongoDB Atlas IP whitelist');
-    console.error('3. Check your MongoDB Atlas username and password');
     process.exit(1);
   }
 };
 
-// Handle MongoDB connection events
 mongoose.connection.on('error', (err) => {
   console.error('❌ MongoDB connection error:', err);
 });
@@ -138,14 +144,12 @@ mongoose.connection.on('disconnected', () => {
   console.log('🔌 MongoDB disconnected');
 });
 
-// Graceful shutdown
 process.on('SIGINT', async () => {
   await mongoose.connection.close();
   console.log('🔌 MongoDB connection closed due to app termination');
   process.exit(0);
 });
 
-// Start the server
 startServer();
 
 export default app;

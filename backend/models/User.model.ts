@@ -1,4 +1,3 @@
-// backend/src/models/User.model.ts
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
@@ -9,13 +8,15 @@ export interface IUser extends Document {
   role: string;
   firstName: string;
   lastName: string;
+  department?: string;
   phoneNumber?: string;
   employeeId?: mongoose.Types.ObjectId;
+  currentShift?: mongoose.Types.ObjectId;   //✅ NEW ADD
   isActive: boolean;
   isEmailVerified: boolean;
   lastLogin?: Date;
-  createdAt: Date;    
-  updatedAt: Date;       
+  createdAt: Date;
+  updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
@@ -24,7 +25,7 @@ const UserSchema = new Schema<IUser>(
     firebaseUid: {
       type: String,
       unique: true,
-      sparse: true,
+      required: [true, 'Firebase UID is required for authentication'],
       index: true
     },
     email: {
@@ -42,6 +43,7 @@ const UserSchema = new Schema<IUser>(
     },
     role: {
       type: String,
+      required: [true, 'User role is required'],
       enum: [
         'CEO',
         'COUNTRY_MANAGER',
@@ -56,7 +58,7 @@ const UserSchema = new Schema<IUser>(
         'ADMIN',
         'EMPLOYEE',
       ],
-      default: 'EMPLOYEE',
+      // default: 'EMPLOYEE',
     },
     firstName: {
       type: String,
@@ -68,10 +70,21 @@ const UserSchema = new Schema<IUser>(
       required: [true, 'Last name is required'],
       trim: true,
     },
-    phoneNumber: String,
-    employeeId: {
+    phoneNumber: {
+      type: String,
+      required: [true, 'Phone number is required'],
+      minlength: [10, 'Phone number must be exactly 10 digits'],
+      maxlength: [10, 'Phone number must be exactly 10 digits']
+    },
+    department: {
+      type: String,
+      required: [true, 'Department is required']
+    },
+    // ✅ ADD THIS 2: Schema Definition
+    currentShift: {
       type: Schema.Types.ObjectId,
-      ref: 'Employee',
+      ref: 'Shift',
+      default: null 
     },
     isActive: {
       type: Boolean,
@@ -84,7 +97,7 @@ const UserSchema = new Schema<IUser>(
     lastLogin: Date,
   },
   {
-    timestamps: true,  // This automatically adds createdAt and updatedAt
+    timestamps: true,
   }
 );
 

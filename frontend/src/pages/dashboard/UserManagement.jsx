@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react" // Add useEffect and useCallback
+import { useState, useEffect, useCallback } from "react" 
 import { Button } from "../../components/ui/button"
 import { Card, CardContent } from "../../components/ui/card"
 import { Input } from "../../components/ui/input"
@@ -28,9 +28,9 @@ import { ROLES } from "../../constants/roles"
 const UserManagement = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isBulkOpen, setIsBulkOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(true) // Add loading state
-  const [users, setUsers] = useState([]) // Initialize as empty array
-  const [filters, setFilters] = useState({ search: '', role: 'all' }) // For dynamic filtering
+  const [isLoading, setIsLoading] = useState(true) 
+  const [users, setUsers] = useState([]) 
+  const [filters, setFilters] = useState({ search: '', role: 'all' }) 
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -41,15 +41,16 @@ const UserManagement = () => {
     department: '',
     phoneNumber: ''
   })
-  // NEW: Fetch users from backend
+
+  const [loading, setLoading] = useState(false);
+
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await adminService.getUsers(filters);
 
-      // Check if the backend response structure is response.data
+    
       const userData = response.data || [];
-      // Add this at Line 53 of UserManagement.jsx
       console.log("DEBUG: Raw Response from Service:", response);
 
       const formattedUsers = userData.map(u => ({
@@ -58,7 +59,6 @@ const UserManagement = () => {
         email: u.email,
         role: u.role,
         status: u.isActive ? 'Active' : 'Inactive',
-        // Generates initials 
         avatar: (u.firstName?.[0] || 'U') + (u.lastName?.[0] || 'S')
       }));
       setUsers(formattedUsers);
@@ -70,25 +70,83 @@ const UserManagement = () => {
     }
   }, [filters]);
 
-  // Initial load
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
-  const handleCreateUser = async (e) => {
-    e.preventDefault();
-    try {
-      // This calls the code you provided in adminService.js
-      const response = await adminService.enrollUser(formData);
-      toast.success(response.message);
+  
+const handleCloseAndReset = () => {
+  setFormData({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    role:'', 
+    department:'',
+    phoneNumber: ''
+  });
+  setIsCreateOpen(false); 
+};
+
+
+const handleCreateUser = async () => {
+ 
+  if (!formData.firstName || formData.firstName.trim() === "") {
+    toast.error("Please enter First Name.");
+    return;
+  }
+  if (!formData.lastName || formData.lastName.trim() === "") {
+    toast.error("Please enter Last Name.");
+    return;
+  }
+  if (!formData.email || formData.email.trim() === "") {
+    toast.error("A valid Work Email is required.");
+    return;
+  }
+  if (!formData.password || formData.password.length < 6) {
+    toast.error("Password must be at least 6 characters long.");
+    return;
+  }
+  if (!formData.role || formData.role === "Select Role") {
+    toast.error("Please select a User Role.");
+    return;
+  }
+  if (!formData.department || formData.department === "Select Dept") {
+    toast.error("Please select a Department.");
+    return;
+  }
+  if (!formData.phoneNumber || formData.phoneNumber.length !== 10) {
+    toast.error("A valid 10-digit Phone Number is required.");
+    return;
+  }
+
+  setLoading(true);
+  try {
+
+    const response = await adminService.enrollUser(formData); 
+    
+    if (response.success) {
+      toast.success("User created successfully!");
       setIsCreateOpen(false);
-      fetchUsers();
-      // Suggestion: call a function here to refresh your metrics/user list
-      // fetchMetrics(); 
-    } catch (err) {
-      toast.error(err.message);
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        role: '',
+        department: '',
+        phoneNumber: ''
+      });
+      handleCloseAndReset();
+      fetchUsers(); 
+      
     }
-  };
+  } catch (error) {
+    toast.error(error.message || "Enrollment failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Bulk User Upload state declarations
   const [selectedFile, setSelectedFile] = useState(null);
@@ -101,19 +159,27 @@ const UserManagement = () => {
       toast.info(`Selected: ${file.name}`);
     }
   };
-  const handleToggleStatus = async (userId) => {
-    try {
-      // This calls the toggle-status endpoint we discussed
-      const response = await adminService.toggleUserStatus(userId);
-      toast.success(response.message);
 
-      // Refresh the table so user status changes immediately
-      fetchUsers();
-    } catch (error) {
-      console.error("Toggle Error:", error);
-      toast.error(error.message || "Failed to update user status");
+  const handleToggleStatus = async (userId) => {
+  try {
+
+    const response = await adminService.toggleUserStatus(userId);
+    
+    if (response.success) {
+      toast.success(response.message);
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.id === userId 
+            ? { ...user, status: user.status === 'Active' ? 'Inactive' : 'Active' } 
+            : user
+        )
+      );
     }
-  };
+  } catch (error) {
+    console.error("Toggle Error:", error);
+    toast.error(error.message || "Failed to update user status");
+  }
+};
 
   const handleProcessUpload = async () => {
     if (!selectedFile) {
@@ -135,10 +201,9 @@ const UserManagement = () => {
       setIsUploading(false);
     }
   };
-  // Add this before the 'return (' in UserManagement.jsx
+
   const activeCount = users.filter(u => u.status === 'Active').length;
   const inactiveCount = users.filter(u => u.status === 'Inactive').length;
-  // Note: If you have a 'Deactivated' status in your DB, filter for it specifically
   const deactivatedCount = users.filter(u => u.status === 'Deactivated').length;
 
 
@@ -295,12 +360,20 @@ const UserManagement = () => {
                     type="tel"
                     placeholder="+91"
                     value={formData.phoneNumber}
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                    onChange={(e) => {
+                      // Remove non-numeric characters
+                      const value = e.target.value.replace(/\D/g, "");
+
+                      // Limit to 10 digits
+                      if (value.length <= 10) {
+                        setFormData({ ...formData, phoneNumber: value });
+                      }
+                    }}
                   />
                 </div>
               </form>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={handleCloseAndReset}>Cancel</Button>
                 <Button onClick={handleCreateUser}>Create User</Button>
               </DialogFooter>
             </DialogContent>
@@ -427,8 +500,8 @@ const UserManagement = () => {
                           variant="ghost"
                           size="icon"
                           className={`h-8 w-8 ${user.status === 'Active'
-                              ? 'text-red-500 hover:bg-red-50'    // Red when user is Active (Deactivation action)
-                              : 'text-green-500 hover:bg-green-50' // Green when user is Inactive (Activation action)
+                            ? 'text-red-500 hover:bg-red-50'    // Red when user is Active (Deactivation action)
+                            : 'text-green-500 hover:bg-green-50' // Green when user is Inactive (Activation action)
                             }`}
                           onClick={() => handleToggleStatus(user.id)}
                           title={user.status === 'Active' ? 'Deactivate User' : 'Activate User'}

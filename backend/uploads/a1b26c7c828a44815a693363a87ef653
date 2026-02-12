@@ -1,0 +1,6 @@
+firstName,lastName,email,password,role,department,phoneNumber
+Amit,Patel,amit.patel@hrms.com,Amit@1234,EMPLOYEE,IT,9800000001
+Rohit,Verma,rohit.verma@hrms.com,Rohit@1234,HR_OFFICER,HR,9800000002
+Sneha,Kulkarni,sneha.k@hrms.com,Sneha@1234,PROJECT_MANAGER,IT,9800000003
+Neha,Joshi,neha.joshi@hrms.com,Neha@1234,OPERATIONS_MANAGER,Operations,9800000004
+Kunal,Mehta,kunal.mehta@hrms.com,Kunal@1234,EMPLOYEE,Finance,9800000005

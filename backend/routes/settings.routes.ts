@@ -1,8 +1,10 @@
 import express from 'express';
-import { getSettings, updateSettings } from '../controllers/settingsController'; // ✅ No .ts extension
-import { authenticate } from '../middleware/auth.middleware'; // ✅ Changed from authenticateToken
+import { getSettings, updateSettings, getCompanyInfo } from '../controllers/settingsController';
+import { authenticate } from '../middleware/auth.middleware';
 
 const router = express.Router();
+
+router.get('/company-info', getCompanyInfo);
 
 router.use(authenticate);
 

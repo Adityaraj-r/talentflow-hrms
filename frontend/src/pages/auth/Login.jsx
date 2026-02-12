@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Building2, Mail, Lock, AlertCircle, Loader2, Shield, Users, TrendingUp, Award, CheckCircle, ArrowRight, Moon, Sun } from 'lucide-react';
+import { Building2, Mail, Lock, AlertCircle, Loader2, Shield, Users, TrendingUp, Award, CheckCircle, ArrowRight, Moon, Sun, Eye, EyeOff } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,13 +12,34 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [companyName, setCompanyName] = useState('InternsLand');
+  
   const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
-  // Generate circles once on mount - shared across both sides
+  useEffect(() => {
+    const fetchCompanyInfo = async () => {
+      try {
+        const cachedName = localStorage.getItem('companyName');
+        if (cachedName) setCompanyName(cachedName);
+
+        const { data } = await axios.get('http://localhost:5001/api/settings/company-info');
+        
+        if (data.success && data.companyName) {
+          setCompanyName(data.companyName);
+          localStorage.setItem('companyName', data.companyName);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchCompanyInfo();
+  }, []);
+
   const floatingCircles = useMemo(() => {
     return [...Array(30)].map((_, i) => ({
       size: Math.random() * 400 + 100,
@@ -35,9 +57,9 @@ const Login = () => {
 
     try {
       await login(email, password);
-      window.location.href = '/dashboard';
+      navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Failed to login. Please check your credentials.');
+      setError(err.response?.data?.message || 'Failed to login. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -74,8 +96,8 @@ const Login = () => {
   ];
 
   return (
+
     <div className="h-screen w-screen fixed inset-0 overflow-hidden bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-500 dark:from-gray-950 dark:via-slate-950 dark:to-zinc-950 transition-all duration-500">
-      
       {/* Animated Background Pattern */}
       <div className="absolute inset-0 opacity-20 dark:opacity-15 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full">
@@ -96,16 +118,14 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Glow Effects */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-300/20 dark:bg-blue-500/15 rounded-full blur-3xl animate-pulse-slow"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-300/20 dark:bg-purple-500/15 rounded-full blur-3xl animate-pulse-slower"></div>
       </div>
 
-      {/* Dark Mode Toggle */}
       <button
         onClick={toggleTheme}
-        className="fixed top-6 right-6 z-50 p-3 rounded-xl bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/30 dark:border-white/10 shadow-lg hover:shadow-xl hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-300 group"
+        className="fixed top-6 right-6 z-50 p-3 rounded-xl bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/30 dark:border-white/10 shadow-lg hover:shadow-xl hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-300 group cursor-pointer"
         aria-label="Toggle theme"
       >
         {theme === 'dark' ? (
@@ -115,14 +135,13 @@ const Login = () => {
         )}
       </button>
 
+
       {/* Content Wrapper */}
       <div className="flex h-full">
         
         {/* Left Side - Branding & Features */}
         <div className="hidden lg:flex lg:w-1/2 relative p-12 flex-col justify-between overflow-hidden">
-          
           <div className="relative z-10">
-            {/* Logo & Brand */}
             <div className="flex items-center gap-3 mb-12">
               <div className="relative group">
                 <div className="absolute inset-0 bg-white/30 dark:bg-blue-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
@@ -131,17 +150,18 @@ const Login = () => {
                 </div>
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow-lg">InternsLand</h1>
+                <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow-lg">{companyName}</h1>
                 <p className="text-blue-50 dark:text-blue-300 text-sm font-medium">Enterprise HRMS Platform</p>
               </div>
             </div>
+
 
             {/* Hero Content */}
             <div className="space-y-6 mb-8">
               <div>
                 <h2 className="text-5xl font-bold text-white leading-tight mb-4 drop-shadow-lg">
                   Transform Your<br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-50 to-purple-50 dark:from-blue-200 dark:via-indigo-200 dark:to-purple-200">
+                  <span className="text-transparent bg-clip-text bg-linear-to-r from-white via-blue-50 to-purple-50 dark:from-blue-200 dark:via-indigo-200 dark:to-purple-200">
                     Workforce Management
                   </span>
                 </h2>
@@ -150,10 +170,11 @@ const Login = () => {
                 </p>
               </div>
 
+
               {/* Feature Highlights */}
               <div className="grid grid-cols-2 gap-3 mt-6">
                 {features.map((feature, index) => (
-                  <div 
+                  <div
                     key={index}
                     className="relative bg-white/15 dark:bg-white/5 backdrop-blur-md border border-white/30 dark:border-white/10 rounded-xl p-3 hover:bg-white/25 dark:hover:bg-white/10 hover:border-white/40 dark:hover:border-white/20 transition-all duration-500 cursor-pointer group overflow-hidden"
                     style={{
@@ -181,6 +202,7 @@ const Login = () => {
                 ))}
               </div>
 
+
             {/* Stats Footer */}
           <div className="relative z-8 grid grid-cols-4 gap-6 pt-4 border-t border-white/30 dark:border-white/10">
             {stats.map((stat, index) => (
@@ -194,6 +216,7 @@ const Login = () => {
           </div>
         </div>
 
+
         {/* Right Side - Login Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-8 relative overflow-hidden">
           
@@ -206,12 +229,13 @@ const Login = () => {
                   <Building2 className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                    InternsLand
+                  <h1 className="text-2xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    {companyName}
                   </h1>
                   <p className="text-xs text-gray-600 dark:text-gray-400">Enterprise HRMS</p>
                 </div>
               </div>
+
 
               {/* Form Header */}
               <div className="mb-6">
@@ -222,6 +246,7 @@ const Login = () => {
                   Sign in to access your dashboard and manage your workforce
                 </p>
               </div>
+
 
               {/* Login Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -250,9 +275,10 @@ const Login = () => {
                       disabled={loading}
                       className="h-11 pl-3.5 pr-3.5 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all duration-300 bg-white dark:bg-slate-800"
                     />
-                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"></div>
+                    <div className="absolute inset-0 rounded-lg bg-linear-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"></div>
                   </div>
                 </div>
+
 
                 {/* Password Field */}
                 <div className="space-y-1.5">
@@ -262,52 +288,65 @@ const Login = () => {
                   </label>
                   <div className="relative group">
                     <Input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       disabled={loading}
+
                       className="h-11 pl-3.5 pr-3.5 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all duration-300 bg-white dark:bg-slate-800"
                     />
-                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"></div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors z-20 cursor-pointer"
+                    >
+                      {showPassword ? (
+                        <Eye className="h-5 w-5" />
+                      ) : (
+                        <EyeOff className="h-5 w-5" />
+                      )}
+                    </button>
+                    <div className="absolute inset-0 rounded-lg bg-linear-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"></div>
                   </div>
                 </div>
 
+
                 {/* Remember & Forgot */}
                 <div className="flex items-center justify-between text-sm pt-1">
+               
                   <label className="flex items-center gap-2 cursor-pointer group">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     />
                     <span className="text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">
                       Remember me
                     </span>
                   </label>
-                  <a 
-                    href="#" 
+                  <a
+                    href="#"
                     className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline transition-colors"
                   >
                     Forgot password?
                   </a>
                 </div>
 
-                {/* Sign In Button */}
                 <Button
                   type="submit"
                   disabled={loading}
                   className="w-full h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 relative overflow-hidden group mt-2"
                 >
-                  <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
-                  
+                  <span className="absolute inset-0 w-full h-full bg-linear-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
+
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
                       <Loader2 className="h-5 w-5 animate-spin" />
                       Signing in...
                     </span>
                   ) : (
-                    <span className="flex items-center justify-center gap-2">
+                    <span className="flex items-center justify-center gap-2 ">
                       Sign In
                       <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                     </span>
@@ -348,7 +387,7 @@ const Login = () => {
             {/* Footer */}
             <div className="px-6 pb-5 text-center">
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                © 2026 InternsLand. All rights reserved.
+                © 2026 {companyName}. All rights reserved.
               </p>
             </div>
           </Card>

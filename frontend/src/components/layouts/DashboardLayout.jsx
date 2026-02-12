@@ -1,50 +1,52 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import axios from "axios"
 import Sidebar from "../ui/Sidebar"
 import Header from "../ui/Header"
-import { useAuth } from "../../contexts/AuthContext"
-import { useTheme } from "../../contexts/ThemeContext"
-import { useSettings } from "../../contexts/SettingsContext"
-import { useNavigate } from "react-router-dom"
 
 const DashboardLayout = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const { user, logout } = useAuth()
-  const { theme, toggleTheme } = useTheme()
-  const { settings } = useSettings()
-  const navigate = useNavigate()
+  const [companyName, setCompanyName] = useState("")
 
-  const handleLogout = () => {
-    logout()
-    navigate("/login")
-  }
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const cached = localStorage.getItem("companyName")
+        if (cached) setCompanyName(cached)
+
+        const { data } = await axios.get("http://localhost:5001/api/settings/company-info")
+        if (data.success && data.companyName) {
+          setCompanyName(data.companyName)
+          localStorage.setItem("companyName", data.companyName)
+        }
+      } catch (error) {
+        if (!companyName) setCompanyName("HRMS System")
+      }
+    }
+    fetchSettings()
+  }, [])
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div className="min-h-screen bg-muted/10">
       <Sidebar
-        isOpen={sidebarOpen}
-        toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        userRole={user?.role}
+        isOpen={isSidebarOpen}
+        toggleSidebar={toggleSidebar}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
-        companyName={settings.companyName}
+        companyName={companyName}
       />
 
       <div 
-        className={`flex h-full flex-1 flex-col bg-background transition-all duration-300 ease-in-out ${
-          isCollapsed ? "lg:ml-20" : "lg:ml-72" 
-        }`}
+        className={`
+          flex flex-col min-h-screen transition-all duration-300 ease-in-out
+          ${isCollapsed ? 'lg:ml-[80px]' : 'lg:ml-[280px]'}
+        `}
       >
-        <Header
-          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          user={user}
-          theme={theme}
-          toggleTheme={toggleTheme}
-          onLogout={handleLogout}
-        />
-
-        <main className="flex-1 overflow-y-auto px-6 pb-6 pt-4">
-          {children}
+        <Header toggleSidebar={toggleSidebar} />
+        <main className="flex-1 p-6">
+           {children}
         </main>
       </div>
     </div>
