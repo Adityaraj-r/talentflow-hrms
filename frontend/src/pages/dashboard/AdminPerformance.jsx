@@ -6,42 +6,22 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
-import { TrendingUp, Plus, Calendar, Users, FileText, X } from "lucide-react";
+import { TrendingUp, Plus, Calendar, Users, FileText, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import PerformanceAnalytics from "./PerformanceAnalytics";
 import EmployeeOverview from "./EmployeeOverview";
-
-
-// Mock data defined outside component to prevent re-initialization
-const mockCycles = [
-  { id: 1, name: "Q4 2025 Review", startDate: "2025-10-01", endDate: "2025-12-31", status: "active", totalReviews: 25, avgScore: 4.5, description: "Quarterly performance review for Q4 2025" },
-  { id: 2, name: "Annual 2025", startDate: "2025-01-01", endDate: "2025-12-31", status: "completed", totalReviews: 20, avgScore: 3.8, description: "Annual performance review for 2025" }
-];
-
+import { performanceApi } from "../../services/performanceApi"; // ← FIXED: Changed from ../../../ to ../../
 
 const AdminPerformance = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("cycles");
-  
-  // ✅ FIX: Initialize cycles from localStorage or fallback to mock data
-  const [cycles, setCycles] = useState(() => {
-    const saved = localStorage.getItem('performanceCycles');
-    return saved ? JSON.parse(saved) : mockCycles;
-  });
-
-  const [performanceData, setPerformanceData] = useState(() => {
-    const savedCycles = localStorage.getItem('performanceCycles');
-    const initialCycles = savedCycles ? JSON.parse(savedCycles) : mockCycles;
-    
-    return {
-      totalCycles: initialCycles.length,
-      activeCycles: initialCycles.filter(c => c.status === 'active').length,
-      totalReviews: initialCycles.reduce((sum, c) => sum + (c.totalReviews || 0), 0),
-      avgScore: initialCycles.length > 0 
-        ? (initialCycles.reduce((sum, c) => sum + (c.avgScore || 0), 0) / initialCycles.length).toFixed(1)
-        : null,
-      cycles: initialCycles
-    };
+  const [loading, setLoading] = useState(true);
+  const [performanceData, setPerformanceData] = useState({
+    totalCycles: 0,
+    activeCycles: 0,
+    totalReviews: 0,
+    avgScore: 0,
+    cycles: []
   });
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -55,12 +35,35 @@ const AdminPerformance = () => {
     status: "active"
   });
   const [formErrors, setFormErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
-  // ✅ FIX: Save to localStorage whenever cycles change
   useEffect(() => {
-    localStorage.setItem('performanceCycles', JSON.stringify(performanceData.cycles));
-  }, [performanceData.cycles]);
+    loadPerformanceData();
+  }, []);
 
+  const loadPerformanceData = async () => {
+    try {
+      setLoading(true);
+      
+      const [statsResponse, cyclesResponse] = await Promise.all([
+        performanceApi.getStats(),
+        performanceApi.getCycles()
+      ]);
+
+      setPerformanceData({
+        totalCycles: statsResponse.data.totalCycles,
+        activeCycles: statsResponse.data.activeCycles,
+        totalReviews: statsResponse.data.totalReviews,
+        avgScore: statsResponse.data.avgScore,
+        cycles: cyclesResponse.data
+      });
+    } catch (error) {
+      console.error('Failed to load performance data:', error);
+      toast.error('Failed to load performance data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -70,11 +73,9 @@ const AdminPerformance = () => {
     }
   };
 
-
   const handleStatusChange = (value) => {
     setFormData(prev => ({ ...prev, status: value }));
   };
-
 
   const validateForm = () => {
     const errors = {};
@@ -101,106 +102,101 @@ const AdminPerformance = () => {
     return Object.keys(errors).length === 0;
   };
 
-
-  const handleCreateCycle = () => {
+  const handleCreateCycle = async () => {
     if (!validateForm()) {
       toast.error("Please fix the errors in the form");
       return;
     }
 
-    const newCycle = {
-      id: Date.now(), // Use timestamp for unique ID
-      name: formData.name,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      description: formData.description,
-      status: "active",
-      totalReviews: 0,
-      avgScore: null
-    };
+    try {
+      setSubmitting(true);
+      
+      const cycleData = {
+        name: formData.name,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        description: formData.description,
+        status: formData.status
+      };
 
-    const updatedCycles = [...performanceData.cycles, newCycle];
-    
-    setPerformanceData(prev => ({
-      ...prev,
-      cycles: updatedCycles,
-      totalCycles: updatedCycles.length,
-      activeCycles: updatedCycles.filter(c => c.status === 'active').length
-    }));
-
-    setFormData({ name: "", startDate: "", endDate: "", description: "", status: "active" });
-    setFormErrors({});
-    setShowCreateModal(false);
-    
-    toast.success(`Cycle "${newCycle.name}" created successfully!`);
+      await performanceApi.createCycle(cycleData);
+      
+      toast.success(`Cycle "${formData.name}" created successfully!`);
+      
+      await loadPerformanceData();
+      
+      setFormData({ name: "", startDate: "", endDate: "", description: "", status: "active" });
+      setFormErrors({});
+      setShowCreateModal(false);
+    } catch (error) {
+      console.error('Failed to create cycle:', error);
+      toast.error(error.response?.data?.error || 'Failed to create cycle');
+    } finally {
+      setSubmitting(false);
+    }
   };
-
 
   const handleEditClick = (cycle) => {
     setEditingCycle(cycle);
     setFormData({
       name: cycle.name,
-      startDate: cycle.startDate,
-      endDate: cycle.endDate,
+      startDate: cycle.startDate.split('T')[0],
+      endDate: cycle.endDate.split('T')[0],
       description: cycle.description || "",
       status: cycle.status
     });
     setShowEditModal(true);
   };
 
-
-  const handleUpdateCycle = () => {
+  const handleUpdateCycle = async () => {
     if (!validateForm()) {
       toast.error("Please fix the errors in the form");
       return;
     }
 
-    const updatedCycles = performanceData.cycles.map(cycle => 
-      cycle.id === editingCycle.id 
-        ? {
-            ...cycle,
-            name: formData.name,
-            startDate: formData.startDate,
-            endDate: formData.endDate,
-            description: formData.description,
-            status: formData.status
-          }
-        : cycle
-    );
-
-    const activeCount = updatedCycles.filter(c => c.status === 'active').length;
-    
-    setPerformanceData(prev => ({
-      ...prev,
-      cycles: updatedCycles,
-      activeCycles: activeCount
-    }));
-
-    setFormData({ name: "", startDate: "", endDate: "", description: "", status: "active" });
-    setFormErrors({});
-    setShowEditModal(false);
-    setEditingCycle(null);
-    
-    toast.success(`Cycle "${formData.name}" updated successfully!`);
-  };
-
-
-  const handleDeleteCycle = (cycleId, cycleName) => {
-    if (window.confirm(`Are you sure you want to delete "${cycleName}"?\n\nThis action cannot be undone.`)) {
-      const updatedCycles = performanceData.cycles.filter(cycle => cycle.id !== cycleId);
-      const activeCount = updatedCycles.filter(c => c.status === 'active').length;
+    try {
+      setSubmitting(true);
       
-      setPerformanceData(prev => ({
-        ...prev,
-        cycles: updatedCycles,
-        totalCycles: updatedCycles.length,
-        activeCycles: activeCount
-      }));
+      const cycleData = {
+        name: formData.name,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        description: formData.description,
+        status: formData.status
+      };
+
+      await performanceApi.updateCycle(editingCycle._id, cycleData);
       
-      toast.success(`Cycle "${cycleName}" deleted successfully!`);
+      toast.success(`Cycle "${formData.name}" updated successfully!`);
+      
+      await loadPerformanceData();
+      
+      setFormData({ name: "", startDate: "", endDate: "", description: "", status: "active" });
+      setFormErrors({});
+      setShowEditModal(false);
+      setEditingCycle(null);
+    } catch (error) {
+      console.error('Failed to update cycle:', error);
+      toast.error(error.response?.data?.error || 'Failed to update cycle');
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  const handleDeleteCycle = async (cycleId, cycleName) => {
+    if (window.confirm(`Are you sure you want to delete "${cycleName}"?\n\nThis action cannot be undone.`)) {
+      try {
+        await performanceApi.deleteCycle(cycleId);
+        
+        toast.success(`Cycle "${cycleName}" deleted successfully!`);
+        
+        await loadPerformanceData();
+      } catch (error) {
+        console.error('Failed to delete cycle:', error);
+        toast.error(error.response?.data?.error || 'Failed to delete cycle');
+      }
+    }
+  };
 
   const handleCloseModal = () => {
     setShowCreateModal(false);
@@ -210,11 +206,18 @@ const AdminPerformance = () => {
     setFormErrors({});
   };
 
-
   const handleViewCycle = (cycle) => {
-    navigate(`/role/admin/appraisal/view/${cycle.id}`, { state: { cycle } });
+    navigate(`/role/admin/appraisal/view/${cycle._id}`, { state: { cycle } });
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <span className="ml-2 text-lg">Loading performance data...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -270,12 +273,13 @@ const AdminPerformance = () => {
               <TrendingUp className="h-5 w-5 text-orange-500" />
               <span className="text-sm font-medium text-muted-foreground">Avg Score</span>
             </div>
-            <div className="text-3xl font-bold text-orange-500">{performanceData.avgScore ? `${performanceData.avgScore}/5` : '—'}</div>
+            <div className="text-3xl font-bold text-orange-500">
+              {performanceData.avgScore > 0 ? `${performanceData.avgScore}/5` : '—'}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 border-b">
         <button
           onClick={() => setActiveTab("cycles")}
@@ -309,7 +313,6 @@ const AdminPerformance = () => {
         </button>
       </div>
 
-      {/* Tab Content */}
       {activeTab === "cycles" ? (
         <Card className="shadow-lg">
           <CardHeader className="border-b">
@@ -338,7 +341,7 @@ const AdminPerformance = () => {
                     </tr>
                   ) : (
                     performanceData.cycles.map((cycle) => (
-                      <tr key={cycle.id} className="hover:bg-muted/50">
+                      <tr key={cycle._id} className="hover:bg-muted/50">
                         <td className="px-6 py-4 font-medium">{cycle.name}</td>
                         <td className="px-6 py-4 text-muted-foreground">
                           {new Date(cycle.startDate).toLocaleDateString()} - {new Date(cycle.endDate).toLocaleDateString()}
@@ -371,7 +374,7 @@ const AdminPerformance = () => {
                             variant="ghost" 
                             size="sm" 
                             className="text-red-600 hover:text-red-700"
-                            onClick={() => handleDeleteCycle(cycle.id, cycle.name)}
+                            onClick={() => handleDeleteCycle(cycle._id, cycle.name)}
                           >
                             Delete
                           </Button>
@@ -390,13 +393,12 @@ const AdminPerformance = () => {
         <EmployeeOverview />
       )}
 
-      {/* Create Cycle Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-2xl">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Create Performance Cycle</CardTitle>
-              <Button variant="ghost" size="icon" onClick={handleCloseModal}>
+              <Button variant="ghost" size="icon" onClick={handleCloseModal} disabled={submitting}>
                 <X className="h-4 w-4" />
               </Button>
             </CardHeader>
@@ -410,6 +412,7 @@ const AdminPerformance = () => {
                   value={formData.name}
                   onChange={handleInputChange}
                   className={formErrors.name ? "border-red-500" : ""}
+                  disabled={submitting}
                 />
                 {formErrors.name && <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>}
               </div>
@@ -424,6 +427,7 @@ const AdminPerformance = () => {
                     value={formData.startDate}
                     onChange={handleInputChange}
                     className={formErrors.startDate ? "border-red-500" : ""}
+                    disabled={submitting}
                   />
                   {formErrors.startDate && <p className="text-red-500 text-sm mt-1">{formErrors.startDate}</p>}
                 </div>
@@ -436,6 +440,7 @@ const AdminPerformance = () => {
                     value={formData.endDate}
                     onChange={handleInputChange}
                     className={formErrors.endDate ? "border-red-500" : ""}
+                    disabled={submitting}
                   />
                   {formErrors.endDate && <p className="text-red-500 text-sm mt-1">{formErrors.endDate}</p>}
                 </div>
@@ -450,26 +455,37 @@ const AdminPerformance = () => {
                   rows={3}
                   value={formData.description}
                   onChange={handleInputChange}
+                  disabled={submitting}
                 />
               </div>
             </CardContent>
             <div className="flex justify-end gap-2 p-6 border-t">
-              <Button variant="outline" onClick={handleCloseModal}>Cancel</Button>
-              <Button onClick={handleCreateCycle} className="bg-gradient-to-r from-blue-500 to-purple-600">
-                Create Cycle
+              <Button variant="outline" onClick={handleCloseModal} disabled={submitting}>Cancel</Button>
+              <Button 
+                onClick={handleCreateCycle} 
+                className="bg-gradient-to-r from-blue-500 to-purple-600"
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Cycle'
+                )}
               </Button>
             </div>
           </Card>
         </div>
       )}
 
-      {/* Edit Cycle Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-2xl">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Edit Performance Cycle</CardTitle>
-              <Button variant="ghost" size="icon" onClick={handleCloseModal}>
+              <Button variant="ghost" size="icon" onClick={handleCloseModal} disabled={submitting}>
                 <X className="h-4 w-4" />
               </Button>
             </CardHeader>
@@ -483,6 +499,7 @@ const AdminPerformance = () => {
                   value={formData.name}
                   onChange={handleInputChange}
                   className={formErrors.name ? "border-red-500" : ""}
+                  disabled={submitting}
                 />
                 {formErrors.name && <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>}
               </div>
@@ -497,6 +514,7 @@ const AdminPerformance = () => {
                     value={formData.startDate}
                     onChange={handleInputChange}
                     className={formErrors.startDate ? "border-red-500" : ""}
+                    disabled={submitting}
                   />
                   {formErrors.startDate && <p className="text-red-500 text-sm mt-1">{formErrors.startDate}</p>}
                 </div>
@@ -509,6 +527,7 @@ const AdminPerformance = () => {
                     value={formData.endDate}
                     onChange={handleInputChange}
                     className={formErrors.endDate ? "border-red-500" : ""}
+                    disabled={submitting}
                   />
                   {formErrors.endDate && <p className="text-red-500 text-sm mt-1">{formErrors.endDate}</p>}
                 </div>
@@ -516,7 +535,7 @@ const AdminPerformance = () => {
 
               <div>
                 <Label htmlFor="edit-status">Status</Label>
-                <Select value={formData.status} onValueChange={handleStatusChange}>
+                <Select value={formData.status} onValueChange={handleStatusChange} disabled={submitting}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
@@ -537,13 +556,25 @@ const AdminPerformance = () => {
                   rows={3}
                   value={formData.description}
                   onChange={handleInputChange}
+                  disabled={submitting}
                 />
               </div>
             </CardContent>
             <div className="flex justify-end gap-2 p-6 border-t">
-              <Button variant="outline" onClick={handleCloseModal}>Cancel</Button>
-              <Button onClick={handleUpdateCycle} className="bg-gradient-to-r from-blue-500 to-purple-600">
-                Update Cycle
+              <Button variant="outline" onClick={handleCloseModal} disabled={submitting}>Cancel</Button>
+              <Button 
+                onClick={handleUpdateCycle} 
+                className="bg-gradient-to-r from-blue-500 to-purple-600"
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  'Update Cycle'
+                )}
               </Button>
             </div>
           </Card>

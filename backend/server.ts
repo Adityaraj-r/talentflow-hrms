@@ -1,10 +1,11 @@
+// backend/server.ts
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
-import adminRoutes from './routes/adminRoutes';  // ← ADD THIS LINE
+import adminRoutes from './routes/adminRoutes';
 import attendanceRoutes from "./routes/attendance.routes";
 import taskRoutes from "./routes/task.routes";
 import leaveRoutes from "./routes/leave.routes";
@@ -15,6 +16,7 @@ import employeeRoutes from "./routes/employee.routes";
 import requisitionRoutes from "./routes/requisition.routes";
 import roleRoutes from './routes/role.routes';
 import departmentRoutes from './routes/department.routes';
+import performanceRoutes from './routes/performanceRoutes';  
 import { seedRoles } from './utils/roleSeeder';
 
 dotenv.config();
@@ -23,6 +25,7 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 const MONGODB_URI = process.env.MONGODB_URI || '';
 
+// CORS Configuration
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
@@ -30,14 +33,17 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Request logging
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
+// Health check
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
@@ -47,6 +53,7 @@ app.get('/health', (req, res) => {
   });
 });
 
+// API Info
 app.get('/api', (req, res) => {
   res.json({
     success: true,
@@ -59,29 +66,36 @@ app.get('/api', (req, res) => {
       admin: '/api/admin',
       settings: '/api/settings',
       roles: '/api/roles',
+      departments: '/api/departments',
       onboarding: '/api/onboarding',
-      departments: '/api/departments'
+      attendance: '/api/attendance',
+      tasks: '/api/tasks',
+      leaves: '/api/leaves',
+      shifts: '/api/shifts',
+      employees: '/api/employees',
+      requisitions: '/api/requisitions',
+      performance: '/api/performance'  
     }
   });
 });
 
+// API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use("/api/employees", employeeRoutes);
-
 app.use('/api/admin', adminRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/departments', departmentRoutes);
-
 app.use("/api/requisitions", requisitionRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/shifts", shiftRoutes);
+app.use('/api/performance', performanceRoutes);  
 
-
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -90,6 +104,7 @@ app.use((req, res) => {
   });
 });
 
+// Error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Server error:', err);
   res.status(500).json({
@@ -99,6 +114,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
+// Connect to MongoDB and start server
 const startServer = async () => {
   try {
     if (!MONGODB_URI) {
@@ -118,6 +134,7 @@ const startServer = async () => {
 
     await seedRoles();
 
+    // Start server only after MongoDB is connected
     app.listen(PORT, () => {
       console.log('\n============================================================');
       console.log('🚀 HRMS BACKEND SERVER STARTED SUCCESSFULLY!');
@@ -136,6 +153,7 @@ const startServer = async () => {
   }
 };
 
+// Handle MongoDB connection events
 mongoose.connection.on('error', (err) => {
   console.error('❌ MongoDB connection error:', err);
 });
@@ -144,12 +162,14 @@ mongoose.connection.on('disconnected', () => {
   console.log('🔌 MongoDB disconnected');
 });
 
+// Graceful shutdown
 process.on('SIGINT', async () => {
   await mongoose.connection.close();
   console.log('🔌 MongoDB connection closed due to app termination');
   process.exit(0);
 });
 
+// Start the server
 startServer();
 
 export default app;
