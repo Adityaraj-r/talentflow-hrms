@@ -19,6 +19,9 @@ import Dashboard from "./pages/dashboard/Dashboard"
 import AdminDashboard from "./pages/dashboard/AdminDashboard"
 import EmployeeDashboard from "./pages/dashboard/EmployeeDashboard"
 import Unauthorized from "./pages/Unauthorized"
+import ReportsPage from "./pages/dashboard/ReportsPage";
+
+
 
 // NEW Partner Files
 import UserManagement from "./pages/dashboard/UserManagement"
@@ -380,19 +383,18 @@ function App() {
                 />
 
                 {/* Reports - Admin only */}
-                <Route
-                  path="/reports"
-                  element={
-                    <ProtectedRoute allowedRoles={["admin", "ADMIN"]}>
-                      <DashboardLayout>
-                        <div className="p-6">
-                          <h1 className="text-2xl font-bold">Reports & Analytics</h1>
-                          <p className="text-gray-500 mt-2">Reports coming soon...</p>
-                        </div>
-                      </DashboardLayout>
-                    </ProtectedRoute>
-                  }
-                />
+              <Route
+                path="/reports"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <ReportsPage />
+                    </DashboardLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+
 
                 {/* Settings - Admin only */}
                 <Route

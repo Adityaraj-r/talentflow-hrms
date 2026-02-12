@@ -14,8 +14,8 @@ export interface IUser extends Document {
   isActive: boolean;
   isEmailVerified: boolean;
   lastLogin?: Date;
-  createdAt: Date;      // ✅ ADD THIS
-  updatedAt: Date;      // ✅ ADD THIS
+  createdAt: Date;    
+  updatedAt: Date;       
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
