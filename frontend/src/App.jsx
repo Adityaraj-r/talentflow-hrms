@@ -400,16 +400,14 @@ function App() {
                     }
                   />
 
-                  {/* Reports - Admin only */}
+                  
+                {/* Reports - Admin only */}
                   <Route
                     path="/reports"
                     element={
                       <ProtectedRoute allowedRoles={["admin", "ADMIN", "Super Admin"]}>
                         <DashboardLayout>
-                          <div className="p-6">
-                            <h1 className="text-2xl font-bold">Reports & Analytics</h1>
-                            <p className="text-gray-500 mt-2">Reports coming soon...</p>
-                          </div>
+                          <ReportsPage />
                         </DashboardLayout>
                       </ProtectedRoute>
                     }
@@ -590,18 +588,6 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
-
-                {/* Reports - Admin only */}
-              <Route
-                path="/reports"
-                element={
-                  <ProtectedRoute>
-                    <DashboardLayout>
-                      <ReportsPage />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
 
 
                   <Route
