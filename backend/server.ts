@@ -9,6 +9,7 @@ import attendanceRoutes from "./routes/attendance.routes";
 import taskRoutes from "./routes/task.routes";
 import leaveRoutes from "./routes/leave.routes";
 import shiftRoutes from "./routes/shift.routes";
+import holidayRoutes from "./routes/holiday.routes";
 import settingsRoutes from './routes/settings.routes';
 import onboardingRoutes from './routes/onboardingRoutes';
 import employeeRoutes from "./routes/employee.routes";
@@ -85,6 +86,7 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/shifts", shiftRoutes);
+app.use("/api/holidays", holidayRoutes);
 
 
 // 404 handler

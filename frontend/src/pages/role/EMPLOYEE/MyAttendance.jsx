@@ -1,17 +1,13 @@
 import { useEffect, useState } from "react";
 import { useUser } from "../../../contexts/UserContext";
 import attendanceService from "../../../services/attendanceService";
-
+import holidayService from "../../../services/holidayService";
 import AttendanceWidget from "../../../components/ui/AttendanceWidget";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
-import { Download, Briefcase, CheckCircle, XCircle, Clock, User, Calendar } from "lucide-react";
+import { Download, Briefcase, CheckCircle, XCircle, Clock, User, Calendar, CalendarDays } from "lucide-react";
 
-// --- HELPER FUNCTIONS ---
-
-// 1. Format Date: 03/02/26
 const formatDate = (dateString) => {
   if (!dateString) return "-";
   const date = new Date(dateString);
@@ -22,7 +18,6 @@ const formatDate = (dateString) => {
   }).format(date);
 };
 
-// 2. Format Time: 09:30 AM
 const formatTime = (dateString) => {
   if (!dateString) return "-";
   const date = new Date(dateString);
@@ -33,7 +28,6 @@ const formatTime = (dateString) => {
   });
 };
 
-// 3. Calculate Total Hours: 8h 30m
 const calculateTotalHours = (checkIn, checkOut) => {
   if (!checkIn || !checkOut) return "-";
 
@@ -50,7 +44,6 @@ const calculateTotalHours = (checkIn, checkOut) => {
   return `${hours}h ${minutes}m`;
 };
 
-// 4. Status Badge Logic
 const getStatusBadge = (status) => {
   const styles = {
     Present: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
@@ -59,7 +52,6 @@ const getStatusBadge = (status) => {
     "Half Day": "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800",
     Holiday: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800",
   };
-
   return (
     <Badge variant="outline" className={`${styles[status] || "bg-slate-100 text-slate-700"} px-2 py-0.5 border`}>
       {status || "Unknown"}
@@ -67,83 +59,81 @@ const getStatusBadge = (status) => {
   );
 };
 
+const getMonth = (dateStr) => new Date(dateStr).toLocaleString('default', { month: 'short' });
+const getDay = (dateStr) => new Date(dateStr).getDate();
+
 const MyAttendance = () => {
   const { user } = useUser();
 
   const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState([]);
+  const [holidays, setHolidays] = useState([]);
+
   const [stats, setStats] = useState({
     workingDays: 0,
     present: 0,
     absent: 0,
     late: 0,
   });
-  const [history, setHistory] = useState([]);
 
   const employeeType = user?.employeeType || "Full-Time";
-
-  const getRequiredHours = (type) => {
-    switch (type) {
-      case "Part-Time": return 4;
-      case "Intern": return 6;
-      default: return 9;
-    }
-  };
-
-  // Basic Business Days Logic (Mon-Fri)
-  const getBusinessDays = (endDate) => {
-    let count = 0;
-    const curDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
-
-    while (curDate <= endDate) {
-      const dayOfWeek = curDate.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        count++;
-      }
-      curDate.setDate(curDate.getDate() + 1);
-    }
-    return count;
-  };
-
-  const requiredHours = getRequiredHours(employeeType);
+  const requiredHours = employeeType === "Part-Time" ? 4 : employeeType === "Intern" ? 6 : 9;
 
   useEffect(() => {
-    const fetchAttendance = async () => {
+    const fetchData = async () => {
       try {
-        const res = await attendanceService.getMyAttendance();
-        const data = Array.isArray(res?.data) ? res.data : [];
-        setHistory(data);
+        setLoading(true);
 
-        // --- STATS CALCULATION ---
+        const [attRes, holRes] = await Promise.all([
+          attendanceService.getMyAttendance(),
+          holidayService.getHolidays()
+        ]);
+
+        const attData = Array.isArray(attRes?.data) ? attRes.data : [];
+        setHistory(attData);
+
+        if (holRes?.data?.success && Array.isArray(holRes.data.data)) {
+          setHolidays(holRes.data.data);
+        } else if (Array.isArray(holRes?.data)) {
+          setHolidays(holRes.data);
+        } else {
+          setHolidays([]);
+        }
+
         const today = new Date();
-        const businessDaysSoFar = getBusinessDays(today);
+        const businessDaysSoFar = (() => {
+          let count = 0;
+          const curDate = new Date(today.getFullYear(), today.getMonth(), 1);
+          while (curDate <= today) {
+            const day = curDate.getDay();
+            if (day !== 0 && day !== 6) count++;
+            curDate.setDate(curDate.getDate() + 1);
+          }
+          return count;
+        })();
 
-        const present = data.filter((d) => d.status === "Present").length;
-        const late = data.filter((d) => d.status === "Late").length;
-        const halfDay = data.filter((d) => d.status === "Half Day").length;
-
-        const totalAttended = present + late + halfDay;
-        const absent = Math.max(0, businessDaysSoFar - totalAttended);
+        const present = attData.filter((d) => d.status === "Present").length;
+        const late = attData.filter((d) => d.status === "Late").length;
+        const totalAttended = present + late + attData.filter((d) => d.status === "Half Day").length;
 
         setStats({
           workingDays: businessDaysSoFar,
           present,
           late,
-          absent,
+          absent: Math.max(0, businessDaysSoFar - totalAttended),
         });
 
       } catch (err) {
-        console.error("Failed to load attendance", err);
+        console.error("Failed to load data", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAttendance();
+    fetchData();
   }, []);
 
-  if (loading) {
-    return <div className="p-6 text-muted-foreground">Loading attendance...</div>;
-  }
+  if (loading) return <div className="p-6 text-muted-foreground">Loading...</div>;
 
   return (
     <div className="space-y-6">
@@ -199,10 +189,65 @@ const MyAttendance = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Widget */}
-        <AttendanceWidget employeeName={user?.firstName || "Employee"} />
 
-        {/* --- RECENT HISTORY TABLE (UPDATED) --- */}
+        <div className="space-y-6">
+          <Card className="mb-6  from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 border-blue-100 dark:border-slate-700">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">
+                  Current Shift
+                </p>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                  {user?.currentShift ? user.currentShift.name : "No Shift Assigned"}
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
+                  {user?.currentShift ? (
+                    <>
+                      <Clock className="w-4 h-4" />
+                      {user.currentShift.startTime} - {user.currentShift.endTime}
+                    </>
+                  ) : (
+                    "Contact Admin to assign a shift"
+                  )}
+                </p>
+              </div>
+
+              <div className="h-12 w-12 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm">
+                <Briefcase className="w-6 h-6 text-blue-600" />
+              </div>
+            </CardContent>
+          </Card>
+          <AttendanceWidget employeeName={user?.firstName || "Employee"} />
+
+          <Card>
+            <CardHeader className="border-b p-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CalendarDays className="w-4 h-4 text-blue-500" /> Upcoming Holidays
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {holidays.length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground text-center">No upcoming holidays.</p>
+              ) : (
+                <div className="max-h-[300px] overflow-y-auto">
+                  {holidays.map((h) => (
+                    <div key={h._id} className="flex items-center gap-3 p-3 border-b last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <div className="flex flex-col items-center justify-center w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
+                        <span className="text-[9px] font-bold uppercase">{getMonth(h.date)}</span>
+                        <span className="text-sm font-bold leading-none">{getDay(h.date)}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white line-clamp-1">{h.name}</p>
+                        <p className="text-xs text-muted-foreground">{h.type}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
         <Card className="lg:col-span-2">
           <CardHeader className="border-b p-4">
             <CardTitle className="flex items-center gap-2">
@@ -216,10 +261,6 @@ const MyAttendance = () => {
               <div className="relative w-full overflow-auto">
                 <table className="w-full caption-bottom text-sm">
                   <thead className="[&_tr]:border-b">
-                    {/* HEADER ROW: 
-          - Light Mode: Border gray-200, Text gray-500
-          - Dark Mode: Border slate-800, Text slate-400 
-      */}
                     <tr className="border-b transition-colors hover:bg-transparent border-gray-200 dark:border-slate-800">
 
                       <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 w-[25%]">
@@ -246,10 +287,6 @@ const MyAttendance = () => {
 
                   <tbody className="[&_tr:last-child]:border-0">
                     {history.map((day, i) => (
-                      /* DATA ROWS:
-                         - Light Mode: White bg, gray-100 border, dark text
-                         - Dark Mode: Transparent bg, slate-800 border, light text
-                      */
                       <tr key={i} className="border-b transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/50 border-gray-100 dark:border-slate-800">
 
                         {/* Date: Strong Black in Light Mode / White in Dark Mode */}
@@ -260,34 +297,34 @@ const MyAttendance = () => {
                         <td className="p-4 align-middle">
                           {getStatusBadge(day.status)}
                         </td>
+                      
+                          {/* Time: Medium Gray in Light Mode / Light Gray in Dark Mode */}
+                          <td className="p-4 align-middle text-gray-600 dark:text-slate-400">
+                            {day.checkIn ? (
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+                                {formatTime(day.checkIn)}
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
 
-                        {/* Time: Medium Gray in Light Mode / Light Gray in Dark Mode */}
-                        <td className="p-4 align-middle text-gray-600 dark:text-slate-400">
-                          {day.checkIn ? (
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-                              {formatTime(day.checkIn)}
-                            </div>
-                          ) : (
-                            "-"
-                          )}
-                        </td>
+                          <td className="p-4 align-middle text-gray-600 dark:text-slate-400">
+                            {day.checkOut ? (
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></div>
+                                {formatTime(day.checkOut)}
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
 
-                        <td className="p-4 align-middle text-gray-600 dark:text-slate-400">
-                          {day.checkOut ? (
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></div>
-                              {formatTime(day.checkOut)}
-                            </div>
-                          ) : (
-                            "-"
-                          )}
-                        </td>
-
-                        {/* Total Hrs: Darker Blue in Light Mode / Neon Blue in Dark Mode */}
-                        <td className="p-4 align-middle text-right font-mono text-blue-600 dark:text-blue-400 whitespace-nowrap">
-                          {calculateTotalHours(day.checkIn, day.checkOut)}
-                        </td>
+                          {/* Total Hrs: Darker Blue in Light Mode / Neon Blue in Dark Mode */}
+                          <td className="p-4 align-middle text-right font-mono text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                            {calculateTotalHours(day.checkIn, day.checkOut)}
+                          </td>
                       </tr>
                     ))}
                   </tbody>

@@ -92,7 +92,7 @@ export class AuthController {
         });
       }
 
-      const user = await User.findById(userId).select('-password');
+      const user = await User.findById(userId).select('-password').populate('currentShift');
 
       if (!user) {
         console.error('❌ User not found by ID:', userId);
@@ -115,6 +115,7 @@ export class AuthController {
           role: user.role,
           phoneNumber: user.phoneNumber,
           isActive: user.isActive,
+           currentShift: user.currentShift, 
           isEmailVerified: user.isEmailVerified,
           lastLogin: user.lastLogin,
           createdAt: user.createdAt,

@@ -80,7 +80,12 @@ const UserSchema = new Schema<IUser>(
       type: String,
       required: [true, 'Department is required']
     },
-    // ✅ ADD THIS 2: Schema Definition
+    employeeId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Employee',
+      default: null
+    },
+    // Schema Definition
     currentShift: {
       type: Schema.Types.ObjectId,
       ref: 'Shift',
