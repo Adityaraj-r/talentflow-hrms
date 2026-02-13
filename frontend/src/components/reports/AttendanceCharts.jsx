@@ -9,9 +9,46 @@ import {
 } from "recharts";
 import { useAttendance } from "../../hooks/useReports";
 import { motion } from "framer-motion";
+import { getLast12Months } from "../../utils/dateUtils";
+import { useState } from "react";
 
 export default function AttendanceCharts() {
-  const { data = [], isLoading } = useAttendance();
+
+  const { data = [], isLoading } = useAttendance();   // ✅ RESTORED
+  const [selectedMonth, setSelectedMonth] = useState(null);
+
+  // Generate 12 months
+  const months = getLast12Months();
+
+  // Forward fill attendance
+  let lastValue = 0;
+
+  const finalData = months.map((m) => {
+    const found = data.find((d) => d.month === m.label);
+
+    if (found) {
+      lastValue = found.attendance;
+      return found;
+    }
+
+    return {
+      month: m.label,
+      attendance: lastValue,
+    };
+  });
+
+  // Forecast logic
+  const forecastData = finalData.map((item, index) => {
+    if (index >= finalData.length - 3) {
+      return {
+        ...item,
+        forecast:
+          finalData[finalData.length - 4]?.attendance +
+          (index - (finalData.length - 4)) * 1.5,
+      };
+    }
+    return item;
+  });
 
   if (isLoading) {
     return (
@@ -24,66 +61,114 @@ export default function AttendanceCharts() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7 }}
-      className="
-        bg-white dark:bg-slate-900
-        border border-gray-200 dark:border-slate-800
-        rounded-2xl
-        p-6
-        shadow-sm
-        dark:hover:border-emerald-500
-        transition-all duration-300
-      "
-    >
-      <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white">
-        Attendance Analytics
-      </h2>
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7 }}
+        className="
+          bg-white dark:bg-slate-900
+          border border-gray-200 dark:border-slate-800
+          rounded-2xl
+          p-6
+          shadow-sm
+          dark:hover:border-emerald-500
+          transition-all duration-300
+        "
+      >
+        <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white">
+          Attendance Analytics
+        </h2>
 
-      <ResponsiveContainer width="100%" height={320}>
-        <LineChart data={data}>
-          <CartesianGrid
-            stroke="#e5e7eb"
-            className="dark:stroke-slate-700"
-            strokeDasharray="3 3"
-          />
+        <div className="w-full h-[320px] min-h-[320px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={forecastData}
+              onClick={(state) => {
+                if (state?.activeLabel) {
+                  setSelectedMonth(state.activeLabel);
+                }
+              }}
+            >
+              <CartesianGrid
+                stroke="#e5e7eb"
+                className="dark:stroke-slate-700"
+                strokeDasharray="3 3"
+              />
 
-          <XAxis
-            dataKey="month"
-            stroke="#6b7280"
-            className="dark:stroke-slate-400"
-          />
+              <XAxis
+                dataKey="month"
+                stroke="#6b7280"
+                className="dark:stroke-slate-400"
+              />
 
-          <YAxis
-            stroke="#6b7280"
-            className="dark:stroke-slate-400"
-          />
+              <YAxis
+                stroke="#6b7280"
+                className="dark:stroke-slate-400"
+              />
 
-          <Tooltip
-            cursor={{ stroke: "#22c55e", strokeWidth: 1 }}
-            contentStyle={{
-              backgroundColor: "#0b1220",
-              border: "1px solid #1e293b",
-              borderRadius: "12px",
-              boxShadow: "0 10px 25px rgba(0,0,0,0.4)",
-            }}
-            itemStyle={{ color: "#ffffff" }}
-            labelStyle={{ color: "#94a3b8" }}
-          />
+              <Tooltip
+                cursor={{ stroke: "#22c55e", strokeWidth: 1 }}
+                contentStyle={{
+                  backgroundColor: "#0b1220",
+                  border: "1px solid #1e293b",
+                  borderRadius: "12px",
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.4)",
+                }}
+                itemStyle={{ color: "#ffffff" }}
+                labelStyle={{ color: "#94a3b8" }}
+              />
 
+              {/* Actual Data */}
+              <Line
+                type="monotone"
+                dataKey="attendance"
+                stroke="#22c55e"
+                strokeWidth={3}
+                dot={{ r: 4 }}
+                activeDot={{ r: 6 }}
+              />
 
-          <Line
-            type="monotone"
-            dataKey="attendance"
-            stroke="#22c55e"
-            strokeWidth={3}
-            dot={{ r: 4 }}
-            activeDot={{ r: 6 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </motion.div>
+              {/* Forecast */}
+              <Line
+                type="monotone"
+                dataKey="forecast"
+                stroke="#f59e0b"
+                strokeDasharray="5 5"
+                strokeWidth={2}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </motion.div>
+
+      {/* Drill-down Modal */}
+      {selectedMonth && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-xl w-[400px] shadow-lg">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+              Attendance Details — {selectedMonth}
+            </h3>
+
+            <div className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
+              <p>
+                • Attendance:{" "}
+                {finalData.find(d => d.month === selectedMonth)?.attendance}%
+              </p>
+              <p>• Leaves Taken: 12</p>
+              <p>• Late Marks: 4</p>
+              <p>• Compliance Score: 94%</p>
+            </div>
+
+            <button
+              onClick={() => setSelectedMonth(null)}
+              className="mt-6 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
