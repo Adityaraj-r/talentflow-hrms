@@ -141,7 +141,7 @@ const ShiftManagement = () => {
                       required
                       value={formData.name}
                       onChange={handleChange}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 pl-9 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      className=" px-3 pl-9 py-2 w-full p-2 border bg-transparent rounded-lg"
                     />
                   </div>
                 </div>
@@ -155,7 +155,7 @@ const ShiftManagement = () => {
                       required
                       value={formData.startTime}
                       onChange={handleChange}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="w-full p-2 border bg-transparent rounded-lg"
                     />
                   </div>
                   <div className="space-y-2">
@@ -166,7 +166,7 @@ const ShiftManagement = () => {
                       required
                       value={formData.endTime}
                       onChange={handleChange}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="w-full p-2 border bg-transparent rounded-lg"
                     />
                   </div>
                 </div>
@@ -182,7 +182,7 @@ const ShiftManagement = () => {
                     min="0"
                     value={formData.lateBuffer}
                     onChange={handleChange}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="w-full p-2 border bg-transparent rounded-lg"
                   />
                   <p className="text-xs text-muted-foreground">Grace period before marking 'Late'.</p>
                 </div>

@@ -79,6 +79,7 @@ import ActiveOnboarding from "./pages/modules/recruitment/ActiveOnboarding"
 import AttendanceRecords from "./pages/role/ADMIN/AttendanceRecords"
 import AdminLeaveManagement from "./pages/role/ADMIN/LeaveManagement"
 import ShiftManagement from "./pages/role/ADMIN/ShiftManagement"
+import HolidayManagement from "./pages/role/ADMIN/HolidayManagement"
 import OnboardingDetails from "@/pages/modules/recruitment/OnboardingDetails"
 
 // Protected Route Component with Case-Insensitive Role Check
@@ -373,14 +374,35 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={["admin", "ADMIN", "HR Manager", "HR_MANAGER", "Super Admin"]}>
                         <DashboardLayout>
-                          <div className="p-6">
-                            <h1 className="text-2xl font-bold">Attendance Records</h1>
-                            <p className="text-gray-500 mt-2">Attendance management coming soon...</p>
-                          </div>
+                          <AttendanceRecords/>
                         </DashboardLayout>
                       </ProtectedRoute>
                     }
                   />
+
+                  {/* HOLIDAYS - Admin & Employees) */}
+                <Route
+                  path="/attendance/holidays"
+                  element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "HR_MANAGER", "EMPLOYEE", "Employee"]}>
+                      <DashboardLayout>
+                        <HolidayManagement />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* shift - Admin only */}
+                <Route
+                  path="/attendance/shifts"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "ADMIN", "HR Manager", "HR_MANAGER"]}>
+                      <DashboardLayout>
+                        <ShiftManagement />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
                   {/* Digital Locker - Admin only */}
                   <Route
@@ -474,14 +496,11 @@ function App() {
 
                   {/* Admin Leave Management */}
                   <Route
-                    path="/role/admin/leave-management"
+                    path="/attendance/leave-management"
                     element={
                       <ProtectedRoute allowedRoles={["admin", "ADMIN", "Super Admin"]}>
                         <DashboardLayout>
-                          <div className="p-6">
-                            <h1 className="text-2xl font-bold">Leave Management</h1>
-                            <p className="text-gray-500 mt-2">Leave management coming soon...</p>
-                          </div>
+                          <AdminLeaveManagement/>
                         </DashboardLayout>
                       </ProtectedRoute>
                     }
