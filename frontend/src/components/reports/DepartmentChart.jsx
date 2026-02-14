@@ -9,17 +9,22 @@ import {
 } from "recharts";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { useDepartment } from "../../utils/useReports";
 
-export default function DepartmentChart() {
+export default function DepartmentChart({ filters }) {
 
+  const { data = [], isLoading } = useDepartment(filters);
   const [selectedDept, setSelectedDept] = useState(null);
 
-  const data = [
-    { department: "IT", employees: 40 },
-    { department: "HR", employees: 20 },
-    { department: "Sales", employees: 35 },
-    { department: "Finance", employees: 15 },
-  ];
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-6 rounded-2xl">
+        <p className="text-gray-500 dark:text-gray-300">
+          Loading Department Data...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -89,8 +94,14 @@ export default function DepartmentChart() {
 
       {/* Drill-down Modal */}
       {selectedDept && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-xl w-[400px] shadow-xl">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => setSelectedDept(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 p-6 rounded-xl w-[400px] shadow-xl"
+          >
             <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
               {selectedDept} Department Details
             </h3>

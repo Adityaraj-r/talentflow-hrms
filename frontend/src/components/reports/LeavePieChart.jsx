@@ -7,16 +7,24 @@ import {
   Label,
 } from "recharts";
 import { motion } from "framer-motion";
+import { useLeave } from "../../utils/useReports";
 
-export default function LeavePieChart() {
-  const data = [
-    { name: "Casual", value: 30 },
-    { name: "Sick", value: 20 },
-    { name: "Earned", value: 50 },
-  ];
+export default function LeavePieChart({ filters }) {
+  const { data = [], isLoading } = useLeave(filters);
 
-  const COLORS = ["#6366f1", "#22c55e", "#f59e0b"];
+  const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444"];
+
   const total = data.reduce((acc, item) => acc + item.value, 0);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-6 rounded-2xl">
+        <p className="text-gray-500 dark:text-gray-300">
+          Loading Leave Data...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -27,9 +35,8 @@ export default function LeavePieChart() {
         bg-white dark:bg-slate-900
         border border-gray-200 dark:border-slate-800
         rounded-2xl p-6
-        shadow-sm dark:shadow-none
+        shadow-sm
         hover:shadow-md
-        dark:hover:border-amber-400
         transition-all duration-300
       "
     >
@@ -37,7 +44,6 @@ export default function LeavePieChart() {
         Leave Breakdown
       </h2>
 
-      {/* IMPORTANT FIX: wrapper with real height */}
       <div className="w-full h-[320px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -50,10 +56,9 @@ export default function LeavePieChart() {
               stroke="none"
             >
               {data.map((entry, index) => (
-                <Cell key={index} fill={COLORS[index]} />
+                <Cell key={index} fill={COLORS[index % COLORS.length]} />
               ))}
 
-              {/* Center Label inside SVG (no overlap ever) */}
               <Label
                 value={`${total}%`}
                 position="center"
@@ -86,7 +91,7 @@ export default function LeavePieChart() {
           <div key={index} className="flex items-center gap-2 text-sm">
             <div
               className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: COLORS[index] }}
+              style={{ backgroundColor: COLORS[index % COLORS.length] }}
             />
             <span className="text-gray-700 dark:text-slate-300">
               {item.name}

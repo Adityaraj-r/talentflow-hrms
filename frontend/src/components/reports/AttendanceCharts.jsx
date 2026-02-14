@@ -11,14 +11,19 @@ import { useAttendance } from "../../hooks/useReports";
 import { motion } from "framer-motion";
 import { getLast12Months } from "../../utils/dateUtils";
 import { useState } from "react";
+import { getMonthsBetween } from "../../utils/dateUtils";
 
-export default function AttendanceCharts() {
 
-  const { data = [], isLoading } = useAttendance();   // ✅ RESTORED
+export default function AttendanceCharts({ filters }) {
+  const { data = [], isLoading } = useAttendance(filters);
   const [selectedMonth, setSelectedMonth] = useState(null);
 
-  // Generate 12 months
-  const months = getLast12Months();
+  // Generate last 12 months
+  const months =
+              filters.startDate && filters.endDate
+                ? getMonthsBetween(filters.startDate, filters.endDate)
+                : getLast12Months();
+
 
   // Forward fill attendance
   let lastValue = 0;
@@ -37,17 +42,25 @@ export default function AttendanceCharts() {
     };
   });
 
-  // Forecast logic
+  
+  const visibleLength = finalData.length;
+  const forecastMonths = Math.min(3, visibleLength);
+  const forecastStartIndex = visibleLength - forecastMonths;
+
   const forecastData = finalData.map((item, index) => {
-    if (index >= finalData.length - 3) {
+    if (index >= forecastStartIndex) {
       return {
         ...item,
         forecast:
-          finalData[finalData.length - 4]?.attendance +
-          (index - (finalData.length - 4)) * 1.5,
+          finalData[forecastStartIndex - 1]?.attendance +
+          (index - forecastStartIndex + 1) * 1.5,
       };
     }
-    return item;
+
+    return {
+      ...item,
+      forecast: null,
+    };
   });
 
   if (isLoading) {
@@ -113,7 +126,6 @@ export default function AttendanceCharts() {
                   backgroundColor: "#0b1220",
                   border: "1px solid #1e293b",
                   borderRadius: "12px",
-                  boxShadow: "0 10px 25px rgba(0,0,0,0.4)",
                 }}
                 itemStyle={{ color: "#ffffff" }}
                 labelStyle={{ color: "#94a3b8" }}
@@ -129,7 +141,7 @@ export default function AttendanceCharts() {
                 activeDot={{ r: 6 }}
               />
 
-              {/* Forecast */}
+              {/* Forecast Line */}
               <Line
                 type="monotone"
                 dataKey="forecast"
