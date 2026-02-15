@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
-import adminRoutes from './routes/adminRoutes';  // ← ADD THIS LINE
+import adminRoutes from './routes/adminRoutes';
 import attendanceRoutes from "./routes/attendance.routes";
 import taskRoutes from "./routes/task.routes";
 import leaveRoutes from "./routes/leave.routes";
@@ -107,7 +107,6 @@ const startServer = async () => {
 
     console.log('🔄 Connecting to MongoDB...');
 
-    // Connect to MongoDB with proper options
     await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 30000,
       socketTimeoutMS: 45000,
