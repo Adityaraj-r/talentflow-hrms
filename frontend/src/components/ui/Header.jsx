@@ -1,5 +1,7 @@
+"use client"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import axios from "axios";
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import {
   Bell,
@@ -21,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "../../contexts/AuthContext"
 import { useTheme } from "../../contexts/ThemeContext"
@@ -29,14 +31,48 @@ import { useTheme } from "../../contexts/ThemeContext"
 const Header = ({ toggleSidebar }) => {
   const navigate = useNavigate()
   const location = useLocation()
+  
+  // 1. Get User and Theme data (Merged from Upstream)
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
 
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: "New leave request from John Doe", read: false },
-    { id: 2, message: "Staff requisition approved", read: false },
-    { id: 3, message: "Payroll processing complete", read: true },
-  ])
+  // 2. State for Notifications
+  const [notifications, setNotifications] = useState([])
+
+  // 3. Dynamic Notification Logic (Preserved from your Stash)
+  useEffect(() => {
+    const fetchRealTimeNotifications = async () => {
+      // Create a safe full name string
+      const fullName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
+      
+      if (fullName) {
+        try {
+          const res = await axios.get(`http://localhost:5001/api/transfers/all`);
+          // Filter transfers to find only those belonging to THIS user
+          const myTransfers = res.data.filter(t => t.employeeName && t.employeeName.includes(user?.firstName));
+          
+          const latest = myTransfers[0]; 
+
+          if (latest && (latest.status === "Approved" || latest.status === "Rejected")) {
+            setNotifications([
+              {
+                id: latest._id,
+                message: `Transfer to ${latest.newDepartment} has been ${latest.status}`,
+                read: false,
+                time: "Just now"
+              }
+            ]);
+          }
+        } catch (err) {
+          console.error("Notification Fetch Error:", err);
+        }
+      }
+    };
+
+    fetchRealTimeNotifications();
+    const interval = setInterval(fetchRealTimeNotifications, 10000); 
+    return () => clearInterval(interval);
+  }, [user]);
 
   const unreadCount = notifications.filter((n) => !n.read).length
 
@@ -44,6 +80,7 @@ const Header = ({ toggleSidebar }) => {
     setNotifications(notifications.map((n) => ({ ...n, read: true })))
   }
 
+  // Check if we can go back (not on home/dashboard)
   const canGoBack =
     location.pathname !== "/" &&
     location.pathname !== "/dashboard" &&
@@ -57,6 +94,7 @@ const Header = ({ toggleSidebar }) => {
       )}
     >
       <div className="flex items-center gap-2">
+        {/* Mobile Menu Toggle */}
         <Button
           variant="ghost"
           size="icon"
@@ -90,6 +128,7 @@ const Header = ({ toggleSidebar }) => {
           <span className="sr-only">Toggle theme</span>
         </Button>
 
+        {/* Notifications Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -99,7 +138,7 @@ const Header = ({ toggleSidebar }) => {
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <Badge className="absolute -right-1 -top-1 px-1.5 py-0.5 text-[10px] flex h-4 min-w-[16px] items-center justify-center">
+                <Badge className="absolute -right-1 -top-1 px-1.5 py-0.5 text-[10px] flex h-4 min-w-4 items-center justify-center">
                   {unreadCount}
                 </Badge>
               )}
@@ -120,29 +159,39 @@ const Header = ({ toggleSidebar }) => {
               )}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <div className="max-h-[300px] overflow-y-auto">
+            
+            {/* Scrollable Notification List */}
+            <div className="max-h-75 overflow-y-auto">
                 {notifications.length > 0 ? (
-                notifications.map((notification) => (
+                  notifications.map((notification) => (
                     <DropdownMenuItem
-                    key={notification.id}
-                    className={cn(
+                      key={notification.id}
+                      className={cn(
                         "flex cursor-pointer flex-col items-start p-3",
                         !notification.read && "bg-muted/50",
-                    )}
+                      )}
                     >
-                    <span className="text-sm">{notification.message}</span>
-                    <span className="text-xs text-muted-foreground mt-1">2 hours ago</span>
+                      <span className="text-sm font-medium">{notification.message}</span>
+                      <span className="text-xs text-muted-foreground mt-1">{notification.time || "2 hours ago"}</span>
                     </DropdownMenuItem>
-                ))
+                  ))
                 ) : (
-                <div className="py-4 px-4 text-center text-sm text-muted-foreground">
+                  <div className="py-4 px-4 text-center text-sm text-muted-foreground">
                     No notifications
-                </div>
+                  </div>
                 )}
             </div>
+            
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to="/notifications" className="w-full text-center text-sm">
+                View all notifications
+              </Link>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* User Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -150,6 +199,10 @@ const Header = ({ toggleSidebar }) => {
               className="flex items-center gap-2 px-2 hover:bg-accent focus:outline-none focus:ring-0 focus-visible:ring-0 rounded-full border border-transparent hover:border-border"
             >
               <Avatar className="h-8 w-8">
+                <AvatarImage
+                  src={user?.profileImage || "/placeholder.svg"}
+                  alt={user?.name || user?.firstName || 'User'}
+                />
                 <AvatarFallback className="bg-primary/10 text-primary font-bold">
                   {(user?.name || user?.firstName || "A").charAt(0).toUpperCase()}
                 </AvatarFallback>

@@ -1,10 +1,31 @@
 import { useState, useEffect } from "react"
 import { Link, useLocation } from "react-router-dom"
 import {
-  Users, Calendar, RefreshCw, DollarSign, Award, AlertTriangle,
-  FileCheck, Home, ChevronDown, ChevronRight, ChevronLeft,
-  Briefcase, Plane, Calculator, Clock, Settings, TrendingUp, Shield,
-  Building, Database, FileText, Layers
+  Users,
+  Calendar,
+  RefreshCw,
+  DollarSign,
+  Award,
+  AlertTriangle,
+  FileCheck,
+  Home,
+  ChevronDown,
+  ChevronRight,
+  ChevronLeft,
+  Briefcase,
+  Plane,
+  Calculator,
+  User,
+  LogOut,
+  Clock,
+  Settings,
+  FileText,
+  ArrowLeftRight,
+  TrendingUp,
+  Shield,
+  Layers,
+  Database,
+  Building
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ROLES } from "../../constants/roles"
@@ -223,6 +244,21 @@ const Sidebar = ({
           <SidebarLink to="/employee/dashboard" icon={Home} label="Dashboard" />
           <SidebarLink to="/dashboard/employee/attendance" icon={Calendar} label="My Attendance" />
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          
+          <Link
+            to="/dashboard/employee/make-transfer"
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+              location.pathname === "/dashboard/employee/make-transfer"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "hover:bg-accent text-foreground"
+            )}
+            title={isCollapsed ? "Make Transfer Request" : ""}
+          >
+            <ArrowLeftRight size={20} className="shrink-0" />
+            <span className={cn("truncate transition-all duration-300", isCollapsed && "w-0 opacity-0 overflow-hidden")}>Make Transfer Request</span>
+          </Link>
+
           {canSee('attendance') && <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />}
 
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
@@ -391,13 +427,8 @@ const Sidebar = ({
       >
         <button
           onClick={toggleCollapse}
-          className="absolute -right-3 top-6 z-50 flex h-7 w-7 items-center justify-center rounded-full border bg-background text-foreground shadow-md transition-colors hover:bg-accent hidden lg:flex"
+          className="absolute -right-3 top-6 z-50 flex h-7 w-7 items-center justify-center rounded-full border bg-background text-foreground shadow-md transition-colors hover:bg-accent lg:flex"
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-
-            onClick={toggleCollapse}
-            className="absolute -right-3 top-6 z-50 flex h-7 w-7 items-center justify-center rounded-full border bg-background text-foreground shadow-md transition-colors hover:bg-accent hidden lg:flex"
-            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-
         >
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>

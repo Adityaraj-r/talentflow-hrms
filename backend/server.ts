@@ -17,6 +17,9 @@ import requisitionRoutes from "./routes/requisition.routes";
 import roleRoutes from './routes/role.routes';
 import departmentRoutes from './routes/department.routes';
 import { seedRoles } from './utils/roleSeeder';
+import transferRoutes from "./routes/transferRoutes";
+
+
 
 dotenv.config();
 
@@ -70,6 +73,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use("/api/employees", employeeRoutes);
 
+
 app.use('/api/admin', adminRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/roles', roleRoutes);
@@ -82,6 +86,7 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/shifts", shiftRoutes);
 app.use("/api/holidays", holidayRoutes);
+app.use("/api/transfers", transferRoutes);
 
 
 app.use((req, res) => {

@@ -45,6 +45,7 @@ import EmployeeTransfer from "./pages/modules/transfer/EmployeeTransfer"
 import Payroll from "./pages/modules/payroll/Payroll"
 import Tickets from "./pages/modules/payroll/Tickets"
 import Indemnity from "./pages/modules/payroll/Indemnity"
+import DigitalLocker from "./pages/dashboard/DigitalLocker";
 
 // Role-Specific Appraisal Pages
 import HRManagerAppraisal from "./pages/role/HR_MANAGER/Appraisal"
@@ -68,6 +69,7 @@ import HRManagerLeaveManagement from "./pages/role/HR_MANAGER/LeaveManagement"
 import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
 import MyAttendance from "./pages/role/EMPLOYEE/MyAttendance"
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
+import TransferPage from "./pages/modules/transfer/TransferPage"
 
 // Role-Specific Recruitment pages
 import RecentHires from "./pages/modules/recruitment/RecentHires"
@@ -291,17 +293,7 @@ function App() {
                     }
                   />
 
-                  <Route
-                    path="/dashboard/employee/tasks"
-                    element={
-                      <ProtectedRoute allowedRoles={["Employee", "EMPLOYEE"]}>
-                        <DashboardLayout>
-                          <MyTasks />
-                        </DashboardLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-
+                 
                   {/* Project Manager Role Pages */}
                   <Route
                     path="/dashboard/pm/tasks"
@@ -404,21 +396,6 @@ function App() {
                   }
                 />
 
-                  {/* Digital Locker - Admin only */}
-                  <Route
-                    path="/digital-locker"
-                    element={
-                      <ProtectedRoute allowedRoles={["admin", "ADMIN", "Super Admin"]}>
-                        <DashboardLayout>
-                          <div className="p-6">
-                            <h1 className="text-2xl font-bold">Digital Locker (Docs)</h1>
-                            <p className="text-gray-500 mt-2">Document management coming soon...</p>
-                          </div>
-                        </DashboardLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-
                   {/* Reports - Admin only */}
                   <Route
                     path="/reports"
@@ -493,6 +470,26 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                <Route
+                  path="/dashboard/employee/tasks"
+                  element={
+                    <ProtectedRoute allowedRoles={["Employee", "EMPLOYEE"]}>
+                      <DashboardLayout>
+                        <MyTasks />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/employee/make-transfer"
+                  element={
+                    <ProtectedRoute allowedRoles={["Employee", "EMPLOYEE"]}>
+                      <DashboardLayout>
+                        <TransferPage />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
                   {/* Admin Leave Management */}
                   <Route
@@ -583,6 +580,17 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                {/* Digital Locker - Connected to UI */}
+                <Route
+                  path="/digital-locker"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "ADMIN", "HR Manager", "HR_MANAGER", "Employee", "EMPLOYEE"]}>
+                      <DashboardLayout>
+                        <DigitalLocker />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
                   {/* Role-Specific Appraisal */}
                   <Route
