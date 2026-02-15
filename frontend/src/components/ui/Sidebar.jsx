@@ -1,10 +1,31 @@
 import { useState, useEffect } from "react"
 import { Link, useLocation } from "react-router-dom"
 import {
-  Users, Calendar, RefreshCw, DollarSign, Award, AlertTriangle,
-  FileCheck, Home, ChevronDown, ChevronRight, ChevronLeft,
-  Briefcase, Plane, Calculator, Clock, Settings, TrendingUp, Shield,
-  Building, Database, FileText, Layers
+  Users,
+  Calendar,
+  RefreshCw,
+  DollarSign,
+  Award,
+  AlertTriangle,
+  FileCheck,
+  Home,
+  ChevronDown,
+  ChevronRight,
+  ChevronLeft,
+  Briefcase,
+  Plane,
+  Calculator,
+  User,
+  LogOut,
+  Clock,
+  Settings,
+  FileText,
+  ArrowLeftRight,
+  TrendingUp,
+  Shield,
+  Layers,
+  Database,
+  Building
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ROLES } from "../../constants/roles"
@@ -44,9 +65,47 @@ const Sidebar = ({
     }
   }, [isCollapsed])
 
+
+  useEffect(() => {
+    if (isCollapsed) return;
+
+    const path = location.pathname;
+
+    setOpenGroups((prev) => ({
+      ...prev,
+      // 1. Employee Center
+      employeeCenter: path.startsWith("/dashboard/users") ||
+        path.startsWith("/dashboard/onboarding") ||
+        path.startsWith("/employee-transfer") ||
+        path.startsWith("/digital-locker"),
+
+      // 2. Time & Attendance
+      timeAttendance: path.startsWith("/attendance") ,
+
+      // 3. Payroll
+      payroll: path.startsWith("/payroll") ||
+        path.startsWith("/tickets") ||
+        path.startsWith("/indemnity"),
+
+      // 4. Administration
+      administration: path.startsWith("/settings") ||
+        path.startsWith("/admin/"),
+
+      // 5. Recruitment (If it was a group)
+      recruitment: path.startsWith("/recruitment") ||
+        path.startsWith("/staff-requisition"),
+
+      // 6. Documents & Disciplinary
+      documentRequests: path.includes("document-requests"),
+      disciplinaryActions: path.includes("disciplinary-actions"),
+      
+    }));
+  }, [location.pathname, isCollapsed]);
+
   const canSee = (moduleKey) => {
     if (['SUPER ADMIN', 'ADMIN'].includes(userRole)) return true
-    return dbPermissions[moduleKey]?.read !== false 
+    return dbPermissions[moduleKey]?.read !== false
+
   }
 
   const toggleGroup = (group) => {
@@ -95,7 +154,7 @@ const Sidebar = ({
   )
 
   const SidebarGroup = ({ id, icon: Icon, label, children }) => {
-    const isActive = children && Array.isArray(children) 
+    const isActive = children && Array.isArray(children)
       ? children.some(child => child?.props?.to === location.pathname)
       : children?.props?.to === location.pathname
 
@@ -140,31 +199,33 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/admin/dashboard" icon={Home} label="Dashboard" />
-          
+
           <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
             <SubLink to="/dashboard/users" label="All Employees" />
             <SubLink to="/dashboard/onboarding" label="Onboarding & KYC" />
             <SubLink to="/employee-transfer" label="Transfers & Promotions" />
             <SubLink to="/digital-locker" label="Digital Locker (Docs)" />
           </SidebarGroup>
-          
+
           <SidebarLink to="/recruitment" icon={Briefcase} label="Recruitment & Staffing" />
-          
+
           <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
             <SubLink to="/attendance" label="Attendance Records" />
             <SubLink to="/attendance/shifts" label="Shift Roster" />
-            <SubLink to="/role/admin/leave-management" label="Leave Management" />
+            <SubLink to="/attendance/holidays" label="Holiday List" />
+            <SubLink to="/attendance/leave-management" label="Leave Management" />
           </SidebarGroup>
-          
+
+
           <SidebarGroup id="payroll" icon={DollarSign} label="Payroll & Compliance">
             <SubLink to="/payroll" label="Payroll Processing" />
             <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
             <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
           </SidebarGroup>
-          
+
           <SidebarLink to="/role/admin/appraisal" icon={Award} label="Performance (PMS)" />
           <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
-          
+
           <SidebarGroup id="administration" icon={Settings} label="Administration">
             <SubLink to="/settings" label="System Settings" icon={Settings} />
             <SubLink to="/admin/roles" label="Roles & Permissions" icon={Shield} />
@@ -183,14 +244,29 @@ const Sidebar = ({
           <SidebarLink to="/employee/dashboard" icon={Home} label="Dashboard" />
           <SidebarLink to="/dashboard/employee/attendance" icon={Calendar} label="My Attendance" />
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          
+          <Link
+            to="/dashboard/employee/make-transfer"
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+              location.pathname === "/dashboard/employee/make-transfer"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "hover:bg-accent text-foreground"
+            )}
+            title={isCollapsed ? "Make Transfer Request" : ""}
+          >
+            <ArrowLeftRight size={20} className="shrink-0" />
+            <span className={cn("truncate transition-all duration-300", isCollapsed && "w-0 opacity-0 overflow-hidden")}>Make Transfer Request</span>
+          </Link>
+
           {canSee('attendance') && <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />}
-          
+
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
-              <SubLink to="/role/employee/appraisal" label="My Appraisal" />
+            <SubLink to="/role/employee/appraisal" label="My Appraisal" />
           </SidebarGroup>
-          
+
           <SidebarGroup id="documentRequests" icon={FileCheck} label="Documents">
-               <SubLink to="/role/employee/document-requests" label="Request Document" />
+            <SubLink to="/role/employee/document-requests" label="Request Document" />
           </SidebarGroup>
         </>
       )
@@ -350,11 +426,11 @@ const Sidebar = ({
         )}
       >
         <button
-            onClick={toggleCollapse}
-            className="absolute -right-3 top-6 z-50 flex h-7 w-7 items-center justify-center rounded-full border bg-background text-foreground shadow-md transition-colors hover:bg-accent hidden lg:flex"
-            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          onClick={toggleCollapse}
+          className="absolute -right-3 top-6 z-50 flex h-7 w-7 items-center justify-center rounded-full border bg-background text-foreground shadow-md transition-colors hover:bg-accent lg:flex"
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
 
         <div className={cn("flex h-16 items-center px-4 border-b transition-all", isCollapsed ? "justify-center" : "justify-between")}>

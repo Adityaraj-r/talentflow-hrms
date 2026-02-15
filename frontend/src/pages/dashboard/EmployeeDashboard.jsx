@@ -9,13 +9,29 @@ import {
   Briefcase, 
   Building2, 
   Mail, 
-  User 
+  User,
+  Check // Added Check icon for the StatsCard
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAuth } from '../../contexts/AuthContext';
 import ApplyLeaveModal from "@/components/dashboard/ApplyLeaveModal"; 
+import TransferStatusWidget from "../../components/dashboard/TransferStatusWidget";
+
+// ✅ FIX: Define StatsCard component locally to resolve the "not defined" error
+const StatsCard = ({ title, value, description, icon, isLoading }) => (
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      {icon}
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{isLoading ? "..." : value}</div>
+      <p className="text-xs text-muted-foreground">{description}</p>
+    </CardContent>
+  </Card>
+);
 
 const EmployeeDashboard = ({ stats = {}, isLoading = false }) => {
   const { user } = useAuth();
@@ -33,19 +49,48 @@ const EmployeeDashboard = ({ stats = {}, isLoading = false }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 p-6 space-y-8 font-sans transition-colors duration-300">
-      
-      {/* 1. HEADER SECTION */}
-      <div className="flex flex-col space-y-2">
-        <h2 className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">Employee Portal</h2>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Dashboard</h1>
-        <p className="text-slate-500 dark:text-slate-400">
-          Welcome back, <span className="font-semibold text-slate-800 dark:text-white">{user?.firstName || "Vishal"}</span>! Here's what's happening today.
-        </p>
-      </div>
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      {/* Main Content - No redundant header, just the top nav bar */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+          <TransferStatusWidget />
+          
+          {/* Stats Cards using the newly defined component */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatsCard
+              title="Leave Balance"
+              value={stats?.leaveRequests || 28}
+              description="Days remaining this year"
+              icon={<Calendar className="h-5 w-5 text-muted-foreground" />}
+              isLoading={isLoading}
+            />
+            <StatsCard
+              title="Document Requests"
+              value={stats?.documentsRequested || 2}
+              description="Pending approval"
+              icon={<FileText className="h-5 w-5 text-muted-foreground" />}
+              isLoading={isLoading}
+            />
+            <StatsCard
+              title="Payroll Status"
+              value="Processed"
+              description="January 2026"
+              icon={<DollarSign className="h-5 w-5 text-muted-foreground" />}
+              isLoading={isLoading}
+            />
+            <StatsCard
+              title="Tasks Assigned"
+              value="8"
+              description="Active this month"
+              icon={<Check className="h-5 w-5 text-muted-foreground" />}
+              isLoading={isLoading}
+            />
+          </div>
+        </div>  
+      </main>
 
-      {/* 2. STATS ROW */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      {/* 2. STATS ROW (Duplicate Manual Cards) - You can keep or remove this section as needed */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 px-4 sm:px-6 lg:px-8">
         {/* Leave Balance */}
         <Card className="bg-white dark:bg-[#1e293b] border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -96,7 +141,8 @@ const EmployeeDashboard = ({ stats = {}, isLoading = false }) => {
       </div>
 
       {/* 3. ACTION BAR */}
-      <div className="rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/50 dark:to-[#1e1b4b]/50 border border-blue-100 dark:border-blue-800/50 p-6 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="rounded-xl bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-900/50 dark:to-[#1e1b4b]/50 border border-blue-100 dark:border-blue-800/50 p-6 shadow-sm">
         <div className="flex flex-wrap gap-4 items-center">
             {/* Main Action Button */}
             <Button 
@@ -122,7 +168,7 @@ const EmployeeDashboard = ({ stats = {}, isLoading = false }) => {
       </div>
 
       {/* 4. TABS SECTION */}
-      <Tabs defaultValue="leave" className="space-y-6">
+      <Tabs defaultValue="leave" className="space-y-6 mt-6">
         <div className="border-b border-slate-200 dark:border-slate-800">
             <TabsList className="bg-transparent p-0 h-auto space-x-6">
                 {["profile", "leave", "documents", "payroll"].map((tab) => (
@@ -155,16 +201,16 @@ const EmployeeDashboard = ({ stats = {}, isLoading = false }) => {
                     {/* Summary Stats */}
                     <div className="grid gap-4 md:grid-cols-3 mb-8">
                        <div className="p-5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 text-center">
-                            <div className="text-3xl font-bold text-slate-900 dark:text-white">35</div>
-                            <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mt-1">Total Leave Days</div>
+                           <div className="text-3xl font-bold text-slate-900 dark:text-white">35</div>
+                           <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mt-1">Total Leave Days</div>
                        </div>
                        <div className="p-5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 text-center">
-                            <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">7</div>
-                            <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mt-1">Days Used</div>
+                           <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">7</div>
+                           <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mt-1">Days Used</div>
                        </div>
                        <div className="p-5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 text-center">
-                            <div className="text-3xl font-bold text-yellow-500 dark:text-yellow-400">3</div>
-                            <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mt-1">Pending Requests</div>
+                           <div className="text-3xl font-bold text-yellow-500 dark:text-yellow-400">3</div>
+                           <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mt-1">Pending Requests</div>
                        </div>
                     </div>
 
@@ -240,6 +286,7 @@ const EmployeeDashboard = ({ stats = {}, isLoading = false }) => {
         </TabsContent>
 
       </Tabs>
+      </div>
 
       {/* MODAL */}
       <ApplyLeaveModal 
@@ -247,7 +294,6 @@ const EmployeeDashboard = ({ stats = {}, isLoading = false }) => {
         onClose={() => setIsLeaveModalOpen(false)} 
         onSuccess={handleLeaveSuccess}
       />
-
     </div>
   );
 };
