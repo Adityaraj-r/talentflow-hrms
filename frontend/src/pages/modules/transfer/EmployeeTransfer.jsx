@@ -1,22 +1,65 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "../../../contexts/AuthContext"
 import { useRole } from "../../../contexts/RoleContext"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { FileText, Check, X, Search } from "lucide-react"
+import { FileText, Check, X, Search, ArrowLeftRight, CheckCircle2, Clock, XCircle } from "lucide-react"
 import { toast } from "sonner"
+import axios from "axios"
+import { cn } from "@/lib/utils"
 
 const EmployeeTransfer = () => {
-  const { user } = useAuth()
+  const [transfers, setTransfers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({ total: 0, approved: 0, pending: 0, rejected: 0 })
   const { hasRole } = useRole()
-  const canInitiateTransfer = hasRole(["HR Manager", "Department Manager", "Project Manager", "Operations Manager"])
+  
+  const API_URL = "http://localhost:5001/api/transfers"
+
+  const fetchTransfers = async () => {
+    try {
+      setLoading(true)
+      const res = await axios.get(`${API_URL}/all`)
+      const data = res.data
+      setTransfers(data)
+      
+      setStats({
+        total: data.length,
+        approved: data.filter(t => t.status === "Approved").length,
+        pending: data.filter(t => t.status === "Pending").length,
+        rejected: data.filter(t => t.status === "Rejected").length,
+      })
+    } catch (error) {
+      console.error("Fetch error:", error)
+      toast.error("Failed to load transfer requests from database")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchTransfers()
+  }, [])
+
+  const handleUpdateStatus = async (id, newStatus) => {
+    try {
+      const response = await axios.patch(`${API_URL}/update/${id}`, {
+        status: newStatus,
+        adminRemarks: `Action taken by Admin on ${new Date().toLocaleDateString()}`
+      })
+
+      if (response.data.success) {
+        toast.success(`Request ${newStatus} successfully`)
+        fetchTransfers() 
+      }
+    } catch (error) {
+      toast.error("Error updating transfer status")
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -25,436 +68,144 @@ const EmployeeTransfer = () => {
         <p className="text-muted-foreground">Manage employee transfers between departments or locations</p>
       </div>
 
-      <Tabs defaultValue={canInitiateTransfer ? "create" : "pending"}>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard title="Total Requests" value={stats.total} icon={<ArrowLeftRight className="text-blue-500" />} />
+        <StatCard title="Approved" value={stats.approved} icon={<CheckCircle2 className="text-green-500" />} color="text-green-600" />
+        <StatCard title="Pending" value={stats.pending} icon={<Clock className="text-orange-500" />} color="text-orange-600" />
+        <StatCard title="Rejected" value={stats.rejected} icon={<XCircle className="text-red-500" />} color="text-red-600" />
+      </div>
+
+      <Tabs defaultValue="pending" className="w-full">
         <TabsList>
-          {canInitiateTransfer && <TabsTrigger value="create">Request Transfer</TabsTrigger>}
           <TabsTrigger value="pending">Pending Approvals</TabsTrigger>
           <TabsTrigger value="history">Transfer History</TabsTrigger>
         </TabsList>
 
-        {canInitiateTransfer && (
-          <TabsContent value="create">
-            <TransferForm />
-          </TabsContent>
-        )}
-
-        <TabsContent value="pending">
-          <PendingTransfers />
+        <TabsContent value="pending" className="mt-4">
+          <TransferTable 
+            data={transfers.filter(t => t.status === "Pending")} 
+            onAction={handleUpdateStatus} 
+            isHistory={false} 
+            loading={loading}
+          />
         </TabsContent>
 
-        <TabsContent value="history">
-          <TransferHistory />
+        <TabsContent value="history" className="mt-4">
+          <TransferTable 
+            data={transfers.filter(t => t.status !== "Pending")} 
+            isHistory={true} 
+            loading={loading}
+          />
         </TabsContent>
       </Tabs>
     </div>
   )
 }
 
-const TransferForm = () => {
-  const [formData, setFormData] = useState({
-    employeeId: "",
-    employeeName: "",
-    currentDepartment: "",
-    newDepartment: "",
-    currentLocation: "",
-    newLocation: "",
-    transferReason: "",
-    transferType: "",
-    effectiveDate: "",
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
+const StatCard = ({ title, value, icon, color = "text-foreground" }) => (
+  <Card className="shadow-md border-none transition-all hover:shadow-lg">
+    <CardContent className="p-6 flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-muted-foreground">{title}</p>
+        <h3 className={cn("text-2xl font-bold mt-1", color)}>{value}</h3>
+      </div>
+      <div className="p-3 bg-muted rounded-full">{icon}</div>
+    </CardContent>
+  </Card>
+)
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
+const TransferTable = ({ data, onAction, isHistory, loading }) => {
+  const [searchTerm, setSearchTerm] = useState("")
 
-  const handleSelectChange = (name, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-
-    // Validation
-    if (
-      !formData.employeeId ||
-      !formData.employeeName ||
-      !formData.newDepartment ||
-      !formData.transferType ||
-      !formData.effectiveDate
-    ) {
-      toast.error("Please fill in all required fields")
-      return
-    }
-
-    setIsSubmitting(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      toast.success("Transfer request submitted successfully")
-      setIsSubmitting(false)
-
-      // Reset form
-      setFormData({
-        employeeId: "",
-        employeeName: "",
-        currentDepartment: "",
-        newDepartment: "",
-        currentLocation: "",
-        newLocation: "",
-        transferReason: "",
-        transferType: "",
-        effectiveDate: "",
-      })
-    }, 1500)
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Request Employee Transfer</CardTitle>
-        <CardDescription>Submit a new employee transfer request for approval</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="employeeId">
-                Employee ID <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="employeeId"
-                name="employeeId"
-                placeholder="Enter employee ID"
-                value={formData.employeeId}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="employeeName">
-                Employee Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="employeeName"
-                name="employeeName"
-                placeholder="Enter employee name"
-                value={formData.employeeName}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="currentDepartment">Current Department</Label>
-              <Select
-                value={formData.currentDepartment}
-                onValueChange={(value) => handleSelectChange("currentDepartment", value)}
-              >
-                <SelectTrigger id="currentDepartment">
-                  <SelectValue placeholder="Select current department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="it">IT</SelectItem>
-                  <SelectItem value="hr">Human Resources</SelectItem>
-                  <SelectItem value="finance">Finance</SelectItem>
-                  <SelectItem value="operations">Operations</SelectItem>
-                  <SelectItem value="sales">Sales</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="newDepartment">
-                New Department <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.newDepartment}
-                onValueChange={(value) => handleSelectChange("newDepartment", value)}
-                required
-              >
-                <SelectTrigger id="newDepartment">
-                  <SelectValue placeholder="Select new department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="it">IT</SelectItem>
-                  <SelectItem value="hr">Human Resources</SelectItem>
-                  <SelectItem value="finance">Finance</SelectItem>
-                  <SelectItem value="operations">Operations</SelectItem>
-                  <SelectItem value="sales">Sales</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="currentLocation">Current Location</Label>
-              <Input
-                id="currentLocation"
-                name="currentLocation"
-                placeholder="Enter current location"
-                value={formData.currentLocation}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="newLocation">New Location</Label>
-              <Input
-                id="newLocation"
-                name="newLocation"
-                placeholder="Enter new location"
-                value={formData.newLocation}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="transferType">
-                Transfer Type <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.transferType}
-                onValueChange={(value) => handleSelectChange("transferType", value)}
-                required
-              >
-                <SelectTrigger id="transferType">
-                  <SelectValue placeholder="Select transfer type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="departmental">Departmental Transfer</SelectItem>
-                  <SelectItem value="location">Location Transfer</SelectItem>
-                  <SelectItem value="project">Project-Based Transfer</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="effectiveDate">
-                Effective Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="effectiveDate"
-                name="effectiveDate"
-                type="date"
-                value={formData.effectiveDate}
-                onChange={handleChange}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="transferReason">Reason for Transfer</Label>
-            <Textarea
-              id="transferReason"
-              name="transferReason"
-              placeholder="Enter reason for transfer"
-              value={formData.transferReason}
-              onChange={handleChange}
-              rows={4}
-            />
-          </div>
-        </form>
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline">Cancel</Button>
-        <Button onClick={handleSubmit} disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : "Submit Transfer Request"}
-        </Button>
-      </CardFooter>
-    </Card>
+  const filteredData = data.filter(item => 
+    item.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
   )
-}
-
-const PendingTransfers = () => {
-  const pendingTransfers = [
-    {
-      id: 1,
-      employeeName: "John Doe",
-      employeeId: "EMP001",
-      currentDepartment: "IT",
-      newDepartment: "Operations",
-      transferType: "Departmental Transfer",
-      effectiveDate: "2025-05-01",
-      requestedBy: "Alice Johnson",
-      requestDate: "2025-04-15",
-    },
-    {
-      id: 2,
-      employeeName: "Jane Smith",
-      employeeId: "EMP002",
-      currentDepartment: "HR",
-      newDepartment: "Finance",
-      transferType: "Departmental Transfer",
-      effectiveDate: "2025-04-20",
-      requestedBy: "Bob Williams",
-      requestDate: "2025-04-10",
-    },
-  ]
-
-  const handleApprove = (id) => {
-    toast.success(`Transfer request #${id} approved successfully`)
-  }
-
-  const handleReject = (id) => {
-    toast.success(`Transfer request #${id} rejected successfully`)
-  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Pending Transfer Approvals</CardTitle>
-        <CardDescription>Review and approve employee transfer requests</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
-          <div className="grid grid-cols-8 bg-muted/50 p-3 text-sm font-medium">
-            <div>Employee</div>
-            <div>Employee ID</div>
-            <div>Current Department</div>
-            <div>New Department</div>
-            <div>Transfer Type</div>
-            <div>Effective Date</div>
-            <div>Requested By</div>
-            <div>Actions</div>
-          </div>
-          <div className="divide-y">
-            {pendingTransfers.map((transfer) => (
-              <div key={transfer.id} className="grid grid-cols-8 p-3 text-sm">
-                <div className="font-medium">{transfer.employeeName}</div>
-                <div>{transfer.employeeId}</div>
-                <div>{transfer.currentDepartment}</div>
-                <div>{transfer.newDepartment}</div>
-                <div>{transfer.transferType}</div>
-                <div>{transfer.effectiveDate}</div>
-                <div>{transfer.requestedBy}</div>
-                <div className="flex space-x-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 text-green-600"
-                    onClick={() => handleApprove(transfer.id)}
-                  >
-                    <Check className="h-4 w-4" />
-                    <span className="sr-only">Approve</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 text-red-600"
-                    onClick={() => handleReject(transfer.id)}
-                  >
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Reject</span>
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8">
-                    <FileText className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-const TransferHistory = () => {
-  const transferHistory = [
-    {
-      id: 1,
-      employeeName: "John Doe",
-      employeeId: "EMP001",
-      currentDepartment: "IT",
-      newDepartment: "Operations",
-      transferType: "Departmental Transfer",
-      effectiveDate: "2025-03-01",
-      status: "Approved",
-      approvedBy: "Jane Smith",
-      approvalDate: "2025-02-25",
-    },
-    {
-      id: 2,
-      employeeName: "Jane Smith",
-      employeeId: "EMP002",
-      currentDepartment: "HR",
-      newDepartment: "Finance",
-      transferType: "Departmental Transfer",
-      effectiveDate: "2025-02-15",
-      status: "Rejected",
-      approvedBy: "Bob Williams",
-      approvalDate: "2025-02-10",
-      reason: "Operational requirements",
-    },
-  ]
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Transfer History</CardTitle>
-          <CardDescription>View history of all employee transfer requests</CardDescription>
-        </div>
-        <div className="flex items-center gap-2">
+    <Card className="shadow-sm border">
+      {isHistory && (
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-lg">Transfer Logs</CardTitle>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search transfers..." className="pl-8 w-[200px] md:w-[300px]" />
+            <Input 
+              type="search" 
+              placeholder="Search transfers..." 
+              className="pl-8 w-[200px] md:w-[300px]" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
-          <div className="grid grid-cols-8 bg-muted/50 p-3 text-sm font-medium">
-            <div>Employee</div>
-            <div>Employee ID</div>
-            <div>From Department</div>
-            <div>To Department</div>
-            <div>Transfer Type</div>
-            <div>Effective Date</div>
-            <div>Status</div>
-            <div>Actions</div>
-          </div>
-          <div className="divide-y">
-            {transferHistory.map((transfer) => (
-              <div key={transfer.id} className="grid grid-cols-8 p-3 text-sm">
-                <div className="font-medium">{transfer.employeeName}</div>
-                <div>{transfer.employeeId}</div>
-                <div>{transfer.currentDepartment}</div>
-                <div>{transfer.newDepartment}</div>
-                <div>{transfer.transferType}</div>
-                <div>{transfer.effectiveDate}</div>
-                <div>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                      transfer.status === "Approved"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                        : transfer.status === "Rejected"
-                        ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                        : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
-                    }`}
-                  >
-                    {transfer.status}
-                  </span>
-                </div>
-                <div>
-                  <Button variant="ghost" size="icon">
-                    <FileText className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+        </CardHeader>
+      )}
+      <CardContent className={cn("p-0", isHistory ? "pt-2" : "pt-0")}>
+        <div className="rounded-md overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b">
+              <tr className="text-left font-medium">
+                <th className="p-4">Employee</th>
+                <th className="p-4">ID</th>
+                <th className="p-4">{isHistory ? "From" : "Current"} Dept</th>
+                <th className="p-4">{isHistory ? "To" : "New"} Dept</th>
+                <th className="p-4">Type</th>
+                <th className="p-4">Effective Date</th>
+                <th className="p-4 text-center">{isHistory ? "Status" : "Actions"}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {loading ? (
+                <tr><td colSpan="7" className="p-8 text-center text-muted-foreground">Loading data from MongoDB...</td></tr>
+              ) : filteredData.length === 0 ? (
+                <tr><td colSpan="7" className="p-8 text-center text-muted-foreground">No records found</td></tr>
+              ) : (
+                filteredData.map((item) => (
+                  <tr key={item._id} className="hover:bg-muted/20 transition-colors">
+                    <td className="p-4 font-medium">{item.employeeName}</td>
+                    <td className="p-4">{item.employeeId}</td>
+                    <td className="p-4">{item.currentDepartment}</td>
+                    <td className="p-4">{item.newDepartment}</td>
+                    <td className="p-4">{item.transferType}</td>
+                    <td className="p-4">{new Date(item.effectiveDate).toLocaleDateString()}</td>
+                    <td className="p-4">
+                      {isHistory ? (
+                        <div className="flex justify-center">
+                          <span className={cn(
+                            "px-2.5 py-0.5 rounded-full text-xs font-semibold",
+                            item.status === "Approved" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                          )}>
+                            {item.status}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex justify-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="h-8 w-8 text-green-600 hover:bg-green-50" 
+                            onClick={() => onAction(item._id, 'Approved')}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="h-8 w-8 text-red-600 hover:bg-red-50" 
+                            onClick={() => onAction(item._id, 'Rejected')}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="icon" className="h-8 w-8">
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </CardContent>
     </Card>
