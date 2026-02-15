@@ -1,4 +1,3 @@
-// backend/server.ts
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -10,14 +9,16 @@ import attendanceRoutes from "./routes/attendance.routes";
 import taskRoutes from "./routes/task.routes";
 import leaveRoutes from "./routes/leave.routes";
 import shiftRoutes from "./routes/shift.routes";
+import holidayRoutes from "./routes/holiday.routes";
 import settingsRoutes from './routes/settings.routes';
 import onboardingRoutes from './routes/onboardingRoutes';
 import employeeRoutes from "./routes/employee.routes";
 import requisitionRoutes from "./routes/requisition.routes";
 import roleRoutes from './routes/role.routes';
 import departmentRoutes from './routes/department.routes';
-import performanceRoutes from './routes/performanceRoutes';  
+import performanceRoutes from './routes/performanceRoutes';
 import { seedRoles } from './utils/roleSeeder';
+import transferRoutes from "./routes/transferRoutes";
 
 dotenv.config();
 
@@ -43,7 +44,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
@@ -53,7 +53,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Info
 app.get('/api', (req, res) => {
   res.json({
     success: true,
@@ -74,7 +73,9 @@ app.get('/api', (req, res) => {
       shifts: '/api/shifts',
       employees: '/api/employees',
       requisitions: '/api/requisitions',
-      performance: '/api/performance'  
+      performance: '/api/performance',
+      holidays: '/api/holidays',
+      transfers: '/api/transfers'
     }
   });
 });
@@ -83,6 +84,7 @@ app.get('/api', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use("/api/employees", employeeRoutes);
+
 app.use('/api/admin', adminRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/roles', roleRoutes);
@@ -93,7 +95,9 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/shifts", shiftRoutes);
-app.use('/api/performance', performanceRoutes);  
+app.use('/api/performance', performanceRoutes);
+app.use("/api/holidays", holidayRoutes);
+app.use("/api/transfers", transferRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -123,7 +127,7 @@ const startServer = async () => {
 
     console.log('🔄 Connecting to MongoDB...');
 
-    // Connect to MongoDB with proper options
+    
     await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 30000,
       socketTimeoutMS: 45000,
@@ -153,7 +157,7 @@ const startServer = async () => {
   }
 };
 
-// Handle MongoDB connection events
+
 mongoose.connection.on('error', (err) => {
   console.error('❌ MongoDB connection error:', err);
 });
@@ -162,14 +166,13 @@ mongoose.connection.on('disconnected', () => {
   console.log('🔌 MongoDB disconnected');
 });
 
-// Graceful shutdown
+
 process.on('SIGINT', async () => {
   await mongoose.connection.close();
   console.log('🔌 MongoDB connection closed due to app termination');
   process.exit(0);
 });
 
-// Start the server
 startServer();
 
 export default app;

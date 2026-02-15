@@ -45,6 +45,7 @@ import EmployeeTransfer from "./pages/modules/transfer/EmployeeTransfer"
 import Payroll from "./pages/modules/payroll/Payroll"
 import Tickets from "./pages/modules/payroll/Tickets"
 import Indemnity from "./pages/modules/payroll/Indemnity"
+import DigitalLocker from "./pages/dashboard/DigitalLocker";
 
 // Role-Specific Appraisal Pages
 import HRManagerAppraisal from "./pages/role/HR_MANAGER/Appraisal"
@@ -68,6 +69,7 @@ import HRManagerLeaveManagement from "./pages/role/HR_MANAGER/LeaveManagement"
 import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
 import MyAttendance from "./pages/role/EMPLOYEE/MyAttendance"
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
+import TransferPage from "./pages/modules/transfer/TransferPage"
 
 // Role-Specific Recruitment pages
 import RecentHires from "./pages/modules/recruitment/RecentHires"
@@ -79,6 +81,7 @@ import ActiveOnboarding from "./pages/modules/recruitment/ActiveOnboarding"
 import AttendanceRecords from "./pages/role/ADMIN/AttendanceRecords"
 import AdminLeaveManagement from "./pages/role/ADMIN/LeaveManagement"
 import ShiftManagement from "./pages/role/ADMIN/ShiftManagement"
+import HolidayManagement from "./pages/role/ADMIN/HolidayManagement"
 import OnboardingDetails from "@/pages/modules/recruitment/OnboardingDetails"
 
 // Protected Route Component with Case-Insensitive Role Check
@@ -290,17 +293,7 @@ function App() {
                     }
                   />
 
-                  <Route
-                    path="/dashboard/employee/tasks"
-                    element={
-                      <ProtectedRoute allowedRoles={["Employee", "EMPLOYEE"]}>
-                        <DashboardLayout>
-                          <MyTasks />
-                        </DashboardLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-
+                 
                   {/* Project Manager Role Pages */}
                   <Route
                     path="/dashboard/pm/tasks"
@@ -373,29 +366,35 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={["admin", "ADMIN", "HR Manager", "HR_MANAGER", "Super Admin"]}>
                         <DashboardLayout>
-                          <div className="p-6">
-                            <h1 className="text-2xl font-bold">Attendance Records</h1>
-                            <p className="text-gray-500 mt-2">Attendance management coming soon...</p>
-                          </div>
+                          <AttendanceRecords/>
                         </DashboardLayout>
                       </ProtectedRoute>
                     }
                   />
 
-                  {/* Digital Locker - Admin only */}
-                  <Route
-                    path="/digital-locker"
-                    element={
-                      <ProtectedRoute allowedRoles={["admin", "ADMIN", "Super Admin"]}>
-                        <DashboardLayout>
-                          <div className="p-6">
-                            <h1 className="text-2xl font-bold">Digital Locker (Docs)</h1>
-                            <p className="text-gray-500 mt-2">Document management coming soon...</p>
-                          </div>
-                        </DashboardLayout>
-                      </ProtectedRoute>
-                    }
-                  />
+                  {/* HOLIDAYS - Admin & Employees) */}
+                <Route
+                  path="/attendance/holidays"
+                  element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "HR_MANAGER", "EMPLOYEE", "Employee"]}>
+                      <DashboardLayout>
+                        <HolidayManagement />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* shift - Admin only */}
+                <Route
+                  path="/attendance/shifts"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "ADMIN", "HR Manager", "HR_MANAGER"]}>
+                      <DashboardLayout>
+                        <ShiftManagement />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
                   {/* Reports - Admin only */}
                   <Route
@@ -471,17 +470,34 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                <Route
+                  path="/dashboard/employee/tasks"
+                  element={
+                    <ProtectedRoute allowedRoles={["Employee", "EMPLOYEE"]}>
+                      <DashboardLayout>
+                        <MyTasks />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/employee/make-transfer"
+                  element={
+                    <ProtectedRoute allowedRoles={["Employee", "EMPLOYEE"]}>
+                      <DashboardLayout>
+                        <TransferPage />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
                   {/* Admin Leave Management */}
                   <Route
-                    path="/role/admin/leave-management"
+                    path="/attendance/leave-management"
                     element={
                       <ProtectedRoute allowedRoles={["admin", "ADMIN", "Super Admin"]}>
                         <DashboardLayout>
-                          <div className="p-6">
-                            <h1 className="text-2xl font-bold">Leave Management</h1>
-                            <p className="text-gray-500 mt-2">Leave management coming soon...</p>
-                          </div>
+                          <AdminLeaveManagement/>
                         </DashboardLayout>
                       </ProtectedRoute>
                     }
@@ -564,6 +580,17 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                {/* Digital Locker - Connected to UI */}
+                <Route
+                  path="/digital-locker"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin", "ADMIN", "HR Manager", "HR_MANAGER", "Employee", "EMPLOYEE"]}>
+                      <DashboardLayout>
+                        <DigitalLocker />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
                   {/* Role-Specific Appraisal */}
                   <Route

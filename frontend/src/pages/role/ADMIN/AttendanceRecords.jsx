@@ -60,6 +60,17 @@ const AttendanceRecords = () => {
     }
   };
 
+  const calculateDuration = (checkIn, checkOut) => {
+    if (!checkIn || !checkOut) return "-";
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+    const diffMs = end - start;
+    const totalMinutes = Math.floor(diffMs / (1000 * 60));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours}h ${minutes}m`;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header section with page title and bulk actions */}
@@ -157,7 +168,7 @@ const AttendanceRecords = () => {
                         {record.checkOut ? new Date(record.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-"}
                       </TableCell>
                       <TableCell className="font-bold">
-                        {record.totalHours || "-"}
+                       {calculateDuration(record.checkIn, record.checkOut)}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={getStatusColor(record.status)}>
