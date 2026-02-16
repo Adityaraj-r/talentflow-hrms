@@ -86,6 +86,7 @@ export default function DepartmentChart({ filters }) {
                 dataKey="employees"
                 fill="#6366f1"
                 radius={[8, 8, 0, 0]}
+                barSize={60}
               />
             </BarChart>
           </ResponsiveContainer>

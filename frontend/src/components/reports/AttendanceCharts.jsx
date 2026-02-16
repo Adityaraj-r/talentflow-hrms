@@ -6,24 +6,22 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  Legend
 } from "recharts";
 import { useAttendance } from "../../hooks/useReports";
 import { motion } from "framer-motion";
-import { getLast12Months } from "../../utils/dateUtils";
+import { getLast12Months, getMonthsBetween } from "../../utils/dateUtils";
 import { useState } from "react";
-import { getMonthsBetween } from "../../utils/dateUtils";
-
 
 export default function AttendanceCharts({ filters }) {
   const { data = [], isLoading } = useAttendance(filters);
   const [selectedMonth, setSelectedMonth] = useState(null);
 
-  // Generate last 12 months
+  // Generate months based on filter
   const months =
-              filters.startDate && filters.endDate
-                ? getMonthsBetween(filters.startDate, filters.endDate)
-                : getLast12Months();
-
+    filters.startDate && filters.endDate
+      ? getMonthsBetween(filters.startDate, filters.endDate)
+      : getLast12Months();
 
   // Forward fill attendance
   let lastValue = 0;
@@ -42,13 +40,13 @@ export default function AttendanceCharts({ filters }) {
     };
   });
 
-  
+  // Forecast logic (last 3 visible months)
   const visibleLength = finalData.length;
   const forecastMonths = Math.min(3, visibleLength);
   const forecastStartIndex = visibleLength - forecastMonths;
 
   const forecastData = finalData.map((item, index) => {
-    if (index >= forecastStartIndex) {
+    if (index >= forecastStartIndex && forecastStartIndex > 0) {
       return {
         ...item,
         forecast:
@@ -116,6 +114,7 @@ export default function AttendanceCharts({ filters }) {
               />
 
               <YAxis
+                domain={[80, 100]} // Prevent negative values
                 stroke="#6b7280"
                 className="dark:stroke-slate-400"
               />
@@ -131,7 +130,9 @@ export default function AttendanceCharts({ filters }) {
                 labelStyle={{ color: "#94a3b8" }}
               />
 
-              {/* Actual Data */}
+              <Legend />
+
+              {/* Attendance Line */}
               <Line
                 type="monotone"
                 dataKey="attendance"
@@ -139,6 +140,7 @@ export default function AttendanceCharts({ filters }) {
                 strokeWidth={3}
                 dot={{ r: 4 }}
                 activeDot={{ r: 6 }}
+                name="Attendance"
               />
 
               {/* Forecast Line */}
@@ -148,6 +150,7 @@ export default function AttendanceCharts({ filters }) {
                 stroke="#f59e0b"
                 strokeDasharray="5 5"
                 strokeWidth={2}
+                name="Forecast"
               />
             </LineChart>
           </ResponsiveContainer>
@@ -156,8 +159,14 @@ export default function AttendanceCharts({ filters }) {
 
       {/* Drill-down Modal */}
       {selectedMonth && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-xl w-[400px] shadow-lg">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => setSelectedMonth(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 p-6 rounded-xl w-[400px] shadow-lg"
+          >
             <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
               Attendance Details — {selectedMonth}
             </h3>
