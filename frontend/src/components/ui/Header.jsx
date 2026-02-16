@@ -199,10 +199,10 @@ const Header = ({ toggleSidebar }) => {
               className="flex items-center gap-2 px-2 hover:bg-accent focus:outline-none focus:ring-0 focus-visible:ring-0 rounded-full border border-transparent hover:border-border"
             >
               <Avatar className="h-8 w-8">
-                <AvatarImage
+                {/* <AvatarImage
                   src={user?.profileImage || "/placeholder.svg"}
                   alt={user?.name || user?.firstName || 'User'}
-                />
+                /> */}
                 <AvatarFallback className="bg-primary/10 text-primary font-bold">
                   {(user?.name || user?.firstName || "A").charAt(0).toUpperCase()}
                 </AvatarFallback>
