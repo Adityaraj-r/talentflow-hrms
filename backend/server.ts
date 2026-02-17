@@ -19,6 +19,7 @@ import departmentRoutes from './routes/department.routes';
 import performanceRoutes from './routes/performanceRoutes';
 import { seedRoles } from './utils/roleSeeder';
 import transferRoutes from "./routes/transferRoutes";
+import candidateRoutes from "./routes/candidate.routes";
 
 dotenv.config();
 
@@ -89,7 +90,10 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/departments', departmentRoutes);
+app.use("/api/candidates", candidateRoutes);
+
 app.use("/api/requisitions", requisitionRoutes);
+
 app.use('/api/onboarding', onboardingRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/tasks", taskRoutes);
