@@ -15,7 +15,7 @@ export default function ExecutiveInsights({ filters }) {
     );
   }
 
-  // ✅ Safe defaults
+  
   const headcount = data?.headcount ?? 0;
   const attritionRate = data?.attritionRate ?? 0;
   const totalPayroll = data?.totalPayroll ?? 0;
