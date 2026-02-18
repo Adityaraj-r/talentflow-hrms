@@ -152,29 +152,49 @@ const Sidebar = ({
     </Link>
   )
 
-  const SidebarGroup = ({ id, label, children }) => {
-    const isActive = children && Array.isArray(children)
-      ? children.some(child => child?.props?.to === location.pathname)
-      : children?.props?.to === location.pathname
+  const SidebarGroup = ({ id, icon: Icon, label, children }) => {
+  const isActive = children && Array.isArray(children)
+    ? children.some(child => child?.props?.to === location.pathname)
+    : children?.props?.to === location.pathname
 
-    return (
-      <div className="space-y-1">
-        <button
-          onClick={() => toggleGroup(id)}
+  return (
+    <div className="space-y-1">
+      <button
+        onClick={() => toggleGroup(id)}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+          isActive
+            ? "bg-primary text-primary-foreground shadow-sm"
+            : "hover:bg-accent text-foreground"
+        )}
+        title={isCollapsed ? label : ""}
+      >
+        {Icon ? <Icon size={20} className="shrink-0" /> : null}
+
+        <span
           className={cn(
-            "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-            isActive ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-accent text-foreground"
+            "flex-1 truncate text-left transition-all duration-300",
+            isCollapsed && "w-0 opacity-0 overflow-hidden"
           )}
-          title={isCollapsed ? label : ""}
         >
-          <Icon size={20} className="shrink-0" />
-          <span className={cn("flex-1 truncate text-left transition-all duration-300", isCollapsed && "w-0 opacity-0 overflow-hidden")}>{label}</span>
-          {!isCollapsed && (openGroups[id] ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />)}
-        </button>
-        {openGroups[id] && !isCollapsed && <ul className="ml-9 space-y-1 border-l pl-2">{children}</ul>}
-      </div>
-    )
-  }
+          {label}
+        </span>
+
+        {!isCollapsed &&
+          (openGroups[id] ? (
+            <ChevronDown className="h-4 w-4 shrink-0" />
+          ) : (
+            <ChevronRight className="h-4 w-4 shrink-0" />
+          ))}
+      </button>
+
+      {openGroups[id] && !isCollapsed && (
+        <ul className="ml-9 space-y-1 border-l pl-2">{children}</ul>
+      )}
+    </div>
+  )
+}
+
 
   const SubLink = ({ to, label, icon: Icon }) => (
     <li>
