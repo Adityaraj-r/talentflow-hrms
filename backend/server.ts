@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import path from 'path';
+import fs from 'fs';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import adminRoutes from './routes/adminRoutes';
@@ -17,8 +19,10 @@ import requisitionRoutes from "./routes/requisition.routes";
 import roleRoutes from './routes/role.routes';
 import departmentRoutes from './routes/department.routes';
 import performanceRoutes from './routes/performanceRoutes';
-import { seedRoles } from './utils/roleSeeder';
 import transferRoutes from "./routes/transferRoutes";
+import auditRoutes from './routes/audit.routes';
+import googleRoutes from './routes/google.routes';
+import { seedRoles } from './utils/roleSeeder';
 
 dotenv.config();
 
@@ -26,7 +30,6 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 const MONGODB_URI = process.env.MONGODB_URI || '';
 
-// CORS Configuration
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
@@ -34,60 +37,49 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
+const localUploads = path.join(__dirname, 'uploads');
+const rootUploads = path.join(__dirname, '../uploads');
 
-// Health check
+if (fs.existsSync(rootUploads)) {
+    app.use('/uploads', express.static(rootUploads));
+} else {
+    app.use('/uploads', express.static(localUploads));
+}
+
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
-    message: 'HRMS Backend is running',
     mongodb: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
     timestamp: new Date().toISOString()
   });
 });
 
-// API Info
 app.get('/api', (req, res) => {
   res.json({
     success: true,
-    message: 'HRMS API is running',
-    version: '1.0.0',
+    version: '1.1.0',
     endpoints: {
-      health: '/health',
       auth: '/api/auth',
-      users: '/api/users',
       admin: '/api/admin',
-      settings: '/api/settings',
-      roles: '/api/roles',
-      departments: '/api/departments',
-      onboarding: '/api/onboarding',
-      attendance: '/api/attendance',
-      tasks: '/api/tasks',
-      leaves: '/api/leaves',
-      shifts: '/api/shifts',
+      audit: '/api/audit',
+      google: '/api/google',
       employees: '/api/employees',
-      requisitions: '/api/requisitions',
-      performance: '/api/performance',
-      holidays: '/api/holidays',
-      transfers: '/api/transfers'
+      attendance: '/api/attendance',
+      leaves: '/api/leaves',
+      performance: '/api/performance'
     }
   });
 });
 
-// API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use("/api/employees", employeeRoutes);
-
 app.use('/api/admin', adminRoutes);
+app.use('/api/audit', auditRoutes);
+app.use('/api/google', googleRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/departments', departmentRoutes);
@@ -101,16 +93,10 @@ app.use('/api/performance', performanceRoutes);
 app.use("/api/holidays", holidayRoutes);
 app.use("/api/transfers", transferRoutes);
 
-// 404 handler
 app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'Route not found',
-    path: req.path
-  });
+  res.status(404).json({ success: false, error: 'Route not found', path: req.path });
 });
 
-// Error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Server error:', err);
   res.status(500).json({
@@ -120,57 +106,18 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-// Connect to MongoDB and start server
 const startServer = async () => {
   try {
-    if (!MONGODB_URI) {
-      throw new Error('MONGODB_URI is not defined in environment variables');
-    }
-
-    console.log('🔄 Connecting to MongoDB...');
-
-    await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 30000,
-      socketTimeoutMS: 45000,
-    });
-
-    console.log('✅ MongoDB connected successfully');
-    console.log('📊 Database:', mongoose.connection.db?.databaseName || 'Unknown');
-
+    if (!MONGODB_URI) throw new Error('MONGODB_URI is undefined');
+    await mongoose.connect(MONGODB_URI);
     await seedRoles();
-
-    // Start server only after MongoDB is connected
     app.listen(PORT, () => {
-      console.log('\n============================================================');
-      console.log('🚀 HRMS BACKEND SERVER STARTED SUCCESSFULLY!');
-      console.log('============================================================');
-      console.log(`📍 Port: ${PORT}`);
-      console.log(`🌐 Local: http://localhost:${PORT}`);
-      console.log(`✅ Health: http://localhost:${PORT}/health`);
-      console.log(`📡 API Info: http://localhost:${PORT}/api`);
-      console.log(`🗄️  Database: Connected to MongoDB Atlas`);
-      console.log('============================================================\n');
+      console.log(`🚀 Server listening on port ${PORT}`);
     });
-
   } catch (error: any) {
-    console.error('❌ Failed to start server:', error.message);
     process.exit(1);
   }
 };
-
-mongoose.connection.on('error', (err) => {
-  console.error('❌ MongoDB connection error:', err);
-});
-
-mongoose.connection.on('disconnected', () => {
-  console.log('🔌 MongoDB disconnected');
-});
-
-process.on('SIGINT', async () => {
-  await mongoose.connection.close();
-  console.log('🔌 MongoDB connection closed due to app termination');
-  process.exit(0);
-});
 
 startServer();
 

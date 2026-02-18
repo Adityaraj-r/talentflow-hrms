@@ -22,15 +22,16 @@ import EmployeeDashboard from "./pages/dashboard/EmployeeDashboard"
 import Unauthorized from "./pages/Unauthorized"
 import ReportsPage from "./pages/dashboard/ReportsPage";
 
-
-
-// NEW Partner Files
 import UserManagement from "./pages/dashboard/UserManagement"
 import SystemSettings from "./pages/dashboard/SystemSettings"
 import Onboarding from "./pages/dashboard/Onboarding"
 import ProjectManagerDashboard from "./pages/dashboard/ProjectManagerDashboard"
 import RoleManagement from "./pages/dashboard/RoleManagement"
 import CompanyStructure from "./pages/dashboard/CompanyStructure"
+
+// New Administration Modules
+import AuditLogs from "./pages/dashboard/AuditLogs"
+import Integrations from "./pages/dashboard/Integrations"
 
 // Admin Performance Module
 import AdminPerformance from "./pages/dashboard/AdminPerformance"
@@ -79,8 +80,6 @@ import RecentHires from "./pages/modules/recruitment/RecentHires"
 import CreateRequisition from "./pages/modules/recruitment/CreateRequisition"
 import ManageOnboarding from "./pages/modules/recruitment/ManageOnboarding"
 import ActiveOnboarding from "./pages/modules/recruitment/ActiveOnboarding"
-
-// ✅ MERGED IMPORTS (Team + Yours)
 import AttendanceRecords from "./pages/role/ADMIN/AttendanceRecords"
 import AdminLeaveManagement from "./pages/role/ADMIN/LeaveManagement"
 import ShiftManagement from "./pages/role/ADMIN/ShiftManagement"
@@ -443,6 +442,29 @@ function App() {
                       <ProtectedRoute allowedRoles={["admin", "ADMIN", "Super Admin", "SUPER ADMIN"]}>
                         <DashboardLayout>
                           <CompanyStructure />
+                        </DashboardLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* ADMINISTRATION SUB-MODULES (Audit Logs, Integrations) */}
+                  <Route
+                    path="/admin/audit-logs"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin", "ADMIN", "Super Admin", "SUPER ADMIN"]}>
+                        <DashboardLayout>
+                          <AuditLogs />
+                        </DashboardLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/admin/integrations"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin", "ADMIN", "Super Admin", "SUPER ADMIN"]}>
+                        <DashboardLayout>
+                          <Integrations />
                         </DashboardLayout>
                       </ProtectedRoute>
                     }

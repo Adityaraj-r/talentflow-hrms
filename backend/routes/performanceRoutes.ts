@@ -1,20 +1,17 @@
 import { Router } from 'express';
 import { PerformanceController } from '../controllers/performanceController';
-import { authenticate } from '../middleware/auth.middleware';  // ← RE-ENABLED
+import { protect } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// All routes require authentication
-router.use(authenticate);  // ← RE-ENABLED
+router.use(protect as any);
 
-// Performance Cycle Routes
-router.post('/cycles', PerformanceController.createCycle);           // Create cycle
-router.get('/cycles', PerformanceController.getCycles);              // Get all cycles
-router.get('/cycles/:id', PerformanceController.getCycleById);       // Get single cycle
-router.put('/cycles/:id', PerformanceController.updateCycle);        // Update cycle
-router.delete('/cycles/:id', PerformanceController.deleteCycle);     // Delete cycle
+router.post('/cycles', PerformanceController.createCycle);
+router.get('/cycles', PerformanceController.getCycles);
+router.get('/cycles/:id', PerformanceController.getCycleById);
+router.put('/cycles/:id', PerformanceController.updateCycle);
+router.delete('/cycles/:id', PerformanceController.deleteCycle);
 
-// Stats Route
-router.get('/stats', PerformanceController.getStats);                // Dashboard stats
+router.get('/stats', PerformanceController.getStats);
 
 export default router;

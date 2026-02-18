@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 export interface IUser extends Document {
   firebaseUid?: string;
@@ -11,13 +12,14 @@ export interface IUser extends Document {
   department?: string;
   phoneNumber?: string;
   employeeId?: mongoose.Types.ObjectId;
-  currentShift?: mongoose.Types.ObjectId;   //✅ NEW ADD
+  currentShift?: mongoose.Types.ObjectId;
   isActive: boolean;
   isEmailVerified: boolean;
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
+  getSignedJwtToken(): string;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -58,7 +60,6 @@ const UserSchema = new Schema<IUser>(
         'ADMIN',
         'EMPLOYEE',
       ],
-      // default: 'EMPLOYEE',
     },
     firstName: {
       type: String,
@@ -85,7 +86,6 @@ const UserSchema = new Schema<IUser>(
       ref: 'Employee',
       default: null
     },
-    // Schema Definition
     currentShift: {
       type: Schema.Types.ObjectId,
       ref: 'Shift',
@@ -106,7 +106,6 @@ const UserSchema = new Schema<IUser>(
   }
 );
 
-// Method to compare passwords
 UserSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
@@ -115,6 +114,21 @@ UserSchema.methods.comparePassword = async function (
   } catch (error) {
     return false;
   }
+};
+
+UserSchema.methods.getSignedJwtToken = function (): string {
+  return jwt.sign(
+    { 
+      id: this._id, 
+      email: this.email, 
+      role: this.role, 
+      firebaseUid: this.firebaseUid 
+    },
+    (process.env.JWT_SECRET as jwt.Secret) || 'secret',
+    {
+      expiresIn: process.env.JWT_EXPIRE || '30d',
+    } as jwt.SignOptions
+  );
 };
 
 export default mongoose.model<IUser>('User', UserSchema);

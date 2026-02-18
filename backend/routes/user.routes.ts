@@ -7,13 +7,14 @@ import {
   resetUserPassword,
   deactivateUser,
 } from '../controllers/user.controller';
-import { authenticate, authorize } from '../middleware/auth.middleware';
+
+import { protect, authorize } from '../middleware/auth.middleware';
 
 const router = express.Router();
 
-// All routes require authentication and admin/HR role
-router.use(authenticate);
-router.use(authorize('CEO', 'COUNTRY_MANAGER', 'HR_MANAGER', 'HR_OFFICER', 'ADMIN'));
+
+router.use(protect as any);
+router.use(authorize('CEO', 'COUNTRY_MANAGER', 'HR_MANAGER', 'HR_OFFICER', 'ADMIN') as any);
 
 // User management routes
 router.post('/', createUser);

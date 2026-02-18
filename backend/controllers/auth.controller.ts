@@ -1,51 +1,48 @@
-// backend/src/controllers/auth.controller.ts
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import User from '../models/User.model';
+import { createLog } from './audit.controller';
 
 export class AuthController {
   static async login(req: Request, res: Response) {
     try {
       const { email, password } = req.body;
+      const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
 
       if (!email || !password) {
-        return res.status(400).json({
-          success: false,
-          error: 'Email and password are required'
-        });
+        return res.status(400).json({ success: false, error: 'Email and password are required' });
       }
 
       const user = await User.findOne({ email }).select('+password');
 
       if (!user) {
-        return res.status(401).json({
-          success: false,
-          error: 'Invalid credentials'
-        });
+        await createLog('system', 'Unknown User', 'Login Attempt', 'Auth', `Failed login: ${email}`, String(ip), 'Failed');
+        return res.status(401).json({ success: false, error: 'Invalid credentials' });
       }
-      // --- ADD THIS BLOCK HERE (Starting at Line 21) ---
+
       if (user.isActive === false) {
-        return res.status(403).json({
-          success: false,
-          error: 'Your account has been deactivated. Please contact the administrator.'
-        });
+        await createLog(user._id.toString(), `${user.firstName} ${user.lastName}`, 'Login Attempt', 'Auth', 'Deactivated account access attempt', String(ip), 'Failed');
+        return res.status(403).json({ success: false, error: 'Your account has been deactivated.' });
       }
 
       const isPasswordValid = await user.comparePassword(password);
 
       if (!isPasswordValid) {
-        return res.status(401).json({
-          success: false,
-          error: 'Invalid credentials'
-        });
+        await createLog(user._id.toString(), `${user.firstName} ${user.lastName}`, 'Login Attempt', 'Auth', 'Incorrect password', String(ip), 'Failed');
+        return res.status(401).json({ success: false, error: 'Invalid credentials' });
       }
 
       user.lastLogin = new Date();
       await user.save();
 
+      await createLog(user._id.toString(), `${user.firstName} ${user.lastName}`, 'User Login', 'Auth', 'Successful login', String(ip), 'Success');
+
+      const token = user.getSignedJwtToken ? await user.getSignedJwtToken() : "mock-token-placeholder";
+
       return res.json({
         success: true,
         message: 'Login successful',
+        token,
         data: {
           id: user._id,
           email: user.email,
@@ -57,52 +54,31 @@ export class AuthController {
       });
     } catch (error: any) {
       console.error('Login error:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Login failed'
-      });
+      return res.status(500).json({ success: false, error: 'Login failed' });
     }
   }
 
   static async register(req: Request, res: Response) {
     try {
-      return res.status(403).json({
-        success: false,
-        error: 'Registration is disabled. Please contact admin.'
-      });
+      return res.status(403).json({ success: false, error: 'Registration is disabled. Please contact admin.' });
     } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        error: 'Registration failed'
-      });
+      return res.status(500).json({ success: false, error: 'Registration failed' });
     }
   }
 
   static async getProfile(req: AuthRequest, res: Response) {
     try {
-      console.log('📋 getProfile called for user:', req.user?.email);
-      
       const userId = req.user?.id;
 
       if (!userId) {
-        console.error('❌ No user ID in request');
-        return res.status(401).json({
-          success: false,
-          error: 'User not authenticated'
-        });
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
 
       const user = await User.findById(userId).select('-password').populate('currentShift');
 
       if (!user) {
-        console.error('❌ User not found by ID:', userId);
-        return res.status(404).json({
-          success: false,
-          error: 'User not found'
-        });
+        return res.status(404).json({ success: false, error: 'User not found' });
       }
-
-      console.log('✅ Sending profile data for:', user.email);
 
       return res.json({
         success: true,
@@ -115,7 +91,7 @@ export class AuthController {
           role: user.role,
           phoneNumber: user.phoneNumber,
           isActive: user.isActive,
-           currentShift: user.currentShift, 
+          currentShift: user.currentShift, 
           isEmailVerified: user.isEmailVerified,
           lastLogin: user.lastLogin,
           createdAt: user.createdAt,
@@ -123,11 +99,8 @@ export class AuthController {
         }
       });
     } catch (error: any) {
-      console.error('❌ Get profile error:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to fetch profile'
-      });
+      console.error('Get profile error:', error);
+      return res.status(500).json({ success: false, error: 'Failed to fetch profile' });
     }
   }
 
@@ -135,14 +108,12 @@ export class AuthController {
     try {
       const userId = req.user?.id;
       const { firstName, lastName, phoneNumber } = req.body;
+      const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
 
       const user = await User.findById(userId);
 
       if (!user) {
-        return res.status(404).json({
-          success: false,
-          error: 'User not found'
-        });
+        return res.status(404).json({ success: false, error: 'User not found' });
       }
 
       if (firstName) user.firstName = firstName;
@@ -150,16 +121,11 @@ export class AuthController {
       if (phoneNumber) user.phoneNumber = phoneNumber;
 
       await user.save();
+      await createLog(user._id.toString(), `${user.firstName} ${user.lastName}`, 'Update Profile', 'User Settings', 'Self profile update', String(ip), 'Success');
 
-      return res.json({
-        success: true,
-        message: 'Profile updated successfully'
-      });
+      return res.json({ success: true, message: 'Profile updated successfully' });
     } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to update profile'
-      });
+      return res.status(500).json({ success: false, error: 'Failed to update profile' });
     }
   }
 
@@ -167,44 +133,33 @@ export class AuthController {
     try {
       const userId = req.user?.id;
       const { currentPassword, newPassword } = req.body;
+      const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
 
       if (!currentPassword || !newPassword) {
-        return res.status(400).json({
-          success: false,
-          error: 'Current password and new password are required'
-        });
+        return res.status(400).json({ success: false, error: 'Current password and new password are required' });
       }
 
       const user = await User.findById(userId).select('+password');
 
       if (!user) {
-        return res.status(404).json({
-          success: false,
-          error: 'User not found'
-        });
+        return res.status(404).json({ success: false, error: 'User not found' });
       }
 
       const isPasswordValid = await user.comparePassword(currentPassword);
 
       if (!isPasswordValid) {
-        return res.status(401).json({
-          success: false,
-          error: 'Current password is incorrect'
-        });
+        await createLog(user._id.toString(), `${user.firstName} ${user.lastName}`, 'Password Change', 'Security', 'Failed: Incorrect current password', String(ip), 'Failed');
+        return res.status(401).json({ success: false, error: 'Current password is incorrect' });
       }
 
       user.password = newPassword;
       await user.save();
 
-      return res.json({
-        success: true,
-        message: 'Password changed successfully'
-      });
+      await createLog(user._id.toString(), `${user.firstName} ${user.lastName}`, 'Password Change', 'Security', 'Successful password update', String(ip), 'Success');
+
+      return res.json({ success: true, message: 'Password changed successfully' });
     } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to change password'
-      });
+      return res.status(500).json({ success: false, error: 'Failed to change password' });
     }
   }
 }
