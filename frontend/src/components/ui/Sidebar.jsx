@@ -29,7 +29,6 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ROLES } from "../../constants/roles"
-import { useAuth } from "../../contexts/AuthContext"
 import { useUser } from "../../contexts/UserContext"
 
 const Sidebar = ({
@@ -154,28 +153,48 @@ const Sidebar = ({
   )
 
   const SidebarGroup = ({ id, icon: Icon, label, children }) => {
-    const isActive = children && Array.isArray(children)
-      ? children.some(child => child?.props?.to === location.pathname)
-      : children?.props?.to === location.pathname
+  const isActive = children && Array.isArray(children)
+    ? children.some(child => child?.props?.to === location.pathname)
+    : children?.props?.to === location.pathname
 
-    return (
-      <div className="space-y-1">
-        <button
-          onClick={() => toggleGroup(id)}
+  return (
+    <div className="space-y-1">
+      <button
+        onClick={() => toggleGroup(id)}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+          isActive
+            ? "bg-primary text-primary-foreground shadow-sm"
+            : "hover:bg-accent text-foreground"
+        )}
+        title={isCollapsed ? label : ""}
+      >
+        {Icon ? <Icon size={20} className="shrink-0" /> : null}
+
+        <span
           className={cn(
-            "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-            isActive ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-accent text-foreground"
+            "flex-1 truncate text-left transition-all duration-300",
+            isCollapsed && "w-0 opacity-0 overflow-hidden"
           )}
-          title={isCollapsed ? label : ""}
         >
-          <Icon size={20} className="shrink-0" />
-          <span className={cn("flex-1 truncate text-left transition-all duration-300", isCollapsed && "w-0 opacity-0 overflow-hidden")}>{label}</span>
-          {!isCollapsed && (openGroups[id] ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />)}
-        </button>
-        {openGroups[id] && !isCollapsed && <ul className="ml-9 space-y-1 border-l pl-2">{children}</ul>}
-      </div>
-    )
-  }
+          {label}
+        </span>
+
+        {!isCollapsed &&
+          (openGroups[id] ? (
+            <ChevronDown className="h-4 w-4 shrink-0" />
+          ) : (
+            <ChevronRight className="h-4 w-4 shrink-0" />
+          ))}
+      </button>
+
+      {openGroups[id] && !isCollapsed && (
+        <ul className="ml-9 space-y-1 border-l pl-2">{children}</ul>
+      )}
+    </div>
+  )
+}
+
 
   const SubLink = ({ to, label, icon: Icon }) => (
     <li>
@@ -206,9 +225,16 @@ const Sidebar = ({
             <SubLink to="/employee-transfer" label="Transfers & Promotions" />
             <SubLink to="/digital-locker" label="Digital Locker (Docs)" />
           </SidebarGroup>
+          
+          <SidebarGroup id="recruitment" icon={Briefcase} label="Recruitment & Staffing">
+            <SubLink to="/recruitment" label="Recruitment Process" />
+            <SubLink to="/staff-requisition" label="Staff Requisition" />
+            <SubLink to="/dashboard/candidate-management" label="Candidate Management" />
+            <SubLink to="/dashboard/offer-management" label="Offer Management"/>
 
-          <SidebarLink to="/recruitment" icon={Briefcase} label="Recruitment & Staffing" />
+          </SidebarGroup>
 
+          
           <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
             <SubLink to="/attendance" label="Attendance Records" />
             <SubLink to="/attendance/shifts" label="Shift Roster" />
@@ -281,6 +307,7 @@ const Sidebar = ({
               <SubLink to="/recruitment" label="Recruitment Process" />
               <SubLink to="/staff-requisition" label="Staff Requisition" />
               <SubLink to="/dashboard/onboarding" label="Onboarding" />
+
             </SidebarGroup>
           )}
           {canSee('attendance') && <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />}
@@ -314,6 +341,7 @@ const Sidebar = ({
               <SubLink to="/recruitment" label="Recruitment Process" />
               <SubLink to="/staff-requisition" label="Staff Requisition" />
               <SubLink to="/dashboard/onboarding" label="Onboarding" />
+
             </SidebarGroup>
           )}
           {canSee('attendance') && <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />}
