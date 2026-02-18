@@ -1,42 +1,95 @@
 import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
 
-export const useSummary = () =>
-  useQuery({
-    queryKey: ["summary"],
-    queryFn: async () => {
-      return {
-        headcount: 128,
-        activeEmployees: 120,
-        attritionRate: 6,
-        avgAttendance: 92,
-        totalPayroll: 7850000,
-        openPositions: 14,
-      };
-    },
-  });
+const API_BASE = "http://localhost:5001/api/reports";
 
-export const useWorkforce = () =>
-  useQuery({
-    queryKey: ["workforce"],
-    queryFn: async () => {
-      return [
-        { month: "Jan", headcount: 110 },
-        { month: "Feb", headcount: 115 },
-        { month: "Mar", headcount: 120 },
-        { month: "Apr", headcount: 128 },
-      ];
-    },
-  });
+/* =========================
+   HELPER: Stable Key Builder
+========================= */
+const buildQueryKey = (key, filters = {}) => [
+  key,
+  filters?.department || "all",
+  filters?.startDate || "",
+  filters?.endDate || "",
+];
 
-export const useAttendance = () =>
-  useQuery({
-    queryKey: ["attendance"],
+/* =========================
+   SUMMARY
+========================= */
+export const useSummary = (filters = {}) => {
+  return useQuery({
+    queryKey: buildQueryKey("summary", filters),
     queryFn: async () => {
-      return [
-        { month: "Jan", attendance: 90 },
-        { month: "Feb", attendance: 88 },
-        { month: "Mar", attendance: 92 },
-        { month: "Apr", attendance: 95 },
-      ];
+      const res = await axios.get(`${API_BASE}/summary`, {
+        params: filters,
+      });
+      return res.data.data;
     },
+    staleTime: 0,              // Always refetch on filter change
+    keepPreviousData: false,   // Prevent stale UI flash
   });
+};
+
+/* =========================
+   WORKFORCE
+========================= */
+export const useWorkforce = (filters = {}) => {
+  return useQuery({
+    queryKey: buildQueryKey("workforce", filters),
+    queryFn: async () => {
+      const res = await axios.get(`${API_BASE}/workforce`, {
+        params: filters,
+      });
+      return res.data.data;
+    },
+    keepPreviousData: false,
+  });
+};
+
+/* =========================
+   ATTENDANCE
+========================= */
+export const useAttendance = (filters = {}) => {
+  return useQuery({
+    queryKey: buildQueryKey("attendance", filters),
+    queryFn: async () => {
+      const res = await axios.get(`${API_BASE}/attendance`, {
+        params: filters,
+      });
+      return res.data.data;
+    },
+    keepPreviousData: false,
+  });
+};
+
+/* =========================
+   DEPARTMENTS
+========================= */
+export const useDepartments = (filters = {}) => {
+  return useQuery({
+    queryKey: buildQueryKey("departments", filters),
+    queryFn: async () => {
+      const res = await axios.get(`${API_BASE}/departments`, {
+        params: filters,
+      });
+      return res.data.data;
+    },
+    keepPreviousData: false,
+  });
+};
+
+/* =========================
+   LEAVES
+========================= */
+export const useLeaves = (filters = {}) => {
+  return useQuery({
+    queryKey: buildQueryKey("leaves", filters),
+    queryFn: async () => {
+      const res = await axios.get(`${API_BASE}/leaves`, {
+        params: filters,
+      });
+      return res.data.data;
+    },
+    keepPreviousData: false,
+  });
+};

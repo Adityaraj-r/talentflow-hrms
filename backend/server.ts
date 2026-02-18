@@ -16,6 +16,8 @@ import requisitionRoutes from "./routes/requisition.routes";
 import roleRoutes from './routes/role.routes';
 import departmentRoutes from './routes/department.routes';
 import { seedRoles } from './utils/roleSeeder';
+import reportsRoutes from "./routes/reports.routes";
+
 
 dotenv.config();
 
@@ -80,6 +82,8 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/shifts", shiftRoutes);
+app.use("/api/reports", reportsRoutes);
+
 
 
 app.use((req, res) => {

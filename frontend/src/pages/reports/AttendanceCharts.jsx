@@ -1,6 +1,6 @@
 import {
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -8,61 +8,57 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { useWorkforce } from "../../hooks/useReports";
+import { useAttendance } from "../../hooks/useReports";
 import { motion } from "framer-motion";
-import { getLast12Months } from "../../utils/dateUtils";
 import { useState } from "react";
-import { getMonthsBetween } from "../../utils/dateUtils";
+import { getLast12Months, getMonthsBetween } from "../../utils/dateUtils";
 
-
-export default function WorkforceCharts({ filters }) {
-  const { data = [], isLoading } = useWorkforce(filters);
+export default function AttendanceCharts({ filters }) {
+  const { data = [], isLoading } = useAttendance(filters);
   const [selectedMonth, setSelectedMonth] = useState(null);
 
-  const handleMonthClick = (state) => {
+  const handleClick = (state) => {
     if (state?.activeLabel) {
       setSelectedMonth(state.activeLabel);
     }
   };
 
+  /* ===============================
+     Generate Months Based on Filter
+  =============================== */
   const months =
-                filters.startDate && filters.endDate
-                  ? getMonthsBetween(filters.startDate, filters.endDate)
-                  : getLast12Months();
+    filters?.startDate && filters?.endDate
+      ? getMonthsBetween(filters.startDate, filters.endDate)
+      : getLast12Months();
 
-  let lastValue = 0;
-
-  const finalData = months.map((m) => {
+  /* ===============================
+     Fill Missing Months With 0%
+  =============================== */
+  const formattedData = months.map((m) => {
     const found = data.find((d) => d.month === m.label);
 
-    if (found) {
-      lastValue = found.headcount;
-      return found;
-    }
+    if (found) return found;
 
     return {
       month: m.label,
-      headcount: lastValue,
+      attendance: 0,
+      complianceScore: 0,
+      totalDays: 0,
+      presentDays: 0,
+      lateMarks: 0,
+      leavesTaken: 0,
     };
   });
 
-  const baseValue = finalData[finalData.length - 4]?.headcount || 0;
-
-  const forecastData = finalData.map((item, index) => {
-    if (index >= finalData.length - 3) {
-      return {
-        ...item,
-        forecast: baseValue + (index - (finalData.length - 4)) * 5,
-      };
-    }
-    return { ...item, forecast: null };
-  });
+  const selectedData = formattedData.find(
+    (d) => d.month === selectedMonth
+  );
 
   if (isLoading) {
     return (
       <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-6 rounded-2xl">
         <p className="text-gray-500 dark:text-gray-300">
-          Loading Workforce Data...
+          Loading Attendance Data...
         </p>
       </div>
     );
@@ -80,21 +76,20 @@ export default function WorkforceCharts({ filters }) {
           rounded-2xl
           p-6
           shadow-sm
-          dark:hover:border-indigo-500
           transition-all duration-300
         "
       >
         <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white">
-          Workforce Analytics
+          Attendance Analytics
         </h2>
 
-        <div className="w-full h-[320px] min-h-[320px]">
+        <div className="w-full h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={forecastData} onClick={handleMonthClick}>
+            <LineChart data={formattedData} onClick={handleClick}>
               <CartesianGrid
+                strokeDasharray="3 3"
                 stroke="#e5e7eb"
                 className="dark:stroke-slate-700"
-                strokeDasharray="3 3"
               />
 
               <XAxis
@@ -104,6 +99,7 @@ export default function WorkforceCharts({ filters }) {
               />
 
               <YAxis
+                domain={[0, 100]}
                 stroke="#6b7280"
                 className="dark:stroke-slate-400"
               />
@@ -119,31 +115,33 @@ export default function WorkforceCharts({ filters }) {
 
               <Legend />
 
-              {/* Actual Data */}
-              <Area
+              {/* Attendance % */}
+              <Line
                 type="monotone"
-                dataKey="headcount"
-                stroke="#6366f1"
-                fill="#6366f120"
+                dataKey="attendance"
+                stroke="#22c55e"
                 strokeWidth={3}
+                dot={{ r: 4 }}
               />
 
-              {/* Forecast */}
-              <Area
+              {/* Compliance Score */}
+              <Line
                 type="monotone"
-                dataKey="forecast"
-                stroke="#f59e0b"
-                strokeDasharray="5 5"
+                dataKey="complianceScore"
+                stroke="#6366f1"
                 strokeWidth={2}
-                fill="#f59e0b10"
+                strokeDasharray="5 5"
+                dot={{ r: 3 }}
               />
-            </AreaChart>
+            </LineChart>
           </ResponsiveContainer>
         </div>
       </motion.div>
 
-      {/* Drill-down Modal */}
-      {selectedMonth && (
+      {/* ===============================
+         Dynamic Modal
+      =============================== */}
+      {selectedMonth && selectedData && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           onClick={() => setSelectedMonth(null)}
@@ -153,22 +151,34 @@ export default function WorkforceCharts({ filters }) {
             className="bg-white dark:bg-slate-900 p-6 rounded-xl w-[400px] shadow-lg"
           >
             <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-              Workforce Details — {selectedMonth}
+              Attendance Details — {selectedMonth}
             </h3>
 
             <div className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
+              <p>• Attendance: {selectedData.attendance}%</p>
+              <p>• Total Records: {selectedData.totalDays}</p>
+              <p>• Present Days: {selectedData.presentDays}</p>
+              <p>• Late Marks: {selectedData.lateMarks}</p>
+              <p>• Leaves Taken: {selectedData.leavesTaken}</p>
               <p>
-                • Total Employees:{" "}
-                {finalData.find((d) => d.month === selectedMonth)?.headcount}
+                • Compliance Score:{" "}
+                <span
+                  className={
+                    selectedData.complianceScore > 90
+                      ? "text-emerald-500"
+                      : selectedData.complianceScore > 75
+                      ? "text-amber-500"
+                      : "text-red-500"
+                  }
+                >
+                  {selectedData.complianceScore}%
+                </span>
               </p>
-              <p>• Estimated Hires: 8</p>
-              <p>• Estimated Exits: 3</p>
-              <p>• Net Growth: +5</p>
             </div>
 
             <button
               onClick={() => setSelectedMonth(null)}
-              className="mt-6 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+              className="mt-6 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
             >
               Close
             </button>

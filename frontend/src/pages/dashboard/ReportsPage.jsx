@@ -1,12 +1,12 @@
 import { useState } from "react";
-import ReportsHeader from "../../components/reports/ReportsHeader";
-import KPISection from "../../components/reports/KPISection";
-import WorkforceCharts from "../../components/reports/WorkforceCharts";
-import AttendanceCharts from "../../components/reports/AttendanceCharts";
-import DepartmentChart from "../../components/reports/DepartmentChart";
-import LeavePieChart from "../../components/reports/LeavePieChart";
-import ExecutiveInsights from "../../components/reports/ExecutiveInsights";
-import WorkforceHealthMeter from "../../components/reports/WorkforceHealthMeter";
+import ReportsHeader from "../reports/ReportsHeader";
+import KPISection from "../reports/KPISection";
+import WorkforceCharts from "../reports/WorkforceCharts";
+import AttendanceCharts from "../reports/AttendanceCharts";
+import DepartmentChart from "../reports/DepartmentChart";
+import LeavePieChart from "../reports/LeavePieChart";
+import ExecutiveInsights from "../reports/ExecutiveInsights";
+import WorkforceHealthMeter from "../reports/WorkforceHealthMeter";
 
 export default function ReportsPage() {
   const [filters, setFilters] = useState({
@@ -27,7 +27,7 @@ export default function ReportsPage() {
       <ReportsHeader filters={filters} setFilters={setFilters} />
 
       {/* Executive Insights Panel */}
-      <ExecutiveInsights />
+      <ExecutiveInsights filters={filters}/>
 
       {/* KPI Section */}
       <KPISection filters={filters} />

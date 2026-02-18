@@ -15,27 +15,33 @@ export default function ExecutiveInsights({ filters }) {
     );
   }
 
+  // ✅ Safe defaults
+  const headcount = data?.headcount ?? 0;
+  const attritionRate = data?.attritionRate ?? 0;
+  const totalPayroll = data?.totalPayroll ?? 0;
+  const openPositions = data?.openPositions ?? 0;
+
   // Dynamic risk detection
   const attritionRisk =
-    data?.attritionRate > 8
+    attritionRate > 8
       ? { level: "High Risk", color: "text-red-500", glow: "shadow-red-500/20" }
-      : data?.attritionRate > 5
+      : attritionRate > 5
       ? { level: "Moderate Risk", color: "text-amber-500", glow: "shadow-amber-500/20" }
       : { level: "Low Risk", color: "text-emerald-500", glow: "shadow-emerald-500/20" };
 
-  const confidenceScore = Math.floor(85 + Math.random() * 10);
+  const confidenceScore = 95; // stable confidence instead of random
 
   const insights = [
     {
       icon: TrendingUp,
       title: "Workforce Growth",
-      description: `Current headcount: ${data?.headcount}. Growth trend stable.`,
+      description: `Current headcount: ${headcount}. Growth trend stable.`,
       color: "text-indigo-500",
     },
     {
       icon: AlertTriangle,
       title: "Attrition Analysis",
-      description: `Attrition rate at ${data?.attritionRate}%.`,
+      description: `Attrition rate at ${attritionRate}%.`,
       badge: attritionRisk.level,
       badgeColor: attritionRisk.color,
       glow: attritionRisk.glow,
@@ -44,13 +50,13 @@ export default function ExecutiveInsights({ filters }) {
     {
       icon: DollarSign,
       title: "Payroll Overview",
-      description: `Total payroll: ₹${data?.totalPayroll?.toLocaleString()}.`,
+      description: `Total payroll: ₹${totalPayroll.toLocaleString()}.`,
       color: "text-emerald-500",
     },
     {
       icon: Users,
       title: "Hiring Activity",
-      description: `${data?.openPositions} open positions across departments.`,
+      description: `${openPositions} open positions across departments.`,
       color: "text-blue-500",
     },
   ];
@@ -80,7 +86,6 @@ export default function ExecutiveInsights({ filters }) {
           </p>
         </div>
 
-        {/* AI Confidence */}
         <div className="text-right">
           <p className="text-xs text-gray-500 dark:text-slate-400">
             AI Confidence
