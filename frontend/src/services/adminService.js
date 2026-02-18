@@ -1,69 +1,18 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
-// 1. Configuration using Vite environment variables
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-
-/**
- * Axios Instance Configuration for the Cloned Repo
- */
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Interceptor: Automatically attaches the token for Admin requests
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token') || localStorage.getItem('idToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Interceptor: Centralized error handling and session management
-apiClient.interceptors.response.use(
-  (response) => response.data, 
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('idToken');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error.response?.data || { message: error.message });
-  }
-);
-
-/**
- * Integrated Admin Service
- */
 const adminService = {
-  // Get dashboard metrics
-  getMetrics: async () => {
-    return await apiClient.get('/admin/metrics');
-  },
+  getMetrics: async () => 
+    await apiClient.get('/admin/metrics'),
 
-  // Get users - Mapped to /admin/users to match current backend structure
-  getUsers: async (params = {}) => {
-    return await apiClient.get('/admin/users', { params });
-  },
+  getUsers: async (params = {}) => 
+    await apiClient.get('/admin/users', { params }),
 
-  // Get system logs/activities
-  getActivities: async (params = {}) => {
-    return await apiClient.get('/admin/activities', { params });
-  },
+  getActivities: async (params = {}) => 
+    await apiClient.get('/admin/activities', { params }),
 
-  // Enroll new employee
-  enrollUser: async (userData) => {
-    return await apiClient.post('/admin/enroll-user', userData);
-  },
+  enrollUser: async (userData) => 
+    await apiClient.post('/admin/enroll-user', userData),
 
-  // Bulk upload via CSV
   bulkUploadUsers: async (file) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -72,61 +21,29 @@ const adminService = {
     });
   },
 
-  // Update status (Active/Inactive)
-  updateUserStatus: async (userId, status) => {
-    return await apiClient.patch(`/admin/users/${userId}/status`, { status });
-  },
+  updateUserStatus: async (userId, status) => 
+    await apiClient.patch(`/admin/users/${userId}/status`, { status }),
 
-  // Change status (Toggle)
-  toggleUserStatus: async (userId) => {
-    return await apiClient.patch(`/admin/users/${userId}/toggle-status`);
-  },
+  toggleUserStatus: async (userId) => 
+    await apiClient.patch(`/admin/users/${userId}/toggle-status`),
 
-  // Data for Chart widgets
-  getUserDistribution: async () => {
-    return await apiClient.get('/admin/user-distribution');
-  },
+  getUserDistribution: async () => 
+    await apiClient.get('/admin/user-distribution'),
 
-  /**
-   * Toggle user status (Active/Inactive)
-   */
-  toggleUserStatus: async (userId) => {
-    return await apiClient.patch(`/admin/users/${userId}/toggle-status`);
-  },
+  getDepartmentStats: async () => 
+    await apiClient.get('/admin/department-stats'),
 
-  /**
-   * ATTENDANCE ADDITION: Get all attendance records for Admin View
-   * This connects the attendance controller logic to the Admin Dashboard
-   */
-  getDepartmentStats: async () => {
-    try {
-      return await apiClient.get('/admin/department-stats');
-    } catch (error) {
-      throw error;
-    }
-  },
+  getSettings: async () => 
+    await apiClient.get('/admin/settings'),
 
-  /**
-   * Get system settings
-   */
-  getSettings: async () => {
-    try {
-      return await apiClient.get('/admin/settings');
-    } catch (error) {
-      throw error;
-    }
-  },
+  updateSettings: async (settingsData) => 
+    await apiClient.put('/admin/settings', settingsData),
 
-  /**
-   * Update system settings
-   */
-  updateSettings: async (settingsData) => {
-    try {
-      return await apiClient.put('/admin/settings', settingsData);
-    } catch (error) {
-      throw error;
-    }
-  },
+  getAuditLogs: async () => 
+    await apiClient.get('/audit'),
+
+  getGoogleAuthUrl: async () => 
+    await apiClient.get('/google/auth')
 };
 
 export default adminService;
