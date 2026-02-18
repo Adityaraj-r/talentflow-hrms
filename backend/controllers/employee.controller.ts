@@ -17,9 +17,20 @@ export const getRecentHires = async (req: Request, res: Response) => {
   }
 };
 
+export const getManageOnboarding = async (req: Request, res: Response) => {
+  try {
+    console.log("Manage onboarding route hit")
 
+    const employees = await Employee.find()
 
-export const getActiveOnboarding = async (req, res) => {
+    res.status(200).json(employees)
+  } catch (error: any) {
+    console.error("Error in manage onboarding:", error)
+    res.status(500).json({ message: error.message })
+  }
+}
+
+export const getActiveOnboarding = async (req: Request, res: Response) => {
   try {
     const employees = await Employee.find({
       onboardingStatus: { $ne: "Completed" }
@@ -32,7 +43,9 @@ export const getActiveOnboarding = async (req, res) => {
   }
 };
 
-export const getEmployeeById = async (req, res) => {
+
+
+export const getEmployeeById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params
     const employee = await Employee.findById(id)

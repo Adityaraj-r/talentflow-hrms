@@ -23,6 +23,7 @@ import transferRoutes from "./routes/transferRoutes";
 import auditRoutes from './routes/audit.routes';
 import googleRoutes from './routes/google.routes';
 import { seedRoles } from './utils/roleSeeder';
+import candidateRoutes from "./routes/candidate.routes"; 
 
 dotenv.config();
 
@@ -83,7 +84,10 @@ app.use('/api/google', googleRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/departments', departmentRoutes);
+app.use("/api/candidates", candidateRoutes);
+
 app.use("/api/requisitions", requisitionRoutes);
+
 app.use('/api/onboarding', onboardingRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/tasks", taskRoutes);
@@ -110,7 +114,9 @@ const startServer = async () => {
   try {
     if (!MONGODB_URI) throw new Error('MONGODB_URI is undefined');
     await mongoose.connect(MONGODB_URI);
+    
     await seedRoles();
+    
     app.listen(PORT, () => {
       console.log(`🚀 Server listening on port ${PORT}`);
     });

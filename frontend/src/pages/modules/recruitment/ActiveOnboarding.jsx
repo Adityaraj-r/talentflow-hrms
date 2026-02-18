@@ -39,7 +39,7 @@ if (loading) {
 }
 
   return (
-<Card className="bg-card/60 backdrop-blur-xl border border-white/10 shadow-xl">
+    <Card className="bg-card/60 backdrop-blur-xl border border-white/10 shadow-xl">
       <CardHeader>
         <CardTitle>Active Onboarding</CardTitle>
         <CardDescription>
@@ -49,8 +49,6 @@ if (loading) {
 
       <CardContent>
         <div className="rounded-md border overflow-hidden">
-
-          {/* HEADER */}
           <div className="grid grid-cols-5 bg-muted/50 p-3 text-sm font-medium">
             <div>Name</div>
             <div>Role</div>
@@ -59,73 +57,52 @@ if (loading) {
             <div>Action</div>
           </div>
 
-{employees.length === 0 && (
-  <div className="p-4 text-center text-muted-foreground">
-    No active onboarding employees found
-  </div>
-)}
+            {employees.length === 0 && (
+              <div className="p-4 text-center text-muted-foreground">
+                No active onboarding employees found
+              </div>
+            )}
 
-
-          {/* BODY */}
           <div className="divide-y">
-{employees.map(emp => (
-
-
-              <div key={emp.id} className="grid grid-cols-5 p-3 items-center text-sm">
-                
-<div className="flex items-center gap-3">
-  <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center font-semibold text-blue-400">
-{emp?.firstName?.charAt(0) || "?"}
-  </div>
-
-  <div>
-  <p className="font-medium">
-  {emp?.firstName || "Unknown"} {emp?.lastName || ""}
-</p>
-
-
-<p className="text-xs text-muted-foreground">
-  {emp.designation}
-</p>
-
-  </div>
-</div>
-<div>{emp.designation}</div>
-
-                <div>
-                 <Badge
-  className={
-    emp.onboardingStatus === "Documents"
-      ? "bg-yellow-500/20 text-yellow-400"
-      : "bg-blue-500/20 text-blue-400"
-  }
->
-  {emp.onboardingStatus}
-</Badge>
-
-
+            {employees.map(emp => (
+              <div key={emp._id} className="grid grid-cols-5 p-3 items-center text-sm">             
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center font-semibold text-blue-400">
+                    {emp?.firstName?.charAt(0) || "?"}
+                  </div>
+                  <div>
+                    <p className="font-medium">
+                     {emp?.firstName || "Unknown"} {emp?.lastName || ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                     {emp.designation}
+                    </p>
+                  </div>
                 </div>
-
-<div>
-  {emp.joiningDate
-    ? new Date(emp.joiningDate).toLocaleDateString()
-    : "-"}
-</div>
-
-                <Button
-  size="icon"
-  variant="ghost"
-  className="cursor-pointer"
-  onClick={() => navigate(`/dashboard/onboarding/${emp._id}`)}
->
-  <Eye className="h-4 w-4"/>
-</Button>
-
-
+                <div>{emp.designation}</div>
+                <div>
+                  <Badge
+                    className={
+                     emp.onboardingStatus === "Documents"
+                     ? "bg-yellow-500/20 text-yellow-400"
+                     : "bg-blue-500/20 text-blue-400"
+                    }
+                  >
+                   {emp.onboardingStatus}
+                  </Badge>
+                </div>
+                <div>
+                 {emp.joiningDate
+                 ? new Date(emp.joiningDate).toLocaleDateString()
+                 : "-"}
+                </div>
+                <Button size="icon" variant="ghost" className="cursor-pointer"
+                  onClick={() => navigate(`/dashboard/onboarding/${emp._id}`)}>
+                 <Eye className="h-4 w-4"/>
+                </Button>
               </div>
             ))}
           </div>
-
         </div>
       </CardContent>
     </Card>

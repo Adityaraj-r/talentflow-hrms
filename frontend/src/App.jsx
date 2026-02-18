@@ -85,6 +85,9 @@ import AdminLeaveManagement from "./pages/role/ADMIN/LeaveManagement"
 import ShiftManagement from "./pages/role/ADMIN/ShiftManagement"
 import HolidayManagement from "./pages/role/ADMIN/HolidayManagement"
 import OnboardingDetails from "@/pages/modules/recruitment/OnboardingDetails"
+import CandidateManagement from "./pages/modules/recruitment/CandidateManagement";
+import OfferManagement from "./pages/modules/recruitment/OfferManagement";
+
 
 // Protected Route Component with Case-Insensitive Role Check
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -271,7 +274,50 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                  
+                  <Route
+                    path="/dashboard/candidate-management"
+                    element={
+                      <ProtectedRoute allowedRoles={[ "admin", "ADMIN", "HR Manager", "HR_MANAGER", "HR Officer", "HR_OFFICER",  ]}>
+                        <DashboardLayout>
+                          <CandidateManagement />
+                        </DashboardLayout>
+                      </ProtectedRoute>
+                    }
+                  />
 
+                  <Route
+                    path="/dashboard/offer-management"
+                    element={
+                      <ProtectedRoute allowedRoles={[ "admin", "ADMIN", "HR Manager", "HR_MANAGER", "HR Officer", "HR_OFFICER",  ]}>
+                        <DashboardLayout>
+                          <OfferManagement />
+                        </DashboardLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/dashboard/generate-offer"
+                    element={
+                      <ProtectedRoute allowedRoles={[ "admin", "ADMIN", "HR Manager", "HR_MANAGER", "HR Officer", "HR_OFFICER",  ]}>
+                        <DashboardLayout>
+                          <OfferManagement />
+                        </DashboardLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/dashboard/offer/:offerId"
+                    element={
+                      <ProtectedRoute allowedRoles={[ "admin", "ADMIN", "HR Manager", "HR_MANAGER", "HR Officer", "HR_OFFICER",  ]}>             
+                        <DashboardLayout>
+                          <OfferManagement />
+                        </DashboardLayout>
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route
                     path="/dashboard/project-manager"
                     element={

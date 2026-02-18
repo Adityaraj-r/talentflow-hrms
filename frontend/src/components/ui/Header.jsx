@@ -39,11 +39,14 @@ const Header = ({ toggleSidebar }) => {
   useEffect(() => {
     const fetchRealTimeNotifications = async () => {
       const firstName = user?.firstName || user?.name?.split(" ")[0] || ""
+      
       if (firstName) {
         try {
           const res = await axios.get(`http://localhost:5001/api/transfers/all`)
+          
           const myTransfers = res.data.filter((t) => t.employeeName && t.employeeName.includes(firstName))
           const latest = myTransfers[0]
+          
           if (latest && (latest.status === "Approved" || latest.status === "Rejected")) {
             setNotifications([
               {
@@ -55,17 +58,22 @@ const Header = ({ toggleSidebar }) => {
             ])
           }
         } catch (err) {
-          console.error(err)
+          console.error("Failed to fetch notifications:", err)
         }
       }
     }
+
     fetchRealTimeNotifications()
     const interval = setInterval(fetchRealTimeNotifications, 10000)
     return () => clearInterval(interval)
   }, [user])
 
   const unreadCount = notifications.filter((n) => !n.read).length
-  const markAllAsRead = () => setNotifications(notifications.map((n) => ({ ...n, read: true })))
+  
+  const markAllAsRead = () => {
+    setNotifications(notifications.map((n) => ({ ...n, read: true })))
+  }
+  
   const canGoBack = !["/", "/dashboard", "/admin/dashboard", "/employee/dashboard"].includes(location.pathname)
 
   return (
