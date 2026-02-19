@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
 import User from '../models/User.model';
-import Employee from '../models/Employee.model';
 import bcrypt from 'bcryptjs';
-import { auth } from '../config/firebase';
 import csv from 'csv-parser';
 import fs from 'fs';
 import mongoose from 'mongoose';
@@ -49,11 +47,7 @@ interface ActivityResponse {
   title: string;
   description: string;
   timestamp: string;
-  user: {
-    name: string;
-    email: string;
-    role: string;
-  } | null;
+  user: { name: string; email: string; role: string } | null;
   metadata?: Record<string, any>;
 }
 
@@ -69,7 +63,6 @@ export const bulkUploadUsers = async (req: AuthRequest, res: Response): Promise<
   const adminName = req.user?.firstName || 'Admin';
 
   const stream = fs.createReadStream(req.file.path).pipe(csv());
-
   stream.on('data', (data) => results.push(data));
 
   stream.on('end', async () => {
@@ -86,34 +79,30 @@ export const bulkUploadUsers = async (req: AuthRequest, res: Response): Promise<
 
       for (const row of results) {
         try {
-          let firebaseUid;
-          try {
-            const existingFirebaseUser = await auth.getUserByEmail(row.email);
-            firebaseUid = existingFirebaseUser.uid;
-          } catch (err) {
-            const newFirebaseUser = await auth.createUser({
-              email: row.email.trim(),
-              password: row.password || 'Temporary123!',
-              displayName: `${row.firstName} ${row.lastName}`,
-            });
-            firebaseUid = newFirebaseUser.uid;
+          if (!row.email || !row.firstName || !row.lastName || !row.role) {
+            errors.push({ email: row.email || 'unknown', error: 'Missing required fields' });
+            continue;
+          }
+
+          const existingUser = await User.findOne({ email: row.email.toLowerCase().trim() });
+          if (existingUser) {
+            errors.push({ email: row.email, error: 'User already exists' });
+            continue;
           }
 
           const salt = await bcrypt.genSalt(10);
           const hashedPassword = await bcrypt.hash(row.password || 'Temporary123!', salt);
 
           processedUsers.push({
-            firebaseUid,
             email: row.email.toLowerCase().trim(),
             password: hashedPassword,
             firstName: row.firstName.trim(),
             lastName: row.lastName.trim(),
             role: row.role.trim().toUpperCase(),
-            department: row.department,
-            phoneNumber: row.phoneNumber.trim(),
+            department: row.department || null,
+            phoneNumber: row.phoneNumber?.trim() || null,
             isActive: true,
-            isEmailVerified: true,
-            isDeleted: false
+            isEmailVerified: true
           });
         } catch (err: any) {
           errors.push({ email: row.email, error: err.message });
@@ -141,7 +130,7 @@ export const bulkUploadUsers = async (req: AuthRequest, res: Response): Promise<
         success: true,
         message: `Processed ${processedUsers.length} users successfully.`,
         failedCount: errors.length,
-        errors: errors
+        errors
       });
     } catch (error: any) {
       await session.abortTransaction();
@@ -157,37 +146,26 @@ export const getAdminMetrics = async (req: AuthRequest, res: Response): Promise<
     const totalUsers = await User.countDocuments({ isDeleted: false });
     const activeUsersCount = await User.countDocuments({
       isDeleted: false,
-      lastLogin: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+      lastLogin: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
     });
 
     const systemAlertsCount = await SystemAlert.countDocuments({
       status: 'active',
-      severity: { $in: ['high', 'critical'] },
+      severity: { $in: ['high', 'critical'] }
     });
 
-    const userStats = await User.aggregate([
-      { $match: { isDeleted: false, createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } },
-      { $group: { _id: null, newUsers: { $sum: 1 } } }
+    const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const previousMonthStart = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1);
+
+    const [currentStats, previousStats] = await Promise.all([
+      User.aggregate([{ $match: { isDeleted: false, createdAt: { $gte: currentMonthStart } } }, { $group: { _id: null, newUsers: { $sum: 1 } } }]),
+      User.aggregate([{ $match: { isDeleted: false, createdAt: { $gte: previousMonthStart, $lt: currentMonthStart } } }, { $group: { _id: null, newUsers: { $sum: 1 } } }])
     ]);
 
-    const previousMonthStats = await User.aggregate([
-      {
-        $match: {
-          isDeleted: false,
-          createdAt: {
-            $gte: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
-            $lt: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-          }
-        }
-      },
-      { $group: { _id: null, newUsers: { $sum: 1 } } }
-    ]);
-
-    const currentMonthNewUsers = userStats[0]?.newUsers || 0;
-    const previousMonthNewUsers = previousMonthStats[0]?.newUsers || 1;
+    const currentMonthNewUsers = currentStats[0]?.newUsers || 0;
+    const previousMonthNewUsers = previousStats[0]?.newUsers || 1;
     const userGrowthPercentage = (((currentMonthNewUsers - previousMonthNewUsers) / previousMonthNewUsers) * 100).toFixed(1);
     const activeUserPercentage = totalUsers > 0 ? ((activeUsersCount / totalUsers) * 100).toFixed(1) : '0';
-
     const securityStatus = systemAlertsCount === 0 ? 'Secure' : systemAlertsCount <= 2 ? 'Warning' : 'Alert';
     const securityColor = securityStatus === 'Secure' ? 'green' : securityStatus === 'Warning' ? 'yellow' : 'red';
 
@@ -206,12 +184,8 @@ export const getAdminMetrics = async (req: AuthRequest, res: Response): Promise<
       systemAlertsLabel: systemAlertsCount === 0 ? 'All Clear' : 'Requires Attention',
       securityStatus,
       securityStatusLabel: 'System Health',
-      securityColor,
-      metadata: {
-        currentMonthNewUsers,
-        previousMonthNewUsers,
-        lastUpdated: new Date().toISOString(),
-      },
+      securityColor: securityColor as any,
+      metadata: { currentMonthNewUsers, previousMonthNewUsers, lastUpdated: new Date().toISOString() }
     };
 
     res.status(200).json({ success: true, data: metrics });
@@ -228,8 +202,8 @@ export const getRecentActivities = async (req: AuthRequest, res: Response): Prom
     if (type && type !== 'all') filter.type = type;
 
     const [activities, totalCount] = await Promise.all([
-      Activity.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)).populate('userId', 'name email role').lean(),
-      Activity.countDocuments(filter),
+      Activity.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)).populate('userId', 'firstName lastName email role').lean(),
+      Activity.countDocuments(filter)
     ]);
 
     const formattedActivities: ActivityResponse[] = activities.map((activity: any) => ({
@@ -238,8 +212,12 @@ export const getRecentActivities = async (req: AuthRequest, res: Response): Prom
       title: activity.title,
       description: activity.description,
       timestamp: formatRelativeTime(activity.createdAt),
-      user: activity.userId ? { name: activity.userId.name, email: activity.userId.email, role: activity.userId.role } : null,
-      metadata: activity.metadata,
+      user: activity.userId ? {
+        name: `${activity.userId.firstName || ''} ${activity.userId.lastName || ''}`.trim(),
+        email: activity.userId.email,
+        role: activity.userId.role
+      } : null,
+      metadata: activity.metadata
     }));
 
     res.status(200).json({
@@ -250,9 +228,9 @@ export const getRecentActivities = async (req: AuthRequest, res: Response): Prom
           currentPage: Number(page),
           totalPages: Math.ceil(totalCount / Number(limit)),
           totalItems: totalCount,
-          itemsPerPage: Number(limit),
-        },
-      },
+          itemsPerPage: Number(limit)
+        }
+      }
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch activities' });
@@ -265,14 +243,14 @@ export const getUserDistribution = async (req: AuthRequest, res: Response): Prom
       { $match: { isDeleted: false } },
       { $group: { _id: '$role', count: { $sum: 1 } } },
       { $project: { role: '$_id', count: 1, _id: 0 } },
-      { $sort: { count: -1 } },
+      { $sort: { count: -1 } }
     ]);
 
     const total = distribution.reduce((sum: number, item: any) => sum + item.count, 0);
     const distributionWithPercentage = distribution.map((item: any) => ({
       role: item.role,
       count: item.count,
-      percentage: total > 0 ? ((item.count / total) * 100).toFixed(1) : '0',
+      percentage: total > 0 ? ((item.count / total) * 100).toFixed(1) : '0'
     }));
 
     res.status(200).json({ success: true, data: { distribution: distributionWithPercentage, total } });
@@ -289,8 +267,8 @@ export const getDepartmentStats = async (req: AuthRequest, res: Response): Promi
         $group: {
           _id: '$department',
           employeeCount: { $sum: 1 },
-          activeEmployees: { $sum: { $cond: [{ $gte: ['$lastLogin', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)] }, 1, 0] } },
-        },
+          activeEmployees: { $sum: { $cond: [{ $gte: ['$lastLogin', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)] }, 1, 0] } }
+        }
       },
       {
         $project: {
@@ -298,10 +276,10 @@ export const getDepartmentStats = async (req: AuthRequest, res: Response): Promi
           employeeCount: 1,
           activeEmployees: 1,
           activePercentage: { $multiply: [{ $divide: ['$activeEmployees', '$employeeCount'] }, 100] },
-          _id: 0,
-        },
+          _id: 0
+        }
       },
-      { $sort: { employeeCount: -1 } },
+      { $sort: { employeeCount: -1 } }
     ]);
 
     res.status(200).json({ success: true, data: departmentStats });
@@ -310,25 +288,10 @@ export const getDepartmentStats = async (req: AuthRequest, res: Response): Promi
   }
 };
 
-function formatRelativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - new Date(date).getTime();
-  const diffSecs = Math.floor(diffMs / 1000);
-  const diffMins = Math.floor(diffSecs / 60);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffSecs < 60) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return new Date(date).toLocaleDateString();
-}
-
 export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { role, search } = req.query;
-    let query: any = { isDeleted: { $ne: true } };
+    const query: any = { isDeleted: { $ne: true } };
 
     if (role && role !== 'all') query.role = role;
     if (search) {
@@ -339,7 +302,7 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
       ];
     }
 
-    const users = await User.find(query).sort({ createdAt: -1 });
+    const users = await User.find(query).select('-password').sort({ createdAt: -1 });
     res.status(200).json({ success: true, data: users });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch users' });
@@ -362,18 +325,24 @@ export const toggleUserStatus = async (req: AuthRequest, res: Response): Promise
     await user.save();
 
     const action = user.isActive ? 'Activate User' : 'Deactivate User';
-    await createLog(
-      req.user?.id || 'system',
-      adminName,
-      action,
-      'User Management',
-      `${action} for: ${user.email}`,
-      String(ip),
-      'Success'
-    );
+    await createLog(req.user?.id || 'system', adminName, action, 'User Management', `${action} for: ${user.email}`, String(ip), 'Success');
 
-    res.status(200).json({ success: true, message: `User status updated successfully`, data: user });
+    res.status(200).json({ success: true, message: 'User status updated', data: user });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Toggle failed' });
   }
 };
+
+function formatRelativeTime(date: Date): string {
+  const diffMs = Date.now() - new Date(date).getTime();
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSecs < 60) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return new Date(date).toLocaleDateString();
+}

@@ -2,25 +2,19 @@ import { Request, Response } from 'express';
 import { PerformanceCycleModel, CycleStatus } from '../models/PerformanceCycle';
 import { PerformanceReviewModel, ReviewStatus } from '../models/PerformanceReview';
 
-// Auth Request Interface
 interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
     role: string;
-    firebaseUid?: string;
   };
 }
 
 export class PerformanceController {
   
-  // ============================================
-  // 1. CREATE NEW PERFORMANCE CYCLE
-  // POST /api/performance/cycles
-  // ============================================
   static async createCycle(req: AuthRequest, res: Response) {
     try {
-      // ✅ FIXED: Validate user authentication
+
       const userId = req.user?.id;
       
       if (!userId) {
@@ -32,7 +26,7 @@ export class PerformanceController {
 
       const { name, description, startDate, endDate, status } = req.body;
 
-      // Validation
+
       if (!name || !startDate || !endDate) {
         return res.status(400).json({
           success: false,
@@ -40,7 +34,6 @@ export class PerformanceController {
         });
       }
 
-      // Date validation
       if (new Date(startDate) >= new Date(endDate)) {
         return res.status(400).json({
           success: false,
@@ -48,7 +41,6 @@ export class PerformanceController {
         });
       }
 
-      // Create cycle
       const cycle = await PerformanceCycleModel.create({
         name,
         description: description || '',
@@ -76,21 +68,15 @@ export class PerformanceController {
     }
   }
 
-  // ============================================
-  // 2. GET ALL PERFORMANCE CYCLES
-  // GET /api/performance/cycles
-  // ============================================
   static async getCycles(req: AuthRequest, res: Response) {
     try {
       const { status } = req.query;
 
-      // Build query
       const query: any = {};
       if (status) {
         query.status = status;
       }
 
-      // Fetch cycles
       const cycles = await PerformanceCycleModel.find(query)
         .populate('createdBy', 'name email')
         .sort({ startDate: -1 });
@@ -109,10 +95,6 @@ export class PerformanceController {
     }
   }
 
-  // ============================================
-  // 3. GET SINGLE CYCLE BY ID
-  // GET /api/performance/cycles/:id
-  // ============================================
   static async getCycleById(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
@@ -142,16 +124,12 @@ export class PerformanceController {
     }
   }
 
-  // ============================================
-  // 4. UPDATE PERFORMANCE CYCLE
-  // PUT /api/performance/cycles/:id
-  // ============================================
+
   static async updateCycle(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
       const { name, description, startDate, endDate, status } = req.body;
 
-      // Fetch existing cycle first
       const existingCycle = await PerformanceCycleModel.findById(id);
       
       if (!existingCycle) {
@@ -161,11 +139,9 @@ export class PerformanceController {
         });
       }
 
-      // Determine final dates (use existing if not provided)
       const finalStartDate = startDate ? new Date(startDate) : existingCycle.startDate;
       const finalEndDate = endDate ? new Date(endDate) : existingCycle.endDate;
 
-      // Date validation with final values
       if (finalStartDate >= finalEndDate) {
         return res.status(400).json({
           success: false,
@@ -173,7 +149,6 @@ export class PerformanceController {
         });
       }
 
-      // Build update object
       const updateData: any = {};
       if (name) updateData.name = name;
       if (description !== undefined) updateData.description = description;
@@ -181,7 +156,6 @@ export class PerformanceController {
       if (endDate) updateData.endDate = finalEndDate;
       if (status) updateData.status = status;
 
-      // Update cycle without schema validation
       const cycle = await PerformanceCycleModel.findByIdAndUpdate(
         id,
         updateData,
@@ -203,10 +177,6 @@ export class PerformanceController {
     }
   }
 
-  // ============================================
-  // 5. DELETE PERFORMANCE CYCLE
-  // DELETE /api/performance/cycles/:id
-  // ============================================
   static async deleteCycle(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
@@ -220,7 +190,6 @@ export class PerformanceController {
         });
       }
 
-      // Delete associated reviews
       await PerformanceReviewModel.deleteMany({ cycleId: id });
 
       res.json({
@@ -238,10 +207,6 @@ export class PerformanceController {
     }
   }
 
-  // ============================================
-  // 6. GET PERFORMANCE DASHBOARD STATS
-  // GET /api/performance/stats
-  // ============================================
   static async getStats(req: AuthRequest, res: Response) {
     try {
       const totalCycles = await PerformanceCycleModel.countDocuments();
@@ -252,7 +217,7 @@ export class PerformanceController {
       const allCycles = await PerformanceCycleModel.find();
       const totalReviews = allCycles.reduce((sum, cycle) => sum + cycle.totalReviews, 0);
       
-      // Calculate average score across all cycles
+
       const cyclesWithScores = allCycles.filter(c => c.avgScore !== undefined && c.avgScore !== null);
       const avgScore = cyclesWithScores.length > 0
         ? cyclesWithScores.reduce((sum, cycle) => sum + (cycle.avgScore || 0), 0) / cyclesWithScores.length

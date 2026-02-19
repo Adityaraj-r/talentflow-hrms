@@ -37,7 +37,7 @@ export class AuthController {
 
       await createLog(user._id.toString(), `${user.firstName} ${user.lastName}`, 'User Login', 'Auth', 'Successful login', String(ip), 'Success');
 
-      const token = user.getSignedJwtToken ? await user.getSignedJwtToken() : "mock-token-placeholder";
+      const token = user.getSignedJwtToken();
 
       return res.json({
         success: true,
@@ -49,6 +49,8 @@ export class AuthController {
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
+          department: user.department,
+          phoneNumber: user.phoneNumber,
           isActive: user.isActive
         }
       });
@@ -59,11 +61,7 @@ export class AuthController {
   }
 
   static async register(req: Request, res: Response) {
-    try {
-      return res.status(403).json({ success: false, error: 'Registration is disabled. Please contact admin.' });
-    } catch (error: any) {
-      return res.status(500).json({ success: false, error: 'Registration failed' });
-    }
+    return res.status(403).json({ success: false, error: 'Registration is disabled. Please contact admin.' });
   }
 
   static async getProfile(req: AuthRequest, res: Response) {
@@ -84,14 +82,14 @@ export class AuthController {
         success: true,
         data: {
           id: user._id,
-          firebaseUid: user.firebaseUid,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
+          department: user.department,
           phoneNumber: user.phoneNumber,
           isActive: user.isActive,
-          currentShift: user.currentShift, 
+          currentShift: user.currentShift,
           isEmailVerified: user.isEmailVerified,
           lastLogin: user.lastLogin,
           createdAt: user.createdAt,
@@ -111,10 +109,7 @@ export class AuthController {
       const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
 
       const user = await User.findById(userId);
-
-      if (!user) {
-        return res.status(404).json({ success: false, error: 'User not found' });
-      }
+      if (!user) return res.status(404).json({ success: false, error: 'User not found' });
 
       if (firstName) user.firstName = firstName;
       if (lastName) user.lastName = lastName;
@@ -136,17 +131,13 @@ export class AuthController {
       const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
 
       if (!currentPassword || !newPassword) {
-        return res.status(400).json({ success: false, error: 'Current password and new password are required' });
+        return res.status(400).json({ success: false, error: 'Current and new password are required' });
       }
 
       const user = await User.findById(userId).select('+password');
-
-      if (!user) {
-        return res.status(404).json({ success: false, error: 'User not found' });
-      }
+      if (!user) return res.status(404).json({ success: false, error: 'User not found' });
 
       const isPasswordValid = await user.comparePassword(currentPassword);
-
       if (!isPasswordValid) {
         await createLog(user._id.toString(), `${user.firstName} ${user.lastName}`, 'Password Change', 'Security', 'Failed: Incorrect current password', String(ip), 'Failed');
         return res.status(401).json({ success: false, error: 'Current password is incorrect' });

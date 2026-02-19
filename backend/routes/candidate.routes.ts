@@ -1,22 +1,26 @@
 import express from "express";
 import {
-  createCandidate,
   getCandidates,
+  getCandidateById,
+  createCandidate,
+  updateCandidate,
   updateCandidateStage,
-  deleteCandidate,
-  rejectCandidate 
+  rejectCandidate,
+  deleteCandidate
 } from "../controllers/candidate.controller";
 import { protect, authorize } from "../middleware/auth.middleware";
 
 const router = express.Router();
 
 router.use(protect as any);
-router.use(authorize('HR_MANAGER', 'ADMIN', 'CEO', 'COUNTRY_MANAGER', 'DEPARTMENT_MANAGER') as any);
-router.post("/", createCandidate);
-router.get("/", getCandidates);
-router.put("/:id", updateCandidateStage);
-router.delete("/:id", deleteCandidate);
-router.patch("/:id/reject", rejectCandidate);
-router.patch("/:id/stage", updateCandidateStage);
+router.use(authorize("CEO", "COUNTRY_MANAGER", "HR_MANAGER", "HR_OFFICER", "ADMIN") as any);
+
+router.get("/",                 getCandidates);
+router.get("/:id",              getCandidateById);
+router.post("/",                createCandidate);
+router.put("/:id",              updateCandidate);
+router.patch("/:id/stage",      updateCandidateStage);
+router.patch("/:id/reject",     rejectCandidate);
+router.delete("/:id",           deleteCandidate);
 
 export default router;

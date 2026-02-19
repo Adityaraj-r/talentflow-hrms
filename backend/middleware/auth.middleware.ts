@@ -9,7 +9,6 @@ export interface AuthRequest extends Request {
     firstName?: string;
     lastName?: string;
     role: string;
-    firebaseUid?: string;
   };
 }
 
@@ -20,11 +19,9 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
     try {
       token = req.headers.authorization.split(' ')[1];
 
-    
       const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
 
-     
-      const user = await User.findById(decoded.id).select('firstName lastName email role firebaseUid isActive');
+      const user = await User.findById(decoded.id).select('firstName lastName email role isActive');
 
       if (!user) {
         return res.status(401).json({ success: false, error: 'User not found' });
@@ -34,14 +31,12 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
         return res.status(403).json({ success: false, error: 'Account deactivated' });
       }
 
-    
       req.user = {
         id: user._id.toString(),
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        role: user.role,
-        firebaseUid: user.firebaseUid
+        role: user.role
       };
 
       next();
@@ -61,12 +56,12 @@ export const authorize = (...roles: string[]) => {
     }
 
     const userRole = req.user.role.toUpperCase();
-    const allowedRoles = roles.map(role => role.toUpperCase());
+    const allowedRoles = roles.map(r => r.toUpperCase());
 
     if (!allowedRoles.includes(userRole)) {
-      return res.status(403).json({ 
-        success: false, 
-        error: `User role ${userRole} is not authorized to access this route` 
+      return res.status(403).json({
+        success: false,
+        error: `Role ${userRole} is not authorized to access this route`
       });
     }
     next();
@@ -74,9 +69,9 @@ export const authorize = (...roles: string[]) => {
 };
 
 export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (req.user && (req.user.role === 'ADMIN' || req.user.role === 'SUPER ADMIN')) {
+  if (req.user && req.user.role.toUpperCase() === 'ADMIN') {
     next();
   } else {
-    res.status(403).json({ success: false, error: 'Not authorized as an admin' });
+    res.status(403).json({ success: false, error: 'Admin access required' });
   }
 };
