@@ -2,86 +2,132 @@ import { Request, Response } from 'express';
 import Department from '../models/Department.model';
 import User from '../models/User.model';
 
-// Get all departments
-export const getDepartments = async (req: Request, res: Response) => {
+export const createDepartment = async (req: Request, res: Response) => {
+  try {
+    const { name, description, manager } = req.body;
+    const existingDepartment = await Department.findOne({ name });
+    if (existingDepartment) {
+      return res.status(400).json({ success: false, error: 'Department already exists' });
+    }
+    const department = await Department.create({
+      name,
+      description,
+      manager: manager || null 
+    });
+
+    res.status(201).json({ success: true, data: department });
+  } catch (error: any) {
+    console.error('Create Department Error:', error);
+    res.status(500).json({ success: false, error: 'Server Error' });
+  }
+};
+
+export const getAllDepartments = async (req: Request, res: Response) => {
   try {
     const departments = await Department.find()
-      .populate('manager', 'name email role')
-      .sort({ createdAt: -1 });
-    res.status(200).json({ success: true, departments });
+      .populate('manager', 'firstName lastName email');
+    
+    res.status(200).json({ success: true, count: departments.length, data: departments });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-// Add new department
-export const addDepartment = async (req: Request, res: Response) => {
+
+export const getDepartmentById = async (req: Request, res: Response) => {
   try {
-    const { name, description } = req.body;
-    const existing = await Department.findOne({ name });
-    if (existing) return res.status(400).json({ success: false, message: "Department already exists" });
+    const department = await Department.findById(req.params.id)
+      .populate('manager', 'firstName lastName email');
 
-    const newDept = await Department.create({ name, description });
-    res.status(201).json({ success: true, department: newDept });
+    if (!department) {
+      return res.status(404).json({ success: false, error: 'Department not found' });
+    }
+
+    res.status(200).json({ success: true, data: department });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-// Update department
 export const updateDepartment = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const { name, description } = req.body;
-    const updatedDept = await Department.findByIdAndUpdate(id, { name, description }, { new: true });
-    if (!updatedDept) return res.status(404).json({ success: false, message: "Department not found" });
-    res.status(200).json({ success: true, department: updatedDept });
+    const department = await Department.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true
+    }).populate('manager', 'firstName lastName');
+
+    if (!department) {
+      return res.status(404).json({ success: false, error: 'Department not found' });
+    }
+
+    res.status(200).json({ success: true, data: department });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-// Delete department
+
 export const deleteDepartment = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    await Department.findByIdAndDelete(id);
-    res.status(200).json({ success: true, message: "Department deleted" });
+    const department = await Department.findById(req.params.id);
+
+    if (!department) {
+      return res.status(404).json({ success: false, error: 'Department not found' });
+    }
+
+    await department.deleteOne();
+
+    res.status(200).json({ success: true, message: 'Department removed' });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-//Get Single Department Details (Employees + Manager)
-export const getDepartmentDetails = async (req: Request, res: Response) => {
-    try {
-        const { id } = req.params;
-        const department = await Department.findById(id).populate('manager', 'name email');
-        
-        
-        const employees = await User.find({ department: department?.name }).select('name email role designation');
 
-        if (!department) return res.status(404).json({ success: false, message: "Department not found" });
+export const addEmployeeToDepartment = async (req: Request, res: Response) => {
+  try {
+    const { employeeId } = req.body;
+    const departmentId = req.params.id;
 
-        res.status(200).json({ success: true, department, employees });
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
+    const department = await Department.findById(departmentId);
+    if (!department) {
+      return res.status(404).json({ success: false, error: 'Department not found' });
     }
+
+    const user = await User.findById(employeeId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+   
+    user.department = department.name; 
+    await user.save();
+
+    res.status(200).json({ 
+      success: true, 
+      message: `User ${user.firstName} added to ${department.name}` 
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: 'Server Error' });
+  }
 };
 
-export const assignManager = async (req: Request, res: Response) => {
-    try {
-        const { id } = req.params;
-        const { managerId } = req.body;
 
-        const department = await Department.findByIdAndUpdate(
-            id, 
-            { manager: managerId },
-            { new: true }
-        ).populate('manager', 'name');
+export const removeEmployeeFromDepartment = async (req: Request, res: Response) => {
+  try {
+    const { employeeId } = req.params;
 
-        res.status(200).json({ success: true, message: "Manager assigned", department });
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
+    const user = await User.findById(employeeId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
     }
+
+    
+    user.department = 'Unassigned'; 
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'User removed from department' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: 'Server Error' });
+  }
 };

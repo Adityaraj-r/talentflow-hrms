@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react" 
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent } from "../../components/ui/card"
 import { Input } from "../../components/ui/input"
@@ -16,21 +16,21 @@ import {
   DialogTrigger,
 } from "../../components/ui/dialog"
 import {
-  Search, Plus, Upload, Filter, Edit, Power, Eye, Lock,
-  Users, UserCheck, UserX, ShieldAlert, FileSpreadsheet, UploadCloud
+  Search, Plus, Upload, Filter, Edit, Power, UserCheck, ShieldAlert, FileSpreadsheet, UploadCloud, Users, RefreshCw
 } from "lucide-react"
 import { toast } from "sonner"
 import adminService from "../../services/adminService"
 import { ROLES } from "../../constants/roles"
-
-
+import { cn } from "@/lib/utils"
 
 const UserManagement = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isBulkOpen, setIsBulkOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(true) 
-  const [users, setUsers] = useState([]) 
-  const [filters, setFilters] = useState({ search: '', role: 'all' }) 
+  const [isLoading, setIsLoading] = useState(true)
+  const [isActionLoading, setIsActionLoading] = useState(false)
+  const [users, setUsers] = useState([])
+  const [filters, setFilters] = useState({ search: '', role: 'all' })
+  const [selectedFile, setSelectedFile] = useState(null)
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -42,177 +42,127 @@ const UserManagement = () => {
     phoneNumber: ''
   })
 
-  const [loading, setLoading] = useState(false);
-
   const fetchUsers = useCallback(async () => {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      const response = await adminService.getUsers(filters);
-
-    
-      const userData = response.data || [];
-      console.log("DEBUG: Raw Response from Service:", response);
-
-      const formattedUsers = userData.map(u => ({
+      const response = await adminService.getUsers(filters)
+      const userData = response.data || []
+      const formatted = userData.map(u => ({
         id: u._id,
         name: `${u.firstName || ''} ${u.lastName || ''}`,
         email: u.email,
         role: u.role,
+        department: u.department || 'N/A',
         status: u.isActive ? 'Active' : 'Inactive',
-        avatar: (u.firstName?.[0] || 'U') + (u.lastName?.[0] || 'S')
-      }));
-      setUsers(formattedUsers);
+        avatar: (u.firstName?.[0] || 'U').toUpperCase()
+      }))
+      setUsers(formatted)
     } catch (error) {
-      console.error("Fetch Error:", error);
-      toast.error("Failed to load users");
+      console.error("Fetch Error:", error)
+      toast.error("Failed to synchronize employee database")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  }, [filters]);
+  }, [filters])
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    fetchUsers()
+  }, [fetchUsers])
 
-  
-const handleCloseAndReset = () => {
-  setFormData({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    role:'', 
-    department:'',
-    phoneNumber: ''
-  });
-  setIsCreateOpen(false); 
-};
-
-
-const handleCreateUser = async () => {
- 
-  if (!formData.firstName || formData.firstName.trim() === "") {
-    toast.error("Please enter First Name.");
-    return;
-  }
-  if (!formData.lastName || formData.lastName.trim() === "") {
-    toast.error("Please enter Last Name.");
-    return;
-  }
-  if (!formData.email || formData.email.trim() === "") {
-    toast.error("A valid Work Email is required.");
-    return;
-  }
-  if (!formData.password || formData.password.length < 6) {
-    toast.error("Password must be at least 6 characters long.");
-    return;
-  }
-  if (!formData.role || formData.role === "Select Role") {
-    toast.error("Please select a User Role.");
-    return;
-  }
-  if (!formData.department || formData.department === "Select Dept") {
-    toast.error("Please select a Department.");
-    return;
-  }
-  if (!formData.phoneNumber || formData.phoneNumber.length !== 10) {
-    toast.error("A valid 10-digit Phone Number is required.");
-    return;
+  const handleInputChange = (e) => {
+    const { id, value } = e.target
+    setFormData(prev => ({ ...prev, [id]: value }))
   }
 
-  setLoading(true);
-  try {
-
-    const response = await adminService.enrollUser(formData); 
-    
-    if (response.success) {
-      toast.success("User created successfully!");
-      setIsCreateOpen(false);
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-        role: '',
-        department: '',
-        phoneNumber: ''
-      });
-      handleCloseAndReset();
-      fetchUsers(); 
-      
-    }
-  } catch (error) {
-    toast.error(error.message || "Enrollment failed");
-  } finally {
-    setLoading(false);
+  const handleSelectChange = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
-};
 
-  // Bulk User Upload state declarations
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      toast.info(`Selected: ${file.name}`);
-    }
-  };
-
-  const handleToggleStatus = async (userId) => {
-  try {
-
-    const response = await adminService.toggleUserStatus(userId);
-    
-    if (response.success) {
-      toast.success(response.message);
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.id === userId 
-            ? { ...user, status: user.status === 'Active' ? 'Inactive' : 'Active' } 
-            : user
-        )
-      );
-    }
-  } catch (error) {
-    console.error("Toggle Error:", error);
-    toast.error(error.message || "Failed to update user status");
+  const handleResetForm = () => {
+    setFormData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      role: '',
+      department: '',
+      phoneNumber: ''
+    })
+    setIsCreateOpen(false)
   }
-};
 
-  const handleProcessUpload = async () => {
-    if (!selectedFile) {
-      toast.error("Please select a file first");
-      return;
-    }
+  const validateForm = () => {
+    if (!formData.firstName.trim()) return "First name is required"
+    if (!formData.lastName.trim()) return "Last name is required"
+    if (!formData.email.includes("@")) return "Valid work email is required"
+    if (formData.password.length < 6) return "Password must be at least 6 characters"
+    if (!formData.role) return "Please assign a user role"
+    if (!formData.department) return "Please assign a department"
+    return null
+  }
 
-    setIsUploading(true);
+  const handleCreateUser = async (e) => {
+    e.preventDefault()
+    const error = validateForm()
+    if (error) return toast.error(error)
+
+    setIsActionLoading(true)
     try {
-      const response = await adminService.bulkUploadUsers(selectedFile);
-      toast.success(response.message || "Bulk upload successful!");
-      setIsBulkOpen(false);
-      setSelectedFile(null);
-      fetchUsers();
-      // Refresh user list logic here
+      const response = await adminService.enrollUser(formData)
+      if (response.success) {
+        toast.success("Employee enrolled successfully")
+        handleResetForm()
+        fetchUsers()
+      }
     } catch (error) {
-      toast.error(error.message || "Bulk upload failed");
+      toast.error(error.message || "Enrollment failed")
     } finally {
-      setIsUploading(false);
+      setIsActionLoading(false)
     }
-  };
+  }
 
-  const activeCount = users.filter(u => u.status === 'Active').length;
-  const inactiveCount = users.filter(u => u.status === 'Inactive').length;
-  const deactivatedCount = users.filter(u => u.status === 'Deactivated').length;
+  const handleToggleStatus = async (userId, currentStatus) => {
+    try {
+      const response = await adminService.toggleUserStatus(userId)
+      if (response.success) {
+        toast.success(`User ${currentStatus === 'Active' ? 'deactivated' : 'activated'} successfully`)
+        setUsers(prev => prev.map(u => 
+          u.id === userId ? { ...u, status: u.status === 'Active' ? 'Inactive' : 'Active' } : u
+        ))
+      }
+    } catch (error) {
+      toast.error("Failed to update account status")
+    }
+  }
 
+  const handleBulkUpload = async () => {
+    if (!selectedFile) return toast.error("Please select a valid CSV file")
+    setIsActionLoading(true)
+    try {
+      await adminService.bulkUploadUsers(selectedFile)
+      toast.success("Bulk data processed successfully")
+      setIsBulkOpen(false)
+      setSelectedFile(null)
+      fetchUsers()
+    } catch (error) {
+      toast.error("File processing failed")
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  const stats = useMemo(() => ({
+    total: users.length,
+    active: users.filter(u => u.status === 'Active').length,
+    inactive: users.filter(u => u.status === 'Inactive').length
+  }), [users])
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-          <p className="text-muted-foreground">Admin Dashboard / User Management</p>
+          <p className="text-muted-foreground">Administer employee accounts and system access levels.</p>
         </div>
         <div className="flex gap-2">
           <Dialog open={isBulkOpen} onOpenChange={setIsBulkOpen}>
@@ -221,52 +171,28 @@ const handleCreateUser = async () => {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Bulk User Upload</DialogTitle>
-                <DialogDescription>Upload a CSV or Excel file.</DialogDescription>
+                <DialogTitle>Bulk Enrollment</DialogTitle>
+                <DialogDescription>Upload employee data via CSV format.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                {/* Hidden File Input */}
-                <input
-                  type="file"
-                  id="fileInput"
-                  className="hidden"
-                  accept=".csv"
-                  onChange={handleFileChange}
-                />
-
-                <div
-                  className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 flex flex-col items-center justify-center text-center hover:bg-muted/50 transition-colors cursor-pointer"
-                  onClick={() => document.getElementById('fileInput').click()}
+                <input type="file" id="bulk-file" className="hidden" accept=".csv" onChange={(e) => setSelectedFile(e.target.files[0])} />
+                <div 
+                  className="border-2 border-dashed rounded-xl p-12 text-center cursor-pointer hover:bg-muted/50 transition-all"
+                  onClick={() => document.getElementById('bulk-file').click()}
                 >
-                  <UploadCloud className="h-10 w-10 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold">
-                    {selectedFile ? selectedFile.name : "Drag & Drop file here"}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">or click to browse</p>
-                  <Button variant="secondary" size="sm" type="button">
-                    {selectedFile ? "Change File" : "Select File"}
-                  </Button>
+                  <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="font-semibold">{selectedFile ? selectedFile.name : "Select CSV File"}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Maximum file size: 5MB</p>
                 </div>
-
-                {/* Template Download Section */}
-                <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary/20 rounded-md">
-                  <div className="flex items-center gap-3">
-                    <FileSpreadsheet className="h-5 w-5 text-primary" />
-                    <div className="text-sm">
-                      <p className="font-medium">Template.csv</p>
-                      <p className="text-xs text-muted-foreground">Use this format</p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
-                    Download
-                  </Button>
-                </div>
+                <Button variant="secondary" className="w-full">
+                  <FileSpreadsheet className="mr-2 h-4 w-4" /> Download Format Template
+                </Button>
               </div>
-
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsBulkOpen(false)}>Cancel</Button>
-                <Button onClick={handleProcessUpload} disabled={isUploading}>
-                  {isUploading ? "Uploading..." : "Upload & Process"}
+                <Button onClick={handleBulkUpload} disabled={isActionLoading}>
+                  {isActionLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Process Upload
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -274,243 +200,159 @@ const handleCreateUser = async () => {
 
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button><Plus className="mr-2 h-4 w-4" /> Create User</Button>
+              <Button><Plus className="mr-2 h-4 w-4" /> Add Employee</Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[650px]">
               <DialogHeader>
-                <DialogTitle>Create New User</DialogTitle>
-                <DialogDescription>Enter employee details.</DialogDescription>
+                <DialogTitle>Individual Enrollment</DialogTitle>
+                <DialogDescription>Create a single employee record in the system.</DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleCreateUser} className="grid gap-4 py-4">
+              <form onSubmit={handleCreateUser} className="space-y-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="fname">First Name</Label>
-                    <Input
-                      id="fname"
-                      placeholder="John"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      required
-                    />
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input id="firstName" value={formData.firstName} onChange={handleInputChange} placeholder="Ex: Aditya" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lname">Last Name</Label>
-                    <Input
-                      id="lname"
-                      placeholder="Doe"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      required
-                    />
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input id="lastName" value={formData.lastName} onChange={handleInputChange} placeholder="Ex: Chakre" />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Work Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="john.doe@company.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                      <SelectTrigger><SelectValue placeholder="Select Role" /></SelectTrigger>
+                    <Label htmlFor="email">Work Email</Label>
+                    <Input id="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="aditya@company.com" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Initial Password</Label>
+                    <Input id="password" type="password" value={formData.password} onChange={handleInputChange} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Access Role</Label>
+                    <Select onValueChange={(v) => handleSelectChange('role', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select permissions" /></SelectTrigger>
                       <SelectContent>
-                        {Object.entries(ROLES).map(([key, value]) => (
-                          <SelectItem key={key} value={key}>{value}</SelectItem>
-                        ))}
+                        {Object.entries(ROLES).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="dept">Department</Label>
-                    <Select value={formData.department} onValueChange={(value) => setFormData({ ...formData, department: value })}>
-                      <SelectTrigger><SelectValue placeholder="Select Dept" /></SelectTrigger>
+                    <Label>Department</Label>
+                    <Select onValueChange={(v) => handleSelectChange('department', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="IT">IT</SelectItem>
-                        <SelectItem value="HR">HR</SelectItem>
-                        <SelectItem value="Finance">Finance</SelectItem>
-                        <SelectItem value="Operations">Operations</SelectItem>
-                        <SelectItem value="Sales">Sales</SelectItem>
-                        <SelectItem value="Marketing">Marketing</SelectItem>
+                        {["IT", "HR", "Finance", "Sales", "Marketing", "Operations"].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Phone Number (Optional)</Label>
-                  <Input
-                    id="phoneNumber"
-                    type="tel"
-                    placeholder="+91"
-                    value={formData.phoneNumber}
-                    onChange={(e) => {
-                      // Remove non-numeric characters
-                      const value = e.target.value.replace(/\D/g, "");
-
-                      // Limit to 10 digits
-                      if (value.length <= 10) {
-                        setFormData({ ...formData, phoneNumber: value });
-                      }
-                    }}
-                  />
+                  <Label htmlFor="phoneNumber">Contact Number</Label>
+                  <Input id="phoneNumber" maxLength={10} value={formData.phoneNumber} onChange={(e) => handleInputChange({ target: { id: 'phoneNumber', value: e.target.value.replace(/\D/g, '') } })} placeholder="10-digit mobile number" />
                 </div>
+                <DialogFooter className="pt-6">
+                  <Button type="button" variant="ghost" onClick={handleResetForm}>Cancel</Button>
+                  <Button type="submit" disabled={isActionLoading}>
+                    {isActionLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Confirm Enrollment
+                  </Button>
+                </DialogFooter>
               </form>
-              <DialogFooter>
-                <Button variant="outline" onClick={handleCloseAndReset}>Cancel</Button>
-                <Button onClick={handleCreateUser}>Create User</Button>
-              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <StatsCard
-          title="Total Users"
-          value={users.length.toString()}
-          icon={<Users className="h-5 w-5" />}
-          className="text-blue-500 bg-blue-500/10 border-blue-500/20"
-        />
-        <StatsCard
-          title="Active Users"
-          value={activeCount.toString()}
-          icon={<UserCheck className="h-5 w-5" />}
-          className="text-green-500 bg-green-500/10 border-green-500/20"
-        />
-        <StatsCard
-          title="Inactive Users"
-          value="0"
-          icon={<UserX className="h-5 w-5" />}
-          className="text-yellow-500 bg-yellow-500/10 border-yellow-500/20"
-        />
-        <StatsCard
-          title="Deactivated"
-          value={inactiveCount.toString()}
-          icon={<ShieldAlert className="h-5 w-5" />}
-          className="text-red-500 bg-red-500/10 border-red-500/20"
-        />
+        <StatsCard title="Total Staff" value={stats.total} icon={<Users className="h-4 w-4" />} variant="blue" />
+        <StatsCard title="Active" value={stats.active} icon={<UserCheck className="h-4 w-4" />} variant="green" />
+        <StatsCard title="Inactive" value={stats.inactive} icon={<ShieldAlert className="h-4 w-4" />} variant="orange" />
+        <StatsCard title="Security Flags" value="0" icon={<ShieldAlert className="h-4 w-4" />} variant="red" />
       </div>
 
       <Card>
-        <CardContent className="p-0">
-          <div className="p-4 flex flex-col md:flex-row gap-4 justify-between items-center border-b">
-            <div className="flex gap-3 w-full md:w-auto">
-              <div className="relative w-full md:w-[300px]">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search users..." className="pl-8" value={filters.search}
-                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))} />
-              </div>
-              <Select
-                value={filters.role}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, role: value }))}
-              >
-                <SelectTrigger className="w-[185px]"><SelectValue placeholder="All Roles" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  {Object.entries(ROLES).map(([key, value]) => (
-                    <SelectItem key={key} value={key}>
-                      {value}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <div className="p-4 border-b flex flex-col md:flex-row gap-4 items-center justify-between bg-muted/20">
+          <div className="flex gap-2 w-full md:w-auto">
+            <div className="relative flex-1 md:w-80">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search by name, email or ID..." 
+                className="pl-10" 
+                onChange={(e) => setFilters(p => ({ ...p, search: e.target.value }))}
+              />
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4" /> Filter</Button>
-            </div>
+            <Select onValueChange={(v) => setFilters(p => ({ ...p, role: v }))}>
+              <SelectTrigger className="w-40"><SelectValue placeholder="All Roles" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                {Object.entries(ROLES).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
-
+          <Button variant="outline" size="sm" onClick={fetchUsers} disabled={isLoading}>
+            <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
+            Sync Data
+          </Button>
+        </div>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-[40px]"><input type="checkbox" className="rounded border-gray-300" /></TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+              <TableRow className="bg-muted/30">
+                <TableHead className="font-bold">Employee</TableHead>
+                <TableHead className="font-bold">Department</TableHead>
+                <TableHead className="font-bold">Access Role</TableHead>
+                <TableHead className="font-bold">Account Status</TableHead>
+                <TableHead className="text-right font-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                    Fetching real-time employee data...
-                  </TableCell>
-                </TableRow>
+                <TableRow><TableCell colSpan={5} className="h-64 text-center text-muted-foreground">Refreshing employee records...</TableCell></TableRow>
               ) : users.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                    No employees found in the database.
-                  </TableCell>
-                </TableRow>
+                <TableRow><TableCell colSpan={5} className="h-64 text-center text-muted-foreground">No matching records found.</TableCell></TableRow>
               ) : (
                 users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <input type="checkbox" className="rounded border-gray-300" />
-                    </TableCell>
+                  <TableRow key={user.id} className="hover:bg-muted/10 transition-colors">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary border border-primary/20">
                           {user.avatar}
                         </div>
-                        <span className="font-medium">{user.name}</span>
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-sm">{user.name}</span>
+                          <span className="text-xs text-muted-foreground">{user.email}</span>
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell>{user.email}</TableCell>
+                    <TableCell><span className="text-sm">{user.department}</span></TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="font-normal capitalize text-xs">
-                        {user.role?.toLowerCase().replace('_', ' ')}
+                      <Badge variant="secondary" className="text-[10px] font-bold tracking-wider px-2 py-0.5">
+                        {user.role}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        className={user.status === 'Active'
-                          ? "bg-green-500/10 text-green-500 border-green-500/20"
-                          : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-                        }
-                      >
+                      <div className={cn(
+                        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
+                        user.status === 'Active' 
+                          ? "bg-green-500/10 text-green-600 border-green-200" 
+                          : "bg-orange-500/10 text-orange-600 border-orange-200"
+                      )}>
+                        <span className={cn("h-1.5 w-1.5 rounded-full", user.status === 'Active' ? "bg-green-600" : "bg-orange-600")} />
                         {user.status}
-                      </Badge>
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={`h-8 w-8 ${user.status === 'Active'
-                            ? 'text-red-500 hover:bg-red-50'    // Red when user is Active (Deactivation action)
-                            : 'text-green-500 hover:bg-green-50' // Green when user is Inactive (Activation action)
-                            }`}
-                          onClick={() => handleToggleStatus(user.id)}
-                          title={user.status === 'Active' ? 'Deactivate User' : 'Activate User'}
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary"><Edit className="h-4 w-4" /></Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className={cn("h-8 w-8", user.status === 'Active' ? "hover:text-red-500" : "hover:text-green-500")}
+                          onClick={() => handleToggleStatus(user.id, user.status)}
                         >
-                          {user.status === 'Active' ? (
-                            <Power className="h-4 w-4" /> // Power icon for stopping
-                          ) : (
-                            <UserCheck className="h-4 w-4" /> // Check icon for starting
-                          )}
+                          <Power className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -519,16 +361,9 @@ const handleCreateUser = async () => {
               )}
             </TableBody>
           </Table>
-
-          <div className="p-4 border-t flex items-center justify-between text-sm text-muted-foreground">
-            <div>Showing 1 to 8 of 156 users</div>
-            <div className="flex items-center gap-2">
-              <span className="mr-2">Page 1</span>
-              <div className="flex gap-1">
-                <Button variant="outline" size="sm" className="h-8 w-8 p-0">{"<"}</Button>
-                <Button variant="outline" size="sm" className="h-8 w-8 p-0">{">"}</Button>
-              </div>
-            </div>
+          <div className="p-4 border-t flex items-center justify-between text-xs text-muted-foreground font-medium">
+             <span>Displaying {users.length} active records from MongoDB</span>
+             <span>System Status: Stable</span>
           </div>
         </CardContent>
       </Card>
@@ -536,16 +371,24 @@ const handleCreateUser = async () => {
   )
 }
 
-const StatsCard = ({ title, value, icon, className }) => (
-  <Card className={`border ${className}`}>
-    <CardContent className="p-4 flex items-center justify-between">
-      <div>
-        <p className="text-sm font-medium opacity-80">{title}</p>
-        <h3 className="text-2xl font-bold mt-1">{value}</h3>
-      </div>
-      <div className="p-2 rounded-lg bg-black/5 dark:bg-white/10">{icon}</div>
-    </CardContent>
-  </Card>
-)
+const StatsCard = ({ title, value, icon, variant }) => {
+  const styles = {
+    blue: "text-blue-600 bg-blue-500/5 border-blue-200",
+    green: "text-green-600 bg-green-500/5 border-green-200",
+    orange: "text-orange-600 bg-orange-500/5 border-orange-200",
+    red: "text-red-600 bg-red-500/5 border-red-200"
+  }
+  return (
+    <Card className={cn("border shadow-none", styles[variant])}>
+      <CardContent className="p-4 flex items-center justify-between">
+        <div>
+          <p className="text-[10px] uppercase font-black tracking-widest opacity-70">{title}</p>
+          <h3 className="text-2xl font-black mt-1">{value}</h3>
+        </div>
+        <div className="p-3 rounded-full bg-background/50 border shadow-sm">{icon}</div>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default UserManagement

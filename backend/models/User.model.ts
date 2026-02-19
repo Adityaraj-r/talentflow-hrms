@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 export interface IUser extends Document {
-  firebaseUid?: string;
   email: string;
   password: string;
   role: string;
@@ -11,35 +11,30 @@ export interface IUser extends Document {
   department?: string;
   phoneNumber?: string;
   employeeId?: mongoose.Types.ObjectId;
-  currentShift?: mongoose.Types.ObjectId;   //✅ NEW ADD
+  currentShift?: mongoose.Types.ObjectId;
   isActive: boolean;
   isEmailVerified: boolean;
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
+  getSignedJwtToken(): string;
 }
 
 const UserSchema = new Schema<IUser>(
   {
-    firebaseUid: {
-      type: String,
-      unique: true,
-      required: [true, 'Firebase UID is required for authentication'],
-      index: true
-    },
     email: {
       type: String,
       required: [true, 'Email is required'],
       unique: true,
       lowercase: true,
-      trim: true,
+      trim: true
     },
     password: {
       type: String,
       required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters'],
-      select: false,
+      select: false
     },
     role: {
       type: String,
@@ -56,60 +51,69 @@ const UserSchema = new Schema<IUser>(
         'OPERATIONS_MANAGER',
         'CAMP_BOSS',
         'ADMIN',
-        'EMPLOYEE',
-      ],
-      // default: 'EMPLOYEE',
+        'EMPLOYEE'
+      ]
     },
     firstName: {
       type: String,
       required: [true, 'First name is required'],
-      trim: true,
+      trim: true
     },
     lastName: {
       type: String,
       required: [true, 'Last name is required'],
-      trim: true,
+      trim: true
     },
     phoneNumber: {
       type: String,
-      required: [true, 'Phone number is required'],
-      minlength: [10, 'Phone number must be exactly 10 digits'],
-      maxlength: [10, 'Phone number must be exactly 10 digits']
+      default: null
     },
     department: {
       type: String,
-      required: [true, 'Department is required']
+      default: null
     },
-    // ✅ ADD THIS 2: Schema Definition
+    employeeId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Employee',
+      default: null
+    },
     currentShift: {
       type: Schema.Types.ObjectId,
       ref: 'Shift',
-      default: null 
+      default: null
     },
     isActive: {
       type: Boolean,
-      default: true,
+      default: true
     },
     isEmailVerified: {
       type: Boolean,
-      default: false,
+      default: false
     },
-    lastLogin: Date,
+    lastLogin: {
+      type: Date,
+      default: null
+    }
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// Method to compare passwords
 UserSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
   try {
     return await bcrypt.compare(candidatePassword, this.password);
-  } catch (error) {
+  } catch {
     return false;
   }
+};
+
+UserSchema.methods.getSignedJwtToken = function (): string {
+  return jwt.sign(
+    { id: this._id, email: this.email, role: this.role },
+    (process.env.JWT_SECRET as jwt.Secret) || 'fallback_secret',
+    { expiresIn: process.env.JWT_EXPIRE || '30d' } as jwt.SignOptions
+  );
 };
 
 export default mongoose.model<IUser>('User', UserSchema);
