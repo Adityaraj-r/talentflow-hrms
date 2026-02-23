@@ -27,6 +27,8 @@ import candidateRoutes from "./routes/candidate.routes";
 import departmentSyncRoutes from "./routes/departmentSync.routes";
 
 import { seedRoles } from './utils/roleSeeder';
+import documentRoutes from './routes/document.routes';
+
 
 dotenv.config();
 
@@ -43,6 +45,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const localUploads = path.join(__dirname, 'uploads');
 const rootUploads = path.join(__dirname, '../uploads');
@@ -104,6 +107,7 @@ app.use("/api/shifts", shiftRoutes);
 app.use('/api/performance', performanceRoutes);
 app.use("/api/holidays", holidayRoutes);
 app.use("/api/transfers", transferRoutes);
+app.use("/api/documents", documentRoutes);
 
 // 404 handler
 app.use((req, res) => {
