@@ -9,7 +9,7 @@ import {
 } from "recharts";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { useDepartment } from "../../utils/useReports";
+import { useDepartment } from "@/utils/useReports";
 
 export default function DepartmentChart({ filters }) {
 

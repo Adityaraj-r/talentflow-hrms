@@ -15,43 +15,62 @@ import OtpVerification from "./pages/auth/OtpVerification"
 // Layout
 import DashboardLayout from "./components/layouts/DashboardLayout"
 
-// Dashboard Pages
+// Dashboard Pages 
 import Dashboard from "./pages/dashboard/Dashboard"
 import AdminDashboard from "./pages/dashboard/AdminDashboard"
 import EmployeeDashboard from "./pages/dashboard/EmployeeDashboard"
-import Unauthorized from "./pages/Unauthorized"
-import ReportsPage from "./pages/dashboard/ReportsPage"
-import UserManagement from "./pages/dashboard/UserManagement"
-import SystemSettings from "./pages/dashboard/SystemSettings"
-import Onboarding from "./pages/dashboard/Onboarding"
 import ProjectManagerDashboard from "./pages/dashboard/ProjectManagerDashboard"
-import RoleManagement from "./pages/dashboard/RoleManagement"
-import CompanyStructure from "./pages/dashboard/CompanyStructure"
-import AuditLogs from "./pages/dashboard/AuditLogs"
-import Integrations from "./pages/dashboard/Integrations"
-import AdminPerformance from "./pages/dashboard/AdminPerformance"
-import ViewCycleDetails from "./pages/dashboard/ViewCycleDetails"
-import DigitalLocker from "./pages/dashboard/DigitalLocker"
+import Unauthorized from "./pages/Unauthorized"
+
+// Administration Module
+import UserManagement from "./pages/modules/administration/UserManagement"
+import SystemSettings from "./pages/modules/administration/SystemSettings"
+import RoleManagement from "./pages/modules/administration/RoleManagement"
+import CompanyStructure from "./pages/modules/administration/CompanyStructure"
+import AuditLogs from "./pages/modules/administration/AuditLogs"
+import Integrations from "./pages/modules/administration/Integrations"
+
+// Recruitment Module
+import Recruitment from "./pages/modules/recruitment/Recruitment"
+import StaffRequisition from "./pages/modules/recruitment/StaffRequisition"
+import CreateRequisition from "./pages/modules/recruitment/CreateRequisition"
+import Onboarding from "./pages/modules/recruitment/Onboarding"
+import ManageOnboarding from "./pages/modules/recruitment/ManageOnboarding"
+import ActiveOnboarding from "./pages/modules/recruitment/ActiveOnboarding"
+import OnboardingDetails from "./pages/modules/recruitment/OnboardingDetails"
+import RecentHires from "./pages/modules/recruitment/RecentHires"
+import CandidateManagement from "./pages/modules/recruitment/CandidateManagement"
+import OfferManagement from "./pages/modules/recruitment/OfferManagement"
+
+// Payroll Module
+import Payroll from "./pages/modules/payroll/Payroll"
+import Tickets from "./pages/modules/payroll/Tickets"
+import Indemnity from "./pages/modules/payroll/Indemnity"
+
+// Transfer Module
+import EmployeeTransfer from "./pages/modules/transfer/EmployeeTransfer"
+import TransferPage from "./pages/modules/transfer/TransferPage"
+
+// Performance Module
+import AdminPerformance from "./pages/modules/performance/AdminPerformance"
+import ViewCycleDetails from "./pages/modules/performance/ViewCycleDetails"
+
+// Reports Module
+import ReportsPage from "./pages/modules/reports/ReportsPage"
+
+// Employee Center Module
+import DigitalLocker from "./pages/modules/employee-center/DigitalLocker"
 
 // Project Manager Role Pages
 import TaskBoard from "./pages/role/PROJECT_MANAGER/TaskBoard"
 import SafetyIncidents from "./pages/role/PROJECT_MANAGER/SafetyIncidents"
 import TimesheetApprovals from "./pages/role/PROJECT_MANAGER/TimesheetApprovals"
 
-// HR Modules
-import Recruitment from "./pages/modules/recruitment/Recruitment"
-import StaffRequisition from "./pages/modules/recruitment/StaffRequisition"
-import EmployeeTransfer from "./pages/modules/transfer/EmployeeTransfer"
-import Payroll from "./pages/modules/payroll/Payroll"
-import Tickets from "./pages/modules/payroll/Tickets"
-import Indemnity from "./pages/modules/payroll/Indemnity"
-import RecentHires from "./pages/modules/recruitment/RecentHires"
-import CreateRequisition from "./pages/modules/recruitment/CreateRequisition"
-import ManageOnboarding from "./pages/modules/recruitment/ManageOnboarding"
-import ActiveOnboarding from "./pages/modules/recruitment/ActiveOnboarding"
-import OnboardingDetails from "@/pages/modules/recruitment/OnboardingDetails"
-import CandidateManagement from "./pages/modules/recruitment/CandidateManagement"
-import OfferManagement from "./pages/modules/recruitment/OfferManagement"
+// Admin Role Pages
+import AttendanceRecords from "./pages/role/ADMIN/AttendanceRecords"
+import AdminLeaveManagement from "./pages/role/ADMIN/LeaveManagement"
+import ShiftManagement from "./pages/role/ADMIN/ShiftManagement"
+import HolidayManagement from "./pages/role/ADMIN/HolidayManagement"
 
 // Role-Specific Appraisal Pages
 import HRManagerAppraisal from "./pages/role/HR_MANAGER/Appraisal"
@@ -59,29 +78,24 @@ import DepartmentManagerAppraisal from "./pages/role/DEPARTMENT_MANAGER/Appraisa
 import DirectManagerAppraisal from "./pages/role/DIRECT_MANAGER/Appraisal"
 import EmployeeAppraisal from "./pages/role/EMPLOYEE/Appraisal"
 
-// Role-Specific DisciplinaryActions Pages
+// Role-Specific Disciplinary Actions Pages
 import HRManagerDisciplinaryActions from "./pages/role/HR_MANAGER/DisciplinaryActions"
 import DepartmentManagerDisciplinaryActions from "./pages/role/DEPARTMENT_MANAGER/DisciplinaryActions"
 import DirectManagerDisciplinaryActions from "./pages/role/DIRECT_MANAGER/DisciplinaryActions"
 
-// Role-Specific DocumentRequests Pages
+// Role-Specific Document Requests Pages
 import DocumentRequestsHRManager from "./pages/role/HR_MANAGER/DocumentRequests"
 import DocumentRequestsHROfficer from "./pages/role/HR_OFFICER/DocumentRequests"
 import DocumentRequestsEmployee from "./pages/role/EMPLOYEE/DocumentRequests"
 
-// Role-Specific LeaveManagement Pages
-import CEOLLeaveManagement from "./pages/role/CEO/LeaveManagement"
+// Role-Specific Leave Management Pages
+import CEOLeaveManagement from "./pages/role/CEO/LeaveManagement"
 import HRManagerLeaveManagement from "./pages/role/HR_MANAGER/LeaveManagement"
 import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
+
+// Employee Role Pages
 import MyAttendance from "./pages/role/EMPLOYEE/MyAttendance"
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
-import TransferPage from "./pages/modules/transfer/TransferPage"
-
-// Admin Role Pages
-import AttendanceRecords from "./pages/role/ADMIN/AttendanceRecords"
-import AdminLeaveManagement from "./pages/role/ADMIN/LeaveManagement"
-import ShiftManagement from "./pages/role/ADMIN/ShiftManagement"
-import HolidayManagement from "./pages/role/ADMIN/HolidayManagement"
 
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -183,14 +197,87 @@ function App() {
                     </ProtectedRoute>
                   } />
 
-                  {/* User Management */}
+                  {/* Project Manager Dashboard */}
+                  <Route path="/dashboard/project-manager" element={
+                    <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
+                      <DashboardLayout><ProjectManagerDashboard /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/dashboard/pm/tasks" element={
+                    <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
+                      <DashboardLayout><TaskBoard /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/dashboard/pm/safety" element={
+                    <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
+                      <DashboardLayout><SafetyIncidents /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/dashboard/pm/timesheets" element={
+                    <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
+                      <DashboardLayout><TimesheetApprovals /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  {/* Administration */}
                   <Route path="/dashboard/users" element={
                     <ProtectedRoute allowedRoles={["ADMIN", "HR_MANAGER", "SUPER ADMIN"]}>
                       <DashboardLayout><UserManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
-                  {/* Onboarding */}
+                  <Route path="/settings" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><SystemSettings /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/admin/roles" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><RoleManagement /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/admin/company-structure" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><CompanyStructure /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/admin/audit-logs" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><AuditLogs /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/admin/integrations" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><Integrations /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  {/* Recruitment */}
+                  <Route path="/recruitment" element={
+                    <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><Recruitment /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/staff-requisition" element={
+                    <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "HR_MANAGER", "DEPARTMENT_MANAGER", "ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><StaffRequisition /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/dashboard/create-requisition" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "HR_MANAGER", "HR_OFFICER", "SUPER ADMIN"]}>
+                      <DashboardLayout><CreateRequisition /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
                   <Route path="/dashboard/onboarding" element={
                     <ProtectedRoute allowedRoles={["ADMIN", "HR_MANAGER", "HR_OFFICER", "SUPER ADMIN"]}>
                       <DashboardLayout><Onboarding /></DashboardLayout>
@@ -221,14 +308,12 @@ function App() {
                     </ProtectedRoute>
                   } />
 
-                  {/* Candidate Management */}
                   <Route path="/dashboard/candidate-management" element={
                     <ProtectedRoute allowedRoles={["ADMIN", "HR_MANAGER", "HR_OFFICER", "SUPER ADMIN"]}>
                       <DashboardLayout><CandidateManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
-                  {/* Offer Management */}
                   <Route path="/dashboard/offer-management" element={
                     <ProtectedRoute allowedRoles={["ADMIN", "HR_MANAGER", "HR_OFFICER", "SUPER ADMIN"]}>
                       <DashboardLayout><OfferManagement /></DashboardLayout>
@@ -244,69 +329,6 @@ function App() {
                   <Route path="/dashboard/offer/:offerId" element={
                     <ProtectedRoute allowedRoles={["ADMIN", "HR_MANAGER", "HR_OFFICER", "SUPER ADMIN"]}>
                       <DashboardLayout><OfferManagement /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  {/* Project Manager */}
-                  <Route path="/dashboard/project-manager" element={
-                    <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
-                      <DashboardLayout><ProjectManagerDashboard /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/dashboard/pm/tasks" element={
-                    <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
-                      <DashboardLayout><TaskBoard /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/dashboard/pm/safety" element={
-                    <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
-                      <DashboardLayout><SafetyIncidents /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/dashboard/pm/timesheets" element={
-                    <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
-                      <DashboardLayout><TimesheetApprovals /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  {/* Employee Role Pages */}
-                  <Route path="/dashboard/employee/attendance" element={
-                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
-                      <DashboardLayout><MyAttendance /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/dashboard/employee/tasks" element={
-                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
-                      <DashboardLayout><MyTasks /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/dashboard/employee/make-transfer" element={
-                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
-                      <DashboardLayout><TransferPage /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  {/* HR Module Routes */}
-                  <Route path="/recruitment" element={
-                    <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><Recruitment /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/staff-requisition" element={
-                    <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "HR_MANAGER", "DEPARTMENT_MANAGER", "ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><StaffRequisition /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/dashboard/create-requisition" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "HR_MANAGER", "HR_OFFICER", "SUPER ADMIN"]}>
-                      <DashboardLayout><CreateRequisition /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
@@ -335,41 +357,29 @@ function App() {
                     </ProtectedRoute>
                   } />
 
-                  {/* Reports & Settings */}
-                  <Route path="/reports" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><ReportsPage /></DashboardLayout>
+                  {/* Payroll */}
+                  <Route path="/payroll" element={
+                    <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "PAYROLL_OFFICER", "ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><Payroll /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
-                  <Route path="/settings" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><SystemSettings /></DashboardLayout>
+                  <Route path="/tickets" element={
+                    <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "PAYROLL_OFFICER", "ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><Tickets /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
-                  {/* Administration */}
-                  <Route path="/admin/roles" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><RoleManagement /></DashboardLayout>
+                  <Route path="/indemnity" element={
+                    <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "PAYROLL_OFFICER", "ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><Indemnity /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
-                  <Route path="/admin/company-structure" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><CompanyStructure /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/admin/audit-logs" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><AuditLogs /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/admin/integrations" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><Integrations /></DashboardLayout>
+                  {/* Transfers */}
+                  <Route path="/employee-transfer" element={
+                    <ProtectedRoute allowedRoles={["HR_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER", "ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><EmployeeTransfer /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
@@ -451,7 +461,7 @@ function App() {
                   {/* Leave Management */}
                   <Route path="/role/ceo/leave-management" element={
                     <ProtectedRoute allowedRoles={["CEO"]}>
-                      <DashboardLayout><CEOLLeaveManagement /></DashboardLayout>
+                      <DashboardLayout><CEOLeaveManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
@@ -467,29 +477,22 @@ function App() {
                     </ProtectedRoute>
                   } />
 
-                  {/* Transfers */}
-                  <Route path="/employee-transfer" element={
-                    <ProtectedRoute allowedRoles={["HR_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER", "ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><EmployeeTransfer /></DashboardLayout>
+                  {/* Employee Role Pages */}
+                  <Route path="/dashboard/employee/attendance" element={
+                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                      <DashboardLayout><MyAttendance /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
-                  {/* Payroll */}
-                  <Route path="/payroll" element={
-                    <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "PAYROLL_OFFICER", "ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><Payroll /></DashboardLayout>
+                  <Route path="/dashboard/employee/tasks" element={
+                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                      <DashboardLayout><MyTasks /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
-                  <Route path="/tickets" element={
-                    <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "PAYROLL_OFFICER", "ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><Tickets /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/indemnity" element={
-                    <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "PAYROLL_OFFICER", "ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><Indemnity /></DashboardLayout>
+                  <Route path="/dashboard/employee/make-transfer" element={
+                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                      <DashboardLayout><TransferPage /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
@@ -497,6 +500,13 @@ function App() {
                   <Route path="/digital-locker" element={
                     <ProtectedRoute allowedRoles={["ADMIN", "HR_MANAGER", "EMPLOYEE"]}>
                       <DashboardLayout><DigitalLocker /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  {/* Reports */}
+                  <Route path="/reports" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><ReportsPage /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 

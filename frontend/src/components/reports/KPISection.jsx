@@ -1,5 +1,5 @@
 import SkeletonCard from "./SkeletonCard";
-import { useSummary } from "../../hooks/useReports";
+import { useSummary } from "@/hooks/useReports";
 import CountUp from "react-countup";
 import { motion } from "framer-motion";
 

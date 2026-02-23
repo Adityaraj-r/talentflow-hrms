@@ -7,7 +7,7 @@ import {
   Label,
 } from "recharts";
 import { motion } from "framer-motion";
-import { useLeave } from "../../utils/useReports";
+import { useLeave } from "@/utils/useReports";
 
 export default function LeavePieChart({ filters }) {
   const { data = [], isLoading } = useLeave(filters);

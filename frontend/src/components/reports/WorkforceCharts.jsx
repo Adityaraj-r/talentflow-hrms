@@ -8,11 +8,11 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { useWorkforce } from "../../hooks/useReports";
+import { useWorkforce } from "@/hooks/useReports";
 import { motion } from "framer-motion";
-import { getLast12Months } from "../../utils/dateUtils";
+import { getLast12Months } from "@/utils/dateUtils";
 import { useState } from "react";
-import { getMonthsBetween } from "../../utils/dateUtils";
+import { getMonthsBetween } from "@/utils/dateUtils";
 
 
 export default function WorkforceCharts({ filters }) {
