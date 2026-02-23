@@ -1,13 +1,19 @@
 import { motion } from "framer-motion";
-import { TrendingUp, AlertTriangle, DollarSign, Users } from "lucide-react";
-import { useSummary } from "../../hooks/useReports";
+import {
+  TrendingUp,
+  AlertTriangle,
+  IndianRupee,
+  Users,
+} from "lucide-react";
 
-export default function ExecutiveInsights({ filters }) {
-  const { data, isLoading } = useSummary(filters);
-
-  if (isLoading) {
+export default function ExecutiveInsights({
+  data,
+  loading,
+  error,
+}) {
+  if (loading) {
     return (
-      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl p-8">
+      <div className="bg-white dark:bg-slate-900 border rounded-2xl p-8">
         <p className="text-gray-500 dark:text-slate-400">
           Generating AI Insights...
         </p>
@@ -15,21 +21,44 @@ export default function ExecutiveInsights({ filters }) {
     );
   }
 
-  
-  const headcount = data?.headcount ?? 0;
-  const attritionRate = data?.attritionRate ?? 0;
-  const totalPayroll = data?.totalPayroll ?? 0;
-  const openPositions = data?.openPositions ?? 0;
+  if (error) {
+    return (
+      <div className="text-red-500">
+        Failed to generate executive insights
+      </div>
+    );
+  }
 
-  // Dynamic risk detection
+  if (!data) return null;
+
+  const headcount = data.headcount ?? 0;
+  const attritionRate = data.attritionRate ?? 0;
+  const totalPayroll = data.totalPayroll ?? 0;
+  const openPositions = data.openPositions ?? 0;
+
+  /* ===============================
+     Dynamic Risk Detection
+  =============================== */
   const attritionRisk =
     attritionRate > 8
-      ? { level: "High Risk", color: "text-red-500", glow: "shadow-red-500/20" }
+      ? {
+          level: "High Risk",
+          color: "text-red-500",
+          glow: "shadow-red-500/20",
+        }
       : attritionRate > 5
-      ? { level: "Moderate Risk", color: "text-amber-500", glow: "shadow-amber-500/20" }
-      : { level: "Low Risk", color: "text-emerald-500", glow: "shadow-emerald-500/20" };
+      ? {
+          level: "Moderate Risk",
+          color: "text-amber-500",
+          glow: "shadow-amber-500/20",
+        }
+      : {
+          level: "Low Risk",
+          color: "text-emerald-500",
+          glow: "shadow-emerald-500/20",
+        };
 
-  const confidenceScore = 95; // stable confidence instead of random
+  const confidenceScore = 95;
 
   const insights = [
     {
@@ -48,7 +77,7 @@ export default function ExecutiveInsights({ filters }) {
       color: "text-amber-500",
     },
     {
-      icon: DollarSign,
+      icon: IndianRupee,
       title: "Payroll Overview",
       description: `Total payroll: ₹${totalPayroll.toLocaleString()}.`,
       color: "text-emerald-500",
@@ -78,7 +107,7 @@ export default function ExecutiveInsights({ filters }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+          <h2 className="text-2xl font-semibold">
             Executive AI Insights
           </h2>
           <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
@@ -120,7 +149,7 @@ export default function ExecutiveInsights({ filters }) {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <Icon className={item.color} size={22} />
-                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                  <h3 className="font-semibold">
                     {item.title}
                   </h3>
                 </div>

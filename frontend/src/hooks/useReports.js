@@ -1,95 +1,49 @@
-import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import { useEffect, useState } from "react";
+import api from "@/services/apiClient"; 
 
-const API_BASE = "http://localhost:5001/api/reports";
+export default function useReports(filters) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-/* =========================
-   HELPER: Stable Key Builder
-========================= */
-const buildQueryKey = (key, filters = {}) => [
-  key,
-  filters?.department || "all",
-  filters?.startDate || "",
-  filters?.endDate || "",
-];
+  useEffect(() => {
+    const fetchAll = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-/* =========================
-   SUMMARY
-========================= */
-export const useSummary = (filters = {}) => {
-  return useQuery({
-    queryKey: buildQueryKey("summary", filters),
-    queryFn: async () => {
-      const res = await axios.get(`${API_BASE}/summary`, {
-        params: filters,
-      });
-      return res.data.data;
-    },
-    staleTime: 0,              // Always refetch on filter change
-    keepPreviousData: false,   // Prevent stale UI flash
-  });
-};
+        const [
+          summaryRes,
+          workforceRes,
+          attendanceRes,
+          departmentsRes,
+          leavesRes,
+        ] = await Promise.all([
+          api.get("/reports/summary", { params: filters }),
+          api.get("/reports/workforce", { params: filters }),
+          api.get("/reports/attendance", { params: filters }),
+          api.get("/reports/departments", { params: filters }),
+          api.get("/reports/leaves", { params: filters }),
+        ]);
+                
+        setData({
+          summary: summaryRes.data,
+          workforceTrend: workforceRes.data,
+          attendanceTrend: attendanceRes.data,
+          departmentDistribution: departmentsRes.data,
+          leaveBreakdown: leavesRes.data,
+        });
 
-/* =========================
-   WORKFORCE
-========================= */
-export const useWorkforce = (filters = {}) => {
-  return useQuery({
-    queryKey: buildQueryKey("workforce", filters),
-    queryFn: async () => {
-      const res = await axios.get(`${API_BASE}/workforce`, {
-        params: filters,
-      });
-      return res.data.data;
-    },
-    keepPreviousData: false,
-  });
-};
+      } catch (err) {
+        console.error("Reports fetch failed:", err);
+        setError("Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-/* =========================
-   ATTENDANCE
-========================= */
-export const useAttendance = (filters = {}) => {
-  return useQuery({
-    queryKey: buildQueryKey("attendance", filters),
-    queryFn: async () => {
-      const res = await axios.get(`${API_BASE}/attendance`, {
-        params: filters,
-      });
-      return res.data.data;
-    },
-    keepPreviousData: false,
-  });
-};
+    fetchAll();
+  }, [filters]);
 
-/* =========================
-   DEPARTMENTS
-========================= */
-export const useDepartments = (filters = {}) => {
-  return useQuery({
-    queryKey: buildQueryKey("departments", filters),
-    queryFn: async () => {
-      const res = await axios.get(`${API_BASE}/departments`, {
-        params: filters,
-      });
-      return res.data.data;
-    },
-    keepPreviousData: false,
-  });
-};
-
-/* =========================
-   LEAVES
-========================= */
-export const useLeaves = (filters = {}) => {
-  return useQuery({
-    queryKey: buildQueryKey("leaves", filters),
-    queryFn: async () => {
-      const res = await axios.get(`${API_BASE}/leaves`, {
-        params: filters,
-      });
-      return res.data.data;
-    },
-    keepPreviousData: false,
-  });
-};
+  return { data, loading, error };
+}

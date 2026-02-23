@@ -1,12 +1,13 @@
 import SkeletonCard from "./SkeletonCard";
-import { useSummary } from "../../hooks/useReports";
 import CountUp from "react-countup";
 import { motion } from "framer-motion";
 
-export default function KPISection({ filters }) {
-  const { data, isLoading, isError } = useSummary(filters);
-
-  if (isLoading) {
+export default function KPISection({
+  data,
+  loading,
+  error,
+}) {
+  if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
         {[...Array(6)].map((_, i) => (
@@ -16,17 +17,38 @@ export default function KPISection({ filters }) {
     );
   }
 
-  if (isError) {
-    return <div className="text-red-500">Failed to load report data</div>;
+  if (error) {
+    return (
+      <div className="text-red-500">
+        Failed to load report data
+      </div>
+    );
   }
 
+  if (!data) return null;
+
   const cards = [
-    { label: "Headcount", value: data?.headcount ?? 0 },
-    { label: "Active Employees", value: data?.activeEmployees ?? 0 },
-    { label: "Attrition Rate", value: data?.attritionRate ?? 0, suffix: "%" },
-    { label: "Avg Attendance", value: data?.avgAttendance ?? 0, suffix: "%" },
-    { label: "Total Payroll", value: data?.totalPayroll ?? 0, prefix: "₹" },
-    { label: "Open Positions", value: data?.openPositions ?? 0 },
+    { label: "Headcount", value: data.headcount ?? 0 },
+    { label: "Active Employees", value: data.activeEmployees ?? 0 },
+    {
+      label: "Attrition Rate",
+      value: data.attritionRate ?? 0,
+      suffix: "%",
+    },
+    {
+      label: "Avg Attendance",
+      value: data.avgAttendance ?? 0,
+      suffix: "%",
+    },
+    {
+      label: "Total Payroll",
+      value: data.totalPayroll ?? 0,
+      prefix: "₹",
+    },
+    {
+      label: "Open Positions",
+      value: data.openPositions ?? 0,
+    },
   ];
 
   return (

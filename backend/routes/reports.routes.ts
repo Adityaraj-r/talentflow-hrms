@@ -1,27 +1,31 @@
-import express from 'express';
+import express from "express";
 import {
   getSummary,
   getWorkforceData,
   getAttendanceData,
   getDepartmentData,
-  getLeaveData
-} from '../controllers/reports.controller';
+  getLeaveData,
+  getEmployeePerformance,
+} from "../controllers/reports.controller";
 
 const router = express.Router();
 
-// GET /api/reports/summary - KPI data
-router.get('/summary', getSummary);
+// KPI summary
+router.get("/summary", getSummary);
 
-// GET /api/reports/workforce - Workforce analytics over time
-router.get('/workforce', getWorkforceData);
+// Workforce analytics
+router.get("/workforce", getWorkforceData);
 
-// GET /api/reports/attendance - Attendance analytics
-router.get('/attendance', getAttendanceData);
+// Attendance analytics
+router.get("/attendance", getAttendanceData);
 
-// GET /api/reports/departments - Department distribution
-router.get('/departments', getDepartmentData);
+// Department distribution
+router.get("/departments", getDepartmentData);
 
-// GET /api/reports/leaves - Leave breakdown
-router.get('/leaves', getLeaveData);
+// Leave breakdown
+router.get("/leaves", getLeaveData);
+
+// Performance table
+router.get("/performance", getEmployeePerformance);
 
 export default router;

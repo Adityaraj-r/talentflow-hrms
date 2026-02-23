@@ -1,172 +1,201 @@
-import { exportPDF, exportExcel } from "../../utils/exportUtils";
-import { useSummary } from "../../hooks/useReports";
-import { useState, useEffect, useCallback } from "react";
+import { useEffect } from "react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectValue,
 } from "@/components/ui/select";
 
-
 export default function ReportsHeader({ filters, setFilters }) {
+  const departments = [
+    "Engineering",
+    "Sales",
+    "Marketing",
+    "HR",
+    "Finance",
+    "Operations",
+  ];
 
-  
-  const { data } = useSummary(filters);
-  const [quickFilter, setQuickFilter] = useState("last12");
-  const handleQuickFilter = useCallback((value) => {
-    setQuickFilter(value);
+  const roles = [
+    "CEO",
+    "Country Manager",
+    "HR Manager",
+    "HR Officer",
+    "Department Manager",
+    "Direct Manager",
+    "Payroll Officer",
+    "Project Manager",
+    "Operations Manager",
+    "Camp Boss",
+    "Admin",
+    "Employee",
+  ];
 
-    const today = new Date();
-    let startDate = null;
-
-    switch (value) {
-      case "last3":
-        startDate = new Date();
-        startDate.setMonth(today.getMonth() - 3);
-        break;
-
-      case "last6":
-        startDate = new Date();
-        startDate.setMonth(today.getMonth() - 6);
-        break;
-
-      case "last12":
-        startDate = new Date();
-        startDate.setMonth(today.getMonth() - 12);
-        break;
-
-      case "thisYear":
-        startDate = new Date(today.getFullYear(), 0, 1);
-        break;
-
-      default:
-        startDate = null;
-    }
-
-    if (startDate) {
-      setFilters((prev) => ({
-        ...prev,
-        startDate: startDate.toISOString().split("T")[0],
-        endDate: today.toISOString().split("T")[0],
-      }));
-    }
-  }, [setFilters]);
-
-  // Set default on first load
+  /* =========================
+     PRESET PERIOD HANDLER
+  ========================== */
   useEffect(() => {
-    handleQuickFilter("last12");
-  }, [handleQuickFilter]);
+    const today = new Date();
+    let start = new Date();
+
+    if (filters.period === "3m") {
+      start.setMonth(today.getMonth() - 3);
+    } else if (filters.period === "6m") {
+      start.setMonth(today.getMonth() - 6);
+    } else if (filters.period === "year") {
+      start = new Date(today.getFullYear(), 0, 1);
+    } else {
+      return; // custom → do nothing
+    }
+
+    setFilters((prev) => ({
+      ...prev,
+      startDate: start.toISOString().split("T")[0],
+      endDate: today.toISOString().split("T")[0],
+    }));
+  }, [filters.period]);
+
+  /* =========================
+     RESET FILTERS
+  ========================== */
+  const handleReset = () => {
+    setFilters({
+      period: "3m",
+      startDate: "",
+      endDate: "",
+      department: "all",
+      role: "all",
+    });
+  };
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="flex flex-wrap gap-4 items-end">
 
-      {/* Filters Section */}
-      <div className="flex gap-4 flex-wrap items-center">
+      {/* ======================
+          PERIOD
+      ======================= */}
+      <Select
+        value={filters.period}
+        onValueChange={(value) =>
+          setFilters((prev) => ({
+            ...prev,
+            period: value,
+          }))
+        }
+      >
+        <SelectTrigger className="w-[200px]">
+          <SelectValue placeholder="Select Period" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="3m">Last 3 Months</SelectItem>
+          <SelectItem value="6m">Last 6 Months</SelectItem>
+          <SelectItem value="year">This Year</SelectItem>
+          <SelectItem value="custom">Custom Range</SelectItem>
+        </SelectContent>
+      </Select>
 
-        {/* Quick Filter */}
-        <Select
-            value={quickFilter}
-            onValueChange={(value) => handleQuickFilter(value)}
-          >
-            <SelectTrigger className="w-[200px] rounded-md">
-              <SelectValue placeholder="Select Range" />
-            </SelectTrigger>
-
-            <SelectContent>
-              <SelectItem value="last12">Last 12 Months</SelectItem>
-              <SelectItem value="last6">Last 6 Months</SelectItem>
-              <SelectItem value="last3">Last 3 Months</SelectItem>
-              <SelectItem value="thisYear">This Year</SelectItem>
-              <SelectItem value="custom">Custom Range</SelectItem>
-            </SelectContent>
-          </Select>
-
-        {/* Custom Range */}
-        {quickFilter === "custom" && (
-          <>
-            <input
+      {/* ======================
+          CUSTOM DATE RANGE
+      ======================= */}
+      {filters.period === "custom" && (
+        <>
+          <div className="flex flex-col">
+            <label className="text-sm text-muted-foreground mb-1">
+              From
+            </label>
+            <Input
               type="date"
+              value={filters.startDate}
               onChange={(e) =>
                 setFilters((prev) => ({
                   ...prev,
                   startDate: e.target.value,
                 }))
               }
-              className="
-                bg-white dark:bg-slate-900
-                border border-gray-300 dark:border-slate-700
-                rounded-lg px-3 py-2
-                text-gray-900 dark:text-white
-              "
+              className="w-[180px]"
             />
+          </div>
 
-            <input
+          <div className="flex flex-col">
+            <label className="text-sm text-muted-foreground mb-1">
+              To
+            </label>
+            <Input
               type="date"
+              value={filters.endDate}
               onChange={(e) =>
                 setFilters((prev) => ({
                   ...prev,
                   endDate: e.target.value,
                 }))
               }
-              className="
-                bg-white dark:bg-slate-900
-                border border-gray-300 dark:border-slate-700
-                rounded-lg px-3 py-2
-                text-gray-900 dark:text-white
-              "
+              className="w-[180px]"
             />
-          </>
-        )}
+          </div>
+        </>
+      )}
 
-        {/* Department */}
-        <Select
-            value={filters.department}
-            onValueChange={(value) =>
-              setFilters((prev) => ({
-                ...prev,
-                department: value,
-              }))
-            }
-          >
-            <SelectTrigger className="w-[200px] rounded-md">
-              <SelectValue placeholder="All Departments" />
-            </SelectTrigger>
+      {/* ======================
+          DEPARTMENT
+      ======================= */}
+      <Select
+        value={filters.department}
+        onValueChange={(value) =>
+          setFilters((prev) => ({
+            ...prev,
+            department: value,
+          }))
+        }
+      >
+        <SelectTrigger className="w-[200px]">
+          <SelectValue placeholder="All Departments" />
+        </SelectTrigger>
 
-            <SelectContent>
-              <SelectItem value="all">All Departments</SelectItem>
-              <SelectItem value="Engineering">Engineering</SelectItem>
-              <SelectItem value="Sales">Sales</SelectItem>
-              <SelectItem value="Marketing">Marketing</SelectItem>
-              <SelectItem value="HR">HR</SelectItem>
-              <SelectItem value="Finance">Finance</SelectItem>
-              <SelectItem value="Operations">Operations</SelectItem>
-            </SelectContent>
-          </Select>
+        <SelectContent>
+          <SelectItem value="all">All Departments</SelectItem>
+          {departments.map((dept) => (
+            <SelectItem key={dept} value={dept}>
+              {dept}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
+      {/* ======================
+          ROLE
+      ======================= */}
+      <Select
+        value={filters.role}
+        onValueChange={(value) =>
+          setFilters((prev) => ({
+            ...prev,
+            role: value,
+          }))
+        }
+      >
+        <SelectTrigger className="w-[200px]">
+          <SelectValue placeholder="All Roles" />
+        </SelectTrigger>
 
-      </div>
+        <SelectContent>
+          <SelectItem value="all">All Roles</SelectItem>
+          {roles.map((role) => (
+            <SelectItem key={role} value={role}>
+              {role}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-          <div className="flex gap-3">
-
-  {/* Primary Button */}
-  <div className="flex gap-3">
-
-  <Button variant="outline" onClick={() => exportPDF(filters)}>
-    Export PDF
-  </Button>
-
-  <Button onClick={() => exportExcel(data, filters)}>
-    Export Excel
-  </Button>
-
-</div>
-
-
-</div>
-
+      {/* ======================
+          RESET BUTTON
+      ======================= */}
+      <Button variant="secondary" onClick={handleReset}>
+        Reset
+      </Button>
 
     </div>
   );

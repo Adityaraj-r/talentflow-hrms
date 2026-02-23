@@ -8,13 +8,16 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { useWorkforce } from "../../hooks/useReports";
 import { motion } from "framer-motion";
-import { getLast12Months, getMonthsBetween } from "../../utils/dateUtils";
+import { getLast12Months, getMonthsBetween } from "@/utils/dateUtils";
 import { useState } from "react";
 
-export default function WorkforceCharts({ filters }) {
-  const { data = [], isLoading } = useWorkforce(filters);
+export default function WorkforceCharts({
+  data = [],
+  loading,
+  error,
+  filters,
+}) {
   const [selectedMonth, setSelectedMonth] = useState(null);
 
   const handleMonthClick = (state) => {
@@ -23,14 +26,32 @@ export default function WorkforceCharts({ filters }) {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="bg-white dark:bg-slate-900 border p-6 rounded-2xl">
+        <p className="text-gray-500 dark:text-gray-300">
+          Loading Workforce Data...
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-red-500">
+        Failed to load workforce data
+      </div>
+    );
+  }
+
   const months =
     filters?.startDate && filters?.endDate
       ? getMonthsBetween(filters.startDate, filters.endDate)
       : getLast12Months();
 
-  // ===============================
-  // Fill Missing Months With Last Known Value
-  // ===============================
+  /* ===============================
+     Fill Missing Months
+  =============================== */
   let lastValue = 0;
 
   const finalData = months.map((m) => {
@@ -47,11 +68,10 @@ export default function WorkforceCharts({ filters }) {
     };
   });
 
-  // ===============================
-  // REAL TREND-BASED FORECAST
-  // ===============================
+  /* ===============================
+     Forecast Logic
+  =============================== */
   const headcounts = finalData.map((d) => d.headcount);
-
   const first = headcounts[0] || 0;
   const last = headcounts[headcounts.length - 1] || 0;
   const monthsCount = headcounts.length;
@@ -75,28 +95,22 @@ export default function WorkforceCharts({ filters }) {
     return { ...item, forecast: null };
   });
 
-  if (isLoading) {
-    return (
-      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-6 rounded-2xl">
-        <p className="text-gray-500 dark:text-gray-300">
-          Loading Workforce Data...
-        </p>
-      </div>
-    );
-  }
-
-  // ===============================
-  // Modal Growth Calculation
-  // ===============================
+  /* ===============================
+     Modal Calculation
+  =============================== */
   const selectedIndex = finalData.findIndex(
     (d) => d.month === selectedMonth
   );
 
   const previousValue =
-    selectedIndex > 0 ? finalData[selectedIndex - 1]?.headcount : 0;
+    selectedIndex > 0
+      ? finalData[selectedIndex - 1]?.headcount
+      : 0;
 
   const currentValue =
-    selectedIndex >= 0 ? finalData[selectedIndex]?.headcount : 0;
+    selectedIndex >= 0
+      ? finalData[selectedIndex]?.headcount
+      : 0;
 
   const netGrowth = currentValue - previousValue;
 
@@ -106,53 +120,24 @@ export default function WorkforceCharts({ filters }) {
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="
-          bg-white dark:bg-slate-900
-          border border-gray-200 dark:border-slate-800
-          rounded-2xl
-          p-6
-          shadow-sm
-          dark:hover:border-indigo-500
-          transition-all duration-300
-        "
+        className="bg-white dark:bg-slate-900 border rounded-2xl p-6 shadow-sm"
       >
-        <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white">
+        <h2 className="text-xl font-semibold mb-6">
           Workforce Analytics
         </h2>
 
-        <div className="w-full h-[320px] min-h-[320px]">
+        <div className="w-full h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={forecastData} onClick={handleMonthClick}>
-              <CartesianGrid
-                stroke="#e5e7eb"
-                className="dark:stroke-slate-700"
-                strokeDasharray="3 3"
-              />
-
-              <XAxis
-                dataKey="month"
-                stroke="#6b7280"
-                className="dark:stroke-slate-400"
-              />
-
-              <YAxis
-                stroke="#6b7280"
-                className="dark:stroke-slate-400"
-                allowDecimals={false}
-              />
-
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#0b1220",
-                  border: "1px solid #1e293b",
-                  borderRadius: "12px",
-                  color: "#fff",
-                }}
-              />
-
+            <AreaChart
+              data={forecastData}
+              onClick={handleMonthClick}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
               <Legend />
 
-              {/* Actual Headcount */}
               <Area
                 type="monotone"
                 dataKey="headcount"
@@ -161,7 +146,6 @@ export default function WorkforceCharts({ filters }) {
                 strokeWidth={3}
               />
 
-              {/* Forecast Line */}
               <Area
                 type="monotone"
                 dataKey="forecast"
@@ -175,7 +159,6 @@ export default function WorkforceCharts({ filters }) {
         </div>
       </motion.div>
 
-      {/* Drill-down Modal */}
       {selectedMonth && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
@@ -185,11 +168,11 @@ export default function WorkforceCharts({ filters }) {
             onClick={(e) => e.stopPropagation()}
             className="bg-white dark:bg-slate-900 p-6 rounded-xl w-[400px] shadow-lg"
           >
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+            <h3 className="text-lg font-semibold mb-4">
               Workforce Details — {selectedMonth}
             </h3>
 
-            <div className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
+            <div className="text-sm space-y-2">
               <p>• Total Employees: {currentValue}</p>
               <p>
                 • Net Growth:{" "}
@@ -199,7 +182,7 @@ export default function WorkforceCharts({ filters }) {
 
             <button
               onClick={() => setSelectedMonth(null)}
-              className="mt-6 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+              className="mt-6 px-4 py-2 bg-indigo-600 text-white rounded-lg"
             >
               Close
             </button>
