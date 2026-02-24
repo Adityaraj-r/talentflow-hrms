@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { useEffect, useState } from "react"
+import { useEffect, useState,useRef } from "react"
 import axios from "axios"
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import {
@@ -14,6 +14,9 @@ import {
   Settings,
   ChevronDown,
   ArrowLeft,
+  Search, 
+  X, 
+  Briefcase,Layout, Users, UserPlus, Repeat, Folder, FileText,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -35,6 +38,106 @@ const Header = ({ toggleSidebar }) => {
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const [notifications, setNotifications] = useState([])
+
+  // --- OMNIBAR SEARCH STATE ---
+  const [searchQuery, setSearchQuery] = useState('')
+  const [results, setResults] = useState({ modules: [], users: [] })
+  const [isSearching, setIsSearching] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const searchRef = useRef(null)
+  const inputRef = useRef(null)
+
+  const APP_MODULES = [
+    { id: 'mod-1', title: 'Admin Dashboard', path: '/admin/dashboard', icon: Layout },
+    { id: 'mod-2', title: 'All Employees', path: '/dashboard/users', icon: Users },
+    { id: 'mod-3', title: 'Onboarding & KYC', path: '/onboarding', icon: UserPlus },
+    { id: 'mod-4', title: 'Transfers & Promotions', path: '/employee-transfer', icon: Repeat },
+    { id: 'mod-5', title: 'Digital Locker (Docs)', path: '/digital-locker', icon: Folder },
+    { id: 'mod-6', title: 'Staff Requisition', path: '/staff-requisition', icon: FileText },
+    { id: 'mod-7', title: 'System Settings', path: '/settings', icon: Settings }
+  ];
+
+  const handleNavigation = (path) => {
+    setShowDropdown(false);
+    setSearchQuery('');
+    navigate(path);
+  };
+
+  // Click outside listener to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // HYBRID SEARCH API CALL
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setResults({ modules: [], users: [] })
+      setShowDropdown(false)
+      return
+    }
+
+    const fetchResults = async () => {
+      setIsSearching(true)
+      try {
+        const queryLower = searchQuery.toLowerCase();
+        
+        // A. Search Static App Modules locally
+        const matchedModules = APP_MODULES.filter(mod => 
+          mod.title.toLowerCase().includes(queryLower)
+        );
+
+        // B. Search Employees via Backend API
+        const token = localStorage.getItem('token')
+        const response = await axios.get(`http://localhost:5001/api/admin/users?search=${searchQuery}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        
+        // C. Combine results!
+        setResults({
+          modules: matchedModules.slice(0, 3), // Show top 3 matching pages
+          users: response.data.data.slice(0, 4) // Show top 4 matching employees
+        }) 
+        setShowDropdown(true)
+      } catch (error) {
+        console.error("Search failed:", error)
+      } finally {
+        setIsSearching(false)
+      }
+    }
+    const debounceTimer = setTimeout(fetchResults, 300) 
+    return () => clearTimeout(debounceTimer)
+  }, [searchQuery])
+
+  const ALLOWED_SEARCH_ROLES = [
+    'ADMIN', 
+    'CEO', 
+    'HR_MANAGER', 
+    'COUNTRY_MANAGER', 
+    'DEPARTMENT_MANAGER'
+  ];
+
+  const userRole = user?.role?.name || user?.role || '';
+  const canUseSearch = ALLOWED_SEARCH_ROLES.includes(userRole);
+
+  useEffect(() => {
+    // SECURITY: If the user doesn't have permission, do not attach the event listener!
+    if (!canUseSearch) return; 
+
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        inputRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [canUseSearch])
 
   useEffect(() => {
     const fetchRealTimeNotifications = async () => {
@@ -89,6 +192,66 @@ const Header = ({ toggleSidebar }) => {
         )}
         <h1 className="text-lg font-bold text-foreground">HRMS System</h1>
       </div>
+
+      {/* --- OMNIBAR SEARCH UI (CONDITIONALLY RENDERED) --- */}
+      {canUseSearch && (
+        <div className="hidden md:flex flex-1 max-w-md mx-6 relative" ref={searchRef}>
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Search employees, emails, or roles..."
+              className="w-full h-9 pl-10 pr-16 rounded-full border bg-muted/30 focus:bg-muted/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => searchQuery.trim() && setShowDropdown(true)}
+            />
+            
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {searchQuery ? (
+                <button onClick={() => {setSearchQuery(''); setResults([]);}} className="p-1 hover:bg-muted rounded-full transition-colors">
+                  <X className="h-3 w-3 text-muted-foreground" />
+                </button>
+              ) : (
+                <span className="text-[10px] font-bold text-muted-foreground bg-background px-1.5 py-0.5 rounded border shadow-sm">
+                  Ctrl K
+                </span>
+              )}
+            </div>
+
+            {/* Floating Dropdown Results Menu */}
+            {showDropdown && (
+              <div className="absolute top-full mt-2 w-full bg-card border rounded-xl shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                {isSearching ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground animate-pulse">Searching...</div>
+                ) : results.length > 0 ? (
+                  <ul className="py-2">
+                    {results.map(u => (
+                      <li key={u._id} onClick={() => { setShowDropdown(false); setSearchQuery(''); }} className="px-4 py-2 hover:bg-muted/50 cursor-pointer flex items-center gap-3 transition-colors">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs border border-primary/20 uppercase shrink-0">
+                          {u.firstName?.charAt(0)}{u.lastName?.charAt(0)}
+                        </div>
+                        <div className="flex flex-col overflow-hidden">
+                          <span className="text-sm font-semibold text-foreground truncate">{u.firstName} {u.lastName}</span>
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
+                            <Briefcase className="h-3 w-3 shrink-0" /> 
+                            {u.role?.split('_').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ')}
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="p-4 text-center text-sm text-muted-foreground">No matches found.</div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* ------------------------- */}
 
       <div className="flex items-center gap-2 sm:gap-4">
         <Button variant="ghost" size="icon" onClick={toggleTheme}>

@@ -39,7 +39,8 @@ const UserManagement = () => {
     password: '',
     role: '',
     department: '',
-    phoneNumber: ''
+    phoneNumber: '',
+    gender: ''
   })
 
   const fetchUsers = useCallback(async () => {
@@ -86,7 +87,8 @@ const UserManagement = () => {
       password: '',
       role: '',
       department: '',
-      phoneNumber: ''
+      phoneNumber: '',
+      gender: ''
     })
     setIsCreateOpen(false)
   }
@@ -98,6 +100,7 @@ const UserManagement = () => {
     if (formData.password.length < 6) return "Password must be at least 6 characters"
     if (!formData.role) return "Please assign a user role"
     if (!formData.department) return "Please assign a department"
+    if (!formData.gender) return "Please select a gender"
     return null
   }
 
@@ -248,10 +251,25 @@ const UserManagement = () => {
                     </Select>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Contact Number</Label>
-                  <Input id="phoneNumber" maxLength={10} value={formData.phoneNumber} onChange={(e) => handleInputChange({ target: { id: 'phoneNumber', value: e.target.value.replace(/\D/g, '') } })} placeholder="10-digit mobile number" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber">Contact Number</Label>
+                    <Input id="phoneNumber" maxLength={10} value={formData.phoneNumber} onChange={(e) => handleInputChange({ target: { id: 'phoneNumber', value: e.target.value.replace(/\D/g, '') } })} placeholder="10-digit mobile number" />
+                  </div>
+                
+                  <div className="space-y-2">
+                    <Label>Gender</Label>
+                    <Select value={formData.gender} onValueChange={(v) => handleSelectChange('gender', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+                
                 <DialogFooter className="pt-6">
                   <Button type="button" variant="ghost" onClick={handleResetForm}>Cancel</Button>
                   <Button type="submit" disabled={isActionLoading}>

@@ -10,6 +10,7 @@ export interface IUser extends Document {
   lastName: string;
   department?: string;
   phoneNumber?: string;
+  gender?: string;
   employeeId?: mongoose.Types.ObjectId;
   currentShift?: mongoose.Types.ObjectId;
   isActive: boolean;
@@ -70,6 +71,11 @@ const UserSchema = new Schema<IUser>(
     },
     department: {
       type: String,
+      default: null
+    },
+    gender: {
+      type: String,
+      enum: ['Male', 'Female', 'Other'],
       default: null
     },
     employeeId: {

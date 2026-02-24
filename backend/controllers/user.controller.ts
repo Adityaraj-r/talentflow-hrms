@@ -4,7 +4,7 @@ import User from '../models/User.model';
 
 export const createUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, firstName, lastName, role, phoneNumber, department } = req.body;
+    const { email, password, firstName, lastName, role, phoneNumber, department,gender } = req.body;
 
     if (!email || !password || !firstName || !lastName || !role) {
       res.status(400).json({ success: false, message: 'Email, password, first name, last name and role are required' });
@@ -28,6 +28,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       role: role || 'EMPLOYEE',
       phoneNumber: phoneNumber || null,
       department: department || null,
+      gender: gender || null,
       isEmailVerified: true,
       isActive: true
     });
@@ -42,6 +43,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         lastName: user.lastName,
         role: user.role,
         department: user.department,
+        gender: user.gender,
         phoneNumber: user.phoneNumber,
         isActive: user.isActive
       }
@@ -161,3 +163,4 @@ export const deactivateUser = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ success: false, message: 'Error deactivating user', error: error.message });
   }
 };
+
