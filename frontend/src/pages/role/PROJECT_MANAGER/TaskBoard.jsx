@@ -1,11 +1,11 @@
 import { useState } from "react"
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd"
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card"
-import { Button } from "../../../components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import TaskCard from "../../../components/ui/TaskCard"
-import CreateTaskModal from "../../../components/ui/CreateTaskModal"
-import { initialTasks } from "../../../data/mockTasks"
+import TaskCard from "@/components/ui/TaskCard"
+import CreateTaskModal from "@/components/ui/CreateTaskModal"
+import { initialTasks } from "@/data/mockTasks"
 
 const TaskBoard = () => {
   const [tasks, setTasks] = useState(initialTasks)

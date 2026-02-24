@@ -67,10 +67,10 @@ import SafetyIncidents from "./pages/role/PROJECT_MANAGER/SafetyIncidents"
 import TimesheetApprovals from "./pages/role/PROJECT_MANAGER/TimesheetApprovals"
 
 // Admin Role Pages
-import AttendanceRecords from "./pages/role/ADMIN/AttendanceRecords"
+import AttendanceRecords from "./pages/modules/attendance/AttendanceRecords"
 import AdminLeaveManagement from "./pages/role/ADMIN/LeaveManagement"
-import ShiftManagement from "./pages/role/ADMIN/ShiftManagement"
-import HolidayManagement from "./pages/role/ADMIN/HolidayManagement"
+import ShiftManagement from "./pages/modules/attendance/ShiftManagement"
+import HolidayManagement from "./pages/modules/attendance/HolidayManagement"
 
 // Role-Specific Appraisal Pages
 import HRManagerAppraisal from "./pages/role/HR_MANAGER/Appraisal"
@@ -94,7 +94,7 @@ import HRManagerLeaveManagement from "./pages/role/HR_MANAGER/LeaveManagement"
 import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
 
 // Employee Role Pages
-import MyAttendance from "./pages/role/EMPLOYEE/MyAttendance"
+import MyAttendance from "./pages/modules/attendance/MyAttendance"
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 
 
