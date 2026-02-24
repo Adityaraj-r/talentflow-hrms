@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useUser } from "../../../contexts/UserContext";
-import holidayService from "../../../services/holidayService";
+import { useUser } from "@/contexts/UserContext";
+import holidayService from "@/services/holidayService";
 import { toast } from "sonner"; 
 
 const HolidayManagement = () => {
