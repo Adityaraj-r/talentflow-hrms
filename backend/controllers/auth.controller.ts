@@ -2,6 +2,8 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import User from '../models/User.model';
+import admin from 'firebase-admin';
+import bcrypt from 'bcryptjs';
 
 export class AuthController {
   static async login(req: Request, res: Response) {
@@ -136,29 +138,35 @@ export class AuthController {
       const userId = req.user?.id;
       const { firstName, lastName, phoneNumber } = req.body;
 
-      const user = await User.findById(userId);
+      // Create an update object with only the fields that were provided
+      const updateData: any = {};
+      if (firstName) updateData.firstName = firstName;
+      if (lastName) updateData.lastName = lastName;
+      if (phoneNumber) updateData.phoneNumber = phoneNumber;
 
-      if (!user) {
+      // Use findByIdAndUpdate to bypass full document validation
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { $set: updateData },
+        { new: true, runValidators: false } // runValidators: false ignores missing required fields on old docs
+      );
+
+      if (!updatedUser) {
         return res.status(404).json({
           success: false,
           error: 'User not found'
         });
       }
 
-      if (firstName) user.firstName = firstName;
-      if (lastName) user.lastName = lastName;
-      if (phoneNumber) user.phoneNumber = phoneNumber;
-
-      await user.save();
-
       return res.json({
         success: true,
-        message: 'Profile updated successfully'
+        message: 'Profile updated successfully',
+        data: updatedUser
       });
     } catch (error: any) {
       return res.status(500).json({
         success: false,
-        error: 'Failed to update profile'
+        error: error.message || 'Failed to update profile'
       });
     }
   }
@@ -184,6 +192,7 @@ export class AuthController {
         });
       }
 
+      // 1. Verify old password
       const isPasswordValid = await user.comparePassword(currentPassword);
 
       if (!isPasswordValid) {
@@ -193,8 +202,30 @@ export class AuthController {
         });
       }
 
-      user.password = newPassword;
-      await user.save();
+      // 2. Update Password in Firebase (CRITICAL for login)
+      if (user.firebaseUid) {
+        try {
+          await admin.auth().updateUser(user.firebaseUid, {
+            password: newPassword
+          });
+        } catch (fbError: any) {
+          console.error('Firebase password update failed:', fbError);
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to sync new password with authentication provider.'
+          });
+        }
+      }
+
+      // 3. Update Password in MongoDB (Bypassing validation)
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+      await User.findByIdAndUpdate(
+        userId,
+        { $set: { password: hashedPassword } },
+        { new: true, runValidators: false }
+      );
 
       return res.json({
         success: true,
