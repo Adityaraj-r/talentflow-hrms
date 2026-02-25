@@ -1,4 +1,4 @@
-import SkeletonCard from "./SkeletonCard";
+import SkeletonCard from "@/components/reports/SkeletonCard";
 import { useSummary } from "@/hooks/useReports";
 import CountUp from "react-countup";
 import { motion } from "framer-motion";

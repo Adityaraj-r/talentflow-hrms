@@ -1,4 +1,4 @@
-import TransferRequestForm from "./TransferRequestForm";
+import TransferRequestForm from "@/pages/modules/transfer/TransferRequestForm";
 
 const MakeTransferPage = () => {
   return (
