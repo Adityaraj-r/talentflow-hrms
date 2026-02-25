@@ -93,22 +93,65 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
 
 export const updateUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { firstName, lastName, role, phoneNumber, isActive, department } = req.body;
+    // Determine the ID based on how your route is set up (params vs body)
+    const userId = req.params.id || req.body.id; 
+    
+    const { 
+      firstName, 
+      lastName, 
+      email, 
+      password, 
+      department, 
+      role, 
+      gender,
+      phoneNumber,
+      isActive // Kept from your original function!
+    } = req.body;
 
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { firstName, lastName, role, phoneNumber, isActive, department },
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    if (!user) {
-      res.status(404).json({ success: false, message: 'User not found' });
+    // 1. Strict Validation: Ensure compulsory fields are not empty
+    if (!role || !department || !phoneNumber) {
+       res.status(400).json({ 
+        success: false, 
+        message: "Role, Department, and Phone Number are compulsory fields." 
+      });
       return;
     }
 
-    res.status(200).json({ success: true, message: 'User updated successfully', data: user });
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    // 2. Update standard fields
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (email) user.email = email;
+    if (department) user.department = department;
+    if (role) user.role = role;
+    if (gender) user.gender = gender;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (isActive !== undefined) user.isActive = isActive; // Allows toggling account status
+
+    // 3. Securely handle password updates (Only hash if admin typed a new one)
+    if (password && password.trim() !== "") {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+    }
+
+    await user.save();
+
+    // Strip the password before sending the response back to the frontend
+    const { password: _, ...userResponse } = user.toObject();
+
+    res.status(200).json({ 
+      success: true, 
+      message: "User updated successfully", 
+      data: userResponse 
+    });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Error updating user', error: error.message });
+    console.error("Update User Error:", error);
+    res.status(500).json({ success: false, message: "Error updating user details", error: error.message });
   }
 };
 
@@ -163,4 +206,6 @@ export const deactivateUser = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ success: false, message: 'Error deactivating user', error: error.message });
   }
 };
+
+
 

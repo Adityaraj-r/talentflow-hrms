@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useSummary } from "../../utils/useReports";
+import { useSummary } from "@/utils/useReports";
 
 export default function WorkforceHealthMeter({ filters }) {
   const { data, isLoading } = useSummary(filters);

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { TrendingUp, AlertTriangle, DollarSign, Users } from "lucide-react";
-import { useSummary } from "../../hooks/useReports";
+import { useSummary } from "@/hooks/useReports";
 
 export default function ExecutiveInsights({ filters }) {
   const { data, isLoading } = useSummary(filters);

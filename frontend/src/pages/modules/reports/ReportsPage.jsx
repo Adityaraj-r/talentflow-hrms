@@ -1,12 +1,12 @@
 import { useState } from "react";
-import ReportsHeader from "../../components/reports/ReportsHeader";
-import KPISection from "../../components/reports/KPISection";
-import WorkforceCharts from "../../components/reports/WorkforceCharts";
-import AttendanceCharts from "../../components/reports/AttendanceCharts";
-import DepartmentChart from "../../components/reports/DepartmentChart";
-import LeavePieChart from "../../components/reports/LeavePieChart";
-import ExecutiveInsights from "../../components/reports/ExecutiveInsights";
-import WorkforceHealthMeter from "../../components/reports/WorkforceHealthMeter";
+import ReportsHeader from "@/components/reports/ReportsHeader";
+import KPISection from "@/components/reports/KPISection";
+import WorkforceCharts from "@/components/reports/WorkforceCharts";
+import AttendanceCharts from "@/components/reports/AttendanceCharts";
+import DepartmentChart from "@/components/reports/DepartmentChart";
+import LeavePieChart from "@/components/reports/LeavePieChart";
+import ExecutiveInsights from "@/components/reports/ExecutiveInsights";
+import WorkforceHealthMeter from "@/components/reports/WorkforceHealthMeter";
 
 export default function ReportsPage() {
   const [filters, setFilters] = useState({

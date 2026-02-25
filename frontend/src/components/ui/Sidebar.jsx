@@ -28,8 +28,8 @@ import {
   Building
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { ROLES } from "../../constants/roles"
-import { useUser } from "../../contexts/UserContext"
+import { ROLES } from "@/constants/roles"
+import { useUser } from "@/contexts/UserContext"
 
 const Sidebar = ({
   isOpen,
@@ -70,36 +70,56 @@ const Sidebar = ({
 
     const path = location.pathname;
 
-    setOpenGroups((prev) => ({
-      ...prev,
-      // 1. Employee Center
-      employeeCenter: path.startsWith("/dashboard/users") ||
-        path.startsWith("/dashboard/onboarding") ||
-        path.startsWith("/employee-transfer") ||
-        path.startsWith("/digital-locker"),
+    const isDashboardPath =
+    path === "/dashboard" ||
+    path === "/admin/dashboard" ||
+    path === "/employee/dashboard";
 
-      // 2. Time & Attendance
-      timeAttendance: path.startsWith("/attendance") ,
+    if (isDashboardPath) {
+    setOpenGroups({
+      employeeCenter: false,
+      recruitment: false,
+      timeAttendance: false,
+      payroll: false,
+      administration: false,
+      appraisal: false,
+      disciplinaryActions: false,
+      documentRequests: false,
+    });
+    return;
+  }
 
-      // 3. Payroll
-      payroll: path.startsWith("/payroll") ||
-        path.startsWith("/tickets") ||
-        path.startsWith("/indemnity"),
+  setOpenGroups({
+    employeeCenter:
+      path.startsWith("/dashboard/users") ||
+      path.startsWith("/dashboard/onboarding") ||
+      path.startsWith("/employee-transfer") ||
+      path.startsWith("/digital-locker"),
 
-      // 4. Administration
-      administration: path.startsWith("/settings") ||
-        path.startsWith("/admin/"),
+    timeAttendance: path.startsWith("/attendance"),
 
-      // 5. Recruitment (If it was a group)
-      recruitment: path.startsWith("/recruitment") ||
-        path.startsWith("/staff-requisition"),
+    payroll:
+      path.startsWith("/payroll") ||
+      path.startsWith("/tickets") ||
+      path.startsWith("/indemnity"),
 
-      // 6. Documents & Disciplinary
-      documentRequests: path.includes("document-requests"),
-      disciplinaryActions: path.includes("disciplinary-actions"),
-      
-    }));
-  }, [location.pathname, isCollapsed]);
+    administration:
+      path.startsWith("/settings") ||
+      (path.startsWith("/admin/") &&
+        !path.startsWith("/admin/dashboard")),
+
+    recruitment:
+      path.startsWith("/recruitment") ||
+      path.startsWith("/staff-requisition") ||
+      path.startsWith("/dashboard/candidate-management") ||
+      path.startsWith("/dashboard/offer-management"),
+
+    documentRequests: path.includes("document-requests"),
+    disciplinaryActions: path.includes("disciplinary-actions"),
+    appraisal: path.includes("/appraisal"),
+  });
+}, [location.pathname, isCollapsed]);
+
 
   const canSee = (moduleKey) => {
     if (['SUPER ADMIN', 'ADMIN'].includes(userRole)) return true

@@ -22,7 +22,7 @@ import {
   Check,
   X,
 } from "lucide-react";
-import StatsCard from "@/pages/dashboard/StatsCard";
+import StatsCard from "@/components/dashboard/StatsCard";
 
 const ExecutiveDashboard = ({ stats, isLoading }) => {
   const [period, setPeriod] = useState("month");

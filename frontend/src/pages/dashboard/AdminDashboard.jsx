@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Users, UserCheck, Clock, AlertTriangle, ShieldCheck } from "lucide-react";
-import StatCard from "../../components/dashboard/StatCard";
-import DepartmentChart from "../../components/dashboard/charts/DepartmentChart";
-import { GenderChart, RoleChart } from "../../components/dashboard/charts/DistributionCharts";
-import { PendingApprovalsChart } from '../../components/dashboard/charts/PendingApprovalsChart';
+import StatCard from "@/components/dashboard/StatCard";
+import DepartmentChart from "@/components/dashboard/charts/DepartmentChart";
+import { GenderChart, RoleChart } from "@/components/dashboard/charts/DistributionCharts";
+import { PendingApprovalsChart } from "@/components/dashboard/charts/PendingApprovalsChart";
 
 const AdminDashboard = () => {
   // 1. Add state for the dynamic chart data

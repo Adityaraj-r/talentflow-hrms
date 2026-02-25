@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Calendar, Video, Loader2, Copy, Check } from "lucide-react"
 import { toast } from "sonner"
 // Path: goes up 3 levels (recruitment -> modules -> pages -> src)
-import googleMeetService from "../../../services/googleMeetService"
+import googleMeetService from "@/services/googleMeetService"
 
 const ScheduleInterviewModal = ({ isOpen, onClose, candidateEmail, jobTitle }) => {
   const [loading, setLoading] = useState(false)

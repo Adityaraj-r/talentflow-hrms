@@ -8,6 +8,7 @@ import { createLog } from './audit.controller';
 import Document from '../models/Document.model';
 import Transfer from '../models/Transfer.model';
 import Requisition from '../models/Requisition.model';
+import Leave from '../models/leave.model';
 
 const Activity = require('../models/Activity').default || require('../models/Activity');
 const SystemAlert = require('../models/SystemAlert').default || require('../models/SystemAlert');
@@ -346,13 +347,15 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
     const pendingDocuments = await Document.countDocuments({ status: 'Pending' });
     const pendingTransfers = await Transfer.countDocuments({ status: 'Pending' });
     const pendingRequisitions = await Requisition.countDocuments({ status: 'Pending' });
+    const pendingLeaves = await Leave.countDocuments({ status: 'Pending' });
 
-    const totalPendingApprovals = pendingDocuments + pendingTransfers + pendingRequisitions;
+    const totalPendingApprovals = pendingDocuments + pendingTransfers + pendingRequisitions + pendingLeaves;
 
     const pendingBreakdown = [
       { module: 'KYC Documents', count: pendingDocuments, fill: '#f59e0b' }, // Amber
       { module: 'Transfers', count: pendingTransfers, fill: '#3b82f6' },     // Blue
-      { module: 'Requisitions', count: pendingRequisitions, fill: '#8b5cf6' } // Purple
+      { module: 'Requisitions', count: pendingRequisitions, fill: '#8b5cf6' },// Purple
+      { module: 'Leave Requests', count: pendingLeaves, fill: '#10b981' }    //  Emerald Green
     ];
 
     // 2. Aggregate Department Distribution Data

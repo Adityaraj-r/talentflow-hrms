@@ -16,7 +16,7 @@ import {
   ArrowLeft,
   Search, 
   X, 
-  Briefcase,Layout, Users, UserPlus, Repeat, Folder, FileText,
+  Briefcase,Layout, Users, UserPlus, Repeat, Folder, FileText,ShieldCheck,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -29,8 +29,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { useAuth } from "../../contexts/AuthContext"
-import { useTheme } from "../../contexts/ThemeContext"
+import { useAuth } from "@/contexts/AuthContext"
+import { useTheme } from "@/contexts/ThemeContext"
 
 const Header = ({ toggleSidebar }) => {
   const navigate = useNavigate()
@@ -47,14 +47,16 @@ const Header = ({ toggleSidebar }) => {
   const searchRef = useRef(null)
   const inputRef = useRef(null)
 
-  const APP_MODULES = [
+ const APP_MODULES = [
     { id: 'mod-1', title: 'Admin Dashboard', path: '/admin/dashboard', icon: Layout },
-    { id: 'mod-2', title: 'All Employees', path: '/dashboard/users', icon: Users },
+    { id: 'mod-2', title: 'User Management (All Employees)', path: '/dashboard/users', icon: Users },
     { id: 'mod-3', title: 'Onboarding & KYC', path: '/onboarding', icon: UserPlus },
     { id: 'mod-4', title: 'Transfers & Promotions', path: '/employee-transfer', icon: Repeat },
     { id: 'mod-5', title: 'Digital Locker (Docs)', path: '/digital-locker', icon: Folder },
     { id: 'mod-6', title: 'Staff Requisition', path: '/staff-requisition', icon: FileText },
-    { id: 'mod-7', title: 'System Settings', path: '/settings', icon: Settings }
+    { id: 'mod-7', title: 'System Settings', path: '/settings', icon: Settings },
+    { id: 'mod-8', title: 'Roles & Permissions', path: '/roles', icon: ShieldCheck },
+    { id: 'mod-9', title: 'Company Structure', path: '/structure', icon: Layout }
   ];
 
   const handleNavigation = (path) => {
@@ -211,7 +213,7 @@ const Header = ({ toggleSidebar }) => {
             
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
               {searchQuery ? (
-                <button onClick={() => {setSearchQuery(''); setResults([]);}} className="p-1 hover:bg-muted rounded-full transition-colors">
+                <button onClick={() => {setSearchQuery(''); setResults({ modules: [], users: [] });}} className="p-1 hover:bg-muted rounded-full transition-colors">
                   <X className="h-3 w-3 text-muted-foreground" />
                 </button>
               ) : (
@@ -223,35 +225,75 @@ const Header = ({ toggleSidebar }) => {
 
             {/* Floating Dropdown Results Menu */}
             {showDropdown && (
-              <div className="absolute top-full mt-2 w-full bg-card border rounded-xl shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="absolute top-full mt-2 w-full bg-card border rounded-xl shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 max-h-[400px] overflow-y-auto">
                 {isSearching ? (
-                  <div className="p-4 text-center text-sm text-muted-foreground animate-pulse">Searching...</div>
-                ) : results.length > 0 ? (
-                  <ul className="py-2">
-                    {results.map(u => (
-                      <li key={u._id} onClick={() => { setShowDropdown(false); setSearchQuery(''); }} className="px-4 py-2 hover:bg-muted/50 cursor-pointer flex items-center gap-3 transition-colors">
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs border border-primary/20 uppercase shrink-0">
-                          {u.firstName?.charAt(0)}{u.lastName?.charAt(0)}
-                        </div>
-                        <div className="flex flex-col overflow-hidden">
-                          <span className="text-sm font-semibold text-foreground truncate">{u.firstName} {u.lastName}</span>
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
-                            <Briefcase className="h-3 w-3 shrink-0" /> 
-                            {u.role?.split('_').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ')}
-                          </span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="p-4 text-center text-sm text-muted-foreground animate-pulse">Searching system...</div>
+                ) : (results.modules.length > 0 || results.users.length > 0) ? (
+                  <div className="py-2">
+                    
+                    {/* --- RENDER MATCHING MODULES/PAGES --- */}
+                    {results.modules.length > 0 && (
+                      <div className="mb-2">
+                        <div className="px-4 py-1 text-[10px] font-bold tracking-wider text-muted-foreground uppercase bg-muted/30">System Pages</div>
+                        <ul>
+                          {results.modules.map(mod => {
+                            const Icon = mod.icon;
+                            return (
+                              <li 
+                                key={mod.id} 
+                                onClick={() => handleNavigation(mod.path)} 
+                                className="px-4 py-2.5 hover:bg-muted/50 cursor-pointer flex items-center gap-3 transition-colors group"
+                              >
+                                <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                                  <Icon className="h-4 w-4" />
+                                </div>
+                                <span className="text-sm font-medium text-foreground">{mod.title}</span>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* --- RENDER MATCHING EMPLOYEES --- */}
+                    {results.users.length > 0 && (
+                      <div>
+                        <div className="px-4 py-1 text-[10px] font-bold tracking-wider text-muted-foreground uppercase bg-muted/30">Employees Directory</div>
+                        <ul>
+                          {results.users.map(u => (
+                            <li 
+                              key={u._id} 
+                              onClick={() => handleNavigation(`/profile/${u._id}`)} 
+                              className="px-4 py-2.5 hover:bg-muted/50 cursor-pointer flex items-center gap-3 transition-colors"
+                            >
+                              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs border border-primary/20 uppercase shrink-0">
+                                {u.firstName?.charAt(0)}{u.lastName?.charAt(0)}
+                              </div>
+                              <div className="flex flex-col overflow-hidden">
+                                <span className="text-sm font-semibold text-foreground truncate">{u.firstName} {u.lastName}</span>
+                                <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
+                                  <Briefcase className="h-3 w-3 shrink-0" /> 
+                                  {u.role?.split('_').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ')}
+                                </span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                  </div>
                 ) : (
-                  <div className="p-4 text-center text-sm text-muted-foreground">No matches found.</div>
+                  <div className="p-6 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
+                     <Search className="h-8 w-8 opacity-20" />
+                     <p>No matches found for "{searchQuery}"</p>
+                  </div>
                 )}
               </div>
             )}
           </div>
         </div>
       )}
-      {/* ------------------------- */}
 
       <div className="flex items-center gap-2 sm:gap-4">
         <Button variant="ghost" size="icon" onClick={toggleTheme}>

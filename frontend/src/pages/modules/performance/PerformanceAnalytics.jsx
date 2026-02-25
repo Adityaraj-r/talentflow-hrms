@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   BarChart, 
   Bar, 
@@ -16,7 +16,7 @@ import {
   Line
 } from "recharts";
 import { TrendingUp, Users, Award, Target, BarChart3, PieChart as PieChartIcon } from "lucide-react";
-import { Progress } from "../../components/ui/progress";
+import { Progress } from "@/components/ui/progress";
 
 const PerformanceAnalytics = () => {
   const [cycles, setCycles] = useState([]);

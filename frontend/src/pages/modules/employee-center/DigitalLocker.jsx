@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   Folder, FileText, Upload, Search, Grid, List, 
   Trash2, Eye, Download, CheckCircle, Clock, XCircle, User, ArrowLeft, Calendar, Building

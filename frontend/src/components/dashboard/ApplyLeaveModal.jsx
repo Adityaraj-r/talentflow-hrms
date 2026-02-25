@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button"; // Using your existing UI components
 import { toast } from "sonner"; // Assuming you use sonner for toasts
-import leaveService from "../../services/leaveService";
+import leaveService from "@/services/leaveService";
 
 const ApplyLeaveModal = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
