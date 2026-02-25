@@ -8,8 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, Plus, Calendar, Users, FileText, X, Loader2, Award } from "lucide-react";
 import { toast } from "sonner";
-import PerformanceAnalytics from "./PerformanceAnalytics";
-import EmployeeOverview from "./EmployeeOverview";
+import EmployeeOverview from "@/pages/modules/employee-center/EmployeeOverview"
+import PerformanceAnalytics from "@/pages/modules/performance/PerformanceAnalytics"
 import { performanceApi } from "@/services/performanceApi";
 
 const AdminPerformance = () => {

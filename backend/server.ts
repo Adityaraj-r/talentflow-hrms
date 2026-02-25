@@ -31,6 +31,8 @@ import reportsRoutes from "./routes/reports.routes";
 
 // import { syncUsersToEmployees } from "./controllers/user.controller";
 import router from './routes/user.routes';
+import documentRoutes from './routes/document.routes';
+
 
 dotenv.config();
 
@@ -47,6 +49,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const localUploads = path.join(__dirname, 'uploads');
 const rootUploads = path.join(__dirname, '../uploads');
@@ -110,6 +113,7 @@ app.use("/api/reports", reportsRoutes);
 app.use('/api/performance', performanceRoutes);
 app.use("/api/holidays", holidayRoutes);
 app.use("/api/transfers", transferRoutes);
+app.use("/api/documents", documentRoutes);
 
 // router.get("/sync-users", syncUsersToEmployees);
 // 404 handler

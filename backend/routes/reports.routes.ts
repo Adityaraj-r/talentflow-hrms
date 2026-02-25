@@ -6,6 +6,7 @@ import {
   getDepartmentData,
   getLeaveData,
   getEmployeePerformance,
+  getDepartmentWorkingHours
 } from "../controllers/reports.controller";
 
 const router = express.Router();
@@ -27,5 +28,7 @@ router.get("/leaves", getLeaveData);
 
 // Performance table
 router.get("/performance", getEmployeePerformance);
+
+router.get("/department-hours", getDepartmentWorkingHours);
 
 export default router;

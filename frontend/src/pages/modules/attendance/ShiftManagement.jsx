@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 // ✅ FIXED: 3 levels up to match your structure
 import shiftService from "@/services/shiftService";
-import AssignShiftModal from "@/components/dashboard/AssignShiftModal"; // Keep this as is if it works, or change to ../../../components/...
+import AssignShiftModal from "@/components/dashboard/AssignShiftModal"; // Keep this as is if it works, or change to @/components/...
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

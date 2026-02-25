@@ -1,12 +1,21 @@
 import { useState, useEffect } from "react";
-import ReportsHeader from "@/pages/reports/ReportsHeader";
-import FiltersSection from "@/pages/reports/FiltersSection";
 
-import DashboardSection from "@/pages/reports/DashboardSection";
-import PerformanceSection from "@/pages/reports/PerformanceSection";
+import FiltersSection from "@/components/reports/FiltersSection";
+import DepartmentWorkingHours from "@/components/reports/DepartmentWorkingHours";
+import DashboardSection from "@/components/reports/DashboardSection";
+import PerformanceSection from "@/components/reports/PerformanceSection";
 
 import useReports from "@/hooks/useReports";
 import useEmployeePerformance from "@/hooks/useEmployeePerformance";
+
+import ReportsHeader from "@/components/reports/ReportsHeader";
+import KPISection from "@/components/reports/KPISection";
+import WorkforceCharts from "@/components/reports/WorkforceCharts";
+import AttendanceCharts from "@/components/reports/AttendanceCharts";
+import DepartmentChart from "@/components/reports/DepartmentChart";
+import LeavePieChart from "@/components/reports/LeavePieChart";
+import ExecutiveInsights from "@/components/reports/ExecutiveInsights";
+import WorkforceHealthMeter from "@/components/reports/WorkforceHealthMeter";
 
 export default function ReportsPage() {
   /* ================= GLOBAL FILTERS ================= */
@@ -55,7 +64,7 @@ export default function ReportsPage() {
         error={reportsError}
         filters={filters}
       />
-
+    
       <PerformanceSection
         hook={performanceHook}
         filters={performanceFilters}

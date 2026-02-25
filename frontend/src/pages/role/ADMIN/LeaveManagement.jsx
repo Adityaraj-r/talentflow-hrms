@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
-// ✅ FIXED: 3 levels up for service
 import leaveService from "@/services/leaveService";
-// ✅ FIXED: 3 levels up for all UI components
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

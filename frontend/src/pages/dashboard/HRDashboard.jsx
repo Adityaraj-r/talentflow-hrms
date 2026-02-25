@@ -13,7 +13,7 @@ import {
   Check,
   X,
 } from "lucide-react";
-import StatsCard from "@/pages/dashboard/StatsCard";
+import StatsCard from "@/components/dashboard/StatsCard";
 
 const HRDashboard = ({ stats, isLoading }) => {
   const recruitmentStages = [
