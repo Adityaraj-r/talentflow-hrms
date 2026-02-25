@@ -9,10 +9,11 @@ import {
 } from '../controllers/user.controller';
 
 import { protect, authorize } from '../middleware/auth.middleware';
+// import { syncUsersToEmployees } from "../controllers/user.controller";
 
 const router = express.Router();
 
-
+// router.get("/sync-users", syncUsersToEmployees);
 router.use(protect as any);
 router.use(authorize('CEO', 'COUNTRY_MANAGER', 'HR_MANAGER', 'HR_OFFICER', 'ADMIN') as any);
 

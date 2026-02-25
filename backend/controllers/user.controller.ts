@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.model';
-
+import Employee from '../models/Employee.model';
 export const createUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, firstName, lastName, role, phoneNumber, department } = req.body;
@@ -19,7 +19,14 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-
+    // Create Employee record first
+      const employee = await Employee.create({
+        firstName,
+        lastName,
+        email: email.toLowerCase(),
+        department: department || null,
+        status: 'Active'
+      });
     const user = await User.create({
       email: email.toLowerCase(),
       password: hashedPassword,
@@ -29,7 +36,8 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       phoneNumber: phoneNumber || null,
       department: department || null,
       isEmailVerified: true,
-      isActive: true
+      isActive: true,
+      employeeId: employee._id,
     });
 
     res.status(201).json({
@@ -161,3 +169,40 @@ export const deactivateUser = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ success: false, message: 'Error deactivating user', error: error.message });
   }
 };
+
+// export const syncUsersToEmployees = async (req: Request, res: Response) => {
+//   try {
+//     const users = await User.find();
+
+//     let createdCount = 0;
+
+//     for (const user of users) {
+//       if (!user.employeeId) {
+//         const employee = await Employee.create({
+//           firstName: user.firstName,
+//           lastName: user.lastName,
+//           email: user.email,
+//           phoneNumber: user.phoneNumber || "0000000000", // ✅ FIX
+//           department: user.department,
+//           status: user.isActive ? "Active" : "Inactive",
+//         });
+
+//         user.employeeId = employee._id;
+//         await user.save();
+//         createdCount++;
+//       }
+//     }
+
+//     res.json({
+//       success: true,
+//       message: `Sync completed. ${createdCount} employees created.`,
+//     });
+
+//   } catch (error: any) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Sync failed",
+//       error: error.message,
+//     });
+//   }
+// };

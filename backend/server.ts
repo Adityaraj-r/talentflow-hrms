@@ -29,6 +29,8 @@ import departmentSyncRoutes from "./routes/departmentSync.routes";
 import { seedRoles } from './utils/roleSeeder';
 import reportsRoutes from "./routes/reports.routes";
 
+// import { syncUsersToEmployees } from "./controllers/user.controller";
+import router from './routes/user.routes';
 
 dotenv.config();
 
@@ -109,6 +111,7 @@ app.use('/api/performance', performanceRoutes);
 app.use("/api/holidays", holidayRoutes);
 app.use("/api/transfers", transferRoutes);
 
+// router.get("/sync-users", syncUsersToEmployees);
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ success: false, error: 'Route not found', path: req.path });
