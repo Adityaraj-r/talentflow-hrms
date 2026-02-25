@@ -1,34 +1,50 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import axios from "axios"
 import Sidebar from "../ui/Sidebar"
 import Header from "../ui/Header"
 
 const DashboardLayout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [companyName, setCompanyName] = useState("")
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const cached = localStorage.getItem("companyName")
+        if (cached) setCompanyName(cached)
+
+        const { data } = await axios.get("http://localhost:5001/api/settings/company-info")
+        if (data.success && data.companyName) {
+          setCompanyName(data.companyName)
+          localStorage.setItem("companyName", data.companyName)
+        }
+      } catch (error) {
+        if (!companyName) setCompanyName("HRMS System")
+      }
+    }
+    fetchSettings()
+  }, [])
+
   return (
     <div className="min-h-screen bg-muted/10">
-      {/* 1. Sidebar (Fixed Left) */}
       <Sidebar
         isOpen={isSidebarOpen}
         toggleSidebar={toggleSidebar}
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
+        companyName={companyName}
       />
 
-      {/* 2. Main Content Wrapper*/}
       <div 
         className={`
           flex flex-col min-h-screen transition-all duration-300 ease-in-out
           ${isCollapsed ? 'lg:ml-[80px]' : 'lg:ml-[280px]'}
         `}
       >
-        {/* 3. Header (Sticky Top) */}
         <Header toggleSidebar={toggleSidebar} />
-
-        {/* 4. Page Content */}
         <main className="flex-1 p-6">
            {children}
         </main>

@@ -19,61 +19,88 @@ const RoleManagement = () => {
     { id: "roles", name: "Access Control", description: "RBAC Management" },
   ];
 
-  useEffect(() => { fetchRoles(); }, []);
-
-  const fetchRoles = async () => {
-    try {
-      setLoading(true);
-      const data = await getRoles();
-      setRoles(data);
-    } catch (error) { toast.error("Failed to sync roles"); } 
-    finally { setLoading(false); }
-  };
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const data = await getRoles();
+        setRoles(data);
+      } catch (error) {
+        toast.error("Failed to sync roles");
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
+  }, []);
 
   const togglePermission = (roleIndex, moduleId, type) => {
     const updatedRoles = [...roles];
     const role = updatedRoles[roleIndex];
+
     if (!role.permissions) role.permissions = {};
     if (!role.permissions[moduleId]) role.permissions[moduleId] = { read: false, write: false, delete: false };
+
     role.permissions[moduleId][type] = !role.permissions[moduleId][type];
-    if (type !== 'read' && role.permissions[moduleId][type]) role.permissions[moduleId]['read'] = true;
+    
+    // Enforce logic: Write/Delete requires Read access
+    if (type !== 'read' && role.permissions[moduleId][type]) {
+        role.permissions[moduleId]['read'] = true;
+    }
     if (type === 'read' && !role.permissions[moduleId]['read']) {
         role.permissions[moduleId]['write'] = false;
         role.permissions[moduleId]['delete'] = false;
     }
+
     setRoles(updatedRoles);
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const promises = roles.map(role => updateRole(role._id, { permissions: role.permissions }));
-      await Promise.all(promises);
+      await Promise.all(roles.map(role => updateRole(role._id, { permissions: role.permissions })));
       toast.success("Permissions updated");
-    } catch (error) { toast.error("Save failed"); } 
-    finally { setIsSaving(false); }
+    } catch (error) {
+      toast.error("Save failed");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDeleteRole = async (id) => {
-    if(!window.confirm("Are you sure?")) return;
-    try { await deleteRole(id); fetchRoles(); toast.success("Role deleted"); } 
-    catch (error) { toast.error("Delete failed"); }
+    if(!window.confirm("Are you sure? This action cannot be undone.")) return;
+    try {
+        await deleteRole(id);
+        const data = await getRoles();
+        setRoles(data);
+        toast.success("Role deleted");
+    } catch (error) {
+        toast.error("Delete failed");
+    }
   }
 
   const handleAddRole = async () => {
     const name = prompt("Role Name:");
-    if (name) {
-        try { await createRole(name); fetchRoles(); toast.success("Created"); } 
-        catch (error) { toast.error("Failed"); }
+    if (!name) return;
+    try {
+        await createRole(name);
+        const data = await getRoles();
+        setRoles(data);
+        toast.success("Role created");
+    } catch (error) {
+        toast.error("Creation failed");
     }
   }
 
-  if (loading) return <div className="flex h-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (loading) {
+    return (
+        <div className="flex h-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col space-y-4 h-[calc(100vh-140px)]"> {/* FIXED HEIGHT calculation */}
-      
-      {/* 1. Header Section */}
+    <div className="flex flex-col h-[calc(100vh-140px)] space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Access Control Matrix</h1>
@@ -92,14 +119,9 @@ const RoleManagement = () => {
         </div>
       </div>
 
-      {/* 2. Table Container */}
       <div className="flex-1 border rounded-lg bg-card shadow-sm overflow-hidden flex flex-col">
-        
-        {/* 3. Scroll Area  */}
         <div className="flex-1 overflow-auto">
           <table className="w-full text-left border-collapse">
-            
-            {/* Sticky Header */}
             <thead className="bg-muted/50 sticky top-0 z-10 shadow-sm">
               <tr>
                 <th className="sticky left-0 z-20 bg-background border-b border-r px-6 py-4 font-semibold min-w-[250px]">
@@ -137,9 +159,9 @@ const RoleManagement = () => {
                     return (
                         <td key={role._id} className="px-4 py-4 text-center align-middle whitespace-nowrap">
                           <div className="flex items-center justify-center gap-2">
-                             <CleanToggle active={perms.read} onClick={() => !isSuperAdmin && togglePermission(rIndex, module.id, 'read')} label="View" variant="blue" disabled={isSuperAdmin} />
-                             <CleanToggle active={perms.write} onClick={() => !isSuperAdmin && togglePermission(rIndex, module.id, 'write')} label="Edit" variant="amber" disabled={isSuperAdmin} />
-                             <CleanToggle active={perms.delete} onClick={() => !isSuperAdmin && togglePermission(rIndex, module.id, 'delete')} label="Del" variant="red" disabled={isSuperAdmin} />
+                             <PermissionToggle active={perms.read} onClick={() => !isSuperAdmin && togglePermission(rIndex, module.id, 'read')} label="View" variant="blue" disabled={isSuperAdmin} />
+                             <PermissionToggle active={perms.write} onClick={() => !isSuperAdmin && togglePermission(rIndex, module.id, 'write')} label="Edit" variant="amber" disabled={isSuperAdmin} />
+                             <PermissionToggle active={perms.delete} onClick={() => !isSuperAdmin && togglePermission(rIndex, module.id, 'delete')} label="Del" variant="red" disabled={isSuperAdmin} />
                           </div>
                         </td>
                     );
@@ -154,14 +176,18 @@ const RoleManagement = () => {
   );
 };
 
-const CleanToggle = ({ active, onClick, label, variant, disabled }) => {
-    const variants = {
+const PermissionToggle = ({ active, onClick, label, variant, disabled }) => {
+    const colors = {
         blue: active ? "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800" : "bg-transparent text-muted-foreground border-transparent hover:bg-muted",
         amber: active ? "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800" : "bg-transparent text-muted-foreground border-transparent hover:bg-muted",
         red: active ? "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800" : "bg-transparent text-muted-foreground border-transparent hover:bg-muted",
     };
     return (
-        <button onClick={onClick} disabled={disabled} className={`px-3 py-1 text-[10px] uppercase font-bold tracking-wide rounded border transition-all ${variants[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+        <button 
+            onClick={onClick} 
+            disabled={disabled} 
+            className={`px-3 py-1 text-[10px] uppercase font-bold tracking-wide rounded border transition-all ${colors[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
             {label}
         </button>
     );

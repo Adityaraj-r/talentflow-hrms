@@ -1,10 +1,26 @@
 import { Request, Response } from 'express';
 import Settings from '../models/Settings.model';
 
-/**
- * GET /api/admin/settings
- * Get system settings
- */
+export const getCompanyInfo = async (req: Request, res: Response) => {
+  try {
+    const settings = await Settings.findOne();
+
+    if (!settings) {
+      return res.status(200).json({
+        success: true,
+        companyName: 'HRMS System',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      companyName: settings.companyName,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 export const getSettings = async (req: Request, res: Response) => {
   try {
     let settings = await Settings.findOne();
@@ -23,7 +39,6 @@ export const getSettings = async (req: Request, res: Response) => {
       settings,
     });
   } catch (error: any) {
-    console.error('Get settings error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch settings',
@@ -32,10 +47,6 @@ export const getSettings = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * PUT /api/admin/settings
- * Update system settings
- */
 export const updateSettings = async (req: Request, res: Response) => {
   try {
     const settingsData = req.body;
@@ -62,7 +73,6 @@ export const updateSettings = async (req: Request, res: Response) => {
       settings,
     });
   } catch (error: any) {
-    console.error('Update settings error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update settings',

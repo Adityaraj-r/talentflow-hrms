@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Building2, Mail, Lock, AlertCircle, Loader2, Shield, Users, TrendingUp, Award, CheckCircle, ArrowRight, Moon, Sun, Eye, EyeOff } from 'lucide-react';
@@ -14,11 +15,31 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [companyName, setCompanyName] = useState('InternsLand');
+  
   const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
-  // Generate circles once on mount - shared across both sides
+  useEffect(() => {
+    const fetchCompanyInfo = async () => {
+      try {
+        const cachedName = localStorage.getItem('companyName');
+        if (cachedName) setCompanyName(cachedName);
+
+        const { data } = await axios.get('http://localhost:5001/api/settings/company-info');
+        
+        if (data.success && data.companyName) {
+          setCompanyName(data.companyName);
+          localStorage.setItem('companyName', data.companyName);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchCompanyInfo();
+  }, []);
+
   const floatingCircles = useMemo(() => {
     return [...Array(30)].map((_, i) => ({
       size: Math.random() * 400 + 100,
@@ -36,9 +57,9 @@ const Login = () => {
 
     try {
       await login(email, password);
-      window.location.href = '/dashboard';
+      navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Failed to login. Please check your credentials.');
+      setError(err.response?.data?.message || 'Failed to login. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -77,7 +98,6 @@ const Login = () => {
   return (
     <div className="min-h-screen relative overflow-hidden bg-linear-to-br from-blue-400 via-indigo-500 to-purple-500 dark:from-gray-950 dark:via-slate-950 dark:to-zinc-950 transition-all duration-500">
 
-      {/* Animated Background Pattern */}
       <div className="absolute inset-0 opacity-20 dark:opacity-15 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full">
           {floatingCircles.map((circle, i) => (
@@ -97,13 +117,11 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Glow Effects */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-300/20 dark:bg-blue-500/15 rounded-full blur-3xl animate-pulse-slow"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-300/20 dark:bg-purple-500/15 rounded-full blur-3xl animate-pulse-slower"></div>
       </div>
 
-      {/* Dark Mode Toggle */}
       <button
         onClick={toggleTheme}
         className="fixed top-6 right-6 z-50 p-3 rounded-xl bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/30 dark:border-white/10 shadow-lg hover:shadow-xl hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-300 group cursor-pointer"
@@ -116,14 +134,10 @@ const Login = () => {
         )}
       </button>
 
-      {/* Content Wrapper */}
       <div className="flex min-h-screen">
 
-        {/* Left Side - Branding & Features */}
         <div className="hidden lg:flex lg:w-1/2 relative p-12 flex-col justify-between">
-
           <div className="relative z-10">
-            {/* Logo & Brand */}
             <div className="flex items-center gap-3 mb-12">
               <div className="relative group">
                 <div className="absolute inset-0 bg-white/30 dark:bg-blue-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
@@ -132,12 +146,11 @@ const Login = () => {
                 </div>
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow-lg">InternsLand</h1>
+                <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow-lg">{companyName}</h1>
                 <p className="text-blue-50 dark:text-blue-300 text-sm font-medium">Enterprise HRMS Platform</p>
               </div>
             </div>
 
-            {/* Hero Content */}
             <div className="space-y-6 mb-12">
               <div>
                 <h2 className="text-5xl font-bold text-white leading-tight mb-4 drop-shadow-lg">
@@ -151,7 +164,6 @@ const Login = () => {
                 </p>
               </div>
 
-              {/* Feature Highlights */}
               <div className="grid grid-cols-2 gap-4 mt-8">
                 {features.map((feature, index) => (
                   <div
@@ -169,7 +181,6 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Stats Footer */}
           <div className="relative z-10 grid grid-cols-4 gap-6 pt-8 border-t border-white/30 dark:border-white/10">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
@@ -180,26 +191,22 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Right Side - Login Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative">
-
           <Card className="w-full max-w-md relative z-10 shadow-2xl border border-white/30 dark:border-white/10 bg-white/98 dark:bg-slate-900/98 backdrop-blur-2xl">
             <div className="p-8">
 
-              {/* Mobile Logo */}
               <div className="lg:hidden flex items-center gap-3 mb-8">
                 <div className="bg-linear-to-br from-blue-500 to-indigo-600 p-3 rounded-xl shadow-lg">
                   <Building2 className="h-8 w-8 text-white" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                    InternsLand
+                    {companyName}
                   </h1>
                   <p className="text-xs text-gray-600 dark:text-gray-400">Enterprise HRMS</p>
                 </div>
               </div>
 
-              {/* Form Header */}
               <div className="mb-8">
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                   Welcome Back
@@ -209,10 +216,8 @@ const Login = () => {
                 </p>
               </div>
 
-              {/* Login Form */}
               <form onSubmit={handleSubmit} className="space-y-6">
 
-                {/* Error Alert */}
                 {error && (
                   <Alert variant="destructive" className="animate-shake bg-red-50 dark:bg-red-950/50 border-red-200 dark:border-red-900">
                     <AlertCircle className="h-4 w-4" />
@@ -220,7 +225,6 @@ const Login = () => {
                   </Alert>
                 )}
 
-                {/* Email Field */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                     <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -240,7 +244,6 @@ const Login = () => {
                   </div>
                 </div>
 
-                {/* Password Field */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                     <Lock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -271,7 +274,6 @@ const Login = () => {
                   </div>
                 </div>
 
-                {/* Remember & Forgot */}
                 <div className="flex items-center justify-between text-sm">
                   <label className="flex items-center gap-2 cursor-pointer group">
                     <input
@@ -290,7 +292,6 @@ const Login = () => {
                   </a>
                 </div>
 
-                {/* Sign In Button */}
                 <Button
                   type="submit"
                   disabled={loading}
@@ -311,7 +312,6 @@ const Login = () => {
                   )}
                 </Button>
 
-                {/* Divider */}
                 <div className="relative my-6">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
@@ -323,7 +323,6 @@ const Login = () => {
                   </div>
                 </div>
 
-                {/* Trust Badges */}
                 <div className="flex items-center justify-center gap-6 text-xs text-gray-500 dark:text-gray-400">
                   <div className="flex items-center gap-1">
                     <CheckCircle className="h-4 w-4 text-green-500" />
@@ -342,17 +341,15 @@ const Login = () => {
               </form>
             </div>
 
-            {/* Footer */}
             <div className="px-8 pb-8 text-center">
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                © 2026 InternsLand. All rights reserved.
+                © 2026 {companyName}. All rights reserved.
               </p>
             </div>
           </Card>
         </div>
       </div>
 
-      {/* Custom Animations */}
       <style jsx>{`
         @keyframes float {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }

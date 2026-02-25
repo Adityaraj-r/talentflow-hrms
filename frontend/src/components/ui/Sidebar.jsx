@@ -44,6 +44,7 @@ const Sidebar = ({
     }
   }, [isCollapsed])
 
+
   useEffect(() => {
     if (isCollapsed) return;
 
@@ -83,6 +84,7 @@ const Sidebar = ({
   const canSee = (moduleKey) => {
     if (['SUPER ADMIN', 'ADMIN'].includes(userRole)) return true
     return dbPermissions[moduleKey]?.read !== false
+
   }
 
   const toggleGroup = (group) => {
@@ -192,6 +194,7 @@ const Sidebar = ({
             <SubLink to="/attendance/holidays" label="Holiday List" />
             <SubLink to="/attendance/leave-management" label="Leave Management" />
           </SidebarGroup>
+
 
           <SidebarGroup id="payroll" icon={DollarSign} label="Payroll & Compliance">
             <SubLink to="/payroll" label="Payroll Processing" />
@@ -390,6 +393,11 @@ const Sidebar = ({
           onClick={toggleCollapse}
           className="absolute -right-3 top-6 z-50 flex h-7 w-7 items-center justify-center rounded-full border bg-background text-foreground shadow-md transition-colors hover:bg-accent hidden lg:flex"
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+
+            onClick={toggleCollapse}
+            className="absolute -right-3 top-6 z-50 flex h-7 w-7 items-center justify-center rounded-full border bg-background text-foreground shadow-md transition-colors hover:bg-accent hidden lg:flex"
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+
         >
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
