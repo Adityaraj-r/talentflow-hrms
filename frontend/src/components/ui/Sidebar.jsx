@@ -394,10 +394,6 @@ const Sidebar = ({
           className="absolute -right-3 top-6 z-50 flex h-7 w-7 items-center justify-center rounded-full border bg-background text-foreground shadow-md transition-colors hover:bg-accent hidden lg:flex"
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
 
-            onClick={toggleCollapse}
-            className="absolute -right-3 top-6 z-50 flex h-7 w-7 items-center justify-center rounded-full border bg-background text-foreground shadow-md transition-colors hover:bg-accent hidden lg:flex"
-            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-
         >
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
