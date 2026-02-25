@@ -1,10 +1,10 @@
-import ExecutiveInsights from "../reports/ExecutiveInsights";
-import KPISection from "../reports/KPISection";
-import WorkforceCharts from "../reports/WorkforceCharts";
-import AttendanceCharts from "../reports/AttendanceCharts";
-import DepartmentChart from "../reports/DepartmentChart";
-import LeavePieChart from "../reports/LeavePieChart";
-import WorkforceHealthMeter from "../reports/WorkforceHealthMeter";
+import ExecutiveInsights from "@/pages/reports/ExecutiveInsights";
+import KPISection from "@/pages/reports/KPISection";
+import WorkforceCharts from "@/pages/reports/WorkforceCharts";
+import AttendanceCharts from "@/pages/reports/AttendanceCharts";
+import DepartmentChart from "@/pages/reports/DepartmentChart";
+import LeavePieChart from "@/pages/reports/LeavePieChart";
+import WorkforceHealthMeter from "@/pages/reports/WorkforceHealthMeter";
 
 export default function DashboardSection({
   data,

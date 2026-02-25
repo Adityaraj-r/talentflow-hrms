@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { X, Search, User, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"; // Ensure you have dialog components or use a basic div overlay
-import apiClient from "../../services/apiClient"; // To fetch users
-import shiftService from "../../services/shiftService";
+import apiClient from "@/services/apiClient"; // To fetch users
+import shiftService from "@/services/shiftService";
 
 const AssignShiftModal = ({ isOpen, onClose, shifts = [] }) => {
   const [employees, setEmployees] = useState([]);

@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { Button } from "../../components/ui/button"
-import { Card, CardContent } from "../../components/ui/card"
-import { Input } from "../../components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
-import { Badge } from "../../components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
-import { Label } from "../../components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 import {
   Dialog,
   DialogContent,
@@ -14,13 +14,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../../components/ui/dialog"
+} from "@/components/ui/dialog"
 import {
   Search, Plus, Upload, Filter, Edit, Power, UserCheck, ShieldAlert, FileSpreadsheet, UploadCloud, Users, RefreshCw
 } from "lucide-react"
 import { toast } from "sonner"
-import adminService from "../../services/adminService"
-import { ROLES } from "../../constants/roles"
+import adminService from "@/services/adminService"
+import { ROLES } from "@/constants/roles"
 import { cn } from "@/lib/utils"
 
 const UserManagement = () => {

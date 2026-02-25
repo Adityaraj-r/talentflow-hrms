@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { useUser } from "../../../contexts/UserContext";
-import attendanceService from "../../../services/attendanceService";
-import holidayService from "../../../services/holidayService";
-import AttendanceWidget from "../../../components/ui/AttendanceWidget";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
-import { Badge } from "../../../components/ui/badge";
-import { Button } from "../../../components/ui/button";
+import { useUser } from "@/contexts/UserContext";
+import attendanceService from "@/services/attendanceService";
+import holidayService from "@/services/holidayService";
+import AttendanceWidget from "@/components/ui/AttendanceWidget";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Download, Briefcase, CheckCircle, XCircle, Clock, User, Calendar, CalendarDays } from "lucide-react";
 
 const formatDate = (dateString) => {

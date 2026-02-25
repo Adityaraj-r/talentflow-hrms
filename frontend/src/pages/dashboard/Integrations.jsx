@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import adminService from "../../services/adminService"
+import adminService from "@/services/adminService"
 
 const Integrations = () => {
   const [loading, setLoading] = useState(null)

@@ -28,8 +28,8 @@ import {
   Building
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { ROLES } from "../../constants/roles"
-import { useUser } from "../../contexts/UserContext"
+import { ROLES } from "@/constants/roles"
+import { useUser } from "@/contexts/UserContext"
 
 const Sidebar = ({
   isOpen,
