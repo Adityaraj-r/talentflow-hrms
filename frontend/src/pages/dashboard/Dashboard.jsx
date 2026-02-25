@@ -1,11 +1,11 @@
 import React from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import AdminDashboard from './AdminDashboard';
-import EmployeeDashboard from './EmployeeDashboard';
-import ExecutiveDashboard from './ExecutiveDashboard';
-import HRDashboard from './HRDashboard';
-import ManagerDashboard from './ManagerDashboard';
-import PayrollDashboard from './PayrollDashboard';
+import { useAuth } from '@/contexts/AuthContext';
+import AdminDashboard from '@/pages/dashboard/AdminDashboard';
+import EmployeeDashboard from '@/pages/dashboard/EmployeeDashboard';
+import ExecutiveDashboard from '@/pages/dashboard/ExecutiveDashboard';
+import HRDashboard from '@/pages/dashboard/HRDashboard';
+import ManagerDashboard from '@/pages/dashboard/ManagerDashboard';
+import PayrollDashboard from '@/pages/dashboard/PayrollDashboard';
 
 const Dashboard = () => {
   const { user } = useAuth();
