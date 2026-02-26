@@ -1,135 +1,105 @@
-// backend/src/controllers/auth.controller.ts
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import User from '../models/User.model';
-import admin from 'firebase-admin';
 import bcrypt from 'bcryptjs';
+import { createLog } from './audit.controller';
 
 export class AuthController {
   static async login(req: Request, res: Response) {
     try {
       const { email, password } = req.body;
+      const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
 
       if (!email || !password) {
-        return res.status(400).json({
-          success: false,
-          error: 'Email and password are required'
-        });
+        return res.status(400).json({ success: false, error: 'Email and password are required' });
       }
 
       const user = await User.findOne({ email }).select('+password');
 
       if (!user) {
-        return res.status(401).json({
-          success: false,
-          error: 'Invalid credentials'
-        });
+        await createLog('system', 'Unknown User', 'Login Attempt', 'Auth', `Failed login: ${email}`, String(ip), 'Failed');
+        return res.status(401).json({ success: false, error: 'Invalid credentials' });
       }
-      // --- ADD THIS BLOCK HERE (Starting at Line 21) ---
+
       if (user.isActive === false) {
-        return res.status(403).json({
-          success: false,
-          error: 'Your account has been deactivated. Please contact the administrator.'
-        });
+        await createLog(user._id.toString(), `${user.firstName} ${user.lastName}`, 'Login Attempt', 'Auth', 'Deactivated account access attempt', String(ip), 'Failed');
+        return res.status(403).json({ success: false, error: 'Your account has been deactivated.' });
       }
 
       const isPasswordValid = await user.comparePassword(password);
 
       if (!isPasswordValid) {
-        return res.status(401).json({
-          success: false,
-          error: 'Invalid credentials'
-        });
+        await createLog(user._id.toString(), `${user.firstName} ${user.lastName}`, 'Login Attempt', 'Auth', 'Incorrect password', String(ip), 'Failed');
+        return res.status(401).json({ success: false, error: 'Invalid credentials' });
       }
 
       user.lastLogin = new Date();
       await user.save();
 
+      await createLog(user._id.toString(), `${user.firstName} ${user.lastName}`, 'User Login', 'Auth', 'Successful login', String(ip), 'Success');
+
+      const token = user.getSignedJwtToken();
+
       return res.json({
         success: true,
         message: 'Login successful',
+        token,
         data: {
           id: user._id,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
+          department: user.department,
+          phoneNumber: user.phoneNumber,
           isActive: user.isActive
         }
       });
     } catch (error: any) {
       console.error('Login error:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Login failed'
-      });
+      return res.status(500).json({ success: false, error: 'Login failed' });
     }
   }
 
   static async register(req: Request, res: Response) {
-    try {
-      return res.status(403).json({
-        success: false,
-        error: 'Registration is disabled. Please contact admin.'
-      });
-    } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        error: 'Registration failed'
-      });
-    }
+    return res.status(403).json({ success: false, error: 'Registration is disabled. Please contact admin.' });
   }
 
   static async getProfile(req: AuthRequest, res: Response) {
     try {
-      console.log('📋 getProfile called for user:', req.user?.email);
-      
       const userId = req.user?.id;
 
       if (!userId) {
-        console.error('❌ No user ID in request');
-        return res.status(401).json({
-          success: false,
-          error: 'User not authenticated'
-        });
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
       }
 
       const user = await User.findById(userId).select('-password').populate('currentShift');
 
       if (!user) {
-        console.error('❌ User not found by ID:', userId);
-        return res.status(404).json({
-          success: false,
-          error: 'User not found'
-        });
+        return res.status(404).json({ success: false, error: 'User not found' });
       }
-
-      console.log('✅ Sending profile data for:', user.email);
 
       return res.json({
         success: true,
         data: {
           id: user._id,
-          firebaseUid: user.firebaseUid,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
+          department: user.department,
           phoneNumber: user.phoneNumber,
           isActive: user.isActive,
-           currentShift: user.currentShift, 
+          currentShift: user.currentShift,
           isEmailVerified: user.isEmailVerified,
           lastLogin: user.lastLogin,
           createdAt: user.createdAt,
-          updatedAt: user.updatedAt
+          updatedAt: user.updatedAt,
         }
       });
     } catch (error: any) {
-      console.error('❌ Get profile error:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to fetch profile'
-      });
+      console.error('Get profile error:', error);
+      return res.status(500).json({ success: false, error: 'Failed to fetch profile' });
     }
   }
 
@@ -137,6 +107,7 @@ export class AuthController {
     try {
       const userId = req.user?.id;
       const { firstName, lastName, phoneNumber } = req.body;
+      const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
 
       // Create an update object with only the fields that were provided
       const updateData: any = {};
@@ -144,19 +115,19 @@ export class AuthController {
       if (lastName) updateData.lastName = lastName;
       if (phoneNumber) updateData.phoneNumber = phoneNumber;
 
-      // Use findByIdAndUpdate to bypass full document validation
+      // Use findByIdAndUpdate to bypass full document validation (prevents 500 errors)
       const updatedUser = await User.findByIdAndUpdate(
         userId,
         { $set: updateData },
-        { new: true, runValidators: false } // runValidators: false ignores missing required fields on old docs
+        { new: true, runValidators: false } 
       );
 
       if (!updatedUser) {
-        return res.status(404).json({
-          success: false,
-          error: 'User not found'
-        });
+        return res.status(404).json({ success: false, error: 'User not found' });
       }
+
+      // Keep the audit log from the main branch
+      await createLog(updatedUser._id.toString(), `${updatedUser.firstName} ${updatedUser.lastName}`, 'Update Profile', 'User Settings', 'Self profile update', String(ip), 'Success');
 
       return res.json({
         success: true,
@@ -175,49 +146,23 @@ export class AuthController {
     try {
       const userId = req.user?.id;
       const { currentPassword, newPassword } = req.body;
+      const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
 
       if (!currentPassword || !newPassword) {
-        return res.status(400).json({
-          success: false,
-          error: 'Current password and new password are required'
-        });
+        return res.status(400).json({ success: false, error: 'Current and new password are required' });
       }
 
       const user = await User.findById(userId).select('+password');
-
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          error: 'User not found'
-        });
-      }
+      if (!user) return res.status(404).json({ success: false, error: 'User not found' });
 
       // 1. Verify old password
       const isPasswordValid = await user.comparePassword(currentPassword);
-
       if (!isPasswordValid) {
-        return res.status(401).json({
-          success: false,
-          error: 'Current password is incorrect'
-        });
+        await createLog(user._id.toString(), `${user.firstName} ${user.lastName}`, 'Password Change', 'Security', 'Failed: Incorrect current password', String(ip), 'Failed');
+        return res.status(401).json({ success: false, error: 'Current password is incorrect' });
       }
 
-      // 2. Update Password in Firebase (CRITICAL for login)
-      if (user.firebaseUid) {
-        try {
-          await admin.auth().updateUser(user.firebaseUid, {
-            password: newPassword
-          });
-        } catch (fbError: any) {
-          console.error('Firebase password update failed:', fbError);
-          return res.status(500).json({
-            success: false,
-            error: 'Failed to sync new password with authentication provider.'
-          });
-        }
-      }
-
-      // 3. Update Password in MongoDB (Bypassing validation)
+      // 2. Update Password in MongoDB (Bypassing validation) & hashing locally
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(newPassword, salt);
 
@@ -227,15 +172,39 @@ export class AuthController {
         { new: true, runValidators: false }
       );
 
+      await createLog(user._id.toString(), `${user.firstName} ${user.lastName}`, 'Password Change', 'Security', 'Successful password update', String(ip), 'Success');
+
+      return res.json({ success: true, message: 'Password changed successfully' });
+    } catch (error: any) {
+      return res.status(500).json({ success: false, error: 'Failed to change password' });
+    }
+  }
+
+  // Re-added Avatar Upload function
+  static async uploadAvatar(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No image file provided' });
+      }
+
+      const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+      await User.findByIdAndUpdate(
+        userId,
+        { $set: { avatar: avatarUrl } },
+        { new: true, runValidators: false }
+      );
+
       return res.json({
         success: true,
-        message: 'Password changed successfully'
+        message: 'Avatar uploaded successfully',
+        avatarUrl: avatarUrl
       });
     } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to change password'
-      });
+      console.error('Avatar upload error:', error);
+      return res.status(500).json({ success: false, error: 'Failed to upload avatar' });
     }
   }
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import axios from "axios"
-import Sidebar from "../ui/Sidebar"
-import Header from "../ui/Header"
+import Sidebar from "@/components/ui/Sidebar"
+import Header from "@/components/ui/Header"
 
 const DashboardLayout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)

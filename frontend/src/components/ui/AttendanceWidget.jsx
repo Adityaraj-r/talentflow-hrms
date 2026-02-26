@@ -1,4 +1,4 @@
-import attendanceService from "../../services/attendanceService";
+import attendanceService from "@/services/attendanceService";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./card"; 
 import { Button } from "./button";

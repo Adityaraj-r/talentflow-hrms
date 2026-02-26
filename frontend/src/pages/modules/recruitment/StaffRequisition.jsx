@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { useAuth } from "../../../contexts/AuthContext"
-import { useRole } from "../../../contexts/RoleContext"
+import { useState,useEffect  } from "react"
+import { useAuth } from "@/contexts/AuthContext"
+import { useRole } from "@/contexts/RoleContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -28,8 +28,8 @@ const StaffRequisition = () => {
       <Tabs defaultValue={canCreateRequisition ? "create" : "pending"}>
         <TabsList>
           {canCreateRequisition && <TabsTrigger value="create">Create Requisition</TabsTrigger>}
-          <TabsTrigger value="pending">Pending Approvals</TabsTrigger>
-          <TabsTrigger value="history">Requisition History</TabsTrigger>
+          <TabsTrigger value="pending" className="cursor-pointer">Pending Approvals</TabsTrigger>
+          <TabsTrigger value="history" className="cursor-pointer">Requisition History</TabsTrigger>
         </TabsList>
 
         {canCreateRequisition && (
@@ -80,37 +80,53 @@ const RequisitionForm = () => {
     }))
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
+  const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    // Validation
-    if (!formData.position || !formData.department || !formData.jobType) {
-      toast.error("Please fill in all required fields")
-      return
-    }
-
-    setIsSubmitting(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      toast.success("Staff requisition submitted successfully")
-      setIsSubmitting(false)
-
-      // Reset form
-      setFormData({
-        position: "",
-        department: "",
-        jobType: "",
-        numberOfPositions: 1,
-        minSalary: "",
-        maxSalary: "",
-        jobDescription: "",
-        requirements: "",
-        reason: "",
-        urgency: "normal",
-      })
-    }, 1500)
+  if (!formData.position || !formData.department) {
+    toast.error("Please fill required fields");
+    return;
   }
+
+  setIsSubmitting(true);
+  try {
+    await fetch("http://localhost:5001/api/requisitions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        position: formData.position,
+        department: formData.department,
+        experience: formData.jobType,
+        salaryRange: `${formData.minSalary}-${formData.maxSalary}`,
+        reason: formData.reason,
+        urgency: formData.urgency,
+      }),
+    });
+
+    toast.success("Requisition submitted successfully");
+
+    setFormData({
+      position: "",
+      department: "",
+      jobType: "",
+      numberOfPositions: 1,
+      minSalary: "",
+      maxSalary: "",
+      jobDescription: "",
+      requirements: "",
+      reason: "",
+      urgency: "normal",
+    });
+
+  } catch {
+    toast.error("Failed to submit requisition");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   return (
     <Card>
@@ -287,219 +303,166 @@ const RequisitionForm = () => {
 }
 
 const PendingRequisitions = () => {
-  const pendingRequisitions = [
-    {
-      id: 1,
-      position: "Software Engineer",
-      department: "IT",
-      requestedBy: "John Doe",
-      requestDate: "2025-04-01",
-      status: "Pending Country Manager Approval",
-      urgency: "High",
-    },
-    {
-      id: 2,
-      position: "HR Specialist",
-      department: "Human Resources",
-      requestedBy: "Alice Johnson",
-      requestDate: "2025-03-28",
-      status: "Pending CEO Approval",
-      urgency: "Normal",
-    },
-    {
-      id: 3,
-      position: "Accountant",
-      department: "Finance",
-      requestedBy: "Bob Williams",
-      requestDate: "2025-03-25",
-      status: "Pending HR Manager Approval",
-      urgency: "Low",
-    },
-  ]
+  const [pendingRequisitions, setPendingRequisitions] = useState([]);
 
-  const handleApprove = (id) => {
-    toast.success(`Requisition #${id} approved successfully`)
-  }
+  const fetchPending = async () => {
+    try {
+      const res = await fetch("http://localhost:5001/api/requisitions/pending");
+      const data = await res.json();
+      setPendingRequisitions(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-  const handleReject = (id) => {
-    toast.success(`Requisition #${id} rejected successfully`)
-  }
+  useEffect(() => {
+    fetchPending();
+  }, []);
+
+  const handleApprove = async (id) => {
+    try {
+      await fetch(
+        `http://localhost:5001/api/requisitions/${id}/approve`,
+        { method: "PUT" }
+      );
+
+      toast.success("Requisition approved successfully");
+      fetchPending();
+    } catch {
+      toast.error("Approval failed");
+    }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      await fetch(
+        `http://localhost:5001/api/requisitions/${id}/reject`,
+        { method: "PUT" }
+      );
+
+      toast.success("Requisition rejected successfully");
+      fetchPending();
+    } catch {
+      toast.error("Rejection failed");
+    }
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pending Requisition Approvals</CardTitle>
-        <CardDescription>Review and approve staff requisitions</CardDescription>
+        <CardTitle>
+          Pending Requisition Approvals ({pendingRequisitions.length})
+        </CardTitle>
+        <CardDescription>
+            Review and approve staff requisitions
+        </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
-          <div className="grid grid-cols-7 bg-muted/50 p-3 text-sm font-medium">
-            <div>Position</div>
-            <div>Department</div>
-            <div>Requested By</div>
-            <div>Date</div>
-            <div>Status</div>
-            <div>Urgency</div>
-            <div>Actions</div>
+
+      <CardContent className="space-y-4">
+          {pendingRequisitions.length === 0 ? (
+        <div className="text-center py-10 text-muted-foreground">
+          No pending requisitions
+        </div>
+        ) : (
+          pendingRequisitions.map((req) => (
+            <div
+              key={req._id}
+              className="p-4 border rounded-lg hover:shadow-md transition bg-white dark:bg-gray-900">           
+            <div className="flex justify-between items-start">
+            <div className="space-y-1">
+            <h3 className="font-semibold text-lg">
+              {req.position}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {req.department} • {new Date(req.createdAt).toLocaleDateString()}
+            </p>
+            <div className="flex gap-2 mt-2">
+              <span className="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700">
+                {req.status}
+              </span>
+              <span
+                className={`px-2 py-1 text-xs rounded ${
+                  req.urgency === "High"
+                    ? "bg-red-100 text-red-700"
+                    : req.urgency === "Normal"
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-green-100 text-green-700"
+                }`}
+              >
+                {req.urgency}
+              </span>
+            </div>
           </div>
-          <div className="divide-y">
-            {pendingRequisitions.map((req) => (
-              <div key={req.id} className="grid grid-cols-7 p-3 text-sm">
-                <div className="font-medium">{req.position}</div>
-                <div>{req.department}</div>
-                <div>{req.requestedBy}</div>
-                <div>{req.requestDate}</div>
-                <div>{req.status}</div>
-                <div>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                      req.urgency === "High"
-                        ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                        : req.urgency === "Normal"
-                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                          : "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                    }`}
-                  >
-                    {req.urgency}
-                  </span>
-                </div>
-                <div className="flex space-x-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 text-green-600"
-                    onClick={() => handleApprove(req.id)}
-                  >
-                    <Check className="h-4 w-4" />
-                    <span className="sr-only">Approve</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 text-red-600"
-                    onClick={() => handleReject(req.id)}
-                  >
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Reject</span>
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8">
-                    <FileText className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
-                </div>
-              </div>
-            ))}
+
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+              onClick={() => handleApprove(req._id)}
+            >
+              Approve
+            </Button>
+
+            <Button
+              size="sm"
+              variant="destructive"
+              className="cursor-pointer"
+              onClick={() => handleReject(req._id)}
+            >
+              Reject
+            </Button>
           </div>
         </div>
-      </CardContent>
+      </div>
+    ))
+  )}
+</CardContent>
+
     </Card>
-  )
-}
+  );
+};
 
 const RequisitionHistory = () => {
-  const requisitionHistory = [
-    {
-      id: 1,
-      position: "Software Engineer",
-      department: "IT",
-      requestedBy: "John Doe",
-      requestDate: "2025-03-01",
-      status: "Approved",
-      approvedBy: "Jane Smith",
-      approvalDate: "2025-03-05",
-    },
-    {
-      id: 2,
-      position: "HR Specialist",
-      department: "Human Resources",
-      requestedBy: "Alice Johnson",
-      requestDate: "2025-02-15",
-      status: "Rejected",
-      approvedBy: "Jane Smith",
-      approvalDate: "2025-02-20",
-      reason: "Budget constraints",
-    },
-    {
-      id: 3,
-      position: "Accountant",
-      department: "Finance",
-      requestedBy: "Bob Williams",
-      requestDate: "2025-02-01",
-      status: "Approved",
-      approvedBy: "Jane Smith",
-      approvalDate: "2025-02-05",
-    },
-    {
-      id: 4,
-      position: "Sales Representative",
-      department: "Sales",
-      requestedBy: "Charlie Brown",
-      requestDate: "2025-01-15",
-      status: "Approved",
-      approvedBy: "Jane Smith",
-      approvalDate: "2025-01-20",
-    },
-  ]
+  const [history, setHistory] = useState([]);
+
+  const fetchHistory = async () => {
+    const res = await fetch("http://localhost:5001/api/requisitions/history");
+    const data = await res.json();
+    setHistory(data);
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Requisition History</CardTitle>
-          <CardDescription>View history of all staff requisitions</CardDescription>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search requisitions..." className="pl-8 w-[200px] md:w-[300px]" />
-          </div>
-        </div>
+      <CardHeader>
+        <CardTitle>Requisition History</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
-          <div className="grid grid-cols-7 bg-muted/50 p-3 text-sm font-medium">
-            <div>Position</div>
-            <div>Department</div>
-            <div>Requested By</div>
-            <div>Request Date</div>
-            <div>Status</div>
-            <div>Approval Date</div>
-            <div>Actions</div>
+        {history.map((req) => (
+          <div key={req._id} className="flex justify-between p-3 border-b">
+            <div>
+              <p className="font-medium">{req.position}</p>
+              <p className="text-sm text-muted-foreground">
+                {req.department}
+              </p>
+            </div>
+            <span
+              className={`px-2 py-1 text-xs rounded ${
+                req.status === "Approved"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
+              {req.status}
+            </span>
           </div>
-          <div className="divide-y">
-            {requisitionHistory.map((req) => (
-              <div key={req.id} className="grid grid-cols-7 p-3 text-sm">
-                <div className="font-medium">{req.position}</div>
-                <div>{req.department}</div>
-                <div>{req.requestedBy}</div>
-                <div>{req.requestDate}</div>
-                <div>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                      req.status === "Approved"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                        : req.status === "Rejected"
-                          ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                          : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
-                    }`}
-                  >
-                    {req.status}
-                  </span>
-                </div>
-                <div>{req.approvalDate}</div>
-                <div>
-                  <Button variant="ghost" size="icon">
-                    <FileText className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        ))}
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
 export default StaffRequisition

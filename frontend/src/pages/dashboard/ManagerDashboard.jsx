@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Users, Calendar, Check, X, Briefcase, BarChart } from "lucide-react";
-import StatsCard from "@/pages/dashboard/StatsCard";
+import StatsCard from "@/components/dashboard/StatsCard";
 
 const ManagerDashboard = ({ stats, isLoading }) => {
   const teamPerformance = [

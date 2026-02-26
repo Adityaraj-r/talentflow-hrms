@@ -9,13 +9,12 @@ dotenv.config();
 const seedData = async () => {
   try {
     console.log('🌱 Starting to seed test data...');
-    
+
     await mongoose.connect(process.env.MONGODB_URI || '');
     console.log('✅ Connected to MongoDB');
 
-    // Get the admin user
     const adminUser = await User.findOne({ email: 'admin@hrms.com' });
-    
+
     if (!adminUser) {
       console.log('❌ Admin user not found. Please login first.');
       process.exit(1);
@@ -37,7 +36,7 @@ const seedData = async () => {
       {
         type: 'create',
         title: 'New Employee Added',
-        description: 'John Doe was added to Engineering department',
+        description: 'Arjun Sharma was added to Engineering department',
         userId: adminUser._id,
         targetModel: 'User',
         metadata: { department: 'Engineering', role: 'EMPLOYEE' },
@@ -45,27 +44,27 @@ const seedData = async () => {
       {
         type: 'update',
         title: 'Profile Updated',
-        description: 'Jane Smith updated her profile information',
+        description: 'Priya Mehta updated her profile information',
         userId: adminUser._id,
         targetModel: 'User',
       },
       {
         type: 'approval',
         title: 'Leave Approved',
-        description: 'Leave request for 3 days was approved',
+        description: 'Leave request for 3 days approved for Diwali',
         userId: adminUser._id,
         targetModel: 'LeaveRequest',
       },
       {
         type: 'create',
         title: 'Department Created',
-        description: 'New Marketing department was created',
+        description: 'New Operations department was created',
         userId: adminUser._id,
         targetModel: 'Department',
       },
     ];
 
-    await Activity.deleteMany({}); // Clear existing
+    await Activity.deleteMany({});
     await Activity.insertMany(activities);
     console.log(`✅ Created ${activities.length} activities`);
 
@@ -97,84 +96,108 @@ const seedData = async () => {
       },
     ];
 
-    await SystemAlert.deleteMany({}); // Clear existing
+    await SystemAlert.deleteMany({});
     await SystemAlert.insertMany(alerts);
     console.log(`✅ Created ${alerts.length} system alerts`);
 
-    // Create sample users with correct role enums
+    // Create sample Indian users
     console.log('\n👥 Creating sample users...');
     const sampleUsers = [
       {
-        firebaseUid: 'test-user-1',
-        email: 'john.doe@hrms.com',
+        email: 'arjun.sharma@hrms.com',
         password: 'password123',
-        firstName: 'John',
-        lastName: 'Doe',
+        firstName: 'Arjun',
+        lastName: 'Sharma',
         role: 'EMPLOYEE',
-        phoneNumber: '+1234567890',
+        department: 'Engineering',
+        phoneNumber: '9876543210',
         isActive: true,
         isEmailVerified: true,
         lastLogin: new Date(),
       },
       {
-        firebaseUid: 'test-user-2',
-        email: 'jane.smith@hrms.com',
+        email: 'priya.mehta@hrms.com',
         password: 'password123',
-        firstName: 'Jane',
-        lastName: 'Smith',
+        firstName: 'Priya',
+        lastName: 'Mehta',
         role: 'HR_MANAGER',
-        phoneNumber: '+1234567891',
+        department: 'Human Resources',
+        phoneNumber: '9845123456',
         isActive: true,
         isEmailVerified: true,
         lastLogin: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
       },
       {
-        firebaseUid: 'test-user-3',
-        email: 'bob.wilson@hrms.com',
+        email: 'rahul.verma@hrms.com',
         password: 'password123',
-        firstName: 'Bob',
-        lastName: 'Wilson',
+        firstName: 'Rahul',
+        lastName: 'Verma',
         role: 'EMPLOYEE',
-        phoneNumber: '+1234567892',
+        department: 'Finance',
+        phoneNumber: '9812345678',
         isActive: true,
         isEmailVerified: true,
         lastLogin: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
       },
       {
-        firebaseUid: 'test-user-4',
-        email: 'alice.brown@hrms.com',
+        email: 'ananya.iyer@hrms.com',
         password: 'password123',
-        firstName: 'Alice',
-        lastName: 'Brown',
+        firstName: 'Ananya',
+        lastName: 'Iyer',
         role: 'DEPARTMENT_MANAGER',
-        phoneNumber: '+1234567893',
+        department: 'Operations',
+        phoneNumber: '9823456789',
         isActive: true,
         isEmailVerified: true,
         lastLogin: new Date(),
       },
       {
-        firebaseUid: 'test-user-5',
-        email: 'charlie.davis@hrms.com',
+        email: 'rohit.patel@hrms.com',
         password: 'password123',
-        firstName: 'Charlie',
-        lastName: 'Davis',
+        firstName: 'Rohit',
+        lastName: 'Patel',
         role: 'EMPLOYEE',
-        phoneNumber: '+1234567894',
+        department: 'Marketing',
+        phoneNumber: '9867890123',
         isActive: false,
         isEmailVerified: false,
         lastLogin: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
       },
       {
-        firebaseUid: 'test-user-6',
-        email: 'david.kim@hrms.com',
+        email: 'kavya.nair@hrms.com',
         password: 'password123',
-        firstName: 'David',
-        lastName: 'Kim',
+        firstName: 'Kavya',
+        lastName: 'Nair',
         role: 'PROJECT_MANAGER',
-        phoneNumber: '+1234567895',
+        department: 'Engineering',
+        phoneNumber: '9898765432',
         isActive: true,
         isEmailVerified: true,
         lastLogin: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      },
+      {
+        email: 'vikram.singh@hrms.com',
+        password: 'password123',
+        firstName: 'Vikram',
+        lastName: 'Singh',
+        role: 'HR_OFFICER',
+        department: 'Human Resources',
+        phoneNumber: '9756123456',
+        isActive: true,
+        isEmailVerified: true,
+        lastLogin: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      },
+      {
+        email: 'deepa.reddy@hrms.com',
+        password: 'password123',
+        firstName: 'Deepa',
+        lastName: 'Reddy',
+        role: 'PAYROLL_OFFICER',
+        department: 'Finance',
+        phoneNumber: '9734567890',
+        isActive: true,
+        isEmailVerified: true,
+        lastLogin: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
       },
     ];
 
@@ -183,12 +206,12 @@ const seedData = async () => {
       if (!existingUser) {
         try {
           await User.create(userData);
-          console.log(`   ✓ Created user: ${userData.email} (${userData.role})`);
+          console.log(`   ✓ Created: ${userData.firstName} ${userData.lastName} (${userData.role})`);
         } catch (err: any) {
           console.log(`   ✗ Failed to create ${userData.email}:`, err.message);
         }
       } else {
-        console.log(`   - User already exists: ${userData.email}`);
+        console.log(`   - Already exists: ${userData.email}`);
       }
     }
 

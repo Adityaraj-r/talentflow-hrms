@@ -1,23 +1,30 @@
 import express from 'express';
-import { 
-    getDepartments, 
-    addDepartment, 
-    updateDepartment, 
-    deleteDepartment,
-    getDepartmentDetails,
-    assignManager
-} from '../controllers/departmentController';
-import { authenticate } from '../middleware/auth.middleware'; 
+import {
+  createDepartment,
+  getAllDepartments,
+  getDepartmentById,
+  updateDepartment,
+  deleteDepartment,
+  addEmployeeToDepartment,
+  removeEmployeeFromDepartment,
+} from '../controllers/departmentController'; 
+
+import { protect, authorize } from '../middleware/auth.middleware';
 
 const router = express.Router();
+router.use(protect as any);
 
-router.use(authenticate); 
 
-router.get('/', getDepartments);
-router.post('/', addDepartment);
+router.get('/', getAllDepartments);
+router.get('/:id', getDepartmentById);
+
+
+router.use(authorize('CEO', 'COUNTRY_MANAGER', 'HR_MANAGER', 'ADMIN') as any); 
+
+router.post('/', createDepartment);
 router.put('/:id', updateDepartment);
 router.delete('/:id', deleteDepartment);
-router.get('/:id', getDepartmentDetails);
-router.put('/:id/assign-manager', assignManager);
+router.post('/:id/employees', addEmployeeToDepartment);
+router.delete('/:id/employees/:employeeId', removeEmployeeFromDepartment);
 
 export default router;

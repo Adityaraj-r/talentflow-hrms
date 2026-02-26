@@ -1,4 +1,4 @@
-import { Document } from 'mongoose';
+import { AuthRequest } from '../middleware/auth.middleware';
 
 declare global {
   namespace Express {
@@ -6,11 +6,10 @@ declare global {
       user?: {
         id: string;
         email: string;
+        firstName?: string;
+        lastName?: string;
         role: string;
-        firebaseUid?: string;
       };
     }
   }
 }
-
-export {};
