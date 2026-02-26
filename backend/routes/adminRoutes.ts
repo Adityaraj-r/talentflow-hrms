@@ -8,6 +8,7 @@ import {
   bulkUploadUsers,
   getAllUsers,
   toggleUserStatus,
+  getDashboardStats,
 } from '../controllers/adminController';
 import { getSettings, updateSettings } from '../controllers/settingsController';
 import { protect, authorize } from '../middleware/auth.middleware';
@@ -79,5 +80,11 @@ router.get('/settings', getSettings);
  * @desc    Update system settings
  */
 router.put('/settings', updateSettings);
+
+/**
+ * @route   GET /api/admin/dashboard-stats
+ * @desc    Fetch dynamic user counts (Total, Active, Inactive)
+ */
+router.get('/dashboard-stats', getDashboardStats);
 
 export default router;
