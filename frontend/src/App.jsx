@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import { Toaster } from "sonner"
 import { ThemeProvider } from "./contexts/ThemeContext"
@@ -96,6 +97,7 @@ import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
 // Employee Role Pages
 import MyAttendance from "./pages/modules/attendance/MyAttendance"
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
+import Profile from "./pages/dashboard/Profile"
 
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -173,6 +175,18 @@ function App() {
                   <Route path="/otp-verification" element={<OtpVerification />} />
                   <Route path="/unauthorized" element={<Unauthorized />} />
                   <Route path="/dashboard-redirect" element={<DashboardRouter />} />
+
+                  
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <DashboardLayout>
+                          <Profile />
+                        </DashboardLayout>
+                      </ProtectedRoute>
+                    }
+                  />
 
                   {/* Admin Dashboard */}
                   <Route path="/admin/dashboard" element={
