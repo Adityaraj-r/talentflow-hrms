@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 const StatCard = ({ title, value, description, icon: Icon, borderColor, textColor, isLoading }) => {
   return (
