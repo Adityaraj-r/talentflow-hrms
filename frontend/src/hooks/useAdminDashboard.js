@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import adminService from '../services/adminService';
+import adminService from '@/services/adminService';
 
 /**
  * Custom hook for admin dashboard data
