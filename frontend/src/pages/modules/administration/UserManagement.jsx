@@ -39,20 +39,25 @@ const UserManagement = () => {
     password: '',
     role: '',
     department: '',
-    phoneNumber: ''
+    phoneNumber: '',
+    gender: ''
   })
 
-  const fetchUsers = useCallback(async () => {
+const fetchUsers = useCallback(async () => {
     setIsLoading(true)
     try {
       const response = await adminService.getUsers(filters)
       const userData = response.data || []
       const formatted = userData.map(u => ({
         id: u._id,
+        firstName: u.firstName || '',
+        lastName: u.lastName || '',
         name: `${u.firstName || ''} ${u.lastName || ''}`,
         email: u.email,
         role: u.role,
         department: u.department || 'N/A',
+        phoneNumber: u.phoneNumber || '',
+        gender: u.gender || 'N/A',
         status: u.isActive ? 'Active' : 'Inactive',
         avatar: (u.firstName?.[0] || 'U').toUpperCase()
       }))
@@ -68,6 +73,56 @@ const UserManagement = () => {
   useEffect(() => {
     fetchUsers()
   }, [fetchUsers])
+
+  
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [editUserId, setEditUserId] = useState(null)
+
+  const openEditModal = (user) => {
+    setFormData({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      password: '', 
+      role: user.role,
+      department: user.department !== 'N/A' ? user.department : '',
+      phoneNumber: user.phoneNumber,
+      gender: user.gender !== 'N/A' ? user.gender : ''
+    })
+    setEditUserId(user.id)
+    setIsEditOpen(true)
+  }
+
+  const handleEditUser = async (e) => {
+    e.preventDefault()
+    // Strict Validation: Compulsory Fields
+    if (!formData.role || !formData.department || !formData.phoneNumber) {
+      return toast.error("Role, Department, and Phone Number are compulsory fields.")
+    }
+    
+    setIsActionLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`http://localhost:5001/api/users/${editUserId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(formData)
+      })
+      const data = await res.json()
+      
+      if (data.success) {
+        toast.success("User updated successfully")
+        setIsEditOpen(false)
+        fetchUsers() 
+      } else {
+        toast.error(data.message || "Update failed")
+      }
+    } catch (error) {
+      toast.error("An error occurred while updating")
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
 
   const handleInputChange = (e) => {
     const { id, value } = e.target
@@ -86,7 +141,8 @@ const UserManagement = () => {
       password: '',
       role: '',
       department: '',
-      phoneNumber: ''
+      phoneNumber: '',
+      gender: ''
     })
     setIsCreateOpen(false)
   }
@@ -98,6 +154,7 @@ const UserManagement = () => {
     if (formData.password.length < 6) return "Password must be at least 6 characters"
     if (!formData.role) return "Please assign a user role"
     if (!formData.department) return "Please assign a department"
+    if (!formData.gender) return "Please select a gender"
     return null
   }
 
@@ -248,10 +305,25 @@ const UserManagement = () => {
                     </Select>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Contact Number</Label>
-                  <Input id="phoneNumber" maxLength={10} value={formData.phoneNumber} onChange={(e) => handleInputChange({ target: { id: 'phoneNumber', value: e.target.value.replace(/\D/g, '') } })} placeholder="10-digit mobile number" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber">Contact Number</Label>
+                    <Input id="phoneNumber" maxLength={10} value={formData.phoneNumber} onChange={(e) => handleInputChange({ target: { id: 'phoneNumber', value: e.target.value.replace(/\D/g, '') } })} placeholder="10-digit mobile number" />
+                  </div>
+                
+                  <div className="space-y-2">
+                    <Label>Gender</Label>
+                    <Select value={formData.gender} onValueChange={(v) => handleSelectChange('gender', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+                
                 <DialogFooter className="pt-6">
                   <Button type="button" variant="ghost" onClick={handleResetForm}>Cancel</Button>
                   <Button type="submit" disabled={isActionLoading}>
@@ -262,6 +334,82 @@ const UserManagement = () => {
               </form>
             </DialogContent>
           </Dialog>
+
+          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+            <DialogContent className="sm:max-w-[650px]">
+              <DialogHeader>
+                <DialogTitle>Edit Employee Record</DialogTitle>
+                <DialogDescription>Update system access and personal details. Leave password blank to keep current password.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleEditUser} className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>First Name</Label>
+                    <Input id="firstName" value={formData.firstName} onChange={handleInputChange} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Last Name</Label>
+                    <Input id="lastName" value={formData.lastName} onChange={handleInputChange} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Work Email</Label>
+                    <Input id="email" type="email" value={formData.email} onChange={handleInputChange} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>New Password</Label>
+                    <Input id="password" type="password" placeholder="Leave blank to keep unchanged" value={formData.password} onChange={handleInputChange} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Access Role *</Label>
+                    <Select value={formData.role} onValueChange={(v) => handleSelectChange('role', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select permissions" /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(ROLES).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Department *</Label>
+                    <Select value={formData.department} onValueChange={(v) => handleSelectChange('department', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                      <SelectContent>
+                        {["IT", "HR", "Finance", "Sales", "Marketing", "Operations"].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Contact Number *</Label>
+                    <Input id="phoneNumber" maxLength={10} value={formData.phoneNumber} onChange={(e) => handleInputChange({ target: { id: 'phoneNumber', value: e.target.value.replace(/\D/g, '') } })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Gender</Label>
+                    <Select value={formData.gender} onValueChange={(v) => handleSelectChange('gender', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter className="pt-6">
+                  <Button type="button" variant="ghost" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+                  <Button type="submit" disabled={isActionLoading}>
+                    {isActionLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Save Changes
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+          
         </div>
       </div>
 
@@ -303,6 +451,7 @@ const UserManagement = () => {
                 <TableHead className="font-bold">Employee</TableHead>
                 <TableHead className="font-bold">Department</TableHead>
                 <TableHead className="font-bold">Access Role</TableHead>
+                <TableHead className="font-bold w-[120px]">Gender</TableHead>
                 <TableHead className="font-bold">Account Status</TableHead>
                 <TableHead className="text-right font-bold">Actions</TableHead>
               </TableRow>
@@ -332,6 +481,7 @@ const UserManagement = () => {
                         {user.role}
                       </Badge>
                     </TableCell>
+                    <TableCell><span className="text-sm font-medium">{user.gender}</span></TableCell>
                     <TableCell>
                       <div className={cn(
                         "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
@@ -343,9 +493,12 @@ const UserManagement = () => {
                         {user.status}
                       </div>
                     </TableCell>
+                    
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary"><Edit className="h-4 w-4" /></Button>
+                       <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => openEditModal(user)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
                         <Button 
                           variant="ghost" 
                           size="icon" 

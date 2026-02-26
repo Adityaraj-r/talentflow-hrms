@@ -5,6 +5,10 @@ import csv from 'csv-parser';
 import fs from 'fs';
 import mongoose from 'mongoose';
 import { createLog } from './audit.controller';
+import Document from '../models/Document.model';
+import Transfer from '../models/Transfer.model';
+import Requisition from '../models/Requisition.model';
+import Leave from '../models/leave.model';
 
 const Activity = require('../models/Activity').default || require('../models/Activity');
 const SystemAlert = require('../models/SystemAlert').default || require('../models/SystemAlert');
@@ -330,6 +334,70 @@ export const toggleUserStatus = async (req: AuthRequest, res: Response): Promise
     res.status(200).json({ success: true, message: 'User status updated', data: user });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Toggle failed' });
+  }
+};
+
+export const getDashboardStats = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // 1. Fetch Top-Level Stat Cards
+    const totalUsers = await User.countDocuments();
+    const activeUsers = await User.countDocuments({ isActive: true });
+    const inactiveUsers = await User.countDocuments({ isActive: { $ne: true } });
+
+    const pendingDocuments = await Document.countDocuments({ status: 'Pending' });
+    const pendingTransfers = await Transfer.countDocuments({ status: 'Pending' });
+    const pendingRequisitions = await Requisition.countDocuments({ status: 'Pending' });
+    const pendingLeaves = await Leave.countDocuments({ status: 'Pending' });
+
+    const totalPendingApprovals = pendingDocuments + pendingTransfers + pendingRequisitions + pendingLeaves;
+
+    const pendingBreakdown = [
+      { module: 'KYC Documents', count: pendingDocuments, fill: '#f59e0b' }, // Amber
+      { module: 'Transfers', count: pendingTransfers, fill: '#3b82f6' },     // Blue
+      { module: 'Requisitions', count: pendingRequisitions, fill: '#8b5cf6' },// Purple
+      { module: 'Leave Requests', count: pendingLeaves, fill: '#10b981' }    //  Emerald Green
+    ];
+
+    // 2. Aggregate Department Distribution Data
+    const departmentData = await User.aggregate([
+      // Exclude users without a department
+      { $match: { department: { $ne: null }, isDeleted: { $ne: true } } }, 
+      { $group: { _id: '$department', employees: { $sum: 1 } } },
+      // Map MongoDB _id to 'name' for the Recharts library
+      { $project: { name: '$_id', employees: 1, _id: 0 } },
+      { $sort: { employees: -1 } } // Sort highest to lowest
+    ]);
+
+    // 3. Aggregate Role Distribution Data
+    const roleData = await User.aggregate([
+      { $match: { role: { $ne: null }, isDeleted: { $ne: true } } },
+      { $group: { _id: '$role', value: { $sum: 1 } } },
+      { $project: { name: '$_id', value: 1, _id: 0 } },
+      { $sort: { value: -1 } }
+    ]);
+
+    const genderData = await User.aggregate([
+      { $match: { gender: { $ne: null }, isDeleted: { $ne: true } } },
+      { $group: { _id: '$gender', value: { $sum: 1 } } },
+      { $project: { name: '$_id', value: 1, _id: 0 } }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalUsers,
+        activeUsers,
+        inactiveUsers,
+        departmentData,
+        roleData,
+        genderData,
+        pendingApprovals: totalPendingApprovals,
+        pendingBreakdown,
+      }
+    });
+  } catch (error: any) {
+    console.error("Dashboard Stats Error:", error);
+    res.status(500).json({ success: false, message: "Error fetching dashboard stats" });
   }
 };
 
