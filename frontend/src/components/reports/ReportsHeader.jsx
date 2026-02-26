@@ -225,19 +225,20 @@ export default function ReportsHeader({ filters, setFilters }) {
   ];
 
   const roles = [
-    "CEO",
-    "Country Manager",
-    "HR Manager",
-    "HR Officer",
-    "Department Manager",
-    "Direct Manager",
-    "Payroll Officer",
-    "Project Manager",
-    "Operations Manager",
-    "Camp Boss",
-    "Admin",
-    "Employee",
-  ];
+      { label: "All Roles", value: "all" },
+      { label: "CEO", value: "CEO" },
+      { label: "Country Manager", value: "COUNTRY_MANAGER" },
+      { label: "HR Manager", value: "HR_MANAGER" },
+      { label: "HR Officer", value: "HR_OFFICER" },
+      { label: "Department Manager", value: "DEPARTMENT_MANAGER" },
+      { label: "Direct Manager", value: "DIRECT_MANAGER" },
+      { label: "Payroll Officer", value: "PAYROLL_OFFICER" },
+      { label: "Project Manager", value: "PROJECT_MANAGER" },
+      { label: "Operations Manager", value: "OPERATIONS_MANAGER" },
+      { label: "Camp Boss", value: "CAMP_BOSS" },
+      { label: "Admin", value: "ADMIN" },
+      { label: "Employee", value: "EMPLOYEE" },
+    ];
 
   /* =========================
      PRESET PERIOD HANDLER
@@ -380,10 +381,10 @@ export default function ReportsHeader({ filters, setFilters }) {
                 <SelectValue placeholder="All Roles" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
+                {/* <SelectItem value="all"></SelectItem> */}
                 {roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role}
+                  <SelectItem key={role.value} value={role.value}>
+                    {role.label}
                   </SelectItem>
                 ))}
               </SelectContent>
