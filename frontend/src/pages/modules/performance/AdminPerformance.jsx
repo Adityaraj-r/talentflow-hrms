@@ -41,21 +41,19 @@ const AdminPerformance = () => {
     loadPerformanceData();
   }, []);
 
-  const loadPerformanceData = async () => {
+    const loadPerformanceData = async () => {
     try {
       setLoading(true);
-      
       const [statsResponse, cyclesResponse] = await Promise.all([
         performanceApi.getStats(),
         performanceApi.getCycles()
       ]);
-
       setPerformanceData({
-        totalCycles: statsResponse.data.totalCycles,
-        activeCycles: statsResponse.data.activeCycles,
-        totalReviews: statsResponse.data.totalReviews,
-        avgScore: statsResponse.data.avgScore,
-        cycles: cyclesResponse.data
+        totalCycles: statsResponse.totalCycles,
+        activeCycles: statsResponse.activeCycles,
+        totalReviews: statsResponse.totalReviews,
+        avgScore: statsResponse.avgScore,
+        cycles: cyclesResponse
       });
     } catch (error) {
       console.error('Failed to load performance data:', error);
@@ -64,6 +62,9 @@ const AdminPerformance = () => {
       setLoading(false);
     }
   };
+
+
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -223,7 +224,6 @@ const AdminPerformance = () => {
     <div className="min-h-screen bg-white dark:bg-gray-950 p-6">
       <div className="max-w-7xl mx-auto">
         
-        {/* ✅ Header - Theme Aware */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Performance Management (PMS)</h1>
@@ -232,7 +232,6 @@ const AdminPerformance = () => {
             </p>
           </div>
           
-          {/* ✅ Button - Inverted colors for light/dark */}
           <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center gap-2 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 px-4 py-2 rounded-lg transition-colors font-medium"
@@ -242,9 +241,7 @@ const AdminPerformance = () => {
           </button>
         </div>
 
-        {/* ✅ Stats Cards - Theme Aware */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Total Cycles - Blue */}
           <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 backdrop-blur-sm rounded-xl p-6 transition-all duration-200 hover:scale-105">
             <div className="flex items-center justify-between">
               <div>
@@ -255,7 +252,7 @@ const AdminPerformance = () => {
             </div>
           </div>
 
-          {/* Active Cycles - Green */}
+
           <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 backdrop-blur-sm rounded-xl p-6 transition-all duration-200 hover:scale-105">
             <div className="flex items-center justify-between">
               <div>
@@ -266,7 +263,7 @@ const AdminPerformance = () => {
             </div>
           </div>
 
-          {/* Total Reviews - Purple */}
+
           <div className="bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 backdrop-blur-sm rounded-xl p-6 transition-all duration-200 hover:scale-105">
             <div className="flex items-center justify-between">
               <div>
@@ -277,7 +274,7 @@ const AdminPerformance = () => {
             </div>
           </div>
 
-          {/* Avg Score - Orange */}
+
           <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 backdrop-blur-sm rounded-xl p-6 transition-all duration-200 hover:scale-105">
             <div className="flex items-center justify-between">
               <div>
@@ -291,7 +288,7 @@ const AdminPerformance = () => {
           </div>
         </div>
 
-        {/* ✅ Tabs - Theme Aware */}
+
         <div className="flex gap-4 mb-6 border-b border-gray-200 dark:border-gray-800">
           <button
             onClick={() => setActiveTab("cycles")}
@@ -325,7 +322,7 @@ const AdminPerformance = () => {
           </button>
         </div>
 
-        {/* ✅ Content Sections - Theme Aware */}
+
         {activeTab === "cycles" ? (
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
             <div className="p-6 border-b border-gray-200 dark:border-gray-800">
@@ -404,7 +401,6 @@ const AdminPerformance = () => {
           <EmployeeOverview />
         )}
 
-        {/* ✅ CREATE MODAL - Theme Aware */}
         {showCreateModal && (
           <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl w-full max-w-2xl shadow-xl">
@@ -505,7 +501,7 @@ const AdminPerformance = () => {
           </div>
         )}
 
-        {/* ✅ EDIT MODAL - Theme Aware */}
+
         {showEditModal && (
           <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl w-full max-w-2xl shadow-xl">
