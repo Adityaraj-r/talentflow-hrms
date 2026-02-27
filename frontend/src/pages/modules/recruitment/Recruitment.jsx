@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Link } from "react-router-dom"
 import { FileText, Users, Briefcase, UserCheck, Calendar } from "lucide-react"
-import CandidateManagement from "./CandidateManagement";
+import CandidateManagement from "@/pages/modules/recruitment/CandidateManagement";
 
 const Recruitment = () => {
   const { user } = useAuth()

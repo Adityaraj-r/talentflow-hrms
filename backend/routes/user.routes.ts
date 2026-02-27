@@ -24,5 +24,6 @@ router.get('/:id', getUserById);
 router.put('/:id', updateUser);
 router.put('/:id/reset-password', resetUserPassword);
 router.put('/:id/deactivate', deactivateUser);
+router.put('/:id', updateUser);
 
 export default router;

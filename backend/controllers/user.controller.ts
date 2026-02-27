@@ -2,9 +2,10 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.model';
 import Employee from '../models/Employee.model';
+
 export const createUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, firstName, lastName, role, phoneNumber, department } = req.body;
+    const { email, password, firstName, lastName, role, phoneNumber, department, gender } = req.body;
 
     if (!email || !password || !firstName || !lastName || !role) {
       res.status(400).json({ success: false, message: 'Email, password, first name, last name and role are required' });
@@ -19,14 +20,15 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    // Create Employee record first
-      const employee = await Employee.create({
-        firstName,
-        lastName,
-        email: email.toLowerCase(),
-        department: department || null,
-        status: 'Active'
-      });
+
+    const employee = await Employee.create({
+      firstName,
+      lastName,
+      email: email.toLowerCase(),
+      department: department || null,
+      status: 'Active'
+    });
+
     const user = await User.create({
       email: email.toLowerCase(),
       password: hashedPassword,
@@ -35,6 +37,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       role: role || 'EMPLOYEE',
       phoneNumber: phoneNumber || null,
       department: department || null,
+      gender: gender || null,
       isEmailVerified: true,
       isActive: true,
       employeeId: employee._id,
@@ -50,6 +53,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         lastName: user.lastName,
         role: user.role,
         department: user.department,
+        gender: user.gender,
         phoneNumber: user.phoneNumber,
         isActive: user.isActive
       }
@@ -99,22 +103,60 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
 
 export const updateUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { firstName, lastName, role, phoneNumber, isActive, department } = req.body;
+    const userId = req.params.id || req.body.id;
 
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { firstName, lastName, role, phoneNumber, isActive, department },
-      { new: true, runValidators: true }
-    ).select('-password');
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      department,
+      role,
+      gender,
+      phoneNumber,
+      isActive
+    } = req.body;
 
-    if (!user) {
-      res.status(404).json({ success: false, message: 'User not found' });
+    if (!role || !department || !phoneNumber) {
+      res.status(400).json({
+        success: false,
+        message: "Role, Department, and Phone Number are compulsory fields."
+      });
       return;
     }
 
-    res.status(200).json({ success: true, message: 'User updated successfully', data: user });
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (email) user.email = email;
+    if (department) user.department = department;
+    if (role) user.role = role;
+    if (gender) user.gender = gender;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (isActive !== undefined) user.isActive = isActive;
+
+    if (password && password.trim() !== "") {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+    }
+
+    await user.save();
+
+    const { password: _, ...userResponse } = user.toObject();
+
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      data: userResponse
+    });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Error updating user', error: error.message });
+    console.error("Update User Error:", error);
+    res.status(500).json({ success: false, message: "Error updating user details", error: error.message });
   }
 };
 
@@ -169,40 +211,3 @@ export const deactivateUser = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ success: false, message: 'Error deactivating user', error: error.message });
   }
 };
-
-// export const syncUsersToEmployees = async (req: Request, res: Response) => {
-//   try {
-//     const users = await User.find();
-
-//     let createdCount = 0;
-
-//     for (const user of users) {
-//       if (!user.employeeId) {
-//         const employee = await Employee.create({
-//           firstName: user.firstName,
-//           lastName: user.lastName,
-//           email: user.email,
-//           phoneNumber: user.phoneNumber || "0000000000", // ✅ FIX
-//           department: user.department,
-//           status: user.isActive ? "Active" : "Inactive",
-//         });
-
-//         user.employeeId = employee._id;
-//         await user.save();
-//         createdCount++;
-//       }
-//     }
-
-//     res.json({
-//       success: true,
-//       message: `Sync completed. ${createdCount} employees created.`,
-//     });
-
-//   } catch (error: any) {
-//     res.status(500).json({
-//       success: false,
-//       message: "Sync failed",
-//       error: error.message,
-//     });
-//   }
-// };
