@@ -27,6 +27,10 @@ import candidateRoutes from "./routes/candidate.routes";
 import departmentSyncRoutes from "./routes/departmentSync.routes";
 
 import { seedRoles } from './utils/roleSeeder';
+import reportsRoutes from "./routes/reports.routes";
+
+// import { syncUsersToEmployees } from "./controllers/user.controller";
+import router from './routes/user.routes';
 import documentRoutes from './routes/document.routes';
 
 
@@ -104,11 +108,14 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/shifts", shiftRoutes);
+app.use("/api/reports", reportsRoutes);
+
 app.use('/api/performance', performanceRoutes);
 app.use("/api/holidays", holidayRoutes);
 app.use("/api/transfers", transferRoutes);
 app.use("/api/documents", documentRoutes);
 
+// router.get("/sync-users", syncUsersToEmployees);
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ success: false, error: 'Route not found', path: req.path });
