@@ -7,16 +7,12 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog"
 import {
-  Search, Plus, Upload, Filter, Edit, Power, UserCheck, ShieldAlert, FileSpreadsheet, UploadCloud, Users, RefreshCw
+  Search, Plus, Upload, Edit, Power, UserCheck, ShieldAlert,
+  FileSpreadsheet, UploadCloud, Users, RefreshCw
 } from "lucide-react"
 import { toast } from "sonner"
 import adminService from "@/services/adminService"
@@ -31,19 +27,15 @@ const UserManagement = () => {
   const [users, setUsers] = useState([])
   const [filters, setFilters] = useState({ search: '', role: 'all' })
   const [selectedFile, setSelectedFile] = useState(null)
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [editUserId, setEditUserId] = useState(null)
 
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    role: '',
-    department: '',
-    phoneNumber: '',
-    gender: ''
+    firstName: '', lastName: '', email: '', password: '',
+    role: '', department: '', phoneNumber: '', gender: ''
   })
 
-const fetchUsers = useCallback(async () => {
+  const fetchUsers = useCallback(async () => {
     setIsLoading(true)
     try {
       const response = await adminService.getUsers(filters)
@@ -70,21 +62,12 @@ const fetchUsers = useCallback(async () => {
     }
   }, [filters])
 
-  useEffect(() => {
-    fetchUsers()
-  }, [fetchUsers])
-
-  
-  const [isEditOpen, setIsEditOpen] = useState(false)
-  const [editUserId, setEditUserId] = useState(null)
+  useEffect(() => { fetchUsers() }, [fetchUsers])
 
   const openEditModal = (user) => {
     setFormData({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      password: '', 
-      role: user.role,
+      firstName: user.firstName, lastName: user.lastName, email: user.email,
+      password: '', role: user.role,
       department: user.department !== 'N/A' ? user.department : '',
       phoneNumber: user.phoneNumber,
       gender: user.gender !== 'N/A' ? user.gender : ''
@@ -95,11 +78,8 @@ const fetchUsers = useCallback(async () => {
 
   const handleEditUser = async (e) => {
     e.preventDefault()
-    // Strict Validation: Compulsory Fields
-    if (!formData.role || !formData.department || !formData.phoneNumber) {
+    if (!formData.role || !formData.department || !formData.phoneNumber)
       return toast.error("Role, Department, and Phone Number are compulsory fields.")
-    }
-    
     setIsActionLoading(true)
     try {
       const token = localStorage.getItem('token')
@@ -109,15 +89,14 @@ const fetchUsers = useCallback(async () => {
         body: JSON.stringify(formData)
       })
       const data = await res.json()
-      
       if (data.success) {
         toast.success("User updated successfully")
         setIsEditOpen(false)
-        fetchUsers() 
+        fetchUsers()
       } else {
         toast.error(data.message || "Update failed")
       }
-    } catch (error) {
+    } catch {
       toast.error("An error occurred while updating")
     } finally {
       setIsActionLoading(false)
@@ -134,16 +113,7 @@ const fetchUsers = useCallback(async () => {
   }
 
   const handleResetForm = () => {
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      password: '',
-      role: '',
-      department: '',
-      phoneNumber: '',
-      gender: ''
-    })
+    setFormData({ firstName: '', lastName: '', email: '', password: '', role: '', department: '', phoneNumber: '', gender: '' })
     setIsCreateOpen(false)
   }
 
@@ -162,7 +132,6 @@ const fetchUsers = useCallback(async () => {
     e.preventDefault()
     const error = validateForm()
     if (error) return toast.error(error)
-
     setIsActionLoading(true)
     try {
       const response = await adminService.enrollUser(formData)
@@ -183,11 +152,11 @@ const fetchUsers = useCallback(async () => {
       const response = await adminService.toggleUserStatus(userId)
       if (response.success) {
         toast.success(`User ${currentStatus === 'Active' ? 'deactivated' : 'activated'} successfully`)
-        setUsers(prev => prev.map(u => 
+        setUsers(prev => prev.map(u =>
           u.id === userId ? { ...u, status: u.status === 'Active' ? 'Inactive' : 'Active' } : u
         ))
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to update account status")
     }
   }
@@ -201,7 +170,7 @@ const fetchUsers = useCallback(async () => {
       setIsBulkOpen(false)
       setSelectedFile(null)
       fetchUsers()
-    } catch (error) {
+    } catch {
       toast.error("File processing failed")
     } finally {
       setIsActionLoading(false)
@@ -222,6 +191,7 @@ const fetchUsers = useCallback(async () => {
           <p className="text-muted-foreground">Administer employee accounts and system access levels.</p>
         </div>
         <div className="flex gap-2">
+          {/* Bulk Upload Dialog */}
           <Dialog open={isBulkOpen} onOpenChange={setIsBulkOpen}>
             <DialogTrigger asChild>
               <Button variant="outline"><Upload className="mr-2 h-4 w-4" /> Bulk Upload</Button>
@@ -233,7 +203,7 @@ const fetchUsers = useCallback(async () => {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <input type="file" id="bulk-file" className="hidden" accept=".csv" onChange={(e) => setSelectedFile(e.target.files[0])} />
-                <div 
+                <div
                   className="border-2 border-dashed rounded-xl p-12 text-center cursor-pointer hover:bg-muted/50 transition-all"
                   onClick={() => document.getElementById('bulk-file').click()}
                 >
@@ -248,13 +218,14 @@ const fetchUsers = useCallback(async () => {
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsBulkOpen(false)}>Cancel</Button>
                 <Button onClick={handleBulkUpload} disabled={isActionLoading}>
-                  {isActionLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {isActionLoading && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                   Process Upload
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
+          {/* Create User Dialog */}
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="mr-2 h-4 w-4" /> Add Employee</Button>
@@ -310,7 +281,6 @@ const fetchUsers = useCallback(async () => {
                     <Label htmlFor="phoneNumber">Contact Number</Label>
                     <Input id="phoneNumber" maxLength={10} value={formData.phoneNumber} onChange={(e) => handleInputChange({ target: { id: 'phoneNumber', value: e.target.value.replace(/\D/g, '') } })} placeholder="10-digit mobile number" />
                   </div>
-                
                   <div className="space-y-2">
                     <Label>Gender</Label>
                     <Select value={formData.gender} onValueChange={(v) => handleSelectChange('gender', v)}>
@@ -323,11 +293,10 @@ const fetchUsers = useCallback(async () => {
                     </Select>
                   </div>
                 </div>
-                
                 <DialogFooter className="pt-6">
                   <Button type="button" variant="ghost" onClick={handleResetForm}>Cancel</Button>
                   <Button type="submit" disabled={isActionLoading}>
-                    {isActionLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {isActionLoading && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                     Confirm Enrollment
                   </Button>
                 </DialogFooter>
@@ -335,6 +304,7 @@ const fetchUsers = useCallback(async () => {
             </DialogContent>
           </Dialog>
 
+          {/* Edit User Dialog */}
           <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
             <DialogContent className="sm:max-w-[650px]">
               <DialogHeader>
@@ -402,22 +372,22 @@ const fetchUsers = useCallback(async () => {
                 <DialogFooter className="pt-6">
                   <Button type="button" variant="ghost" onClick={() => setIsEditOpen(false)}>Cancel</Button>
                   <Button type="submit" disabled={isActionLoading}>
-                    {isActionLoading ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {isActionLoading && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                     Save Changes
                   </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
-          
         </div>
       </div>
 
+
       <div className="grid gap-4 md:grid-cols-4">
-        <StatsCard title="Total Staff" value={stats.total} icon={<Users className="h-4 w-4" />} variant="blue" />
-        <StatsCard title="Active" value={stats.active} icon={<UserCheck className="h-4 w-4" />} variant="green" />
-        <StatsCard title="Inactive" value={stats.inactive} icon={<ShieldAlert className="h-4 w-4" />} variant="orange" />
-        <StatsCard title="Security Flags" value="0" icon={<ShieldAlert className="h-4 w-4" />} variant="red" />
+        <StatsCard title="Total Staff" value={stats.total} icon={<Users className="h-8 w-8" />} variant="blue" />
+        <StatsCard title="Active" value={stats.active} icon={<UserCheck className="h-8 w-8" />} variant="green" />
+        <StatsCard title="Inactive" value={stats.inactive} icon={<ShieldAlert className="h-8 w-8" />} variant="orange" />
+        <StatsCard title="Security Flags" value="0" icon={<ShieldAlert className="h-8 w-8" />} variant="red" />
       </div>
 
       <Card>
@@ -425,9 +395,9 @@ const fetchUsers = useCallback(async () => {
           <div className="flex gap-2 w-full md:w-auto">
             <div className="relative flex-1 md:w-80">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search by name, email or ID..." 
-                className="pl-10" 
+              <Input
+                placeholder="Search by name, email or ID..."
+                className="pl-10"
                 onChange={(e) => setFilters(p => ({ ...p, search: e.target.value }))}
               />
             </div>
@@ -458,9 +428,9 @@ const fetchUsers = useCallback(async () => {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={5} className="h-64 text-center text-muted-foreground">Refreshing employee records...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="h-64 text-center text-muted-foreground">Refreshing employee records...</TableCell></TableRow>
               ) : users.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="h-64 text-center text-muted-foreground">No matching records found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="h-64 text-center text-muted-foreground">No matching records found.</TableCell></TableRow>
               ) : (
                 users.map((user) => (
                   <TableRow key={user.id} className="hover:bg-muted/10 transition-colors">
@@ -485,23 +455,22 @@ const fetchUsers = useCallback(async () => {
                     <TableCell>
                       <div className={cn(
                         "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
-                        user.status === 'Active' 
-                          ? "bg-green-500/10 text-green-600 border-green-200" 
+                        user.status === 'Active'
+                          ? "bg-green-500/10 text-green-600 border-green-200"
                           : "bg-orange-500/10 text-orange-600 border-orange-200"
                       )}>
                         <span className={cn("h-1.5 w-1.5 rounded-full", user.status === 'Active' ? "bg-green-600" : "bg-orange-600")} />
                         {user.status}
                       </div>
                     </TableCell>
-                    
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                       <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => openEditModal(user)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => openEditModal(user)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className={cn("h-8 w-8", user.status === 'Active' ? "hover:text-red-500" : "hover:text-green-500")}
                           onClick={() => handleToggleStatus(user.id, user.status)}
                         >
@@ -515,8 +484,8 @@ const fetchUsers = useCallback(async () => {
             </TableBody>
           </Table>
           <div className="p-4 border-t flex items-center justify-between text-xs text-muted-foreground font-medium">
-             <span>Displaying {users.length} active records from MongoDB</span>
-             <span>System Status: Stable</span>
+            <span>Displaying {users.length} active records from MongoDB</span>
+            <span>System Status: Stable</span>
           </div>
         </CardContent>
       </Card>
@@ -526,22 +495,44 @@ const fetchUsers = useCallback(async () => {
 
 const StatsCard = ({ title, value, icon, variant }) => {
   const styles = {
-    blue: "text-blue-600 bg-blue-500/5 border-blue-200",
-    green: "text-green-600 bg-green-500/5 border-green-200",
-    orange: "text-orange-600 bg-orange-500/5 border-orange-200",
-    red: "text-red-600 bg-red-500/5 border-red-200"
+    blue: {
+      card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
+      icon: "text-blue-600 dark:text-blue-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+    },
+    green: {
+      card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
+      icon: "text-green-600 dark:text-green-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+    },
+    orange: {
+      card: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30",
+      icon: "text-orange-600 dark:text-orange-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+    },
+    red: {
+      card: "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30",
+      icon: "text-purple-600 dark:text-purple-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+    },
   }
+  const s = styles[variant]
   return (
-    <Card className={cn("border shadow-none", styles[variant])}>
-      <CardContent className="p-4 flex items-center justify-between">
+    <div className={cn("rounded-xl border p-6 transition-all duration-200 hover:scale-105", s.card)}>
+      <div className="flex items-center justify-between">
         <div>
-          <p className="text-[10px] uppercase font-black tracking-widest opacity-70">{title}</p>
-          <h3 className="text-2xl font-black mt-1">{value}</h3>
+          <p className={cn("text-sm", s.label)}>{title}</p>
+          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
         </div>
-        <div className="p-3 rounded-full bg-background/50 border shadow-sm">{icon}</div>
-      </CardContent>
-    </Card>
+        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
+      </div>
+    </div>
   )
 }
+
 
 export default UserManagement

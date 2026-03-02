@@ -5,7 +5,7 @@ import Employee from '../models/Employee.model';
 
 export const createUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, firstName, lastName, role, phoneNumber, department, gender } = req.body;
+    const { email, password, firstName, lastName, role, phoneNumber, department,gender } = req.body;
 
     if (!email || !password || !firstName || !lastName || !role) {
       res.status(400).json({ success: false, message: 'Email, password, first name, last name and role are required' });
@@ -21,14 +21,6 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const employee = await Employee.create({
-      firstName,
-      lastName,
-      email: email.toLowerCase(),
-      department: department || null,
-      status: 'Active'
-    });
-
     const user = await User.create({
       email: email.toLowerCase(),
       password: hashedPassword,
@@ -39,8 +31,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       department: department || null,
       gender: gender || null,
       isEmailVerified: true,
-      isActive: true,
-      employeeId: employee._id,
+      isActive: true
     });
 
     res.status(201).json({
