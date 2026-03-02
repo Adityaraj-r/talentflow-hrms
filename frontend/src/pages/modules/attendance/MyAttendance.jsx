@@ -28,7 +28,7 @@ const formatTime = (dateString) => {
   });
 };
 
-const calculateTotalHours = (checkIn, checkOut) => {
+const calculateTotalHours = (checkIn, checkOut, totalBreakMinutes = 0) => {
   if (!checkIn || !checkOut) return "-";
 
   const start = new Date(checkIn);
@@ -37,9 +37,11 @@ const calculateTotalHours = (checkIn, checkOut) => {
 
   if (diffMs < 0) return "-";
 
-  const totalMinutes = Math.floor(diffMs / 1000 / 60);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
+  const grossMinutes = Math.floor(diffMs / 1000 / 60);
+  const netMinutes = Math.max(0, grossMinutes - (totalBreakMinutes || 0));
+
+  const hours = Math.floor(netMinutes / 60);
+  const minutes = Math.floor(netMinutes % 60);
 
   return `${hours}h ${minutes}m`;
 };
@@ -155,34 +157,28 @@ const MyAttendance = () => {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      {/* Stats Cards - Updated to match 'My Tasks' Color Scheme */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatsCard
           title="Working Days"
           value={stats.workingDays}
-          // Matching 'Total Tasks' (Purple) style
           icon={<Briefcase className="h-4 w-4 text-purple-500" />}
           className="text-purple-600"
         />
         <StatsCard
           title="Present"
           value={stats.present}
-          // Matching 'Completed' (Green) style
           icon={<CheckCircle className="h-4 w-4 text-green-500" />}
           className="text-green-600"
         />
         <StatsCard
           title="Late"
           value={stats.late}
-          // Matching 'Pending' (Orange) style
           icon={<Clock className="h-4 w-4 text-orange-500" />}
           className="text-orange-600"
         />
         <StatsCard
           title="Absent"
           value={stats.absent}
-          // Matching 'Overdue' (Red) style
           icon={<XCircle className="h-4 w-4 text-red-500" />}
           className="text-red-600"
         />
@@ -289,7 +285,6 @@ const MyAttendance = () => {
                     {history.map((day, i) => (
                       <tr key={i} className="border-b transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/50 border-gray-100 dark:border-slate-800">
 
-                        {/* Date: Strong Black in Light Mode / White in Dark Mode */}
                         <td className="p-4 align-middle font-medium text-gray-900 dark:text-slate-200">
                           {formatDate(day.date || day.checkIn)}
                         </td>
@@ -298,7 +293,6 @@ const MyAttendance = () => {
                           {getStatusBadge(day.status)}
                         </td>
                       
-                          {/* Time: Medium Gray in Light Mode / Light Gray in Dark Mode */}
                           <td className="p-4 align-middle text-gray-600 dark:text-slate-400">
                             {day.checkIn ? (
                               <div className="flex items-center gap-2">
@@ -321,9 +315,8 @@ const MyAttendance = () => {
                             )}
                           </td>
 
-                          {/* Total Hrs: Darker Blue in Light Mode / Neon Blue in Dark Mode */}
                           <td className="p-4 align-middle text-right font-mono text-blue-600 dark:text-blue-400 whitespace-nowrap">
-                            {calculateTotalHours(day.checkIn, day.checkOut)}
+                           {calculateTotalHours(day.checkIn, day.checkOut, day.totalBreakMinutes)}
                           </td>
                       </tr>
                     ))}
