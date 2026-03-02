@@ -17,16 +17,12 @@ import {
 const AttendanceRecords = () => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Date filter defaults to the current local date for immediate oversight.
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
   const [searchTerm, setSearchTerm] = useState("");
 
   const fetchRecords = async () => {
     try {
       setLoading(true);
-      // Fetching all records for the selected date; filtering for names happens locally
-      // to reduce server load as the user types in the search bar.
       const res = await attendanceService.getAllAttendance(dateFilter);
       if (res.data) {
         setRecords(res.data);
@@ -38,18 +34,15 @@ const AttendanceRecords = () => {
     }
   };
 
-  // Re-sync with the database every time the admin picks a new date.
   useEffect(() => {
     fetchRecords();
   }, [dateFilter]);
 
-  // Performs a fuzzy search on the combined First and Last name.
   const filteredRecords = records.filter((record) => {
     const fullName = `${record.userId?.firstName || ""} ${record.userId?.lastName || ""}`.toLowerCase();
     return fullName.includes(searchTerm.toLowerCase());
   });
 
-  // Maps backend status strings to UI-friendly color palettes.
   const getStatusColor = (status) => {
     switch (status) {
       case "Present": return "bg-green-100 text-green-700 border-green-200";
@@ -60,27 +53,37 @@ const AttendanceRecords = () => {
     }
   };
 
-  const calculateDuration = (checkIn, checkOut) => {
+  const calculateDuration = (checkIn, checkOut, totalBreakMinutes = 0) => {
     if (!checkIn || !checkOut) return "-";
+    
     const start = new Date(checkIn);
     const end = new Date(checkOut);
+    
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return "-";
+
     const diffMs = end - start;
-    const totalMinutes = Math.floor(diffMs / (1000 * 60));
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${hours}h ${minutes}m`;
+    if (diffMs < 0) return "-";
+
+    const grossMinutes = Math.floor(diffMs / 1000 / 60);
+    const netMinutes = Math.max(0, grossMinutes - (totalBreakMinutes || 0));
+
+    const hours = Math.floor(netMinutes / 60);
+    const minutes = Math.floor(netMinutes % 60);
+    
+    const formattedHours = String(hours).padStart(2, '0');
+    const formattedMinutes = String(minutes).padStart(2, '0');
+
+    return `${formattedHours}h ${formattedMinutes}m`;
   };
 
   return (
     <div className="space-y-6">
-      {/* Header section with page title and bulk actions */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Attendance Records</h1>
           <p className="text-muted-foreground">Monitor employee check-ins and working hours.</p>
         </div>
         <div className="flex gap-2">
-          {/* Future feature: CSV export of the current filtered view */}
           <Button variant="outline"><Download className="mr-2 h-4 w-4" /> Export CSV</Button>
         </div>
       </div>
@@ -148,7 +151,6 @@ const AttendanceRecords = () => {
                     <TableRow key={record._id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          {/* Profile Avatar fallback using the first initial */}
                           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
                             {record.userId?.firstName?.charAt(0) || "U"}
                           </div>
@@ -168,7 +170,7 @@ const AttendanceRecords = () => {
                         {record.checkOut ? new Date(record.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-"}
                       </TableCell>
                       <TableCell className="font-bold">
-                       {calculateDuration(record.checkIn, record.checkOut)}
+                       {calculateDuration(record.checkIn, record.checkOut, record.totalBreakMinutes)}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={getStatusColor(record.status)}>

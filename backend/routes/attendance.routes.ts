@@ -1,29 +1,25 @@
-import { Router } from "express";
+import express from 'express';
 import { 
   getMyAttendance, 
   clockIn, 
   clockOut, 
-  getAllAttendance 
-} from "../controllers/attendance.controller";
-import { protect } from "../middleware/auth.middleware";
-import { authorize } from "../middleware/role.middleware";
+  startBreak, 
+  endBreak, 
+  getAllAttendance, 
+  runAutoCheckout 
+} from '../controllers/attendance.controller';
+import { protect, authorize } from '../middleware/auth.middleware';
 
-const router = Router();
+const router = express.Router();
 
-// These routes require a valid login token. 
-// The 'protect' middleware identifies 'who' the user is before letting them proceed.
-router.get("/my", protect, getMyAttendance);
-router.post("/clock-in", protect, clockIn);
-router.post("/clock-out", protect, clockOut);
+router.use(protect);
 
-// Admin & HR exclusive access.
-// We chain 'protect' (to verify identity) and 'authorize' (to verify permission).
-// Note: If adding a 'Manager' role later, include it in the authorize arguments here.
-router.get(
-  "/all", 
-  protect, 
-  authorize("ADMIN", "HR_MANAGER"), 
-  getAllAttendance
-);
+router.get('/my', getMyAttendance);
+router.post('/clock-in', clockIn);
+router.post('/clock-out', clockOut);
+router.post('/start-break', startBreak);
+router.post('/end-break', endBreak);    
 
+router.get('/all', authorize('ADMIN', 'HR_MANAGER', 'CEO'), getAllAttendance);
+router.post('/auto-checkout', authorize('ADMIN'), runAutoCheckout); 
 export default router;
