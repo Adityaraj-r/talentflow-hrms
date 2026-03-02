@@ -1,67 +1,22 @@
-import axios from 'axios';
+import api from './apiClient';
 
-const API_BASE_URL = 'http://localhost:5001/api/performance';
-
-// Get auth token from localStorage
-const getAuthToken = () => {
-  return localStorage.getItem('token');
-};
-
-// Create axios instance with default config
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-// Add auth token to requests
-apiClient.interceptors.request.use((config) => {
-  const token = getAuthToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Performance API Methods
 export const performanceApi = {
-  // Get dashboard stats
-  getStats: async () => {
-    const response = await apiClient.get('/stats');
-    return response.data;
-  },
 
-  // Get all cycles
-  getCycles: async (status) => {
+  getStats: () => api.get('/performance/stats').then(r => r.data),
+
+  getCycles: (status) => {
     const params = status ? { status } : {};
-    const response = await apiClient.get('/cycles', { params });
-    return response.data;
+    return api.get('/performance/cycles', { params }).then(r => r.data);
   },
 
-  // Get single cycle by ID
-  getCycleById: async (id) => {
-    const response = await apiClient.get(`/cycles/${id}`);
-    return response.data;
-  },
+  getCycleById: (id) => api.get(`/performance/cycles/${id}`).then(r => r.data),
 
-  // Create new cycle
-  createCycle: async (cycleData) => {
-    const response = await apiClient.post('/cycles', cycleData);
-    return response.data;
-  },
+  createCycle: (data) => api.post('/performance/cycles', data).then(r => r.data),
 
-  // Update cycle
-  updateCycle: async (id, cycleData) => {
-    const response = await apiClient.put(`/cycles/${id}`, cycleData);
-    return response.data;
-  },
+  updateCycle: (id, data) => api.put(`/performance/cycles/${id}`, data).then(r => r.data),
 
-  // Delete cycle
-  deleteCycle: async (id) => {
-    const response = await apiClient.delete(`/cycles/${id}`);
-    return response.data;
-  }
+  deleteCycle: (id) => api.delete(`/performance/cycles/${id}`).then(r => r.data),
+
 };
 
 export default performanceApi;

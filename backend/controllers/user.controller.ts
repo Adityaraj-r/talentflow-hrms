@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.model';
+import Employee from '../models/Employee.model';
 
 export const createUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, firstName, lastName, role, phoneNumber, department,gender } = req.body;
+    const { email, password, firstName, lastName, role, phoneNumber, department, gender } = req.body;
 
     if (!email || !password || !firstName || !lastName || !role) {
       res.status(400).json({ success: false, message: 'Email, password, first name, last name and role are required' });
@@ -20,6 +21,14 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    const employee = await Employee.create({
+      firstName,
+      lastName,
+      email: email.toLowerCase(),
+      department: department || null,
+      status: 'Active'
+    });
+
     const user = await User.create({
       email: email.toLowerCase(),
       password: hashedPassword,
@@ -30,7 +39,8 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       department: department || null,
       gender: gender || null,
       isEmailVerified: true,
-      isActive: true
+      isActive: true,
+      employeeId: employee._id,
     });
 
     res.status(201).json({
@@ -93,26 +103,24 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
 
 export const updateUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Determine the ID based on how your route is set up (params vs body)
-    const userId = req.params.id || req.body.id; 
-    
-    const { 
-      firstName, 
-      lastName, 
-      email, 
-      password, 
-      department, 
-      role, 
+    const userId = req.params.id || req.body.id;
+
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      department,
+      role,
       gender,
       phoneNumber,
-      isActive // Kept from your original function!
+      isActive
     } = req.body;
 
-    // 1. Strict Validation: Ensure compulsory fields are not empty
     if (!role || !department || !phoneNumber) {
-       res.status(400).json({ 
-        success: false, 
-        message: "Role, Department, and Phone Number are compulsory fields." 
+      res.status(400).json({
+        success: false,
+        message: "Role, Department, and Phone Number are compulsory fields."
       });
       return;
     }
@@ -123,7 +131,6 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // 2. Update standard fields
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
     if (email) user.email = email;
@@ -131,9 +138,8 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     if (role) user.role = role;
     if (gender) user.gender = gender;
     if (phoneNumber) user.phoneNumber = phoneNumber;
-    if (isActive !== undefined) user.isActive = isActive; // Allows toggling account status
+    if (isActive !== undefined) user.isActive = isActive;
 
-    // 3. Securely handle password updates (Only hash if admin typed a new one)
     if (password && password.trim() !== "") {
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(password, salt);
@@ -141,13 +147,12 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
 
     await user.save();
 
-    // Strip the password before sending the response back to the frontend
     const { password: _, ...userResponse } = user.toObject();
 
-    res.status(200).json({ 
-      success: true, 
-      message: "User updated successfully", 
-      data: userResponse 
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      data: userResponse
     });
   } catch (error: any) {
     console.error("Update User Error:", error);
@@ -206,6 +211,3 @@ export const deactivateUser = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ success: false, message: 'Error deactivating user', error: error.message });
   }
 };
-
-
-

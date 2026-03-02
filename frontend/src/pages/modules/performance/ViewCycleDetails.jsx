@@ -1,48 +1,109 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  ArrowLeft, 
-  Calendar, 
-  Users, 
-  TrendingUp, 
+import {
+  ArrowLeft,
+  Calendar,
+  Users,
+  TrendingUp,
   Clock,
   CheckCircle2,
   XCircle,
   FileText,
-  BarChart3
+  BarChart3,
+  Plus,
+  Loader2
 } from "lucide-react";
+import { toast } from "sonner";
+import { performanceApi } from "@/services/performanceApi";
+import { reviewApi } from "@/services/reviewApi";
+import AssignReviewModal from "@/components/performance/AssignReviewModal";
 
 const ViewCycleDetails = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
-  
-  // Get cycle data from navigation state or localStorage
-  const [cycle] = useState(() => {
-    if (location.state?.cycle) {
-      return location.state.cycle;
-    }
-    // Fallback: try to get from localStorage
-    const saved = localStorage.getItem('performanceCycles');
-    if (saved) {
-      const cycles = JSON.parse(saved);
-      return cycles.find(c => c.id === parseInt(id));
-    }
-    return null;
-  });
 
-  // Mock assigned employees data
-  const mockAssignedEmployees = [
-    { id: 1, name: "John Doe", department: "Engineering", status: "completed", rating: 4.5, reviewedBy: "Sarah Manager", reviewDate: "2026-01-15" },
-    { id: 2, name: "Jane Smith", department: "Marketing", status: "in-progress", rating: null, reviewedBy: null, reviewDate: null },
-    { id: 3, name: "Mike Johnson", department: "Sales", status: "pending", rating: null, reviewedBy: null, reviewDate: null },
-    { id: 4, name: "Sarah Williams", department: "HR", status: "completed", rating: 4.2, reviewedBy: "Tom Director", reviewDate: "2026-01-18" },
-    { id: 5, name: "Tom Brown", department: "Engineering", status: "completed", rating: 3.8, reviewedBy: "Sarah Manager", reviewDate: "2026-01-20" },
-  ];
+  const [cycle, setCycle] = useState(location.state?.cycle || null);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+
+  useEffect(() => {
+    loadCycleData();
+  }, [id]);
+
+  const loadCycleData = async () => {
+    try {
+      setLoading(true);
+
+      const [cycleRes, reviewsRes] = await Promise.all([
+        performanceApi.getCycleById(id),
+        reviewApi.getAllReviews({ cycleId: id })
+      ]);
+
+      setCycle(cycleRes);             
+      setReviews(reviewsRes.data || []); 
+
+    } catch (error) {
+      console.error("Failed to load cycle data:", error);
+      toast.error("Failed to load cycle details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
+  const totalReviews = reviews.length;
+  const completedReviews = reviews.filter(r => r.status === 'completed').length;
+  const inProgressReviews = reviews.filter(r => r.status === 'in-progress').length;
+  const pendingReviews = reviews.filter(r => r.status === 'pending').length;
+  const completionRate = totalReviews > 0 ? Math.round((completedReviews / totalReviews) * 100) : 0;
+  const avgRating = completedReviews > 0
+    ? reviews.filter(r => r.overallRating > 0).reduce((sum, r) => sum + r.overallRating, 0) / completedReviews
+    : 0;
+
+  const getStatusStyle = (status) => {
+    const styles = {
+      completed: "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/30",
+      "in-progress": "bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-500/30",
+      pending: "bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400 border border-gray-200 dark:border-gray-500/30"
+    };
+    return styles[status] || styles.pending;
+  };
+
+  const getStatusIcon = (status) => {
+    if (status === 'completed') return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+    if (status === 'in-progress') return <Clock className="h-4 w-4 text-yellow-600" />;
+    return <Clock className="h-4 w-4 text-gray-400" />;
+  };
+
+  const getEmployeeName = (review) => {
+    const emp = review.employeeId;
+    if (!emp) return '—';
+    if (typeof emp === 'object') return `${emp.firstName ?? ''} ${emp.lastName ?? ''}`.trim();
+    return emp;
+  };
+
+  const getReviewerName = (review) => {
+    const reviewer = review.reviewerId;
+    if (!reviewer) return '—';
+    if (typeof reviewer === 'object') return `${reviewer.firstName ?? ''} ${reviewer.lastName ?? ''}`.trim();
+    return reviewer;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-950">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <span className="ml-2 text-lg text-gray-900 dark:text-white">Loading cycle details...</span>
+      </div>
+    );
+  }
 
   if (!cycle) {
     return (
@@ -51,7 +112,9 @@ const ViewCycleDetails = () => {
           <CardContent className="p-12 text-center">
             <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-2">Cycle Not Found</h2>
-            <p className="text-muted-foreground mb-6">The performance cycle you're looking for doesn't exist.</p>
+            <p className="text-muted-foreground mb-6">
+              The performance cycle you're looking for doesn't exist.
+            </p>
             <Button onClick={() => navigate('/role/admin/appraisal')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Performance
@@ -62,227 +125,241 @@ const ViewCycleDetails = () => {
     );
   }
 
-  const totalEmployees = mockAssignedEmployees.length;
-  const completedReviews = mockAssignedEmployees.filter(e => e.status === 'completed').length;
-  const inProgressReviews = mockAssignedEmployees.filter(e => e.status === 'in-progress').length;
-  const pendingReviews = mockAssignedEmployees.filter(e => e.status === 'pending').length;
-  const completionRate = totalEmployees > 0 ? Math.round((completedReviews / totalEmployees) * 100) : 0;
-  
-  const avgRating = mockAssignedEmployees
-    .filter(e => e.rating !== null)
-    .reduce((sum, e) => sum + e.rating, 0) / (completedReviews || 1);
-
-  const getStatusBadge = (status) => {
-    const styles = {
-      completed: "bg-green-100 text-green-800",
-      "in-progress": "bg-yellow-100 text-yellow-800",
-      pending: "bg-gray-100 text-gray-800"
-    };
-    return styles[status] || styles.pending;
-  };
-
-  const getStatusIcon = (status) => {
-    if (status === 'completed') return <CheckCircle2 className="h-4 w-4 text-green-600" />;
-    if (status === 'in-progress') return <Clock className="h-4 w-4 text-yellow-600" />;
-    return <XCircle className="h-4 w-4 text-gray-400" />;
-  };
-
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => navigate('/role/admin/appraisal')}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">{cycle.name}</h1>
-            <p className="text-muted-foreground">
-              Performance cycle details and employee reviews
-            </p>
+    <div className="min-h-screen bg-white dark:bg-gray-950 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+
+        {/* ─── Header ─────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/role/admin/appraisal')}
+              className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{cycle.name}</h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                Performance cycle details and employee reviews
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              cycle.status === 'active'
+                ? 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/30'
+                : cycle.status === 'completed'
+                ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30'
+                : 'bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400 border border-gray-200 dark:border-gray-500/30'
+            }`}>
+              {cycle.status?.toUpperCase()}
+            </span>
+
+            {/* Only show Assign button for active cycles */}
+            {cycle.status === 'active' && (
+              <button
+                onClick={() => setShowAssignModal(true)}
+                className="flex items-center gap-2 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 px-4 py-2 rounded-lg transition-colors font-medium text-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Assign Review
+              </button>
+            )}
           </div>
         </div>
-        <Badge className={cycle.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}>
-          {cycle.status.toUpperCase()}
-        </Badge>
-      </div>
 
-      {/* Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-l-4 border-l-blue-500">
-          <CardContent className="p-6">
+        {/* ─── Stats Cards ─────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+          {/* Cycle Period */}
+          <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-6">
             <div className="flex items-center gap-2 mb-2">
-              <Calendar className="h-5 w-5 text-blue-500" />
-              <span className="text-sm font-medium text-muted-foreground">Cycle Period</span>
+              <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <span className="text-sm text-gray-600 dark:text-gray-400">Cycle Period</span>
             </div>
-            <div className="text-sm font-semibold">
+            <div className="text-sm font-semibold text-gray-900 dark:text-white">
               {new Date(cycle.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              {' - '}
+              {' — '}
               {new Date(cycle.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card className="border-l-4 border-l-purple-500">
-          <CardContent className="p-6">
+          {/* Total Reviews */}
+          <div className="bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-xl p-6">
             <div className="flex items-center gap-2 mb-2">
-              <Users className="h-5 w-5 text-purple-500" />
-              <span className="text-sm font-medium text-muted-foreground">Total Employees</span>
+              <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <span className="text-sm text-gray-600 dark:text-gray-400">Total Reviews</span>
             </div>
-            <div className="text-3xl font-bold text-purple-500">{totalEmployees}</div>
-          </CardContent>
-        </Card>
+            <div className="text-3xl font-bold text-gray-900 dark:text-white">{totalReviews}</div>
+          </div>
 
-        <Card className="border-l-4 border-l-green-500">
-          <CardContent className="p-6">
+          {/* Completion Rate */}
+          <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-6">
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
-              <span className="text-sm font-medium text-muted-foreground">Completion Rate</span>
+              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <span className="text-sm text-gray-600 dark:text-gray-400">Completion Rate</span>
             </div>
-            <div className="space-y-2">
-              <div className="text-3xl font-bold text-green-500">{completionRate}%</div>
-              <Progress value={completionRate} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
+            <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{completionRate}%</div>
+            <Progress value={completionRate} className="h-2" />
+          </div>
 
-        <Card className="border-l-4 border-l-orange-500">
-          <CardContent className="p-6">
+          {/* Average Rating */}
+          <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 rounded-xl p-6">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-5 w-5 text-orange-500" />
-              <span className="text-sm font-medium text-muted-foreground">Average Rating</span>
+              <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              <span className="text-sm text-gray-600 dark:text-gray-400">Average Rating</span>
             </div>
-            <div className="text-3xl font-bold text-orange-500">
-              {completedReviews > 0 ? avgRating.toFixed(1) : '—'}/5
+            <div className="text-3xl font-bold text-gray-900 dark:text-white">
+              {completedReviews > 0 ? `${avgRating.toFixed(1)}/5` : '—'}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
 
-      {/* Review Status Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        {/* ─── Status Summary ───────────────────────────────────────────── */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
             Review Status Overview
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="flex items-center gap-4 p-4 bg-green-50 rounded-lg">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-center gap-4 p-4 bg-green-50 dark:bg-green-500/10 rounded-lg border border-green-100 dark:border-green-500/20">
+              <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
               <div>
-                <div className="text-2xl font-bold text-green-600">{completedReviews}</div>
-                <div className="text-sm text-muted-foreground">Completed</div>
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{completedReviews}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Completed</div>
               </div>
             </div>
-
-            <div className="flex items-center gap-4 p-4 bg-yellow-50 rounded-lg">
-              <Clock className="h-8 w-8 text-yellow-600" />
+            <div className="flex items-center gap-4 p-4 bg-yellow-50 dark:bg-yellow-500/10 rounded-lg border border-yellow-100 dark:border-yellow-500/20">
+              <Clock className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
               <div>
-                <div className="text-2xl font-bold text-yellow-600">{inProgressReviews}</div>
-                <div className="text-sm text-muted-foreground">In Progress</div>
+                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{inProgressReviews}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">In Progress</div>
               </div>
             </div>
-
-            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-              <XCircle className="h-8 w-8 text-gray-600" />
+            <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
+              <Clock className="h-8 w-8 text-gray-500 dark:text-gray-400" />
               <div>
-                <div className="text-2xl font-bold text-gray-600">{pendingReviews}</div>
-                <div className="text-sm text-muted-foreground">Pending</div>
+                <div className="text-2xl font-bold text-gray-600 dark:text-gray-300">{pendingReviews}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Pending</div>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Description */}
-      {cycle.description && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        {/* ─── Description ─────────────────────────────────────────────── */}
+        {cycle.description && (
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
               <FileText className="h-5 w-5" />
               Cycle Description
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">{cycle.description}</p>
-          </CardContent>
-        </Card>
-      )}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">{cycle.description}</p>
+          </div>
+        )}
 
-      {/* Employee Review Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Employee Reviews ({totalEmployees})</CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            Track individual employee review status and ratings
-          </p>
-        </CardHeader>
-        <CardContent className="p-0">
+        {/* ─── Reviews Table ────────────────────────────────────────────── */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                Assigned Reviews ({totalReviews})
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Track individual employee review status and ratings
+              </p>
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-muted/50">
+              <thead className="bg-gray-50 dark:bg-gray-800/50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Employee</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Department</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Rating</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Reviewed By</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Review Date</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold">Actions</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Employee</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Department</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Status</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Rating</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Reviewer</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Submitted</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
-                {mockAssignedEmployees.map((employee) => (
-                  <tr key={employee.id} className="hover:bg-muted/50">
-                    <td className="px-6 py-4 font-medium">{employee.name}</td>
-                    <td className="px-6 py-4 text-muted-foreground">{employee.department}</td>
-                    <td className="px-6 py-4">
-                      <Badge className={getStatusBadge(employee.status)}>
-                        <span className="flex items-center gap-1">
-                          {getStatusIcon(employee.status)}
-                          {employee.status.replace('-', ' ').toUpperCase()}
-                        </span>
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 font-semibold">
-                      {employee.rating ? (
-                        <span className="text-orange-600">{employee.rating}/5</span>
-                      ) : (
-                        <span className="text-gray-400">—</span>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                {reviews.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                      No reviews assigned yet.
+                      {cycle.status === 'active' && (
+                        <button
+                          onClick={() => setShowAssignModal(true)}
+                          className="ml-2 text-blue-600 dark:text-blue-400 underline font-medium"
+                        >
+                          Assign the first review
+                        </button>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-muted-foreground">
-                      {employee.reviewedBy || '—'}
-                    </td>
-                    <td className="px-6 py-4 text-muted-foreground">
-                      {employee.reviewDate 
-                        ? new Date(employee.reviewDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                        : '—'
-                      }
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="text-blue-600 hover:text-blue-700"
-                        disabled={employee.status === 'pending'}
-                      >
-                        {employee.status === 'completed' ? 'View Details' : 'Start Review'}
-                      </Button>
-                    </td>
                   </tr>
-                ))}
+                ) : (
+                  reviews.map((review) => (
+                    <tr key={review._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                        {getEmployeeName(review)}
+                      </td>
+                      <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
+                        {review.employeeId?.department ?? '—'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 w-fit ${getStatusStyle(review.status)}`}>
+                          {getStatusIcon(review.status)}
+                          {review.status?.replace('-', ' ').toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 font-semibold">
+                        {review.overallRating > 0
+                          ? <span className="text-orange-600 dark:text-orange-400">{review.overallRating}/5</span>
+                          : <span className="text-gray-400">—</span>
+                        }
+                      </td>
+                      <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
+                        {getReviewerName(review)}
+                      </td>
+                      <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
+                        {review.submittedAt
+                          ? new Date(review.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                          : '—'
+                        }
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          disabled={review.status === 'pending'}
+                          onClick={() => navigate(`/role/admin/review/${review._id}`)}
+                        >
+                          {review.status === 'completed' ? 'View Details' : 'Start Review'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+      </div>
+
+      {/* ─── Assign Review Modal ─────────────────────────────────────────── */}
+      <AssignReviewModal
+        isOpen={showAssignModal}
+        onClose={() => setShowAssignModal(false)}
+        cycleId={id}
+        cycleName={cycle?.name}
+        onSuccess={() => {
+          setShowAssignModal(false);
+          loadCycleData();
+          toast.success('Review assigned! Table updated.');
+        }}
+      />
     </div>
   );
 };

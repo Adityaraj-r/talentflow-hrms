@@ -1,101 +1,245 @@
+// import { motion } from "framer-motion";
+
+// export default function WorkforceHealthMeter({
+//   data,
+//   loading,
+//   error,
+// }) {
+//   if (loading) {
+//     return (
+//       <div className="bg-white dark:bg-slate-900 border rounded-2xl p-8 text-center">
+//         Loading Health Score...
+//       </div>
+//     );
+//   }
+
+//   if (error) {
+//     return (
+//       <div className="text-red-500">
+//         Failed to calculate workforce health
+//       </div>
+//     );
+//   }
+
+//   if (!data) return null;
+
+//   const attendanceScore = data.avgAttendance || 0;
+//   const attritionScore = 100 - (data.attritionRate || 0);
+
+//   const activeRatio =
+//     data.headcount > 0
+//       ? (data.activeEmployees / data.headcount) * 100
+//       : 0;
+
+//   /* =====================================
+//      Health Formula
+//      40% Attendance
+//      30% (100 - Attrition)
+//      30% Active Ratio
+//   ===================================== */
+//   const healthScore = Math.round(
+//     attendanceScore * 0.4 +
+//       attritionScore * 0.3 +
+//       activeRatio * 0.3
+//   );
+
+//   const status =
+//     healthScore >= 85
+//       ? "Healthy"
+//       : healthScore >= 65
+//       ? "Moderate"
+//       : "Critical";
+
+//   const color =
+//     healthScore >= 85
+//       ? "#10b981"
+//       : healthScore >= 65
+//       ? "#f59e0b"
+//       : "#ef4444";
+
+//   const circumference = 2 * Math.PI * 60;
+//   const offset =
+//     circumference - (healthScore / 100) * circumference;
+
+//   return (
+//     <motion.div
+//       initial={{ opacity: 0, y: 40 }}
+//       animate={{ opacity: 1, y: 0 }}
+//       transition={{ duration: 0.6 }}
+//       className="bg-white dark:bg-slate-900 border rounded-2xl p-8 text-center shadow-sm"
+//     >
+//       <h2 className="text-xl font-semibold mb-6">
+//         Workforce Health Score
+//       </h2>
+
+//       <div className="relative flex items-center justify-center">
+//         <svg width="160" height="160">
+//           {/* Background Circle */}
+//           <circle
+//             cx="80"
+//             cy="80"
+//             r="60"
+//             stroke="#e5e7eb"
+//             strokeWidth="12"
+//             fill="none"
+//             className="dark:stroke-slate-700"
+//           />
+
+//           {/* Animated Progress */}
+//           <motion.circle
+//             cx="80"
+//             cy="80"
+//             r="60"
+//             stroke={color}
+//             strokeWidth="12"
+//             fill="none"
+//             strokeLinecap="round"
+//             strokeDasharray={circumference}
+//             strokeDashoffset={offset}
+//             initial={{ strokeDashoffset: circumference }}
+//             animate={{ strokeDashoffset: offset }}
+//             transition={{ duration: 1 }}
+//             transform="rotate(-90 80 80)"
+//           />
+//         </svg>
+
+//         {/* Center Text */}
+//         <div className="absolute flex flex-col items-center">
+//           <span
+//             className="text-3xl font-bold"
+//             style={{ color }}
+//           >
+//             {healthScore}
+//           </span>
+//           <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+//             {status}
+//           </span>
+//         </div>
+//       </div>
+
+//       <p className="mt-6 text-sm text-gray-600 dark:text-gray-400">
+//         AI-generated overall workforce health assessment
+//       </p>
+//     </motion.div>
+//   );
+// }
+
 import { motion } from "framer-motion";
-import { useSummary } from "@/utils/useReports";
 
-export default function WorkforceHealthMeter({ filters }) {
-  const { data, isLoading } = useSummary(filters);
-
-  if (isLoading) {
+export default function WorkforceHealthMeter({
+  data,
+  loading,
+  error,
+}) {
+  if (loading) {
     return (
-      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-6">
-        <p className="text-gray-500 dark:text-gray-400">
-          Calculating Workforce Health...
-        </p>
+      <div className="bg-white dark:bg-slate-900 border rounded-2xl p-8 text-center">
+        Loading Health Score...
       </div>
     );
   }
 
-  // Weighted scoring logic
-  const attendanceScore = (data?.avgAttendance || 0) * 0.4;
-  const attritionScore = (100 - (data?.attritionRate || 0)) * 0.3;
-  const hiringScore = (data?.openPositions > 0 ? 80 : 60) * 0.2;
-  const payrollScore = 90 * 0.1;
-
-  const totalScore = Math.round(
-    attendanceScore + attritionScore + hiringScore + payrollScore
-  );
-
-  let status = "Healthy";
-  let color = "text-emerald-500";
-  let ringColor = "stroke-emerald-500";
-
-  if (totalScore < 70) {
-    status = "Critical";
-    color = "text-red-500";
-    ringColor = "stroke-red-500";
-  } else if (totalScore < 85) {
-    status = "Watch";
-    color = "text-amber-500";
-    ringColor = "stroke-amber-500";
+  if (error) {
+    return (
+      <div className="text-red-500">
+        Failed to calculate workforce health
+      </div>
+    );
   }
 
-  const radius = 70;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset =
-    circumference - (totalScore / 100) * circumference;
+  if (!data) return null;
+
+  const attendanceScore = data.avgAttendance || 0;
+  const attritionScore = 100 - (data.attritionRate || 0);
+
+  const activeRatio =
+    data.headcount > 0
+      ? (data.activeEmployees / data.headcount) * 100
+      : 0;
+
+  /* =====================================
+     Health Formula
+     40% Attendance
+     30% (100 - Attrition)
+     30% Active Ratio
+  ===================================== */
+  const healthScore = Math.round(
+    attendanceScore * 0.4 +
+      attritionScore * 0.3 +
+      activeRatio * 0.3
+  );
+
+  const status =
+    healthScore >= 85
+      ? "Healthy"
+      : healthScore >= 65
+      ? "Moderate"
+      : "Critical";
+
+  const color =
+    healthScore >= 85
+      ? "#10b981"
+      : healthScore >= 65
+      ? "#f59e0b"
+      : "#ef4444";
+
+  const circumference = 2 * Math.PI * 60;
+  const offset =
+    circumference - (healthScore / 100) * circumference;
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5 }}
-      className="
-        bg-white dark:bg-slate-900
-        border border-gray-200 dark:border-slate-800
-        rounded-2xl
-        p-8
-        shadow-sm
-        text-center
-      "
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      className="bg-white dark:bg-slate-900 border rounded-2xl p-8 text-center shadow-sm"
     >
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+      <h2 className="text-xl font-semibold mb-6">
         Workforce Health Score
       </h2>
 
-      <div className="flex justify-center items-center">
-        <svg width="180" height="180">
+      <div className="relative flex items-center justify-center">
+        <svg width="160" height="160">
+          {/* Background Circle */}
           <circle
-            cx="90"
-            cy="90"
-            r={radius}
+            cx="80"
+            cy="80"
+            r="60"
             stroke="#e5e7eb"
             strokeWidth="12"
             fill="none"
             className="dark:stroke-slate-700"
           />
 
+          {/* Animated Progress */}
           <motion.circle
-            cx="90"
-            cy="90"
-            r={radius}
+            cx="80"
+            cy="80"
+            r="60"
+            stroke={color}
             strokeWidth="12"
             fill="none"
-            className={ringColor}
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
             initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset }}
+            animate={{ strokeDashoffset: offset }}
             transition={{ duration: 1 }}
+            transform="rotate(-90 80 80)"
           />
         </svg>
 
-        <div className="absolute">
-          <p className={`text-3xl font-bold ${color}`}>
-            {totalScore}
-          </p>
-          <p className={`text-sm font-medium ${color}`}>
+        {/* Center Text */}
+        <div className="absolute flex flex-col items-center">
+          <span
+            className="text-3xl font-bold"
+            style={{ color }}
+          >
+            {healthScore}
+          </span>
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
             {status}
-          </p>
+          </span>
         </div>
       </div>
 
