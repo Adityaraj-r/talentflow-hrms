@@ -1,16 +1,19 @@
 import apiClient from './apiClient';
 
 const adminService = {
-  getMetrics: async () => 
+  getMetrics: async () =>
     await apiClient.get('/admin/metrics'),
 
-  getUsers: async (params = {}) => 
+  getUsers: async (params = {}) =>
     await apiClient.get('/admin/users', { params }),
 
-  getActivities: async (params = {}) => 
+  getAllEmployees: async (params = {}) =>
+    await apiClient.get('/admin/users', { params }),
+
+  getActivities: async (params = {}) =>
     await apiClient.get('/admin/activities', { params }),
 
-  enrollUser: async (userData) => 
+  enrollUser: async (userData) =>
     await apiClient.post('/admin/enroll-user', userData),
 
   bulkUploadUsers: async (file) => {
@@ -21,29 +24,29 @@ const adminService = {
     });
   },
 
-  updateUserStatus: async (userId, status) => 
+  updateUserStatus: async (userId, status) =>
     await apiClient.patch(`/admin/users/${userId}/status`, { status }),
 
-  toggleUserStatus: async (userId) => 
+  toggleUserStatus: async (userId) =>
     await apiClient.patch(`/admin/users/${userId}/toggle-status`),
 
-  getUserDistribution: async () => 
+  getUserDistribution: async () =>
     await apiClient.get('/admin/user-distribution'),
 
-  getDepartmentStats: async () => 
+  getDepartmentStats: async () =>
     await apiClient.get('/admin/department-stats'),
 
-  getSettings: async () => 
+  getSettings: async () =>
     await apiClient.get('/admin/settings'),
 
-  updateSettings: async (settingsData) => 
+  updateSettings: async (settingsData) =>
     await apiClient.put('/admin/settings', settingsData),
 
-  getAuditLogs: async () => 
+  getAuditLogs: async () =>
     await apiClient.get('/audit'),
 
-  getGoogleAuthUrl: async () => 
-    await apiClient.get('/google/auth')
+  getGoogleAuthUrl: async () =>
+    await apiClient.get('/google/auth'),
 };
 
 export default adminService;
