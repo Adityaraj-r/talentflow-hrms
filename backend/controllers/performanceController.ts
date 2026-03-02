@@ -365,6 +365,46 @@ export class PerformanceController {
     }
   }
 
+  // PUT /api/performance/reviews/:id/approve
+  static async approveReview(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const { feedback } = req.body;
+      const userId = req.user?.id;
+      const userRole = req.user?.role?.toUpperCase();
+
+      if (userRole !== 'ADMIN' && userRole !== 'SUPER ADMIN') {
+        return res.status(403).json({ success: false, error: 'Only admins can approve reviews' });
+      }
+
+      const review = await PerformanceReviewModel.findById(id);
+      if (!review) return res.status(404).json({ success: false, error: 'Review not found' });
+
+      if (review.status !== ReviewStatus.COMPLETED) {
+        return res.status(400).json({ success: false, error: 'Only completed reviews can be approved' });
+      }
+
+      const updatedReview = await PerformanceReviewModel.findByIdAndUpdate(
+        id,
+        {
+          status: ReviewStatus.APPROVED,
+          approvedBy: userId,
+          approvedAt: new Date(),
+          adminFeedback: feedback || ''
+        },
+        { new: true }
+      )
+        .populate('employeeId', 'firstName lastName email department')
+        .populate('reviewerId', 'firstName lastName email')
+        .populate('cycleId', 'name status');
+
+      res.json({ success: true, message: 'Review approved successfully', data: updatedReview });
+    } catch (error: any) {
+      console.error('Approve review error:', error);
+      res.status(500).json({ success: false, error: 'Failed to approve review', details: error.message });
+    }
+  }
+
   // GET /api/performance/analytics/summary
   static async getAnalyticsSummary(req: AuthRequest, res: Response) {
     try {

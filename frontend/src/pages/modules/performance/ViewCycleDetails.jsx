@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { performanceApi } from "@/services/performanceApi";
 import { reviewApi } from "@/services/reviewApi";
 import AssignReviewModal from "@/components/performance/AssignReviewModal";
+import SubmitReviewModal from "@/components/performance/SubmitReviewModal";
 
 const ViewCycleDetails = () => {
   const navigate = useNavigate();
@@ -31,6 +32,8 @@ const ViewCycleDetails = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedReview, setSelectedReview] = useState(null);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
 
   useEffect(() => {
     loadCycleData();
@@ -55,8 +58,6 @@ const ViewCycleDetails = () => {
       setLoading(false);
     }
   };
-
-
 
   const totalReviews = reviews.length;
   const completedReviews = reviews.filter(r => r.status === 'completed').length;
@@ -330,13 +331,30 @@ const ViewCycleDetails = () => {
                         }
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          disabled={review.status === 'pending'}
-                          onClick={() => navigate(`/role/admin/review/${review._id}`)}
-                        >
-                          {review.status === 'completed' ? 'View Details' : 'Start Review'}
-                        </button>
+                        {review.status === 'pending' && (
+                          <button
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium transition-colors"
+                            onClick={() => { setSelectedReview(review); setShowSubmitModal(true); }}
+                          >
+                            Start Review
+                          </button>
+                        )}
+                        {review.status === 'completed' && (
+                          <button
+                            className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm font-medium transition-colors"
+                            onClick={() => navigate(`/role/admin/review/${review._id}`)}
+                          >
+                            View Details
+                          </button>
+                        )}
+                        {review.status === 'approved' && (
+                          <button
+                            className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 text-sm font-medium transition-colors"
+                            onClick={() => navigate(`/role/admin/review/${review._id}`)}
+                          >
+                            View Approved
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -358,6 +376,19 @@ const ViewCycleDetails = () => {
           setShowAssignModal(false);
           loadCycleData();
           toast.success('Review assigned! Table updated.');
+        }}
+      />
+      
+      {/* ─── Submit Review Modal ─────────────────────────────────────────── */}
+      <SubmitReviewModal
+        isOpen={showSubmitModal}
+        onClose={() => { setShowSubmitModal(false); setSelectedReview(null); }}
+        review={selectedReview}
+        onSuccess={() => {
+          setShowSubmitModal(false);
+          setSelectedReview(null);
+          loadCycleData();
+          toast.success('Review submitted! Table updated.');
         }}
       />
     </div>
