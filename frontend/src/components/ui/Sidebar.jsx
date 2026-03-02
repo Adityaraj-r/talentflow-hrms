@@ -443,15 +443,6 @@ const Sidebar = ({
       )
     }
 
-    if (userRole === ROLES.CAMP_BOSS) {
-      return (
-        <>
-          <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
-          {canSee('attendance') && <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />}
-        </>
-      )
-    }
-
     return <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
   }
 

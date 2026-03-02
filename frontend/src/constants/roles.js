@@ -8,7 +8,6 @@ export const ROLES = {
     PAYROLL_OFFICER: "Payroll Officer",
     PROJECT_MANAGER: "Project Manager",
     OPERATIONS_MANAGER: "Operations Manager",
-    CAMP_BOSS: "Camp Boss",
     ADMIN: "Admin",
     EMPLOYEE: "Employee",
   };
@@ -167,24 +166,6 @@ export const ROLES = {
       },
       leaveManagement: false,
       employeeTransfer: true,
-      payroll: {
-        payrollProcessing: false,
-        ticketsAndAdvances: false,
-        indemnityCalculation: false,
-      },
-      appraisal: false,
-      disciplinaryActions: false,
-      documentRequests: false,
-    },
-    [ROLES.CAMP_BOSS]: {
-      dashboard: true,
-      recruitment: {
-        recruitmentProcess: false,
-        staffRequisition: false,
-        onboarding: false,
-      },
-      leaveManagement: false,
-      employeeTransfer: false,
       payroll: {
         payrollProcessing: false,
         ticketsAndAdvances: false,
