@@ -57,6 +57,7 @@ import TransferPage from "./pages/modules/transfer/TransferPage"
 // Performance Module
 import AdminPerformance from "./pages/modules/performance/AdminPerformance"
 import ViewCycleDetails from "./pages/modules/performance/ViewCycleDetails"
+import ReviewDetailPage from "./pages/modules/performance/ReviewDetailPage"
 
 // Reports Module
 import ReportsPage from "./pages/modules/reports/ReportsPage"
@@ -462,6 +463,12 @@ function App() {
                     </ProtectedRoute>
                   } />
 
+                  <Route path="/role/admin/review/:id" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><ReviewDetailPage /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+                  
                   <Route path="/role/hr_manager/appraisal" element={
                     <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
                       <DashboardLayout><HRManagerAppraisal /></DashboardLayout>
