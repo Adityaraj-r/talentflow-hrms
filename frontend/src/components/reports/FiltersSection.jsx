@@ -29,7 +29,6 @@
 //     "PAYROLL_OFFICER",
 //     "PROJECT_MANAGER",
 //     "OPERATIONS_MANAGER",
-//     "CAMP_BOSS",
 //     "ADMIN",
 //     "EMPLOYEE",
 //   ];
@@ -147,7 +146,6 @@ export default function FiltersSection({ filters, setFilters }) {
     "PAYROLL_OFFICER",
     "PROJECT_MANAGER",
     "OPERATIONS_MANAGER",
-    "CAMP_BOSS",
     "ADMIN",
     "EMPLOYEE",
   ];

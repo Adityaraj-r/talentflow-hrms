@@ -50,7 +50,6 @@ const UserSchema = new Schema<IUser>(
         'PAYROLL_OFFICER',
         'PROJECT_MANAGER',
         'OPERATIONS_MANAGER',
-        'CAMP_BOSS',
         'ADMIN',
         'EMPLOYEE'
       ]
