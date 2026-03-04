@@ -3,9 +3,9 @@ import {
   createJob,
   updateJob,
   publishJob,
-  closeJob,        // Naya function import kiya
+  closeJob,        
   getPublishedJobs,
-  getAllJobs,       // Naya function import kiya
+  getAllJobs,       
 } from "../controllers/job.controller";
 
 const router = express.Router();

@@ -17,9 +17,6 @@ const JobOpenings = () => {
     deadline: "",
   })
 
-  // =========================
-  // FETCH JOBS
-  // =========================
   const fetchJobs = async () => {
     try {
       const res = await axios.get(
@@ -35,9 +32,6 @@ const JobOpenings = () => {
     fetchJobs()
   }, [])
 
-  // =========================
-  // HANDLE INPUT CHANGE
-  // =========================
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -45,10 +39,6 @@ const JobOpenings = () => {
     })
   }
 
-  // =========================
- // =========================
-// CREATE JOB (DRAFT)
-// =========================
 const handleSubmit = async (e) => {
   e.preventDefault()
 
@@ -67,7 +57,7 @@ const handleSubmit = async (e) => {
     const payload = {
       jobTitle: formData.jobTitle,
       department: formData.department,
-      positions: Number(formData.positions),   // IMPORTANT
+      positions: Number(formData.positions),   
       employmentType: formData.employmentType,
       deadline: formData.deadline,
       status: "Draft"
@@ -94,9 +84,6 @@ const handleSubmit = async (e) => {
     console.log("Error:", error.response?.data)
   }
 }
-  // =========================
-  // PUBLISH JOB
-  // =========================
   const publishJob = async (id) => {
     try {
       await axios.put(
@@ -108,9 +95,6 @@ const handleSubmit = async (e) => {
     }
   }
 
-  // =========================
-  // CLOSE JOB
-  // =========================
   const closeJob = async (id) => {
     try {
       await axios.put(
@@ -122,9 +106,6 @@ const handleSubmit = async (e) => {
     }
   }
 
-  // =========================
-  // STATS
-  // =========================
   const total = jobs.length
   const active = jobs.filter(j => j.status === "Published").length
   const draft = jobs.filter(j => j.status === "Draft").length
@@ -133,7 +114,6 @@ const handleSubmit = async (e) => {
   return (
     <div className="p-8 space-y-8">
 
-      {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">
           Job Openings
@@ -145,7 +125,6 @@ const handleSubmit = async (e) => {
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card><CardContent className="p-4">
           <p>Total Jobs</p>
@@ -168,7 +147,6 @@ const handleSubmit = async (e) => {
         </CardContent></Card>
       </div>
 
-      {/* Create Form */}
       {showForm && (
         <Card>
           <CardContent className="p-6 space-y-4">
@@ -239,7 +217,6 @@ const handleSubmit = async (e) => {
         </Card>
       )}
 
-      {/* Job Cards */}
       <div className="space-y-4">
         {jobs.map(job => (
           <Card key={job._id}>

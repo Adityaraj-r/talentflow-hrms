@@ -3,26 +3,13 @@ import Application from "../models/application.model"
 
 export const applyJob = async (req: Request, res: Response) => {
 
-  try{
+  try {
 
-    const { name, email, jobId } = req.body
+    const application = await Application.create(req.body)
 
-    const application = await Application.create({
+    res.status(201).json(application)
 
-      name,
-      email,
-      jobId,
-      resumeFileId: req.file?.id,   // GridFS file id
-      resumeName: req.file?.filename
-
-    })
-
-    res.status(201).json({
-      success:true,
-      message:"Application submitted"
-    })
-
-  }catch(error:any){
+  } catch (error:any) {
 
     res.status(400).json({
       success:false,
@@ -39,7 +26,7 @@ export const getApplications = async (req: Request, res: Response) => {
 
     const applications = await Application
       .find()
-      .populate("jobId") // job details bhi mil jayegi
+      .populate("jobId") 
 
     res.json(applications)
 

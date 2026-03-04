@@ -3,10 +3,8 @@ import { applyJob, getApplications, updateApplicationStatus, getApplicationStatu
 
 const router = express.Router()
 
-// Candidate Apply
 router.post("/apply", applyJob)
 
-// HR View Applications
 router.get("/", getApplications)
 router.get("/status/:email", getApplicationStatus)
 router.put("/:id/status", updateApplicationStatus)

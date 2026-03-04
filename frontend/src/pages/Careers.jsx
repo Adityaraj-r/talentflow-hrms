@@ -31,14 +31,12 @@ const Careers = () => {
 
     <div className="p-10 max-w-3xl mx-auto">
 
-      {/* Header */}
-
       <h1 className="text-4xl font-bold mb-3">
         Careers
       </h1>
 
       <h2 className="text-xl mb-2">
-        🚀 Join Our Team
+         Join Our Team
       </h2>
 
       <p className="text-gray-400 mb-8">
@@ -46,7 +44,6 @@ const Careers = () => {
       </p>
 
 
-      {/* Job List */}
 
       {jobs.map(job =>(
 

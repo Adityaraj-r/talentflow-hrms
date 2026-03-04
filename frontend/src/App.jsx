@@ -346,23 +346,9 @@ function App() {
                   } />
                   <Route path="/careers" element={<Careers />} />
                   <Route path="/apply/:id" element={<ApplyJob />} />
-                  <Route
- path="/dashboard/applications"
- element={
-   <DashboardLayout>
-     <CandidateApplications />
-   </DashboardLayout>
- }
-/>
-<Route
- path="/dashboard/recruitment-pipeline"
- element={
-  <DashboardLayout>
-   <RecruitmentPipeline />
-  </DashboardLayout>
- }
-/>
-<Route path="/application-status" element={<ApplicationStatus />} />
+                  <Route path="/dashboard/applications" element={ <DashboardLayout> <CandidateApplications /> </DashboardLayout> }/>
+                  <Route path="/dashboard/recruitment-pipeline" element={ <DashboardLayout> <RecruitmentPipeline /> </DashboardLayout>}/>
+                  <Route path="/application-status" element={<ApplicationStatus />} />
                   <Route path="/dashboard/job-openings" element={
                     <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
                       <DashboardLayout> <JobOpenings /> </DashboardLayout>    

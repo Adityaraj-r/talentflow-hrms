@@ -245,14 +245,8 @@ const Sidebar = ({
             <SubLink to="/recruitment" label="Recruitment Process" />
             <SubLink to="/staff-requisition" label="Staff Requisition" />
             <SubLink to="/dashboard/job-openings" label="Job Openings" />
-            <SubLink
- to="/dashboard/applications"
- label="Applications"
-/>
-<SubLink
- to="/dashboard/recruitment-pipeline"
- label="Recruitment Pipeline"
-/>
+            <SubLink to="/dashboard/applications" label="Applications" />
+            <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline"/>
             <SubLink to="/dashboard/candidate-management" label="Candidate Management" />
             <SubLink to="/dashboard/offer-management" label="Offer Management" />
           </SidebarGroup>

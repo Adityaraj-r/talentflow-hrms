@@ -60,7 +60,6 @@ const ApplicationStatus = () => {
 
       <div className="max-w-3xl w-full p-10">
 
-        {/* Header */}
 
         <h1 className="text-4xl font-bold mb-2">
           Check Application Status
@@ -70,7 +69,6 @@ const ApplicationStatus = () => {
           Enter your email to track your job application
         </p>
 
-        {/* Search Box */}
 
         <div className="flex gap-3 mb-10">
 
@@ -92,7 +90,6 @@ const ApplicationStatus = () => {
         </div>
 
 
-        {/* Applications */}
 
         {applications.length === 0 && !loading && (
 

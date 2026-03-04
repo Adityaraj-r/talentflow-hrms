@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import Job from "../models/job.model";
 
-// GET ALL JOBS (Admin Dashboard)
 export const getAllJobs = async (req: Request, res: Response) => {
   try {
     const jobs = await Job.find().sort({ createdAt: -1 });
@@ -11,11 +10,10 @@ export const getAllJobs = async (req: Request, res: Response) => {
   }
 };
 
-// CREATE JOB (As Draft)
 export const createJob = async (req: Request, res: Response) => {
   try {
 
-    console.log("Incoming Job Data:", req.body); // DEBUG
+    console.log("Incoming Job Data:", req.body);
 
     const jobData = {
       jobTitle: req.body.jobTitle,
@@ -32,7 +30,7 @@ export const createJob = async (req: Request, res: Response) => {
 
   } catch (error: any) {
 
-    console.log("Create Job Error:", error); // DEBUG
+    console.log("Create Job Error:", error); 
 
     res.status(400).json({
       success: false,
@@ -41,7 +39,6 @@ export const createJob = async (req: Request, res: Response) => {
   }
 };
 
-// UPDATE JOB
 export const updateJob = async (req: Request, res: Response) => {
   try {
     const job = await Job.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -51,12 +48,11 @@ export const updateJob = async (req: Request, res: Response) => {
   }
 };
 
-// PUBLISH JOB
 export const publishJob = async (req: Request, res: Response) => {
   try {
     const job = await Job.findByIdAndUpdate(
       req.params.id,
-      { status: "Published" }, // 'P' capital rakha hai frontend filter ke hisaab se
+      { status: "Published" }, 
       { new: true }
     );
     res.json(job);
@@ -65,12 +61,11 @@ export const publishJob = async (req: Request, res: Response) => {
   }
 };
 
-// CLOSE JOB
 export const closeJob = async (req: Request, res: Response) => {
   try {
     const job = await Job.findByIdAndUpdate(
       req.params.id,
-      { status: "Closed" }, // 'C' capital rakha hai frontend filter ke hisaab se
+      { status: "Closed" }, 
       { new: true }
     );
     res.json(job);
@@ -79,7 +74,6 @@ export const closeJob = async (req: Request, res: Response) => {
   }
 };
 
-// GET PUBLISHED JOBS (Public View)
 export const getPublishedJobs = async (req: Request, res: Response) => {
   try {
     const jobs = await Job.find({ status: "Published" }).sort({ createdAt: -1 });

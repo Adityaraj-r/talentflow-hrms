@@ -5,7 +5,6 @@ interface AuthRequest extends Request {
   user?: { id: string; role: string; email: string; firstName?: string };
 }
 
-// GET /api/candidates
 export const getCandidates = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { stage, search } = req.query;
@@ -28,7 +27,6 @@ export const getCandidates = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
-// GET /api/candidates/:id
 export const getCandidateById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const candidate = await Candidate.findById(req.params.id);
@@ -42,7 +40,6 @@ export const getCandidateById = async (req: AuthRequest, res: Response): Promise
   }
 };
 
-// POST /api/candidates
 export const createCandidate = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { firstName, lastName, email, phone, position, experience, stage } = req.body;
@@ -68,7 +65,6 @@ export const createCandidate = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
-// PUT /api/candidates/:id  — updates any fields including stage + rejectReason
 export const updateCandidate = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { firstName, lastName, email, phone, position, experience, stage, rejectReason } = req.body;
@@ -90,7 +86,6 @@ export const updateCandidate = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
-// PATCH /api/candidates/:id/stage  — quick stage-only update
 export const updateCandidateStage = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { stage } = req.body;
@@ -112,7 +107,6 @@ export const updateCandidateStage = async (req: AuthRequest, res: Response): Pro
   }
 };
 
-// PATCH /api/candidates/:id/reject
 export const rejectCandidate = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { reason } = req.body;
@@ -134,7 +128,6 @@ export const rejectCandidate = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
-// DELETE /api/candidates/:id
 export const deleteCandidate = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const candidate = await Candidate.findByIdAndDelete(req.params.id);

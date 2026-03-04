@@ -51,8 +51,6 @@ const ApplyJob = () => {
 
       <div className="bg-white shadow-xl rounded-2xl w-full max-w-xl p-10">
 
-        {/* Header */}
-
         <h1 className="text-3xl font-bold text-gray-800 mb-2">
           Apply for Job
         </h1>
@@ -69,11 +67,7 @@ const ApplyJob = () => {
 
         )}
 
-        {/* Form */}
-
         <form onSubmit={handleSubmit} className="space-y-6">
-
-          {/* Name */}
 
           <div>
 
@@ -92,8 +86,6 @@ const ApplyJob = () => {
 
           </div>
 
-          {/* Email */}
-
           <div>
 
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -111,8 +103,6 @@ const ApplyJob = () => {
 
           </div>
 
-          {/* Resume */}
-
           <div>
 
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -125,8 +115,6 @@ const ApplyJob = () => {
             />
 
           </div>
-
-          {/* Button */}
 
           <button
           type="submit"
