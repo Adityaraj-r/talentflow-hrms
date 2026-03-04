@@ -382,12 +382,6 @@ const Sidebar = ({
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
           {canSee('recruitment') && <SidebarLink to="/recruitment" icon={Users} label="View Recruitment" />}
-          <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
-            <SubLink to="/attendance" label="Attendance Records" />
-            <SubLink to="/attendance/shifts" label="Shift Roster" />
-            <SubLink to="/attendance/holidays" label="Holiday List" />
-            <SubLink to="/attendance/leave-management" label="Leave Management" />
-          </SidebarGroup>
           {canSee('reports') && <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />}
         </>
       )

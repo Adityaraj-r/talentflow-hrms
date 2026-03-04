@@ -19,6 +19,7 @@ router.get('/reviews/pending', PerformanceController.getPendingReviews);
 router.get('/reviews/all', PerformanceController.getAllReviews);
 router.get('/reviews/employee/:employeeId', PerformanceController.getEmployeeReviews);
 router.put('/reviews/:id/submit', PerformanceController.submitReview);
+router.put('/reviews/:id/approve', PerformanceController.approveReview);
 
 router.get('/analytics/summary', PerformanceController.getAnalyticsSummary);
 
