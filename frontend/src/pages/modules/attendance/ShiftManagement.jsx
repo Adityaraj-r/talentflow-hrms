@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-// ✅ FIXED: 3 levels up to match your structure
 import shiftService from "@/services/shiftService";
-import AssignShiftModal from "@/components/dashboard/AssignShiftModal"; // Keep this as is if it works, or change to @/components/...
+import AssignShiftModal from "@/components/dashboard/AssignShiftModal"; 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton"; // Added for better loading state
+import { Skeleton } from "@/components/ui/skeleton"; 
 import {
   Clock,
   Plus,
@@ -16,7 +15,71 @@ import {
   Users,
   Timer
 } from "lucide-react";
-import { toast } from "sonner"; // ✅ Using sonner as requested
+import { toast } from "sonner"; 
+
+const TimeSelect = ({ value, name, onChange }) => {
+  let h12 = "", m = "", ampm = "AM";
+  if (value) {
+    let [hh, mm] = value.split(":");
+    let hInt = parseInt(hh, 10);
+    ampm = hInt >= 12 ? "PM" : "AM";
+    hInt = hInt % 12 || 12;
+    h12 = hInt.toString().padStart(2, "0");
+    m = mm;
+  }
+
+  const updateTime = (newH12, newM, newAmpm) => {
+    if (!newH12) newH12 = "09";
+    if (!newM) newM = "00";
+
+    let h24 = parseInt(newH12, 10);
+    if (newAmpm === "PM" && h24 !== 12) h24 += 12;
+    if (newAmpm === "AM" && h24 === 12) h24 = 0;
+    
+    const out = `${h24.toString().padStart(2, "0")}:${newM}`;
+    onChange({ target: { name, value: out } });
+  };
+
+  return (
+    <div className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 overflow-hidden transition-colors shadow-sm">
+      <Clock className="h-4 w-4 mr-2 text-muted-foreground shrink-0" />
+      <div className="flex flex-1 items-center justify-between gap-1">
+        <select 
+          value={h12} 
+          onChange={(e) => updateTime(e.target.value, m || "00", ampm)} 
+          className="bg-transparent hover:bg-muted focus:bg-muted focus:outline-none appearance-none cursor-pointer text-center w-10 py-1 rounded-sm transition-colors font-medium"
+          required
+        >
+          <option value="" disabled>HH</option>
+          {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map(h => <option key={h} value={h}>{h}</option>)}
+        </select>
+        
+        <span className="font-bold text-muted-foreground mb-0.5">:</span>
+        
+        <select 
+          value={m} 
+          onChange={(e) => updateTime(h12 || "09", e.target.value, ampm)} 
+          className="bg-transparent hover:bg-muted focus:bg-muted focus:outline-none appearance-none cursor-pointer text-center w-10 py-1 rounded-sm transition-colors font-medium"
+          required
+        >
+          <option value="" disabled>MM</option>
+          {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map(min => <option key={min} value={min}>{min}</option>)}
+        </select>
+        
+        <div className="h-4 w-px bg-border mx-1"></div>
+        
+        <select 
+          value={ampm} 
+          onChange={(e) => updateTime(h12 || "09", m || "00", e.target.value)} 
+          className="bg-transparent hover:bg-muted focus:bg-muted focus:outline-none appearance-none cursor-pointer text-center w-12 py-1 font-bold text-blue-600 dark:text-blue-400 rounded-sm transition-colors"
+        >
+          <option value="AM">AM</option>
+          <option value="PM">PM</option>
+        </select>
+      </div>
+    </div>
+  );
+};
 
 const ShiftManagement = () => {
   const [shifts, setShifts] = useState([]);
@@ -35,7 +98,6 @@ const ShiftManagement = () => {
       setLoading(true);
       const res = await shiftService.getAllShifts();
 
-      // Robust handling for various API response structures
       if (res?.data?.success && Array.isArray(res.data.data)) {
         setShifts(res.data.data);
       } else if (res?.success && Array.isArray(res.data)) {
@@ -87,20 +149,29 @@ const ShiftManagement = () => {
     }
   };
 
-  // Helper to calculate duration for display
+  const formatTime12Hour = (time24) => {
+    if (!time24) return "--";
+    const [hourString, minute] = time24.split(":");
+    let hour = parseInt(hourString, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12;
+    hour = hour ? hour : 12; 
+    const paddedHour = hour.toString().padStart(2, '0');
+    return `${paddedHour}:${minute} ${ampm}`;
+  };
+
   const getDuration = (start, end) => {
     if (!start || !end) return "--";
     const [sH, sM] = start.split(":").map(Number);
     const [eH, eM] = end.split(":").map(Number);
     let diff = (eH * 60 + eM) - (sH * 60 + sM);
-    if (diff < 0) diff += 1440; // Handle overnight
+    if (diff < 0) diff += 1440; 
     const h = Math.floor(diff / 60);
     return `${h} Hours`;
   };
 
   return (
     <div className="space-y-6">
-      {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Shift Management</h1>
@@ -117,7 +188,6 @@ const ShiftManagement = () => {
 
       <div className="grid lg:grid-cols-3 gap-8">
 
-        {/* Left Column: Create Shift Form */}
         <div className="lg:col-span-1">
           <Card className="sticky top-6 border-slate-200 dark:border-slate-800">
             <CardHeader>
@@ -141,32 +211,26 @@ const ShiftManagement = () => {
                       required
                       value={formData.name}
                       onChange={handleChange}
-                      className=" px-3 pl-9 py-2 w-full p-2 border bg-transparent rounded-lg"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 pl-9 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 shadow-sm"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Start Time</label>
-                    <input
-                      type="time"
-                      name="startTime"
-                      required
-                      value={formData.startTime}
-                      onChange={handleChange}
-                      className="w-full p-2 border bg-transparent rounded-lg"
+                    <TimeSelect 
+                      name="startTime" 
+                      value={formData.startTime} 
+                      onChange={handleChange} 
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">End Time</label>
-                    <input
-                      type="time"
-                      name="endTime"
-                      required
-                      value={formData.endTime}
-                      onChange={handleChange}
-                      className="w-full p-2 border bg-transparent rounded-lg"
+                    <TimeSelect 
+                      name="endTime" 
+                      value={formData.endTime} 
+                      onChange={handleChange} 
                     />
                   </div>
                 </div>
@@ -182,7 +246,7 @@ const ShiftManagement = () => {
                     min="0"
                     value={formData.lateBuffer}
                     onChange={handleChange}
-                    className="w-full p-2 border bg-transparent rounded-lg"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 shadow-sm"
                   />
                   <p className="text-xs text-muted-foreground">Grace period before marking 'Late'.</p>
                 </div>
@@ -196,11 +260,9 @@ const ShiftManagement = () => {
           </Card>
         </div>
 
-        {/* Right Column: List of Shifts (GRID OF CARDS) */}
         <div className="lg:col-span-2 space-y-6">
           <div className="grid md:grid-cols-2 gap-4">
             {loading ? (
-              // Skeletons for loading state
               [1, 2].map((i) => (
                 <Card key={i} className="border-slate-200 dark:border-slate-800">
                   <CardHeader className="space-y-2">
@@ -226,7 +288,7 @@ const ShiftManagement = () => {
                         {shift.isActive && <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 text-[10px] px-2 py-0">Active</Badge>}
                       </CardTitle>
                       <CardDescription className="mt-1 font-mono text-xs">
-                        {shift.startTime} - {shift.endTime}
+                        {formatTime12Hour(shift.startTime)} - {formatTime12Hour(shift.endTime)}
                       </CardDescription>
                     </div>
                     <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-full text-blue-600 dark:text-blue-400">
