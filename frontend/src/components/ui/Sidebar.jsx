@@ -382,7 +382,6 @@ const Sidebar = ({
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
           {canSee('recruitment') && <SidebarLink to="/recruitment" icon={Users} label="View Recruitment" />}
-          {canSee('attendance') && <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />}
           {canSee('reports') && <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />}
         </>
       )
