@@ -25,10 +25,10 @@ import auditRoutes from './routes/audit.routes';
 import googleRoutes from './routes/google.routes';
 import candidateRoutes from "./routes/candidate.routes";
 import departmentSyncRoutes from "./routes/departmentSync.routes";
-
+import jobRoutes from "./routes/job.routes";
 import { seedRoles } from './utils/roleSeeder';
 import reportsRoutes from "./routes/reports.routes";
-
+import applicationRoutes from "./routes/application.routes"
 // import { syncUsersToEmployees } from "./controllers/user.controller";
 import router from './routes/user.routes';
 import documentRoutes from './routes/document.routes';
@@ -103,6 +103,8 @@ app.use('/api/departments-sync', departmentSyncRoutes);
 app.use("/api/candidates", candidateRoutes);
 
 app.use("/api/requisitions", requisitionRoutes);
+app.use("/api/job-openings", jobRoutes)
+app.use("/api/applications", applicationRoutes)
 app.use('/api/onboarding', onboardingRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/tasks", taskRoutes);
