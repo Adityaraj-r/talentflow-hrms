@@ -235,7 +235,6 @@ export default function ReportsHeader({ filters, setFilters }) {
       { label: "Payroll Officer", value: "PAYROLL_OFFICER" },
       { label: "Project Manager", value: "PROJECT_MANAGER" },
       { label: "Operations Manager", value: "OPERATIONS_MANAGER" },
-      { label: "Camp Boss", value: "CAMP_BOSS" },
       { label: "Admin", value: "ADMIN" },
       { label: "Employee", value: "EMPLOYEE" },
     ];

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download, Briefcase, CheckCircle, XCircle, Clock, User, Calendar, CalendarDays } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const formatDate = (dateString) => {
   if (!dateString) return "-";
@@ -26,6 +27,13 @@ const formatTime = (dateString) => {
     minute: "2-digit",
     hour12: true,
   });
+};
+
+const formatBreakTime = (totalMinutes) => {
+  if (!totalMinutes) return "0m";
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 };
 
 const calculateTotalHours = (checkIn, checkOut, totalBreakMinutes = 0) => {
@@ -103,9 +111,12 @@ const MyAttendance = () => {
         }
 
         const today = new Date();
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+
         const businessDaysSoFar = (() => {
           let count = 0;
-          const curDate = new Date(today.getFullYear(), today.getMonth(), 1);
+          const curDate = new Date(currentYear, currentMonth, 1);
           while (curDate <= today) {
             const day = curDate.getDay();
             if (day !== 0 && day !== 6) count++;
@@ -114,9 +125,15 @@ const MyAttendance = () => {
           return count;
         })();
 
-        const present = attData.filter((d) => d.status === "Present").length;
-        const late = attData.filter((d) => d.status === "Late").length;
-        const totalAttended = present + late + attData.filter((d) => d.status === "Half Day").length;
+        const currentMonthData = attData.filter((d) => {
+          if (!d.date && !d.checkIn) return false;
+          const dDate = new Date(d.date || d.checkIn);
+          return dDate.getMonth() === currentMonth && dDate.getFullYear() === currentYear;
+        });
+
+        const present = currentMonthData.filter((d) => d.status === "Present").length;
+        const late = currentMonthData.filter((d) => d.status === "Late").length;
+        const totalAttended = present + late + currentMonthData.filter((d) => d.status === "Half Day").length;
 
         setStats({
           workingDays: businessDaysSoFar,
@@ -139,7 +156,6 @@ const MyAttendance = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
@@ -161,33 +177,33 @@ const MyAttendance = () => {
         <StatsCard
           title="Working Days"
           value={stats.workingDays}
-          icon={<Briefcase className="h-4 w-4 text-purple-500" />}
-          className="text-purple-600"
+          icon={<Briefcase className="h-8 w-8" />}
+          variant="blue"
         />
         <StatsCard
           title="Present"
           value={stats.present}
-          icon={<CheckCircle className="h-4 w-4 text-green-500" />}
-          className="text-green-600"
+          icon={<CheckCircle className="h-8 w-8" />}
+          variant="green"
         />
         <StatsCard
           title="Late"
           value={stats.late}
-          icon={<Clock className="h-4 w-4 text-orange-500" />}
-          className="text-orange-600"
+          icon={<Clock className="h-8 w-8" />}
+          variant="orange"
         />
         <StatsCard
           title="Absent"
           value={stats.absent}
-          icon={<XCircle className="h-4 w-4 text-red-500" />}
-          className="text-red-600"
+          icon={<XCircle className="h-8 w-8" />}
+          variant="red"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         <div className="space-y-6">
-          <Card className="mb-6  from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 border-blue-100 dark:border-slate-700">
+          <Card className="mb-6 bg from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 border-blue-100 dark:border-slate-700">
             <CardContent className="p-6 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">
@@ -258,66 +274,50 @@ const MyAttendance = () => {
                 <table className="w-full caption-bottom text-sm">
                   <thead className="[&_tr]:border-b">
                     <tr className="border-b transition-colors hover:bg-transparent border-gray-200 dark:border-slate-800">
-
-                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 w-[25%]">
-                        Date
-                      </th>
-
-                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 w-[15%]">
-                        Status
-                      </th>
-
-                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 w-[25%]">
-                        In
-                      </th>
-
-                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 w-[25%]">
-                        Out
-                      </th>
-
-                      <th className="h-12 px-4 text-right align-middle font-medium text-gray-500 dark:text-slate-400 w-[15%] whitespace-nowrap">
-                        Total Hrs
-                      </th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 w-[20%]">Date</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 w-[15%]">Status</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 w-[20%]">In</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 w-[20%]">Out</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 w-[10%]">Break</th>
+                      <th className="h-12 px-4 text-right align-middle font-medium text-gray-500 dark:text-slate-400 w-[15%] whitespace-nowrap">Total Hrs</th>
                     </tr>
                   </thead>
 
                   <tbody className="[&_tr:last-child]:border-0">
                     {history.map((day, i) => (
                       <tr key={i} className="border-b transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/50 border-gray-100 dark:border-slate-800">
-
                         <td className="p-4 align-middle font-medium text-gray-900 dark:text-slate-200">
                           {formatDate(day.date || day.checkIn)}
                         </td>
-
                         <td className="p-4 align-middle">
                           {getStatusBadge(day.status)}
                         </td>
-                      
-                          <td className="p-4 align-middle text-gray-600 dark:text-slate-400">
-                            {day.checkIn ? (
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-                                {formatTime(day.checkIn)}
-                              </div>
-                            ) : (
-                              "-"
-                            )}
-                          </td>
-
-                          <td className="p-4 align-middle text-gray-600 dark:text-slate-400">
-                            {day.checkOut ? (
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></div>
-                                {formatTime(day.checkOut)}
-                              </div>
-                            ) : (
-                              "-"
-                            )}
-                          </td>
-
-                          <td className="p-4 align-middle text-right font-mono text-blue-600 dark:text-blue-400 whitespace-nowrap">
-                           {calculateTotalHours(day.checkIn, day.checkOut, day.totalBreakMinutes)}
-                          </td>
+                        <td className="p-4 align-middle text-gray-600 dark:text-slate-400">
+                          {day.checkIn ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+                              {formatTime(day.checkIn)}
+                            </div>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+                        <td className="p-4 align-middle text-gray-600 dark:text-slate-400">
+                          {day.checkOut ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></div>
+                              {formatTime(day.checkOut)}
+                            </div>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+                        <td className="p-4 align-middle text-gray-600 dark:text-slate-400 font-mono text-xs">
+                          {formatBreakTime(day.totalBreakMinutes)}
+                        </td>
+                        <td className="p-4 align-middle text-right font-mono text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                          {calculateTotalHours(day.checkIn, day.checkOut, day.totalBreakMinutes)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -331,16 +331,47 @@ const MyAttendance = () => {
   );
 };
 
-const StatsCard = ({ title, value, icon, className }) => (
-  <Card>
-    <CardContent className="p-6">
-      <div className="flex items-center justify-between space-y-0 pb-2">
-        <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        {icon}
+const StatsCard = ({ title, value, icon, variant }) => {
+  const styles = {
+    blue: {
+      card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
+      icon: "text-blue-600 dark:text-blue-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+    },
+    green: {
+      card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
+      icon: "text-green-600 dark:text-green-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+    },
+    orange: {
+      card: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30",
+      icon: "text-orange-600 dark:text-orange-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+    },
+    red: {
+      card: "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30",
+      icon: "text-purple-600 dark:text-purple-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+    },
+  };
+
+  const s = styles[variant] || styles.blue;
+
+  return (
+    <div className={cn("rounded-xl border p-6 transition-all duration-200 hover:scale-105", s.card)}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className={cn("text-sm", s.label)}>{title}</p>
+          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
+        </div>
+        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
       </div>
-      <div className={`text-3xl font-bold ${className}`}>{value}</div>
-    </CardContent>
-  </Card>
-);
+    </div>
+  );
+};
 
 export default MyAttendance;

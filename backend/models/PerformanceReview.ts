@@ -32,6 +32,7 @@ export interface IPerformanceReview extends Document {
   submittedAt?: Date;
   approvedBy?: Schema.Types.ObjectId;
   approvedAt?: Date;
+  adminFeedback?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -119,7 +120,12 @@ const PerformanceReviewSchema = new Schema<IPerformanceReview>(
       type: Schema.Types.ObjectId,
       ref: 'User'
     },
-    approvedAt: Date
+    approvedAt: Date,
+    adminFeedback: {
+      type: String,
+      trim: true,
+      default: ''
+    }
   },
   {
     timestamps: true

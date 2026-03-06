@@ -9,7 +9,7 @@ export const reviewApi = {
   getEmployeeReviews: (employeeId) => api.get(`/performance/reviews/employee/${employeeId}`),
 
   submitReview: (reviewId, data) => api.put(`/performance/reviews/${reviewId}/submit`, data),
-
+  approveReview: (reviewId, data) => api.put(`/performance/reviews/${reviewId}/approve`, data),
   getAnalyticsSummary: () => api.get('/performance/analytics/summary'),
 
 };
