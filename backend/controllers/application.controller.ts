@@ -5,7 +5,16 @@ export const applyJob = async (req: Request, res: Response) => {
 
   try {
 
-    const application = await Application.create(req.body)
+    const { jobId, name, email } = req.body
+
+    const resume = (req as any).file?.filename
+
+    const application = await Application.create({
+      jobId,
+      name,
+      email,
+      resume
+    })
 
     res.status(201).json(application)
 

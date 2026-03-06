@@ -10,6 +10,7 @@ const ApplyJob = () => {
   const [email,setEmail] = useState("")
   const [loading,setLoading] = useState(false)
   const [success,setSuccess] = useState(false)
+  const [resume,setResume] = useState(null)
 
   const handleSubmit = async (e) => {
 
@@ -19,16 +20,22 @@ const ApplyJob = () => {
 
       setLoading(true)
 
-      const data = {
-        jobId:id,
-        name:name,
-        email:email
-      }
+      const formData = new FormData()
 
-      await axios.post(
-        "http://localhost:5001/api/applications/apply",
-        data
-      )
+        formData.append("jobId",id)
+        formData.append("name",name)
+        formData.append("email",email)
+        formData.append("resume",resume)
+
+    await axios.post(
+      "http://localhost:5001/api/applications/apply",
+      formData,
+      {
+        headers:{
+         "Content-Type":"multipart/form-data"
+        }
+      }
+    )
 
       setSuccess(true)
 
@@ -110,8 +117,9 @@ const ApplyJob = () => {
             </label>
 
             <input
-            type="file"
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50 cursor-pointer"
+              type="file"
+              onChange={(e)=>setResume(e.target.files[0])}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50 cursor-pointer"
             />
 
           </div>
