@@ -1,17 +1,16 @@
 export const ROLES = {
-    CEO: "CEO",
-    COUNTRY_MANAGER: "Country Manager",
-    HR_MANAGER: "HR Manager",
-    HR_OFFICER: "HR Officer",
-    DEPARTMENT_MANAGER: "Department Manager",
-    DIRECT_MANAGER: "Direct Manager",
-    PAYROLL_OFFICER: "Payroll Officer",
-    PROJECT_MANAGER: "Project Manager",
-    OPERATIONS_MANAGER: "Operations Manager",
-    CAMP_BOSS: "Camp Boss",
-    ADMIN: "Admin",
-    EMPLOYEE: "Employee",
-  };
+  CEO: "CEO",
+  COUNTRY_MANAGER: "COUNTRY_MANAGER",
+  HR_MANAGER: "HR_MANAGER",
+  HR_OFFICER: "HR_OFFICER",
+  DEPARTMENT_MANAGER: "DEPARTMENT_MANAGER",
+  DIRECT_MANAGER: "DIRECT_MANAGER",
+  PAYROLL_OFFICER: "PAYROLL_OFFICER",
+  PROJECT_MANAGER: "PROJECT_MANAGER",
+  OPERATIONS_MANAGER: "OPERATIONS_MANAGER",
+  ADMIN: "ADMIN",
+  EMPLOYEE: "EMPLOYEE",
+}
   
   export const PERMISSIONS = {
     [ROLES.CEO]: {
@@ -167,24 +166,6 @@ export const ROLES = {
       },
       leaveManagement: false,
       employeeTransfer: true,
-      payroll: {
-        payrollProcessing: false,
-        ticketsAndAdvances: false,
-        indemnityCalculation: false,
-      },
-      appraisal: false,
-      disciplinaryActions: false,
-      documentRequests: false,
-    },
-    [ROLES.CAMP_BOSS]: {
-      dashboard: true,
-      recruitment: {
-        recruitmentProcess: false,
-        staffRequisition: false,
-        onboarding: false,
-      },
-      leaveManagement: false,
-      employeeTransfer: false,
       payroll: {
         payrollProcessing: false,
         ticketsAndAdvances: false,

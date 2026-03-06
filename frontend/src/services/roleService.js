@@ -1,16 +1,10 @@
-import axios from 'axios';
-
-const API_URL = 'http://localhost:5001/api/roles';
+import apiClient from './apiClient';
 
 export const getRoles = async () => {
   try {
-    const response = await axios.get(API_URL, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}` // Send token if auth is needed
-      }
-    });
-    if (response.data.success) {
-      return response.data.roles;
+    const response = await apiClient.get('/roles');
+    if (response.success) {          
+      return response.roles;        
     }
     return [];
   } catch (error) {
@@ -19,14 +13,9 @@ export const getRoles = async () => {
   }
 };
 
-// 2. Update a Role (Save Permissions)
 export const updateRole = async (id, roleData) => {
   try {
-    const response = await axios.put(`${API_URL}/${id}`, roleData, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    });
+    const response = await apiClient.put(`/roles/${id}`, roleData);
     return response.data;
   } catch (error) {
     console.error("Error updating role:", error);
@@ -34,14 +23,9 @@ export const updateRole = async (id, roleData) => {
   }
 };
 
-// 3. Create New Role
 export const createRole = async (roleName) => {
   try {
-    const response = await axios.post(API_URL, { name: roleName }, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    });
+    const response = await apiClient.post('/roles', { name: roleName });
     return response.data;
   } catch (error) {
     console.error("Error creating role:", error);
@@ -49,14 +33,9 @@ export const createRole = async (roleName) => {
   }
 };
 
-// 4. Delete Role
 export const deleteRole = async (id) => {
   try {
-    const response = await axios.delete(`${API_URL}/${id}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    });
+    const response = await apiClient.delete(`/roles/${id}`);
     return response.data;
   } catch (error) {
     console.error("Error deleting role:", error);
