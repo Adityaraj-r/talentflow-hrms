@@ -36,6 +36,7 @@ import Integrations from "./pages/modules/administration/Integrations"
 // Recruitment Module
 import Recruitment from "./pages/modules/recruitment/Recruitment"
 import StaffRequisition from "./pages/modules/recruitment/StaffRequisition"
+import Careers from "./pages/Careers"
 import CreateRequisition from "./pages/modules/recruitment/CreateRequisition"
 import Onboarding from "./pages/modules/recruitment/Onboarding"
 import ManageOnboarding from "./pages/modules/recruitment/ManageOnboarding"
@@ -44,6 +45,11 @@ import OnboardingDetails from "./pages/modules/recruitment/OnboardingDetails"
 import RecentHires from "./pages/modules/recruitment/RecentHires"
 import CandidateManagement from "./pages/modules/recruitment/CandidateManagement"
 import OfferManagement from "./pages/modules/recruitment/OfferManagement"
+import JobOpenings from "./pages/modules/recruitment/JobOpenings"
+import ApplyJob from "./pages/ApplyJob"
+import CandidateApplications from "./pages/modules/recruitment/CandidateApplications"
+import RecruitmentPipeline from "./pages/modules/recruitment/RecruitmentPipeline"
+import ApplicationStatus from "./pages/ApplicationStatus"
 
 // Payroll Module
 import Payroll from "./pages/modules/payroll/Payroll"
@@ -57,6 +63,7 @@ import TransferPage from "./pages/modules/transfer/TransferPage"
 // Performance Module
 import AdminPerformance from "./pages/modules/performance/AdminPerformance"
 import ViewCycleDetails from "./pages/modules/performance/ViewCycleDetails"
+import ReviewDetailPage from "./pages/modules/performance/ReviewDetailPage"
 
 // Reports Module
 import ReportsPage from "./pages/modules/reports/ReportsPage"
@@ -337,6 +344,16 @@ function App() {
                       <DashboardLayout><StaffRequisition /></DashboardLayout>
                     </ProtectedRoute>
                   } />
+                  <Route path="/careers" element={<Careers />} />
+                  <Route path="/apply/:id" element={<ApplyJob />} />
+                  <Route path="/dashboard/applications" element={ <DashboardLayout> <CandidateApplications /> </DashboardLayout> }/>
+                  <Route path="/dashboard/recruitment-pipeline" element={ <DashboardLayout> <RecruitmentPipeline /> </DashboardLayout>}/>
+                  <Route path="/application-status" element={<ApplicationStatus />} />
+                  <Route path="/dashboard/job-openings" element={
+                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
+                      <DashboardLayout> <JobOpenings /> </DashboardLayout>    
+                    </ProtectedRoute>
+                  }/>
 
                   <Route path="/dashboard/create-requisition" element={
                     <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
@@ -462,6 +479,12 @@ function App() {
                     </ProtectedRoute>
                   } />
 
+                  <Route path="/role/admin/review/:id" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><ReviewDetailPage /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+                  
                   <Route path="/role/hr_manager/appraisal" element={
                     <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
                       <DashboardLayout><HRManagerAppraisal /></DashboardLayout>
