@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { getRoles } from '@/services/roleService'; // Import the service we made
+import { getRoles } from '@/services/roleService';
 
 const UserContext = createContext();
 
@@ -8,19 +8,17 @@ export const UserProvider = ({ children }) => {
   const { user } = useAuth();
   const [rolePermissions, setRolePermissions] = useState(null);
 
-  // 1. Fetch the latest permissions matrix when the user loads
   useEffect(() => {
     const loadPermissions = async () => {
       if (user?.role) {
         try {
-          // Get all roles to find the current user's specific permissions
-          // In a larger app, you'd have an endpoint like /api/users/me/permissions
+
           const allRoles = await getRoles();
           
-          // Handle case where user.role might be an object or string
           const userRoleName = typeof user.role === 'string' ? user.role : user.role.name;
           
-          const myRole = allRoles.find(r => r.name === userRoleName);
+          const normalize = (str) => str?.toLowerCase().replace(/[\s_]/g, '')
+          const myRole = allRoles.find(r => normalize(r.name) === normalize(userRoleName))
           
           if (myRole && myRole.permissions) {
             setRolePermissions(myRole.permissions);
@@ -34,13 +32,9 @@ export const UserProvider = ({ children }) => {
     loadPermissions();
   }, [user]);
 
-  // 2. Helper function to check if user has access
-  // Usage: can('recruitment', 'read')
   const can = (module, action = 'read') => {
-    // Super Admins usually have bypass, but let's stick to the matrix
-    if (!rolePermissions) return false; // fast fail if loading
+    if (!rolePermissions) return false;
     
-    // Case insensitive safety
     if (user?.role === 'Super Admin' || user?.role === 'SUPER ADMIN') return true;
 
     const modulePerms = rolePermissions[module];
@@ -53,8 +47,8 @@ export const UserProvider = ({ children }) => {
     if (!user) return null;
     return {
       ...user,
-      permissions: rolePermissions, // Attach permissions to user object
-      can, // Attach the helper function
+      permissions: rolePermissions,
+      can,
     };
   }, [user, rolePermissions]);
 
