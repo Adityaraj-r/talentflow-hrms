@@ -33,8 +33,6 @@ const Sidebar = ({
   const userRole = user?.role || ""
   const isAdmin = [ROLES.ADMIN, "Super Admin", "SUPER_ADMIN"].includes(userRole)
 
-  // canSee — checks DB permissions from Access Control Matrix
-  // Always allow admin, hide if permissions not loaded yet, else check read flag
   const canSee = (moduleKey) => {
     if (isAdmin) return true
     if (!user?.permissions) return false
@@ -132,8 +130,6 @@ const Sidebar = ({
     return map[userRole] || "/role/employee/leave-management"
   }
 
-  // ── Reusable Components ──────────────────────────────────────────
-
   const SidebarLink = ({ to, icon: Icon, label }) => (
     <Link
       to={to}
@@ -200,8 +196,6 @@ const Sidebar = ({
     </li>
   )
 
-  // ── Shared nav blocks (reused across roles) ──────────────────────
-
   const RecruitmentGroup = () => canSee('recruitment') ? (
     <SidebarGroup id="recruitment" icon={Briefcase} label={getRecruitmentLabel()}>
       <SubLink to="/recruitment" label="Recruitment Process" />
@@ -230,12 +224,9 @@ const Sidebar = ({
     ? <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
     : null
 
-  // ── Role-specific sidebar content ────────────────────────────────
-
   const renderSidebarContent = () => {
     if (!userRole) return null
 
-    // ── ADMIN / SUPER ADMIN ──────────────────────────────────────
     if (isAdmin) {
       return (
         <>
@@ -247,11 +238,9 @@ const Sidebar = ({
             <SubLink to="/digital-locker" label="Digital Locker (Docs)" />
           </SidebarGroup>
           <SidebarGroup id="recruitment" icon={Briefcase} label="Recruitment & Staffing">
-            <SubLink to="/recruitment" label="Recruitment Process" />
             <SubLink to="/staff-requisition" label="Staff Requisition" />
             <SubLink to="/dashboard/job-openings" label="Job Openings" />
             <SubLink to="/dashboard/applications" label="Applications" />
-
             <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
             <SubLink to="/dashboard/candidate-management" label="Candidate Management" />
             <SubLink to="/dashboard/offer-management" label="Offer Management" />
@@ -281,7 +270,6 @@ const Sidebar = ({
       )
     }
 
-    // ── EMPLOYEE ─────────────────────────────────────────────────
     if (userRole === ROLES.EMPLOYEE) {
       return (
         <>
@@ -300,7 +288,6 @@ const Sidebar = ({
       )
     }
 
-    // ── HR MANAGER ───────────────────────────────────────────────
     if (userRole === ROLES.HR_MANAGER) {
       return (
         <>
@@ -328,7 +315,6 @@ const Sidebar = ({
       )
     }
 
-    // ── HR OFFICER ───────────────────────────────────────────────
     if (userRole === ROLES.HR_OFFICER) {
       return (
         <>
@@ -345,7 +331,6 @@ const Sidebar = ({
       )
     }
 
-    // ── CEO / COUNTRY MANAGER ────────────────────────────────────
     if (userRole === ROLES.CEO || userRole === ROLES.COUNTRY_MANAGER) {
       return (
         <>
@@ -359,7 +344,6 @@ const Sidebar = ({
       )
     }
 
-    // ── DEPARTMENT MANAGER ───────────────────────────────────────
     if (userRole === ROLES.DEPARTMENT_MANAGER) {
       return (
         <>
@@ -381,7 +365,6 @@ const Sidebar = ({
       )
     }
 
-    // ── DIRECT MANAGER ───────────────────────────────────────────
     if (userRole === ROLES.DIRECT_MANAGER) {
       return (
         <>
@@ -401,7 +384,6 @@ const Sidebar = ({
       )
     }
 
-    // ── PAYROLL OFFICER ──────────────────────────────────────────
     if (userRole === ROLES.PAYROLL_OFFICER) {
       return (
         <>
@@ -412,7 +394,6 @@ const Sidebar = ({
       )
     }
 
-    // ── PROJECT MANAGER ──────────────────────────────────────────
     if (userRole === ROLES.PROJECT_MANAGER) {
       return (
         <>
@@ -431,7 +412,6 @@ const Sidebar = ({
       )
     }
 
-    // ── OPERATIONS MANAGER ───────────────────────────────────────
     if (userRole === ROLES.OPERATIONS_MANAGER) {
       return (
         <>
@@ -443,7 +423,6 @@ const Sidebar = ({
       )
     }
 
-    // ── FALLBACK ─────────────────────────────────────────────────
     return <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
   }
 
