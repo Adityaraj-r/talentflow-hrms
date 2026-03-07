@@ -415,27 +415,27 @@ function App() {
                     </ProtectedRoute>
                   } />
 
-                  {/* ── Attendance — MATRIX ENFORCED ─────────────────── */}
+                 {/* ── Attendance — SHARED BY ADMIN & CEO ─────────────────── */}
                   <Route path="/attendance" element={
-                    <ProtectedRoute requiredPermission={{ module: "attendance", action: "read" }}>
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "CEO", "COUNTRY_MANAGER"]}>
                       <DashboardLayout><AttendanceRecords /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
                   <Route path="/attendance/holidays" element={
-                    <ProtectedRoute requiredPermission={{ module: "attendance", action: "read" }}>
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "CEO", "COUNTRY_MANAGER"]}>
                       <DashboardLayout><HolidayManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
                   <Route path="/attendance/shifts" element={
-                    <ProtectedRoute requiredPermission={{ module: "attendance", action: "write" }}>
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "CEO", "COUNTRY_MANAGER"]}>
                       <DashboardLayout><ShiftManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
                   <Route path="/attendance/leave-management" element={
-                    <ProtectedRoute requiredPermission={{ module: "attendance", action: "write" }}>
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "CEO", "COUNTRY_MANAGER"]}>
                       <DashboardLayout><AdminLeaveManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />

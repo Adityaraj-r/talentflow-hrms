@@ -19,7 +19,7 @@ router.get("/my", protect, getMyLeaves);
 router.get(
   "/all", 
   protect, 
-  authorize("ADMIN", "HR_MANAGER"), 
+  authorize("ADMIN", "HR_MANAGER","CEO"), 
   getAllLeaves
 );
 
@@ -28,7 +28,7 @@ router.get(
 router.patch(
   "/:id/status", 
   protect, 
-  authorize("ADMIN", "HR_MANAGER"), 
+  authorize("ADMIN", "HR_MANAGER","CEO"), 
   updateLeaveStatus
 );
 

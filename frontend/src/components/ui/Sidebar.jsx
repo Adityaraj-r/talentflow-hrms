@@ -246,7 +246,7 @@ const Sidebar = ({
             <SubLink to="/staff-requisition" label="Staff Requisition" />
             <SubLink to="/dashboard/job-openings" label="Job Openings" />
             <SubLink to="/dashboard/applications" label="Applications" />
-            <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline"/>
+            <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
             <SubLink to="/dashboard/candidate-management" label="Candidate Management" />
             <SubLink to="/dashboard/offer-management" label="Offer Management" />
           </SidebarGroup>
@@ -384,6 +384,14 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          {canSee('attendance') && (
+            <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+              <SubLink to="/attendance" label="Attendance Records" />
+              <SubLink to="/attendance/shifts" label="Shift Roster" />
+              <SubLink to="/attendance/holidays" label="Holiday List" />
+              <SubLink to="/attendance/leave-management" label="Leave Management" />
+            </SidebarGroup>
+          )}
           {canSee('recruitment') && <SidebarLink to="/recruitment" icon={Users} label="View Recruitment" />}
           {canSee('reports') && <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />}
         </>
