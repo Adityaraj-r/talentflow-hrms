@@ -392,8 +392,11 @@ const Sidebar = ({
               <SubLink to="/attendance/leave-management" label="Leave Management" />
             </SidebarGroup>
           )}
-          {canSee('recruitment') && <SidebarLink to="/recruitment" icon={Users} label="View Recruitment" />}
-          {canSee('reports') && <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />}
+           {canSee('recruitment') && (
+            <SidebarLink to="/recruitment" icon={Briefcase} label="View Recruitment" />
+          )}
+           {canSee('reports') && <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />}
+           
         </>
       )
     }

@@ -8,9 +8,9 @@ export const getMyPermissions = async (userRole) => {
   }
   try {
     const response = await apiClient.get('/roles');
-    const roles = response.data?.roles || [];
+    const roles = response?.roles || [];
     const roleDoc = roles.find(
-      r => r.name?.toUpperCase() === userRole?.toUpperCase()
+      r => r.name?.toUpperCase().replace(/\s/g, '_') === userRole?.toUpperCase().replace(/\s/g, '_')
     );
     const permissions = roleDoc?.permissions || {};
     cache = { permissions, role: userRole };
@@ -25,7 +25,6 @@ export const clearPermissionCache = () => {
   cache = { permissions: null, role: null };
 };
 
-// action: 'read' | 'write' | 'delete'
 export const can = (permissions, moduleKey, action) => {
   if (!permissions || !moduleKey) return false;
   const perm = permissions[moduleKey];
