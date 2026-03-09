@@ -1,79 +1,147 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
-  Cell, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  LineChart,
-  Line
+import {
+  BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer, LineChart, Line
 } from "recharts";
 import { TrendingUp, Users, Award, Target, BarChart3, PieChart as PieChartIcon } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { performanceApi } from "@/services/performanceApi";
+import apiClient from "@/services/apiClient";
 
 const PerformanceAnalytics = () => {
-  const [cycles, setCycles] = useState([]);
+  const [analyticsData, setAnalyticsData] = useState({
+    performanceDistribution: [],
+    departmentComparison: [],
+    cycleCompletion: [],
+    ratingTrend: [],
+    topPerformers: [],
+    totalEmployees: 0,
+    overallAvgRating: 0,
+    activeCycles: 0
+  });
+  const [loading, setLoading] = useState(true);
 
-  // Load cycles from localStorage
+  const calculatePerformanceDistribution = (reviews) => {
+    const buckets = { outstanding: 0, exceeds: 0, meets: 0, below: 0, poor: 0 };
+    reviews.forEach(review => {
+      const score = review.avgRating || review.overallRating || 0;
+      if (score >= 4.5) buckets.outstanding++;
+      else if (score >= 4.0) buckets.exceeds++;
+      else if (score >= 3.0) buckets.meets++;
+      else if (score >= 2.0) buckets.below++;
+      else buckets.poor++;
+    });
+    return [
+      { name: "Outstanding (4.5-5.0)", value: buckets.outstanding, color: "#10b981" },
+      { name: "Exceeds (4.0-4.4)", value: buckets.exceeds, color: "#3b82f6" },
+      { name: "Meets (3.0-3.9)", value: buckets.meets, color: "#f59e0b" },
+      { name: "Below (2.0-2.9)", value: buckets.below, color: "#ef4444" },
+      { name: "Poor (<2.0)", value: buckets.poor, color: "#991b1b" }
+    ];
+  };
+
+  const calculateDepartmentComparison = (reviews) => {
+    const deptMap = {};
+    reviews.forEach(review => {
+      const dept = review.department || review.employeeDepartment || 'Unknown';
+      const score = review.avgRating || review.overallRating || 0;
+      if (!deptMap[dept]) deptMap[dept] = { total: 0, count: 0 };
+      deptMap[dept].total += score;
+      deptMap[dept].count += 1;
+    });
+    return Object.entries(deptMap).map(([department, data]) => ({
+      department,
+      avgScore: parseFloat((data.total / data.count).toFixed(1)),
+      employees: data.count
+    }));
+  };
+
+  const calculateCycleCompletion = (cycles) => {
+    return cycles.map(cycle => ({
+      cycle: cycle.name,
+      completion: cycle.completionRate || 0
+    }));
+  };
+
+  const calculateRatingTrend = (reviews) => {
+    const monthly = {};
+    reviews.forEach(review => {
+      const month = new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short' });
+      if (!monthly[month]) monthly[month] = { total: 0, count: 0 };
+      monthly[month].total += review.avgRating || review.overallRating || 0;
+      monthly[month].count += 1;
+    });
+    return Object.entries(monthly).map(([month, data]) => ({
+      month,
+      avgRating: parseFloat((data.total / data.count).toFixed(1))
+    }));
+  };
+
+  const calculateTopPerformers = (reviews) => {
+    const performerMap = {};
+    reviews.forEach(review => {
+      const name = review.employeeName || review.employee?.name || 'Unknown';
+      const dept = review.department || review.employeeDepartment || 'Unknown';
+      const rating = review.avgRating || review.overallRating || 0;
+      if (!performerMap[name] || rating > performerMap[name].rating) {
+        performerMap[name] = { name, department: dept, rating };
+      }
+    });
+    return Object.values(performerMap)
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 5);
+  };
+
   useEffect(() => {
-    const saved = localStorage.getItem('performanceCycles');
-    if (saved) {
-      setCycles(JSON.parse(saved));
-    }
+    const loadAnalytics = async () => {
+      try {
+        setLoading(true);
+        const [stats, cycles] = await Promise.all([
+          performanceApi.getStats(),
+          performanceApi.getCycles()
+        ]);
+
+        // ✅ Fetch reviews via apiClient (same as employees fetch)
+        let reviews = [];
+        try {
+          const reviewsRes = await apiClient.get('/performance/reviews');
+          reviews = reviewsRes.data || [];
+        } catch {
+          reviews = [];
+        }
+
+        // ✅ Fetch total employees count
+        let totalEmployees = stats.totalEmployees || 0;
+        if (!totalEmployees) {
+          try {
+            const usersRes = await apiClient.get('/users');
+            totalEmployees = usersRes.data.filter(u => u.role !== 'admin').length;
+          } catch {
+            totalEmployees = 0;
+          }
+        }
+
+        setAnalyticsData({
+          performanceDistribution: calculatePerformanceDistribution(reviews),
+          departmentComparison: calculateDepartmentComparison(reviews),
+          cycleCompletion: calculateCycleCompletion(cycles),
+          ratingTrend: calculateRatingTrend(reviews),
+          topPerformers: calculateTopPerformers(reviews),
+          totalEmployees,
+          overallAvgRating: stats.avgScore || 0,
+          activeCycles: stats.activeCycles || 0
+        });
+      } catch (error) {
+        console.error('Analytics load failed:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAnalytics();
   }, []);
 
-  // Mock analytics data (in real app, calculate from actual review data)
-  const performanceDistribution = [
-    { name: "Outstanding (4.5-5.0)", value: 15, color: "#10b981" },
-    { name: "Exceeds (4.0-4.4)", value: 28, color: "#3b82f6" },
-    { name: "Meets (3.0-3.9)", value: 42, color: "#f59e0b" },
-    { name: "Below (2.0-2.9)", value: 12, color: "#ef4444" },
-    { name: "Poor (<2.0)", value: 3, color: "#991b1b" }
-  ];
-
-  const departmentComparison = [
-    { department: "Engineering", avgScore: 4.2, employees: 45 },
-    { department: "Sales", avgScore: 3.8, employees: 32 },
-    { department: "Marketing", avgScore: 4.1, employees: 28 },
-    { department: "HR", avgScore: 4.5, employees: 15 },
-    { department: "Operations", avgScore: 3.9, employees: 38 },
-    { department: "Finance", avgScore: 4.3, employees: 22 }
-  ];
-
-  const cycleCompletion = [
-    { cycle: "Q4 2025", completion: 85 },
-    { cycle: "Q3 2025", completion: 92 },
-    { cycle: "Q2 2025", completion: 88 },
-    { cycle: "Q1 2025", completion: 95 }
-  ];
-
-  const ratingTrend = [
-    { month: "Jan", avgRating: 3.8 },
-    { month: "Feb", avgRating: 3.9 },
-    { month: "Mar", avgRating: 4.0 },
-    { month: "Apr", avgRating: 4.1 },
-    { month: "May", avgRating: 4.2 },
-    { month: "Jun", avgRating: 4.0 }
-  ];
-
-  const topPerformers = [
-    { name: "Sarah Johnson", department: "Engineering", rating: 4.9 },
-    { name: "Michael Chen", department: "Sales", rating: 4.8 },
-    { name: "Emily Brown", department: "Marketing", rating: 4.7 },
-    { name: "David Wilson", department: "HR", rating: 4.7 },
-    { name: "Lisa Anderson", department: "Finance", rating: 4.6 }
-  ];
-
-  const totalEmployees = departmentComparison.reduce((sum, dept) => sum + dept.employees, 0);
-  const overallAvgRating = (departmentComparison.reduce((sum, dept) => sum + dept.avgScore * dept.employees, 0) / totalEmployees).toFixed(2);
-  const activeCycles = cycles.filter(c => c.status === 'active').length;
+  if (loading) return <div className="p-8 text-center text-muted-foreground">Loading analytics...</div>;
 
   return (
     <div className="space-y-6">
@@ -85,44 +153,42 @@ const PerformanceAnalytics = () => {
               <Users className="h-5 w-5 text-blue-500" />
               <span className="text-sm font-medium text-muted-foreground">Total Employees</span>
             </div>
-            <div className="text-3xl font-bold text-blue-500">{totalEmployees}</div>
+            <div className="text-3xl font-bold text-blue-500">{analyticsData.totalEmployees}</div>
           </CardContent>
         </Card>
-
         <Card className="border-l-4 border-l-green-500">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="h-5 w-5 text-green-500" />
               <span className="text-sm font-medium text-muted-foreground">Overall Avg Rating</span>
             </div>
-            <div className="text-3xl font-bold text-green-500">{overallAvgRating}/5</div>
+            <div className="text-3xl font-bold text-green-500">
+              {(analyticsData.overallAvgRating || 0).toFixed(1)}/5
+            </div>
           </CardContent>
         </Card>
-
         <Card className="border-l-4 border-l-purple-500">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-2">
               <Target className="h-5 w-5 text-purple-500" />
               <span className="text-sm font-medium text-muted-foreground">Active Cycles</span>
             </div>
-            <div className="text-3xl font-bold text-purple-500">{activeCycles}</div>
+            <div className="text-3xl font-bold text-purple-500">{analyticsData.activeCycles}</div>
           </CardContent>
         </Card>
-
         <Card className="border-l-4 border-l-orange-500">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-2">
               <Award className="h-5 w-5 text-orange-500" />
               <span className="text-sm font-medium text-muted-foreground">Top Performers</span>
             </div>
-            <div className="text-3xl font-bold text-orange-500">{topPerformers.length}</div>
+            <div className="text-3xl font-bold text-orange-500">{analyticsData.topPerformers.length}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Charts Row 1 */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Performance Distribution Pie Chart */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -131,30 +197,28 @@ const PerformanceAnalytics = () => {
             </CardTitle>
             <p className="text-sm text-muted-foreground">Employee rating breakdown across all reviews</p>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+          <CardContent style={{ height: '350px', minHeight: '350px' }}>
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={performanceDistribution}
+                  data={analyticsData.performanceDistribution}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
                   outerRadius={100}
-                  fill="#8884d8"
                   dataKey="value"
                 >
-                  {performanceDistribution.map((entry, index) => (
+                  {analyticsData.performanceDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Department Comparison Bar Chart */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -163,9 +227,9 @@ const PerformanceAnalytics = () => {
             </CardTitle>
             <p className="text-sm text-muted-foreground">Average ratings by department</p>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={departmentComparison}>
+          <CardContent style={{ height: '350px', minHeight: '350px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={analyticsData.departmentComparison}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="department" angle={-45} textAnchor="end" height={100} />
                 <YAxis domain={[0, 5]} />
@@ -180,7 +244,6 @@ const PerformanceAnalytics = () => {
 
       {/* Charts Row 2 */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Cycle Completion Progress */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -190,21 +253,24 @@ const PerformanceAnalytics = () => {
             <p className="text-sm text-muted-foreground">Review completion percentage per cycle</p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {cycleCompletion.map((cycle, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">{cycle.cycle}</span>
-                    <span className="text-muted-foreground">{cycle.completion}%</span>
+            {analyticsData.cycleCompletion.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No cycle data available</p>
+            ) : (
+              <div className="space-y-4">
+                {analyticsData.cycleCompletion.map((cycle, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">{cycle.cycle}</span>
+                      <span className="text-muted-foreground">{cycle.completion}%</span>
+                    </div>
+                    <Progress value={cycle.completion} className="h-2" />
                   </div>
-                  <Progress value={cycle.completion} className="h-2" />
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Rating Trend Line Chart */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -213,18 +279,18 @@ const PerformanceAnalytics = () => {
             </CardTitle>
             <p className="text-sm text-muted-foreground">Monthly average performance ratings</p>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={ratingTrend}>
+          <CardContent style={{ height: '250px', minHeight: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={analyticsData.ratingTrend}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis domain={[0, 5]} />
                 <Tooltip />
                 <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="avgRating" 
-                  stroke="#f59e0b" 
+                <Line
+                  type="monotone"
+                  dataKey="avgRating"
+                  stroke="#f59e0b"
                   strokeWidth={2}
                   name="Avg Rating"
                   dot={{ fill: '#f59e0b', r: 4 }}
@@ -257,31 +323,41 @@ const PerformanceAnalytics = () => {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {topPerformers.map((performer, index) => (
-                  <tr key={index} className="hover:bg-muted/50">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        {index === 0 && <Award className="h-5 w-5 text-yellow-500" />}
-                        {index === 1 && <Award className="h-5 w-5 text-gray-400" />}
-                        {index === 2 && <Award className="h-5 w-5 text-orange-600" />}
-                        <span className="font-bold">#{index + 1}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-medium">{performer.name}</td>
-                    <td className="px-6 py-4 text-muted-foreground">{performer.department}</td>
-                    <td className="px-6 py-4">
-                      <span className="text-lg font-bold text-orange-600">{performer.rating}/5</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-gradient-to-r from-orange-500 to-yellow-500 h-2 rounded-full"
-                          style={{ width: `${(performer.rating / 5) * 100}%` }}
-                        ></div>
-                      </div>
+                {analyticsData.topPerformers.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
+                      No review data yet — submit reviews to see top performers
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  analyticsData.topPerformers.map((performer, index) => (
+                    <tr key={index} className="hover:bg-muted/50">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          {index === 0 && <Award className="h-5 w-5 text-yellow-500" />}
+                          {index === 1 && <Award className="h-5 w-5 text-gray-400" />}
+                          {index === 2 && <Award className="h-5 w-5 text-orange-600" />}
+                          <span className="font-bold">#{index + 1}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 font-medium">{performer.name}</td>
+                      <td className="px-6 py-4 text-muted-foreground">{performer.department}</td>
+                      <td className="px-6 py-4">
+                        <span className="text-lg font-bold text-orange-600">
+                          {(performer.rating || 0).toFixed(1)}/5
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-gradient-to-r from-orange-500 to-yellow-500 h-2 rounded-full"
+                            style={{ width: `${((performer.rating || 0) / 5) * 100}%` }}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
