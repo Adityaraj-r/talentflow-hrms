@@ -120,7 +120,6 @@ app.use('/api/candidates', candidateRoutes);
 app.use('/api/requisitions', requisitionRoutes);
 app.use('/api/job-openings', jobRoutes);
 app.use('/api/applications', applicationRoutes);
-
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/tasks', taskRoutes);
