@@ -55,6 +55,7 @@ import ApplicationStatus from "./pages/ApplicationStatus"
 import Payroll from "./pages/modules/payroll/Payroll"
 import Tickets from "./pages/modules/payroll/Tickets"
 import Indemnity from "./pages/modules/payroll/Indemnity"
+import SalarySlip from "./pages/modules/payroll/SalarySlip"
 
 // Transfer Module
 import EmployeeTransfer from "./pages/modules/transfer/EmployeeTransfer"
@@ -457,6 +458,12 @@ function App() {
                     <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
                       <DashboardLayout><Indemnity /></DashboardLayout>
                     </ProtectedRoute>
+                  } />
+            
+                  <Route path="/payroll/salary-slip" element={
+                   <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
+                      <DashboardLayout><SalarySlip /></DashboardLayout>
+                  </ProtectedRoute>
                   } />
 
                   {/* ── Transfers ────────────────────────────────────── */}

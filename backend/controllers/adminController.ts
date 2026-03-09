@@ -9,6 +9,7 @@ import Document from '../models/Document.model';
 import Transfer from '../models/Transfer.model';
 import Requisition from '../models/Requisition.model';
 import Leave from '../models/leave.model';
+import Employee from '../models/Employee.model';
 
 const Activity = require('../models/Activity').default || require('../models/Activity');
 const SystemAlert = require('../models/SystemAlert').default || require('../models/SystemAlert');
@@ -106,7 +107,7 @@ export const bulkUploadUsers = async (req: AuthRequest, res: Response): Promise<
             department: row.department || null,
             phoneNumber: row.phoneNumber?.trim() || null,
             isActive: true,
-            isEmailVerified: true
+            isEmailVerified: true,
           });
         } catch (err: any) {
           errors.push({ email: row.email, error: err.message });
@@ -114,7 +115,43 @@ export const bulkUploadUsers = async (req: AuthRequest, res: Response): Promise<
       }
 
       if (processedUsers.length > 0) {
-        await User.insertMany(processedUsers, { session });
+        const insertedUsers = await User.insertMany(processedUsers, { session });
+
+        // ── Create Employee doc + link employeeId for each user ──────────
+        for (const insertedUser of insertedUsers) {
+          const empCount = await Employee.countDocuments().session(session);
+          const employeeCode = `EMP-${String(empCount + 1).padStart(4, '0')}`;
+
+          const employee = await Employee.create(
+            [
+              {
+                userId:      insertedUser._id,
+                employeeCode,
+                email:       insertedUser.email,
+                firstName:   insertedUser.firstName,
+                lastName:    insertedUser.lastName,
+                phoneNumber: insertedUser.phoneNumber || '',
+                department:  insertedUser.department  || '',
+                role:        insertedUser.role,
+                status:      'Active',
+                salary: {
+                  basic:    0,
+                  currency: 'INR',
+                  allowances: { hra: 0, transport: 0, medical: 0, other: 0 },
+                  deductions: { pf: 0,  tax: 0,      insurance: 0 },
+                },
+              },
+            ],
+            { session }
+          );
+
+          await User.findByIdAndUpdate(
+            insertedUser._id,
+            { employeeId: employee[0]._id, employeeCode },
+            { session }
+          );
+        }
+        // ─────────────────────────────────────────────────────────────────
       }
 
       await createLog(
@@ -134,7 +171,7 @@ export const bulkUploadUsers = async (req: AuthRequest, res: Response): Promise<
         success: true,
         message: `Processed ${processedUsers.length} users successfully.`,
         failedCount: errors.length,
-        errors
+        errors,
       });
     } catch (error: any) {
       await session.abortTransaction();
@@ -150,12 +187,12 @@ export const getAdminMetrics = async (req: AuthRequest, res: Response): Promise<
     const totalUsers = await User.countDocuments({ isDeleted: false });
     const activeUsersCount = await User.countDocuments({
       isDeleted: false,
-      lastLogin: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+      lastLogin: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
     });
 
     const systemAlertsCount = await SystemAlert.countDocuments({
       status: 'active',
-      severity: { $in: ['high', 'critical'] }
+      severity: { $in: ['high', 'critical'] },
     });
 
     const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -163,15 +200,15 @@ export const getAdminMetrics = async (req: AuthRequest, res: Response): Promise<
 
     const [currentStats, previousStats] = await Promise.all([
       User.aggregate([{ $match: { isDeleted: false, createdAt: { $gte: currentMonthStart } } }, { $group: { _id: null, newUsers: { $sum: 1 } } }]),
-      User.aggregate([{ $match: { isDeleted: false, createdAt: { $gte: previousMonthStart, $lt: currentMonthStart } } }, { $group: { _id: null, newUsers: { $sum: 1 } } }])
+      User.aggregate([{ $match: { isDeleted: false, createdAt: { $gte: previousMonthStart, $lt: currentMonthStart } } }, { $group: { _id: null, newUsers: { $sum: 1 } } }]),
     ]);
 
-    const currentMonthNewUsers = currentStats[0]?.newUsers || 0;
+    const currentMonthNewUsers  = currentStats[0]?.newUsers  || 0;
     const previousMonthNewUsers = previousStats[0]?.newUsers || 1;
-    const userGrowthPercentage = (((currentMonthNewUsers - previousMonthNewUsers) / previousMonthNewUsers) * 100).toFixed(1);
-    const activeUserPercentage = totalUsers > 0 ? ((activeUsersCount / totalUsers) * 100).toFixed(1) : '0';
-    const securityStatus = systemAlertsCount === 0 ? 'Secure' : systemAlertsCount <= 2 ? 'Warning' : 'Alert';
-    const securityColor = securityStatus === 'Secure' ? 'green' : securityStatus === 'Warning' ? 'yellow' : 'red';
+    const userGrowthPercentage  = (((currentMonthNewUsers - previousMonthNewUsers) / previousMonthNewUsers) * 100).toFixed(1);
+    const activeUserPercentage  = totalUsers > 0 ? ((activeUsersCount / totalUsers) * 100).toFixed(1) : '0';
+    const securityStatus  = systemAlertsCount === 0 ? 'Secure' : systemAlertsCount <= 2 ? 'Warning' : 'Alert';
+    const securityColor   = securityStatus === 'Secure' ? 'green' : securityStatus === 'Warning' ? 'yellow' : 'red';
 
     const metrics: MetricsResponse = {
       totalUsers,
@@ -189,7 +226,7 @@ export const getAdminMetrics = async (req: AuthRequest, res: Response): Promise<
       securityStatus,
       securityStatusLabel: 'System Health',
       securityColor: securityColor as any,
-      metadata: { currentMonthNewUsers, previousMonthNewUsers, lastUpdated: new Date().toISOString() }
+      metadata: { currentMonthNewUsers, previousMonthNewUsers, lastUpdated: new Date().toISOString() },
     };
 
     res.status(200).json({ success: true, data: metrics });
@@ -207,7 +244,7 @@ export const getRecentActivities = async (req: AuthRequest, res: Response): Prom
 
     const [activities, totalCount] = await Promise.all([
       Activity.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)).populate('userId', 'firstName lastName email role').lean(),
-      Activity.countDocuments(filter)
+      Activity.countDocuments(filter),
     ]);
 
     const formattedActivities: ActivityResponse[] = activities.map((activity: any) => ({
@@ -216,12 +253,14 @@ export const getRecentActivities = async (req: AuthRequest, res: Response): Prom
       title: activity.title,
       description: activity.description,
       timestamp: formatRelativeTime(activity.createdAt),
-      user: activity.userId ? {
-        name: `${activity.userId.firstName || ''} ${activity.userId.lastName || ''}`.trim(),
-        email: activity.userId.email,
-        role: activity.userId.role
-      } : null,
-      metadata: activity.metadata
+      user: activity.userId
+        ? {
+            name:  `${activity.userId.firstName || ''} ${activity.userId.lastName || ''}`.trim(),
+            email: activity.userId.email,
+            role:  activity.userId.role,
+          }
+        : null,
+      metadata: activity.metadata,
     }));
 
     res.status(200).json({
@@ -230,11 +269,11 @@ export const getRecentActivities = async (req: AuthRequest, res: Response): Prom
         activities: formattedActivities,
         pagination: {
           currentPage: Number(page),
-          totalPages: Math.ceil(totalCount / Number(limit)),
-          totalItems: totalCount,
-          itemsPerPage: Number(limit)
-        }
-      }
+          totalPages:  Math.ceil(totalCount / Number(limit)),
+          totalItems:  totalCount,
+          itemsPerPage: Number(limit),
+        },
+      },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch activities' });
@@ -247,14 +286,14 @@ export const getUserDistribution = async (req: AuthRequest, res: Response): Prom
       { $match: { isDeleted: false } },
       { $group: { _id: '$role', count: { $sum: 1 } } },
       { $project: { role: '$_id', count: 1, _id: 0 } },
-      { $sort: { count: -1 } }
+      { $sort: { count: -1 } },
     ]);
 
     const total = distribution.reduce((sum: number, item: any) => sum + item.count, 0);
     const distributionWithPercentage = distribution.map((item: any) => ({
       role: item.role,
       count: item.count,
-      percentage: total > 0 ? ((item.count / total) * 100).toFixed(1) : '0'
+      percentage: total > 0 ? ((item.count / total) * 100).toFixed(1) : '0',
     }));
 
     res.status(200).json({ success: true, data: { distribution: distributionWithPercentage, total } });
@@ -270,20 +309,20 @@ export const getDepartmentStats = async (req: AuthRequest, res: Response): Promi
       {
         $group: {
           _id: '$department',
-          employeeCount: { $sum: 1 },
-          activeEmployees: { $sum: { $cond: [{ $gte: ['$lastLogin', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)] }, 1, 0] } }
-        }
+          employeeCount:   { $sum: 1 },
+          activeEmployees: { $sum: { $cond: [{ $gte: ['$lastLogin', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)] }, 1, 0] } },
+        },
       },
       {
         $project: {
-          department: '$_id',
-          employeeCount: 1,
-          activeEmployees: 1,
+          department:       '$_id',
+          employeeCount:    1,
+          activeEmployees:  1,
           activePercentage: { $multiply: [{ $divide: ['$activeEmployees', '$employeeCount'] }, 100] },
-          _id: 0
-        }
+          _id: 0,
+        },
       },
-      { $sort: { employeeCount: -1 } }
+      { $sort: { employeeCount: -1 } },
     ]);
 
     res.status(200).json({ success: true, data: departmentStats });
@@ -301,8 +340,8 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
     if (search) {
       query.$or = [
         { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { lastName:  { $regex: search, $options: 'i' } },
+        { email:     { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -328,8 +367,20 @@ export const toggleUserStatus = async (req: AuthRequest, res: Response): Promise
     user.isActive = !user.isActive;
     await user.save();
 
+    // ── Sync Employee status ─────────────────────────────────────────────
+    if (user.employeeId) {
+      await Employee.findByIdAndUpdate(user.employeeId, {
+        status: user.isActive ? 'Active' : 'Inactive',
+      });
+    }
+    // ────────────────────────────────────────────────────────────────────
+
     const action = user.isActive ? 'Activate User' : 'Deactivate User';
-    await createLog(req.user?.id || 'system', adminName, action, 'User Management', `${action} for: ${user.email}`, String(ip), 'Success');
+    await createLog(
+      req.user?.id || 'system', adminName, action,
+      'User Management', `${action} for: ${user.email}`,
+      String(ip), 'Success'
+    );
 
     res.status(200).json({ success: true, message: 'User status updated', data: user });
   } catch (error) {
@@ -337,80 +388,109 @@ export const toggleUserStatus = async (req: AuthRequest, res: Response): Promise
   }
 };
 
+export const deleteUser = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    const adminName = req.user?.firstName || 'Admin';
+
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(404).json({ success: false, message: 'User not found' });
+      return;
+    }
+
+    if (user._id.toString() === req.user?.id) {
+      res.status(400).json({ success: false, message: 'You cannot delete your own account' });
+      return;
+    }
+
+    await User.findByIdAndUpdate(id, { isDeleted: true, isActive: false });
+
+    if (user.employeeId) {
+      await Employee.findByIdAndUpdate(user.employeeId, { status: 'Terminated' });
+    }
+
+    await createLog(
+      req.user?.id || 'system', adminName, 'Delete User',
+      'User Management', `Soft deleted user: ${user.email}`,
+      String(ip), 'Success'
+    );
+
+    res.status(200).json({
+      success: true,
+      message: `User ${user.firstName} ${user.lastName} has been deleted`,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Delete failed', error: error.message });
+  }
+};
+
 export const getDashboardStats = async (req: Request, res: Response): Promise<void> => {
   try {
-    // 1. Fetch Top-Level Stat Cards
-    const totalUsers = await User.countDocuments();
-    const activeUsers = await User.countDocuments({ isActive: true });
-    const inactiveUsers = await User.countDocuments({ isActive: { $ne: true } });
+    const totalUsers       = await User.countDocuments();
+    const activeUsers      = await User.countDocuments({ isActive: true });
+    const inactiveUsers    = await User.countDocuments({ isActive: { $ne: true } });
 
-    const pendingDocuments = await Document.countDocuments({ status: 'Pending' });
-    const pendingTransfers = await Transfer.countDocuments({ status: 'Pending' });
+    const pendingDocuments    = await Document.countDocuments({ status: 'Pending' });
+    const pendingTransfers    = await Transfer.countDocuments({ status: 'Pending' });
     const pendingRequisitions = await Requisition.countDocuments({ status: 'Pending' });
-    const pendingLeaves = await Leave.countDocuments({ status: 'Pending' });
+    const pendingLeaves       = await Leave.countDocuments({ status: 'Pending' });
 
     const totalPendingApprovals = pendingDocuments + pendingTransfers + pendingRequisitions + pendingLeaves;
 
     const pendingBreakdown = [
-      { module: 'KYC Documents', count: pendingDocuments, fill: '#f59e0b' }, // Amber
-      { module: 'Transfers', count: pendingTransfers, fill: '#3b82f6' },     // Blue
-      { module: 'Requisitions', count: pendingRequisitions, fill: '#8b5cf6' },// Purple
-      { module: 'Leave Requests', count: pendingLeaves, fill: '#10b981' }    //  Emerald Green
+      { module: 'KYC Documents',  count: pendingDocuments,    fill: '#f59e0b' },
+      { module: 'Transfers',      count: pendingTransfers,    fill: '#3b82f6' },
+      { module: 'Requisitions',   count: pendingRequisitions, fill: '#8b5cf6' },
+      { module: 'Leave Requests', count: pendingLeaves,       fill: '#10b981' },
     ];
 
-    // 2. Aggregate Department Distribution Data
     const departmentData = await User.aggregate([
-      // Exclude users without a department
-      { $match: { department: { $ne: null }, isDeleted: { $ne: true } } }, 
+      { $match: { department: { $ne: null }, isDeleted: { $ne: true } } },
       { $group: { _id: '$department', employees: { $sum: 1 } } },
-      // Map MongoDB _id to 'name' for the Recharts library
       { $project: { name: '$_id', employees: 1, _id: 0 } },
-      { $sort: { employees: -1 } } // Sort highest to lowest
+      { $sort: { employees: -1 } },
     ]);
 
-    // 3. Aggregate Role Distribution Data
     const roleData = await User.aggregate([
       { $match: { role: { $ne: null }, isDeleted: { $ne: true } } },
       { $group: { _id: '$role', value: { $sum: 1 } } },
       { $project: { name: '$_id', value: 1, _id: 0 } },
-      { $sort: { value: -1 } }
+      { $sort: { value: -1 } },
     ]);
 
     const genderData = await User.aggregate([
       { $match: { gender: { $ne: null }, isDeleted: { $ne: true } } },
       { $group: { _id: '$gender', value: { $sum: 1 } } },
-      { $project: { name: '$_id', value: 1, _id: 0 } }
+      { $project: { name: '$_id', value: 1, _id: 0 } },
     ]);
 
     res.status(200).json({
       success: true,
       data: {
-        totalUsers,
-        activeUsers,
-        inactiveUsers,
-        departmentData,
-        roleData,
-        genderData,
+        totalUsers, activeUsers, inactiveUsers,
+        departmentData, roleData, genderData,
         pendingApprovals: totalPendingApprovals,
         pendingBreakdown,
-      }
+      },
     });
   } catch (error: any) {
-    console.error("Dashboard Stats Error:", error);
-    res.status(500).json({ success: false, message: "Error fetching dashboard stats" });
+    console.error('Dashboard Stats Error:', error);
+    res.status(500).json({ success: false, message: 'Error fetching dashboard stats' });
   }
 };
 
 function formatRelativeTime(date: Date): string {
-  const diffMs = Date.now() - new Date(date).getTime();
+  const diffMs   = Date.now() - new Date(date).getTime();
   const diffSecs = Math.floor(diffMs / 1000);
   const diffMins = Math.floor(diffSecs / 60);
   const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
+  const diffDays  = Math.floor(diffHours / 24);
 
-  if (diffSecs < 60) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffSecs  < 60) return 'Just now';
+  if (diffMins  < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays  < 7)  return `${diffDays}d ago`;
   return new Date(date).toLocaleDateString();
 }

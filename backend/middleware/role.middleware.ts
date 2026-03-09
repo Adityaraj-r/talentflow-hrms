@@ -30,7 +30,7 @@ export const MODULE_KEYS = {
 export type ModuleKey = typeof MODULE_KEYS[keyof typeof MODULE_KEYS];
 export type PermissionAction = 'read' | 'write' | 'delete';
 
-const ADMIN_ROLES = ['ADMIN', 'SUPER ADMIN', 'Super Admin'];
+const ADMIN_ROLES = ['ADMIN'];
 
 export const authorize = (...allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
