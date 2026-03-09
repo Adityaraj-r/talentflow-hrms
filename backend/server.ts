@@ -30,7 +30,6 @@ import jobRoutes from "./routes/job.routes";
 import { seedRoles } from './utils/roleSeeder';
 import reportsRoutes from "./routes/reports.routes";
 import applicationRoutes from "./routes/application.routes";
-import router from './routes/user.routes';
 import documentRoutes from './routes/document.routes';
 import salaryRoutes from './routes/salary.routes';
 import payrollRoutes from './routes/payroll.routes';
@@ -59,7 +58,7 @@ app.use((req, res, next) => {
     const color =
       res.statusCode >= 500 ? '\x1b[31m' :
       res.statusCode >= 400 ? '\x1b[33m' :
-      res.statusCode >= 200 ? '\x1b[32m' : 
+      res.statusCode >= 200 ? '\x1b[32m' :
       '\x1b[0m';
     console.log(
       `${color}[${new Date().toLocaleTimeString()}] ${req.method} ${req.path} → ${res.statusCode} (${duration}ms)\x1b[0m`
@@ -121,6 +120,7 @@ app.use('/api/candidates', candidateRoutes);
 app.use('/api/requisitions', requisitionRoutes);
 app.use('/api/job-openings', jobRoutes);
 app.use('/api/applications', applicationRoutes);
+
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/tasks', taskRoutes);
