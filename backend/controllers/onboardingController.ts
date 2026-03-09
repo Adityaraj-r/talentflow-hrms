@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import Employee from '../models/Employee.model';
-import Document from '../models/Document.model'; 
-import Activity from '../models/Activity'; 
+import Document from '../models/Document.model';
+import User from '../models/User.model';
+import Activity from '../models/Activity';
 
 export const saveOnboardingProgress = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -17,15 +18,14 @@ export const saveOnboardingProgress = async (req: Request, res: Response): Promi
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
     if (files) {
       updateData.Documents = updateData.Documents || {};
-      if (files['aadharCard']) updateData.Documents.aadharCardPath = files['aadharCard'][0].path;
-      if (files['panCard']) updateData.Documents.panCardPath = files['panCard'][0].path;
-      if (files['resume']) updateData.Documents.resumePath = files['resume'][0].path;
-      if (files['educationDocs']) updateData.Documents.educationDocsPath = files['educationDocs'][0].path;
-      if (files['passportPhoto']) updateData.Documents.passportPhotoPath = files['passportPhoto'][0].path;
-      if (files['relievingLetter']) updateData.Documents.relievingLetterPath = files['relievingLetter'][0].path;
+      if (files['aadharCard'])     updateData.Documents.aadharCardPath     = files['aadharCard'][0].path;
+      if (files['panCard'])        updateData.Documents.panCardPath        = files['panCard'][0].path;
+      if (files['resume'])         updateData.Documents.resumePath         = files['resume'][0].path;
+      if (files['educationDocs'])  updateData.Documents.educationDocsPath  = files['educationDocs'][0].path;
+      if (files['passportPhoto'])  updateData.Documents.passportPhotoPath  = files['passportPhoto'][0].path;
+      if (files['relievingLetter'])updateData.Documents.relievingLetterPath= files['relievingLetter'][0].path;
     }
 
-    
     if (!updateData.employeeCode && req.body.employeeCode) {
       updateData.employeeCode = req.body.employeeCode;
     }
@@ -36,50 +36,54 @@ export const saveOnboardingProgress = async (req: Request, res: Response): Promi
       { new: true, upsert: true, runValidators: true }
     );
 
-    //   BRIDGE TO DIGITAL LOCKER 
-    
+    // ── Link Employee back to User doc if not already linked ─────────────
+    if (employee) {
+      await User.findOneAndUpdate(
+        { email: email.toLowerCase().trim(), employeeId: { $exists: false } },
+        { employeeId: employee._id }
+      );
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ── Bridge to Digital Locker ─────────────────────────────────────────
     if (files && employee) {
       const targetId = employee.employeeCode || employee._id.toString();
 
-      const fileKeys = Object.keys(files);
-      
-      const docNames: any = {
-        'aadharCard': 'Aadhaar Card',
-        'panCard': 'PAN Card',
-        'resume': 'Resume',
-        'educationDocs': 'Education Certificate',
-        'passportPhoto': 'Passport Photo',
-        'relievingLetter': 'Relieving Letter'
+      const docNames: Record<string, string> = {
+        aadharCard:     'Aadhaar Card',
+        panCard:        'PAN Card',
+        resume:         'Resume',
+        educationDocs:  'Education Certificate',
+        passportPhoto:  'Passport Photo',
+        relievingLetter:'Relieving Letter',
       };
 
-      for (const key of fileKeys) {
+      for (const key of Object.keys(files)) {
         const fileArr = files[key];
         if (fileArr && fileArr.length > 0) {
           const file = fileArr[0];
-
-          // Create Digital Locker Record
           await new Document({
-            employeeId: targetId, 
-            uploadedBy: 'Onboarding System', 
-            fileName: file.filename,
-            originalName: docNames[key] || file.originalname, 
-            fileType: file.mimetype,
-            fileSize: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-            filePath: `/uploads/onboarding/${file.filename}`, 
-            category: 'Onboarding', 
-            status: 'Pending'
+            employeeId:   targetId,
+            uploadedBy:   'Onboarding System',
+            fileName:     file.filename,
+            originalName: docNames[key] || file.originalname,
+            fileType:     file.mimetype,
+            fileSize:     (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+            filePath:     `/uploads/onboarding/${file.filename}`,
+            category:     'Onboarding',
+            status:       'Pending',
           }).save();
         }
       }
     }
+    // ─────────────────────────────────────────────────────────────────────
 
     res.status(200).json({ success: true, data: employee });
   } catch (error: any) {
-    console.error("Onboarding Save Error:", error);
+    console.error('Onboarding Save Error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 
 export const getOnboardingDetails = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -95,16 +99,14 @@ export const getOnboardingDetails = async (req: Request, res: Response): Promise
   }
 };
 
-
 export const getAllOnboardingEmployees = async (req: Request, res: Response): Promise<void> => {
   try {
-  
     const employees = await Employee.find({})
       .select('firstName lastName employeeCode department createdAt onboardingStatus')
-      .sort({ createdAt: -1 }); 
+      .sort({ createdAt: -1 });
 
     res.status(200).json(employees);
   } catch (error: any) {
-    res.status(500).json({ message: "Error fetching onboarding list" });
+    res.status(500).json({ message: 'Error fetching onboarding list' });
   }
 };

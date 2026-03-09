@@ -1,466 +1,418 @@
-"use client"
+import { useState, useEffect } from "react";
+import { FileText, Check, X, Search, Loader2, Plus } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import * as payrollService from "@/services/payrollService";
+import apiClient from "@/services/apiClient";
 
-import { useState } from "react"
-import { useAuth } from "@/contexts/AuthContext"
-import { useRole } from "@/contexts/RoleContext"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { FileText, Check, X, Search } from "lucide-react"
-import { toast } from "sonner"
-import { Textarea } from "@/components/ui/textarea"
+const HR_ROLES = ["HRMANAGER", "HROFFICER", "PAYROLLOFFICER", "ADMIN", "SUPER ADMIN"];
+
+const STATUS_COLORS = {
+  Pending:  "bg-yellow-100 text-yellow-700 border-yellow-200",
+  Approved: "bg-green-100 text-green-700 border-green-200",
+  Rejected: "bg-red-100 text-red-700 border-red-200",
+};
 
 const Tickets = () => {
-  const { user } = useAuth()
-  const { hasRole } = useRole()
-  const canRequestTickets = hasRole(["HR Manager", "HR Officer", "Payroll Officer"])
+  const { user } = useAuth();
+  const userRole = (typeof user?.role === "string" ? user.role : user?.role?.name)?.toUpperCase();
+  const isHR = HR_ROLES.includes(userRole);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Travel Ticket Management</h1>
-        <p className="text-muted-foreground">Manage employee travel ticket requests</p>
+        <h1 className="text-3xl font-bold tracking-tight">Tickets & Advances</h1>
+        <p className="text-muted-foreground">Manage employee travel tickets and salary advance requests.</p>
       </div>
 
-      <Tabs defaultValue={canRequestTickets ? "request" : "history"}>
+      <Tabs defaultValue="pending">
         <TabsList>
-          {canRequestTickets && <TabsTrigger value="request">Request Ticket</TabsTrigger>}
-          {canRequestTickets && <TabsTrigger value="pending">Pending Approvals</TabsTrigger>}
-          <TabsTrigger value="history">Ticket History</TabsTrigger>
+          {isHR && <TabsTrigger value="request">New Request</TabsTrigger>}
+          {isHR && <TabsTrigger value="pending">Pending Approvals</TabsTrigger>}
+          <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
 
-        {canRequestTickets && (
+        {isHR && (
           <TabsContent value="request">
-            <TicketForm />
+            <TicketForm onSuccess={() => {}} />
           </TabsContent>
         )}
-
-        {canRequestTickets && (
+        {isHR && (
           <TabsContent value="pending">
-            <PendingTickets />
+            <PendingTickets userEmail={user?.email} />
           </TabsContent>
         )}
-
         <TabsContent value="history">
           <TicketHistory />
         </TabsContent>
       </Tabs>
     </div>
-  )
-}
+  );
+};
 
-const TicketForm = () => {
-  const [formData, setFormData] = useState({
-    employeeId: "",
-    employeeName: "",
-    travelPurpose: "",
-    destination: "",
-    departureDate: "",
-    returnDate: "",
-    ticketType: "",
-    estimatedCost: "",
-    notes: "",
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
+const TicketForm = ({ onSuccess }) => {
+  const { user } = useAuth();
+  const [employees, setEmployees] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({
+    employeeId: "", employeeName: "", type: "travel",
+    travelPurpose: "", destination: "", departureDate: "",
+    returnDate: "", ticketClass: "economy",
+    amount: "", reason: "", notes: "",
+  });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
+  useEffect(() => {
+    apiClient.get("/admin/users").then(res => {
+      setEmployees(res.users || res.data || []);
+    }).catch(() => {});
+  }, []);
 
-  const handleSelectChange = (name, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
+  const set = (field, val) => setForm(p => ({ ...p, [field]: val }));
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
+  const handleEmployeeChange = (id) => {
+    const emp = employees.find(e => e._id === id);
+    set("employeeId", id);
+    set("employeeName", emp ? `${emp.firstName} ${emp.lastName}` : "");
+  };
 
-    // Validation
-    if (
-      !formData.employeeId ||
-      !formData.employeeName ||
-      !formData.travelPurpose ||
-      !formData.destination ||
-      !formData.departureDate ||
-      !formData.ticketType
-    ) {
-      toast.error("Please fill in all required fields")
-      return
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.employeeId || !form.reason) {
+      toast.error("Employee and reason are required");
+      return;
+    }
+    if (form.type === "travel" && (!form.destination || !form.departureDate)) {
+      toast.error("Destination and departure date required for travel tickets");
+      return;
+    }
+    if (form.type === "advance" && !form.amount) {
+      toast.error("Amount is required for salary advances");
+      return;
     }
 
-    setIsSubmitting(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      toast.success("Ticket request submitted successfully")
-      setIsSubmitting(false)
-
-      // Reset form
-      setFormData({
-        employeeId: "",
-        employeeName: "",
-        travelPurpose: "",
-        destination: "",
-        departureDate: "",
-        returnDate: "",
-        ticketType: "",
-        estimatedCost: "",
-        notes: "",
-      })
-    }, 1500)
-  }
+    setSubmitting(true);
+    try {
+      await payrollService.createTicket(form);
+      toast.success("Request submitted successfully");
+      setForm({
+        employeeId: "", employeeName: "", type: "travel",
+        travelPurpose: "", destination: "", departureDate: "",
+        returnDate: "", ticketClass: "economy",
+        amount: "", reason: "", notes: "",
+      });
+      onSuccess?.();
+    } catch (err) {
+      toast.error(err?.response?.data?.error || "Failed to submit request");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Request Travel Ticket</CardTitle>
-        <CardDescription>Submit a new travel ticket request for an employee</CardDescription>
+        <CardTitle>New Ticket / Advance Request</CardTitle>
+        <CardDescription>Submit a travel ticket or salary advance request for an employee.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="employeeId">
-                Employee ID <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="employeeId"
-                name="employeeId"
-                placeholder="Enter employee ID"
-                value={formData.employeeId}
-                onChange={handleChange}
-                required
-              />
-            </div>
 
             <div className="space-y-2">
-              <Label htmlFor="employeeName">
-                Employee Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="employeeName"
-                name="employeeName"
-                placeholder="Enter employee name"
-                value={formData.employeeName}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="travelPurpose">
-                Travel Purpose <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.travelPurpose}
-                onValueChange={(value) => handleSelectChange("travelPurpose", value)}
-                required
-              >
-                <SelectTrigger id="travelPurpose">
-                  <SelectValue placeholder="Select travel purpose" />
-                </SelectTrigger>
+              <Label>Request Type</Label>
+              <Select value={form.type} onValueChange={v => set("type", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="business">Business Meeting</SelectItem>
-                  <SelectItem value="conference">Conference</SelectItem>
-                  <SelectItem value="training">Training</SelectItem>
-                  <SelectItem value="personal">Personal (Company-Sponsored)</SelectItem>
+                  <SelectItem value="travel">Travel Ticket</SelectItem>
+                  <SelectItem value="advance">Salary Advance</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="destination">
-                Destination <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="destination"
-                name="destination"
-                placeholder="Enter destination"
-                value={formData.destination}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="departureDate">
-                Departure Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="departureDate"
-                name="departureDate"
-                type="date"
-                value={formData.departureDate}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="returnDate">Return Date</Label>
-              <Input
-                id="returnDate"
-                name="returnDate"
-                type="date"
-                value={formData.returnDate}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ticketType">
-                Ticket Type <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.ticketType}
-                onValueChange={(value) => handleSelectChange("ticketType", value)}
-                required
-              >
-                <SelectTrigger id="ticketType">
-                  <SelectValue placeholder="Select ticket type" />
-                </SelectTrigger>
+              <Label>Employee <span className="text-red-500">*</span></Label>
+              <Select value={form.employeeId} onValueChange={handleEmployeeChange}>
+                <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="economy">Economy</SelectItem>
-                  <SelectItem value="business">Business</SelectItem>
-                  <SelectItem value="first">First Class</SelectItem>
+                  {employees.map(e => (
+                    <SelectItem key={e._id} value={e._id}>
+                      {e.firstName} {e.lastName}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="estimatedCost">Estimated Cost</Label>
-              <Input
-                id="estimatedCost"
-                name="estimatedCost"
-                type="number"
-                placeholder="Enter estimated cost"
-                value={formData.estimatedCost}
-                onChange={handleChange}
-              />
+            {form.type === "travel" && (
+              <>
+                <div className="space-y-2">
+                  <Label>Travel Purpose</Label>
+                  <Select value={form.travelPurpose} onValueChange={v => set("travelPurpose", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select purpose" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="business">Business Meeting</SelectItem>
+                      <SelectItem value="conference">Conference</SelectItem>
+                      <SelectItem value="training">Training</SelectItem>
+                      <SelectItem value="personal">Personal (Sponsored)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Destination <span className="text-red-500">*</span></Label>
+                  <Input placeholder="Enter destination" value={form.destination}
+                    onChange={e => set("destination", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Departure Date <span className="text-red-500">*</span></Label>
+                  <Input type="date" value={form.departureDate}
+                    onChange={e => set("departureDate", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Return Date</Label>
+                  <Input type="date" value={form.returnDate}
+                    onChange={e => set("returnDate", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Ticket Class</Label>
+                  <Select value={form.ticketClass} onValueChange={v => set("ticketClass", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="economy">Economy</SelectItem>
+                      <SelectItem value="business">Business</SelectItem>
+                      <SelectItem value="first">First Class</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+
+            {form.type === "advance" && (
+              <div className="space-y-2">
+                <Label>Advance Amount (₹) <span className="text-red-500">*</span></Label>
+                <Input type="number" min="0" placeholder="Enter amount"
+                  value={form.amount} onChange={e => set("amount", e.target.value)} />
+              </div>
+            )}
+
+            <div className="space-y-2 md:col-span-2">
+              <Label>Reason <span className="text-red-500">*</span></Label>
+              <Input placeholder="Brief reason for request"
+                value={form.reason} onChange={e => set("reason", e.target.value)} />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label>Notes</Label>
+              <Textarea placeholder="Additional notes..." rows={3}
+                value={form.notes} onChange={e => set("notes", e.target.value)} />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              name="notes"
-              placeholder="Enter any additional notes"
-              value={formData.notes}
-              onChange={handleChange}
-              rows={4}
-            />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="submit" disabled={submitting} className="bg-blue-600 hover:bg-blue-700 text-white">
+              {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : "Submit Request"}
+            </Button>
           </div>
         </form>
       </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline">Cancel</Button>
-        <Button onClick={handleSubmit} disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : "Submit Ticket Request"}
-        </Button>
-      </CardFooter>
     </Card>
-  )
-}
+  );
+};
 
 const PendingTickets = () => {
-  const pendingTickets = [
-    {
-      id: 1,
-      employeeName: "John Doe",
-      employeeId: "EMP001",
-      travelPurpose: "Business Meeting",
-      destination: "New York",
-      departureDate: "2025-05-01",
-      ticketType: "Economy",
-      estimatedCost: 500,
-      requestedBy: "Jane Smith",
-      requestDate: "2025-04-15",
-    },
-    {
-      id: 2,
-      employeeName: "Alice Johnson",
-      employeeId: "EMP002",
-      travelPurpose: "Conference",
-      destination: "London",
-      departureDate: "2025-04-20",
-      ticketType: "Business",
-      estimatedCost: 1200,
-      requestedBy: "Bob Williams",
-      requestDate: "2025-04-10",
-    },
-  ]
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleApprove = (id) => {
-    toast.success(`Ticket request #${id} approved successfully`)
-  }
+  const fetchPending = async () => {
+    try {
+      const res = await payrollService.getTickets({ status: "Pending" });
+      setTickets(res.data || []);
+    } catch {
+      toast.error("Failed to load pending tickets");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleReject = (id) => {
-    toast.success(`Ticket request #${id} rejected successfully`)
-  }
+  useEffect(() => { fetchPending(); }, []);
+
+  const handleAction = async (id, status) => {
+    try {
+      await payrollService.updateTicketStatus(id, status);
+      toast.success(`Request ${status.toLowerCase()} successfully`);
+      fetchPending();
+    } catch {
+      toast.error("Action failed");
+    }
+  };
+
+  if (loading) return (
+    <Card><CardContent className="flex justify-center py-12">
+      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+    </CardContent></Card>
+  );
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pending Ticket Approvals</CardTitle>
-        <CardDescription>Review and approve travel ticket requests</CardDescription>
+        <CardTitle>Pending Approvals</CardTitle>
+        <CardDescription>{tickets.length} requests awaiting action</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
-          <div className="grid grid-cols-8 bg-muted/50 p-3 text-sm font-medium">
-            <div>Employee</div>
-            <div>Employee ID</div>
-            <div>Purpose</div>
-            <div>Destination</div>
-            <div>Departure</div>
-            <div>Ticket Type</div>
-            <div>Cost</div>
-            <div>Actions</div>
-          </div>
-          <div className="divide-y">
-            {pendingTickets.map((ticket) => (
-              <div key={ticket.id} className="grid grid-cols-8 p-3 text-sm">
-                <div className="font-medium">{ticket.employeeName}</div>
-                <div>{ticket.employeeId}</div>
-                <div>{ticket.travelPurpose}</div>
-                <div>{ticket.destination}</div>
-                <div>{ticket.departureDate}</div>
-                <div>{ticket.ticketType}</div>
-                <div>${ticket.estimatedCost.toLocaleString()}</div>
-                <div className="flex space-x-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 text-green-600"
-                    onClick={() => handleApprove(ticket.id)}
-                  >
-                    <Check className="h-4 w-4" />
-                    <span className="sr-only">Approve</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 text-red-600"
-                    onClick={() => handleReject(ticket.id)}
-                  >
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Reject</span>
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8">
-                    <FileText className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
-                </div>
-              </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Employee</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Details</TableHead>
+              <TableHead>Reason</TableHead>
+              <TableHead>Requested</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {tickets.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  No pending requests.
+                </TableCell>
+              </TableRow>
+            ) : tickets.map(t => (
+              <TableRow key={t._id}>
+                <TableCell className="font-medium">{t.employeeName}</TableCell>
+                <TableCell>
+                  <Badge variant="outline" className={t.type === "advance"
+                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                    : "bg-purple-50 text-purple-700 border-purple-200"}>
+                    {t.type === "advance" ? "Salary Advance" : "Travel Ticket"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {t.type === "advance"
+                    ? `₹ ${Number(t.amount).toLocaleString()}`
+                    : `${t.destination} · ${t.ticketClass}`}
+                </TableCell>
+                <TableCell className="text-sm">{t.reason}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {new Date(t.createdAt).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button size="icon" variant="outline"
+                      className="h-8 w-8 text-green-600 hover:bg-green-50"
+                      onClick={() => handleAction(t._id, "Approved")}>
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="outline"
+                      className="h-8 w-8 text-red-600 hover:bg-red-50"
+                      onClick={() => handleAction(t._id, "Rejected")}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
             ))}
-          </div>
-        </div>
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
 const TicketHistory = () => {
-  const ticketHistory = [
-    {
-      id: 1,
-      employeeName: "John Doe",
-      employeeId: "EMP001",
-      travelPurpose: "Business Meeting",
-      destination: "New York",
-      departureDate: "2025-03-01",
-      ticketType: "Economy",
-      estimatedCost: 500,
-      status: "Approved",
-      approvedBy: "Jane Smith",
-      approvalDate: "2025-02-25",
-    },
-    {
-      id: 2,
-      employeeName: "Alice Johnson",
-      employeeId: "EMP002",
-      travelPurpose: "Conference",
-      destination: "London",
-      departureDate: "2025-02-15",
-      ticketType: "Business",
-      estimatedCost: 1200,
-      status: "Rejected",
-      approvedBy: "Bob Williams",
-      approvalDate: "2025-02-10",
-      reason: "Budget constraints",
-    },
-  ]
+  const [tickets, setTickets]   = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [search, setSearch]     = useState("");
+
+  useEffect(() => {
+    payrollService.getTickets().then(res => {
+      setTickets(res.data || []);
+    }).catch(() => toast.error("Failed to load history"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = tickets.filter(t =>
+    t.employeeName?.toLowerCase().includes(search.toLowerCase()) ||
+    t.reason?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (loading) return (
+    <Card><CardContent className="flex justify-center py-12">
+      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+    </CardContent></Card>
+  );
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>Ticket History</CardTitle>
-          <CardDescription>View history of all travel ticket requests</CardDescription>
+          <CardDescription>All travel and advance requests</CardDescription>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search tickets..." className="pl-8 w-[200px] md:w-[300px]" />
-          </div>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search..." className="pl-8 w-64"
+            value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
-          <div className="grid grid-cols-8 bg-muted/50 p-3 text-sm font-medium">
-            <div>Employee</div>
-            <div>Employee ID</div>
-            <div>Purpose</div>
-            <div>Destination</div>
-            <div>Departure</div>
-            <div>Ticket Type</div>
-            <div>Status</div>
-            <div>Actions</div>
-          </div>
-          <div className="divide-y">
-            {ticketHistory.map((ticket) => (
-              <div key={ticket.id} className="grid grid-cols-8 p-3 text-sm">
-                <div className="font-medium">{ticket.employeeName}</div>
-                <div>{ticket.employeeId}</div>
-                <div>{ticket.travelPurpose}</div>
-                <div>{ticket.destination}</div>
-                <div>{ticket.departureDate}</div>
-                <div>{ticket.ticketType}</div>
-                <div>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                      ticket.status === "Approved"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                        : ticket.status === "Rejected"
-                        ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                        : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
-                    }`}
-                  >
-                    {ticket.status}
-                  </span>
-                </div>
-                <div>
-                  <Button variant="ghost" size="icon">
-                    <FileText className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
-                </div>
-              </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Employee</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Details</TableHead>
+              <TableHead>Reason</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Date</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  No records found.
+                </TableCell>
+              </TableRow>
+            ) : filtered.map(t => (
+              <TableRow key={t._id}>
+                <TableCell className="font-medium">{t.employeeName}</TableCell>
+                <TableCell>
+                  <Badge variant="outline" className={t.type === "advance"
+                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                    : "bg-purple-50 text-purple-700 border-purple-200"}>
+                    {t.type === "advance" ? "Salary Advance" : "Travel Ticket"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {t.type === "advance"
+                    ? `₹ ${Number(t.amount).toLocaleString()}`
+                    : `${t.destination} · ${t.ticketClass}`}
+                </TableCell>
+                <TableCell className="text-sm">{t.reason}</TableCell>
+                <TableCell>
+                  <Badge variant="outline" className={STATUS_COLORS[t.status] || ""}>
+                    {t.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {new Date(t.createdAt).toLocaleDateString()}
+                </TableCell>
+              </TableRow>
             ))}
-          </div>
-        </div>
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
-export default Tickets
+export default Tickets;
