@@ -5,11 +5,22 @@ import Employee from '../models/Employee.model';
 
 export const createUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, firstName, lastName, role, phoneNumber, department,gender } = req.body;
+    const { email, password, firstName, lastName, role, phoneNumber, department,gender, employeeCode } = req.body;
 
     if (!email || !password || !firstName || !lastName || !role) {
       res.status(400).json({ success: false, message: 'Email, password, first name, last name and role are required' });
       return;
+    }
+
+    if (employeeCode) {
+      const existingEmployeeCode = await User.findOne({ employeeCode });
+      if (existingEmployeeCode) {
+        res.status(400).json({ 
+          success: false, 
+          message: `Account creation failed: The ID ${employeeCode} is already linked to an active user account.` 
+        });
+        return;
+      }
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -31,6 +42,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       department: department || null,
       gender: gender || null,
       isEmailVerified: true,
+      employeeCode: employeeCode || null,
       isActive: true
     });
 
@@ -46,6 +58,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         department: user.department,
         gender: user.gender,
         phoneNumber: user.phoneNumber,
+        employeeCode: user.employeeCode,
         isActive: user.isActive
       }
     });

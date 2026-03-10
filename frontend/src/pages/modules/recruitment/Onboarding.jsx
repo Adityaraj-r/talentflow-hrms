@@ -15,10 +15,9 @@ const Onboarding = () => {
   const [loading, setLoading] = useState(false)
   const [isConfirmed, setIsConfirmed] = useState(false);
 
-  // Combined State precisely matching the merged Employee.model.ts
   const [formData, setFormData] = useState({
     firstName: "",
-    MiddleName: "", // Fixed casing to lowercase 'm'
+    MiddleName: "", 
     lastName: "",
     dateOfBirth: "",
     gender: "",
@@ -131,67 +130,49 @@ const Onboarding = () => {
     }
   };
 
-  // helper logic to validate required fields before saving
-  const isTabValid = (tab) => {
+ const getTabValidationError = (tab) => {
     if (tab === "personal") {
       const { firstName, MiddleName, lastName, dateOfBirth, gender, email, phoneNumber, currentAddress } = formData;
-      const isDateValid = dateOfBirth && dateOfBirth.length >= 8;
-      return (
-        firstName.trim() !== "" &&
-        MiddleName.trim() !== "" &&
-        lastName.trim() !== "" &&
-        isDateValid &&
-        gender !== "" &&
-        email.trim() !== "" &&
-        phoneNumber.length === 10 &&
-        currentAddress.trim() !== ""
-      );
+      if (firstName.trim() === "") return "First Name is required.";
+      if (MiddleName.trim() === "") return "Middle Name is required.";
+      if (lastName.trim() === "") return "Last Name is required.";
+      if (!dateOfBirth || dateOfBirth.length < 8) return "Valid Date of Birth is required.";
+      if (gender === "") return "Gender selection is required.";
+      if (email.trim() === "") return "Personal Email is required.";
+      if (phoneNumber.length !== 10) return "Mobile Number must be exactly 10 digits.";
+      if (currentAddress.trim() === "") return "Current Address is required.";
     }
-    //  logic for employment tab validation
     if (tab === "employment") {
       const { employeeCode, joiningDate, designation, department, reportingManager } = formData;
-      return (
-        // Use optional chaining so .trim() only runs if employeeCode is a string
-        (employeeCode?.trim() ?? "") !== "" &&
-        joiningDate !== "" &&
-        (designation?.trim() ?? "") !== "" &&
-        (department !== "" && department !== "Select Department") &&
-        (reportingManager?.trim() ?? "") !== ""
-      );
+      if ((employeeCode?.trim() ?? "") === "") return "Employee ID is required.";
+      if (joiningDate === "") return "Date of Joining is required.";
+      if ((designation?.trim() ?? "") === "") return "Designation is required.";
+      if (department === "" || department === "Select Department") return "Department selection is required.";
+      if ((reportingManager?.trim() ?? "") === "") return "Reporting Manager is required.";
     }
-    // logic for banking tab validation
     if (tab === "banking") {
       const { bankDetails, kycDetails } = formData;
-
-      // Real-world logic to validate bank and KYC details
-      const isAccountValid = /^\d{9,18}$/.test(bankDetails?.accountNumber);
-      const isIfscValid = /^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankDetails?.ifscCode);
-      const isPanValid = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(kycDetails?.panNumber);
-      const isAadharValid = /^\d{12}$/.test(kycDetails?.aadharNumber);
-      const isUanValid = /^\d{12}$/.test(kycDetails?.uan);
-      const isPfValid = (kycDetails?.pfNumber?.length ?? 0) >= 15;
-
-      return (
-        (bankDetails?.accountHolderName?.trim() ?? "") !== "" &&
-        (bankDetails?.bankName?.trim() ?? "") !== "" &&
-        isAccountValid &&
-        isIfscValid &&
-        isPanValid &&
-        isAadharValid &&
-        isUanValid &&
-        isPfValid
-      );
+      if ((bankDetails?.accountHolderName?.trim() ?? "") === "") return "Account Holder Name is required.";
+      if ((bankDetails?.bankName?.trim() ?? "") === "") return "Bank Name is required.";
+      if (!/^\d{9,18}$/.test(bankDetails?.accountNumber)) return "Account Number must be between 9 and 18 digits.";
+      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankDetails?.ifscCode)) return "Invalid IFSC Code. Format: HDFC0001234";
+      if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(kycDetails?.panNumber)) return "Invalid PAN Number. Format: ABCDE1234F";
+      if (!/^\d{12}$/.test(kycDetails?.aadharNumber)) return "Aadhar Number must be exactly 12 digits.";
+      if (kycDetails?.uan && !/^\d{12}$/.test(kycDetails?.uan)) return "UAN must be exactly 12 digits.";
+      if ((kycDetails?.pfNumber?.length ?? 0) < 15) return "PF Number is required (Min 15 chars).";
     }
-
     if (tab === "documents") {
       const mandatoryDocs = ['aadharCard', 'panCard', 'resume', 'passportPhoto'];
-      const allDocsUploaded = mandatoryDocs.every(doc => formData[doc]);
-
-      return allDocsUploaded && isConfirmed;
+      const missing = mandatoryDocs.find(doc => !formData[doc]);
+      if (missing) return "Please upload all mandatory documents (*).";
+      if (!isConfirmed) return "Please confirm the authenticity declaration.";
     }
-    return true;
+    return null; // Null means no errors!
   };
 
+  const isTabValid = (tab) => {
+    return getTabValidationError(tab) === null;
+  };
   // Function to ensure the date always looks like DD-MM-YYYY for the user
   const formatDisplayDate = (dateString) => {
     if (!dateString) return "";
@@ -209,8 +190,9 @@ const Onboarding = () => {
   };
 
   const handleSaveProgress = async (nextTab) => {
-    if (!isTabValid(activeTab)) {
-      toast.error("Please fill all compulsory fields marked with * correctly.");
+    const errorMessage = getTabValidationError(activeTab);
+    if (errorMessage) {
+      toast.error(errorMessage); 
       return;
     }
     if (!formData.email) {
@@ -332,12 +314,9 @@ const Onboarding = () => {
                 <div className="space-y-2">
                   <Label>Date of Birth *</Label>
                   <Input
-                    type="text"
-                    placeholder="DD-MM-YYYY"
-                    className="relative w-full pr-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:top-1/2 [&::-webkit-calendar-picker-indicator]:-translate-y-1/2 [&::-webkit-calendar-picker-indicator]:m-0 [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                    value={formatDisplayDate(formData.dateOfBirth)}
-                    onFocus={(e) => (e.target.type = "date")}
-                    onBlur={(e) => (e.target.type = "text")}
+                    type="date"
+                    className="relative w-full pr-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                    value={formData.dateOfBirth ? formData.dateOfBirth.split('T')[0] : ""}
                     onChange={(e) => handleChange("dateOfBirth", e.target.value)}
                   />
                 </div>
@@ -463,6 +442,8 @@ const Onboarding = () => {
                       <SelectItem value="HR">Human Resources</SelectItem>
                       <SelectItem value="Finance">Finance</SelectItem>
                       <SelectItem value="Sales">Sales</SelectItem>
+                      <SelectItem value="Finance">Operation</SelectItem>
+                      <SelectItem value="Sales">Marketing</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -624,15 +605,7 @@ const Onboarding = () => {
                   Back to Employment
                 </Button>
 
-                <Button
-                  onClick={() => {
-                    if (isTabValid("banking")) {
-                      handleSaveProgress("documents");
-                    } else {
-                      toast.error("Please fill all compulsory fields marked with * correctly.");
-                    }
-                  }}
-                >
+               <Button onClick={() => handleSaveProgress("documents")}>
                   Next: Documents
                 </Button>
               </div>

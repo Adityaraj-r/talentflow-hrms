@@ -12,6 +12,7 @@ export interface IUser extends Document {
   phoneNumber?: string;
   gender?: string;
   employeeId?: mongoose.Types.ObjectId;
+  employeeCode?: string;
   currentShift?: mongoose.Types.ObjectId;
   isActive: boolean;
   isEmailVerified: boolean;
@@ -80,6 +81,11 @@ const UserSchema = new Schema<IUser>(
     employeeId: {
       type: Schema.Types.ObjectId,
       ref: 'Employee',
+      default: null
+    },
+    employeeCode: {
+      type: String,
+      trim: true,
       default: null
     },
     currentShift: {

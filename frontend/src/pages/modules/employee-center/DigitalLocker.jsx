@@ -22,7 +22,7 @@ const DigitalLocker = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [targetEmployeeId, setTargetEmployeeId] = useState(""); 
   const [uploadOpen, setUploadOpen] = useState(false);
-  
+  const [selectedDoc, setSelectedDoc] = useState(null);
   // Upload Form State
   const [file, setFile] = useState(null);
   const [uploadCategory, setUploadCategory] = useState("Personal");
@@ -364,7 +364,7 @@ const DigitalLocker = () => {
                       <div className="text-xs text-gray-500 mt-1 flex justify-between"><span>{doc.fileSize}</span><span>{new Date(doc.uploadDate).toLocaleDateString()}</span></div>
                       
                       <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 bg-blue-50 hover:bg-blue-100" onClick={() => window.open(`http://localhost:5001${doc.filePath}`, '_blank')}><Eye className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 bg-blue-50 hover:bg-blue-100" onClick={() => setSelectedDoc(doc)}><Eye className="w-4 h-4" /></Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 bg-red-50 hover:bg-red-100" onClick={() => handleDelete(doc._id)}><Trash2 className="w-4 h-4" /></Button>
                       </div>
                     </div>
@@ -432,7 +432,7 @@ const DigitalLocker = () => {
 
                             <td className="px-4 py-3 text-right">
                               <div className="flex justify-end gap-2">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-blue-600" onClick={() => window.open(`http://localhost:5001${doc.filePath}`, '_blank')}><Download className="w-4 h-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-blue-600" onClick={() => setSelectedDoc(doc)}><Eye className="w-4 h-4" /></Button>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-red-600" onClick={() => handleDelete(doc._id)}><Trash2 className="w-4 h-4" /></Button>
                               </div>
                             </td>
@@ -447,6 +447,51 @@ const DigitalLocker = () => {
           </div>
         </div>
       </div>
+      {selectedDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden relative border dark:border-gray-700">
+            
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
+              <div>
+                <h3 className="text-lg font-semibold dark:text-white">{selectedDoc.originalName}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{selectedDoc.fileName}</p>
+              </div>
+              <button 
+                onClick={() => setSelectedDoc(null)}
+                className="text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-full transition-colors"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Body (Smart rendering for Cloudinary vs Local) */}
+            <div className="flex-1 overflow-auto bg-slate-50 dark:bg-gray-950 p-4 flex justify-center items-center">
+              {selectedDoc.filePath.toLowerCase().endsWith('.pdf') ? (
+                <iframe 
+                  src={selectedDoc.filePath.startsWith('http') ? selectedDoc.filePath : `http://localhost:5001${selectedDoc.filePath}`} 
+                  className="w-full h-[600px] border-0 rounded"
+                  title="PDF Viewer"
+                />
+              ) : (
+                <img 
+                  src={selectedDoc.filePath.startsWith('http') ? selectedDoc.filePath : `http://localhost:5001${selectedDoc.filePath}`} 
+                  alt="Document Preview" 
+                  className="max-w-full max-h-[70vh] object-contain rounded border dark:border-gray-800 shadow-sm"
+                />
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t dark:border-gray-700 flex justify-end gap-2 bg-gray-50 dark:bg-gray-900">
+              <Button variant="outline" onClick={() => setSelectedDoc(null)}>Close</Button>
+              <Button onClick={() => window.open(selectedDoc.filePath.startsWith('http') ? selectedDoc.filePath : `http://localhost:5001${selectedDoc.filePath}`, '_blank')}>
+                Open in New Tab
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
