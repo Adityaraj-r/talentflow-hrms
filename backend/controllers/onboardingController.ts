@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import Employee from '../models/Employee.model';
 import Document from '../models/Document.model'; 
 import User from '../models/User.model';
-import Activity from '../models/Activity'; 
 
 export const saveOnboardingProgress = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -18,31 +17,30 @@ export const saveOnboardingProgress = async (req: Request, res: Response): Promi
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
     if (files) {
       updateData.Documents = updateData.Documents || {};
-      if (files['aadharCard']) updateData.Documents.aadharCardPath = files['aadharCard'][0].path;
-      if (files['panCard']) updateData.Documents.panCardPath = files['panCard'][0].path;
-      if (files['resume']) updateData.Documents.resumePath = files['resume'][0].path;
-      if (files['educationDocs']) updateData.Documents.educationDocsPath = files['educationDocs'][0].path;
-      if (files['passportPhoto']) updateData.Documents.passportPhotoPath = files['passportPhoto'][0].path;
-      if (files['relievingLetter']) updateData.Documents.relievingLetterPath = files['relievingLetter'][0].path;
+      if (files['aadharCard'])     updateData.Documents.aadharCardPath     = files['aadharCard'][0].path;
+      if (files['panCard'])        updateData.Documents.panCardPath        = files['panCard'][0].path;
+      if (files['resume'])         updateData.Documents.resumePath         = files['resume'][0].path;
+      if (files['educationDocs'])  updateData.Documents.educationDocsPath  = files['educationDocs'][0].path;
+      if (files['passportPhoto'])  updateData.Documents.passportPhotoPath  = files['passportPhoto'][0].path;
+      if (files['relievingLetter'])updateData.Documents.relievingLetterPath= files['relievingLetter'][0].path;
     }
 
     // STRICT AUTO-INCREMENT ID LOGIC 
-    
     const existingEmployee = await Employee.findOne({ email: email.toLowerCase().trim() });
 
-   if (!existingEmployee) {
+    if (!existingEmployee) {
       const lastEmployee = await Employee.findOne({ 
         employeeCode: { $regex: /^EMP-\d+/ } 
       }).sort({ createdAt: -1 });
       
-      let newEmployeeCode = "EMP-001"; 
+      let newEmployeeCode = "EMP-0001"; 
 
       if (lastEmployee && lastEmployee.employeeCode) {
         const lastIdParts = lastEmployee.employeeCode.split('-'); 
         if (lastIdParts.length === 2) {
           const lastNumber = parseInt(lastIdParts[1], 10);
           if (!isNaN(lastNumber)) {
-            newEmployeeCode = `EMP-${(lastNumber + 1).toString().padStart(3, '0')}`;
+            newEmployeeCode = `EMP-${(lastNumber + 1).toString().padStart(4, '0')}`;
           }
         }
       }
@@ -60,7 +58,6 @@ export const saveOnboardingProgress = async (req: Request, res: Response): Promi
     //  BRIDGE TO DIGITAL LOCKER 
     if (files && employee) {
       const targetId = employee.employeeCode || employee._id.toString();
-      const fileKeys = Object.keys(files);
       
       const docNames: any = {
         'aadharCard': 'Aadhar Card (Front & Back)',
@@ -71,7 +68,7 @@ export const saveOnboardingProgress = async (req: Request, res: Response): Promi
         'relievingLetter': 'Previous Relieving Letter'
       };
 
-      for (const key of fileKeys) {
+      for (const key of Object.keys(files)) {
         const fileArr = files[key];
         if (fileArr && fileArr.length > 0) {
           const file = fileArr[0];
@@ -94,11 +91,10 @@ export const saveOnboardingProgress = async (req: Request, res: Response): Promi
 
     res.status(200).json({ success: true, data: employee });
   } catch (error: any) {
-    console.error("Onboarding Save Error:", error);
+    console.error('Onboarding Save Error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 
 export const getOnboardingDetails = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -114,21 +110,34 @@ export const getOnboardingDetails = async (req: Request, res: Response): Promise
   }
 };
 
-
 export const getAllOnboardingEmployees = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { unenrolled } = req.query; // <--- The smart toggle
-    
-    let dbQuery: any = { employeeCode: { $regex: /^EMP-\d+/ } };
+    const { unenrolled } = req.query; 
+    let dbQuery: any = { 
+      employeeCode: { $regex: /^EMP-\d+/ },
+      $or: [
+        { "Documents.aadharCardPath": { $exists: true, $ne: null } },
+        { "Documents.panCardPath": { $exists: true, $ne: null } },
+        { "Documents.resumePath": { $exists: true, $ne: null } },
+        { "Documents.educationDocsPath": { $exists: true, $ne: null } },
+        { "Documents.passportPhotoPath": { $exists: true, $ne: null } },
+        { "Documents.relievingLetterPath": { $exists: true, $ne: null } }
+      ]
+    };
 
-    // ONLY apply the filter if the frontend explicitly asks for 'unenrolled=true'
     if (unenrolled === 'true') {
       const existingUsers = await User.find({ 
         employeeCode: { $regex: /^EMP-\d+/ } 
       }).select('employeeCode').lean();
       
       const enrolledCodes = existingUsers.map((user: any) => user.employeeCode).filter(Boolean);
+      
       dbQuery.employeeCode = { $nin: enrolledCodes, $regex: /^EMP-\d+/ };
+
+      dbQuery["department"] = { $exists: true, $nin: [null, ""] };
+      dbQuery["designation"] = { $exists: true, $nin: [null, ""] };
+      dbQuery["bankDetails"] = { $exists: true, $ne: null };
+      dbQuery["kycDetails"] = { $exists: true, $ne: null };
     }
 
     const employees = await Employee.find(dbQuery)
@@ -139,5 +148,5 @@ export const getAllOnboardingEmployees = async (req: Request, res: Response): Pr
   } catch (error: any) {
     console.error("Error fetching onboarding list:", error);
     res.status(500).json({ message: "Error fetching onboarding list" });
-  }
+  } 
 };

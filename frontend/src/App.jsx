@@ -34,16 +34,10 @@ import AuditLogs from "./pages/modules/administration/AuditLogs"
 import Integrations from "./pages/modules/administration/Integrations"
 
 // Recruitment Module
-import Recruitment from "./pages/modules/recruitment/Recruitment"
+import Onboarding from "./pages/modules/recruitment/Onboarding"
 import StaffRequisition from "./pages/modules/recruitment/StaffRequisition"
 import Careers from "./pages/Careers"
 import CreateRequisition from "./pages/modules/recruitment/CreateRequisition"
-import Onboarding from "./pages/modules/recruitment/Onboarding"
-import ManageOnboarding from "./pages/modules/recruitment/ManageOnboarding"
-import ActiveOnboarding from "./pages/modules/recruitment/ActiveOnboarding"
-import OnboardingDetails from "./pages/modules/recruitment/OnboardingDetails"
-import RecentHires from "./pages/modules/recruitment/RecentHires"
-import CandidateManagement from "./pages/modules/recruitment/CandidateManagement"
 import OfferManagement from "./pages/modules/recruitment/OfferManagement"
 import JobOpenings from "./pages/modules/recruitment/JobOpenings"
 import ApplyJob from "./pages/ApplyJob"
@@ -55,6 +49,7 @@ import ApplicationStatus from "./pages/ApplicationStatus"
 import Payroll from "./pages/modules/payroll/Payroll"
 import Tickets from "./pages/modules/payroll/Tickets"
 import Indemnity from "./pages/modules/payroll/Indemnity"
+import SalarySlip from "./pages/modules/payroll/SalarySlip"
 
 // Transfer Module
 import EmployeeTransfer from "./pages/modules/transfer/EmployeeTransfer"
@@ -333,12 +328,13 @@ function App() {
                   } />
 
                   {/* ── Recruitment — MATRIX ENFORCED ────────────────── */}
-                  <Route path="/recruitment" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
-                      <DashboardLayout><Recruitment /></DashboardLayout>
+
+                  <Route path="/dashboard/onboarding" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER"]}>
+                      <DashboardLayout><Onboarding /></DashboardLayout>
                     </ProtectedRoute>
                   } />
-
+                 
                   <Route path="/staff-requisition" element={
                     <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
                       <DashboardLayout><StaffRequisition /></DashboardLayout>
@@ -349,53 +345,14 @@ function App() {
                   <Route path="/dashboard/applications" element={ <DashboardLayout> <CandidateApplications /> </DashboardLayout> }/>
                   <Route path="/dashboard/recruitment-pipeline" element={ <DashboardLayout> <RecruitmentPipeline /> </DashboardLayout>}/>
                   <Route path="/application-status" element={<ApplicationStatus />} />
+
                   <Route path="/dashboard/job-openings" element={
                     <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
                       <DashboardLayout> <JobOpenings /> </DashboardLayout>    
                     </ProtectedRoute>
                   }/>
 
-                  <Route path="/dashboard/create-requisition" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
-                      <DashboardLayout><CreateRequisition /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/dashboard/onboarding" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
-                      <DashboardLayout><Onboarding /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/dashboard/manage-onboarding" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
-                      <DashboardLayout><ManageOnboarding /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/dashboard/active-onboarding" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
-                      <DashboardLayout><ActiveOnboarding /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/dashboard/onboarding/:id" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
-                      <DashboardLayout><OnboardingDetails /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/dashboard/recent-hires" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
-                      <DashboardLayout><RecentHires /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  <Route path="/dashboard/candidate-management" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
-                      <DashboardLayout><CandidateManagement /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                 
 
                   <Route path="/dashboard/offer-management" element={
                     <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
@@ -457,6 +414,12 @@ function App() {
                     <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
                       <DashboardLayout><Indemnity /></DashboardLayout>
                     </ProtectedRoute>
+                  } />
+            
+                  <Route path="/payroll/salary-slip" element={
+                   <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
+                      <DashboardLayout><SalarySlip /></DashboardLayout>
+                  </ProtectedRoute>
                   } />
 
                   {/* ── Transfers ────────────────────────────────────── */}

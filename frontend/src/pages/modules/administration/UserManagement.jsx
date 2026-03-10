@@ -12,28 +12,42 @@ import {
 } from "@/components/ui/dialog"
 import {
   Search, Plus, Upload, Edit, Power, UserCheck, ShieldAlert,
-  FileSpreadsheet, UploadCloud, Users, RefreshCw
+  FileSpreadsheet, UploadCloud, Users, RefreshCw, Trash2
 } from "lucide-react"
 import { toast } from "sonner"
 import adminService from "@/services/adminService"
 import { ROLES } from "@/constants/roles"
 import { cn } from "@/lib/utils"
 
-const UserManagement = () => {
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [isBulkOpen, setIsBulkOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isActionLoading, setIsActionLoading] = useState(false)
-  const [users, setUsers] = useState([])
-  const [filters, setFilters] = useState({ search: '', role: 'all' })
-  const [selectedFile, setSelectedFile] = useState(null)
-  const [isEditOpen, setIsEditOpen] = useState(false)
-  const [editUserId, setEditUserId] = useState(null)
 
-const [formData, setFormData] = useState({
-    firstName: '', lastName: '', email: '', password: '',
-    role: '', department: '', phoneNumber: '', gender: '', employeeCode: ''
-  })
+// const [formData, setFormData] = useState({
+//     firstName: '', lastName: '', email: '', password: '',
+//     role: '', department: '', phoneNumber: '', gender: '', employeeCode: ''
+//   })
+const EMPTY_FORM = {
+  firstName: '', lastName: '', email: '', password: '',
+  role: '', department: '', phoneNumber: '', gender: '',
+  salary: {
+    basic: '',
+    allowances: { hra: '', transport: '', medical: '', other: '' },
+    deductions: { pf: '', tax: '', insurance: '' }
+  }
+}
+
+const UserManagement = () => {
+  const [isCreateOpen, setIsCreateOpen]         = useState(false)
+  const [isBulkOpen, setIsBulkOpen]             = useState(false)
+  const [isLoading, setIsLoading]               = useState(true)
+  const [isActionLoading, setIsActionLoading]   = useState(false)
+  const [users, setUsers]                       = useState([])
+  const [filters, setFilters]                   = useState({ search: '', role: 'all' })
+  const [selectedFile, setSelectedFile]         = useState(null)
+  const [isEditOpen, setIsEditOpen]             = useState(false)
+  const [editUserId, setEditUserId]             = useState(null)
+  const [isDeleteOpen, setIsDeleteOpen]         = useState(false)
+  const [deleteTarget, setDeleteTarget]         = useState(null)
+  const [isDeleting, setIsDeleting]             = useState(false)
+  const [formData, setFormData]                 = useState(EMPTY_FORM)
 
   const [onboardedList, setOnboardedList] = useState([])
 
@@ -75,17 +89,17 @@ const [formData, setFormData] = useState({
       const response = await adminService.getUsers(filters)
       const userData = response.data || []
       const formatted = userData.map(u => ({
-        id: u._id,
-        firstName: u.firstName || '',
-        lastName: u.lastName || '',
-        name: `${u.firstName || ''} ${u.lastName || ''}`,
-        email: u.email,
-        role: u.role,
-        department: u.department || 'N/A',
+        id:          u._id,
+        firstName:   u.firstName || '',
+        lastName:    u.lastName  || '',
+        name:        `${u.firstName || ''} ${u.lastName || ''}`,
+        email:       u.email,
+        role:        u.role,
+        department:  u.department  || 'N/A',
         phoneNumber: u.phoneNumber || '',
-        gender: u.gender || 'N/A',
-        status: u.isActive ? 'Active' : 'Inactive',
-        avatar: (u.firstName?.[0] || 'U').toUpperCase()
+        gender:      u.gender      || 'N/A',
+        status:      u.isActive ? 'Active' : 'Inactive',
+        avatar:      (u.firstName?.[0] || 'U').toUpperCase()
       }))
       setUsers(formatted)
     } catch (error) {
@@ -98,44 +112,7 @@ const [formData, setFormData] = useState({
 
   useEffect(() => { fetchUsers() }, [fetchUsers])
 
-  const openEditModal = (user) => {
-    setFormData({
-      firstName: user.firstName, lastName: user.lastName, email: user.email,
-      password: '', role: user.role,
-      department: user.department !== 'N/A' ? user.department : '',
-      phoneNumber: user.phoneNumber,
-      gender: user.gender !== 'N/A' ? user.gender : ''
-    })
-    setEditUserId(user.id)
-    setIsEditOpen(true)
-  }
-
-  const handleEditUser = async (e) => {
-    e.preventDefault()
-    if (!formData.role || !formData.department || !formData.phoneNumber)
-      return toast.error("Role, Department, and Phone Number are compulsory fields.")
-    setIsActionLoading(true)
-    try {
-      const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:5001/api/users/${editUserId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(formData)
-      })
-      const data = await res.json()
-      if (data.success) {
-        toast.success("User updated successfully")
-        setIsEditOpen(false)
-        fetchUsers()
-      } else {
-        toast.error(data.message || "Update failed")
-      }
-    } catch {
-      toast.error("An error occurred while updating")
-    } finally {
-      setIsActionLoading(false)
-    }
-  }
+  // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleInputChange = (e) => {
     const { id, value } = e.target
@@ -146,19 +123,34 @@ const [formData, setFormData] = useState({
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  const handleSalaryChange = (field, subfield, value) => {
+    setFormData(prev => ({
+      ...prev,
+      salary: {
+        ...prev.salary,
+        [field]: subfield
+          ? { ...prev.salary[field], [subfield]: value }
+          : value
+      }
+    }))
+  }
+
   const handleResetForm = () => {
     setFormData({ firstName: '', lastName: '', email: '', password: '', role: '', department: '', phoneNumber: '', gender: '', employeeCode: '' })
+    setFormData(EMPTY_FORM)
     setIsCreateOpen(false)
   }
 
   const validateForm = () => {
-    if (!formData.firstName.trim()) return "First name is required"
-    if (!formData.lastName.trim()) return "Last name is required"
-    if (!formData.email.includes("@")) return "Valid work email is required"
-    if (formData.password.length < 6) return "Password must be at least 6 characters"
-    if (!formData.role) return "Please assign a user role"
-    if (!formData.department) return "Please assign a department"
-    if (!formData.gender) return "Please select a gender"
+    if (!formData.firstName.trim())                        return "First name is required"
+    if (!formData.lastName.trim())                         return "Last name is required"
+    if (!formData.email.includes("@"))                     return "Valid work email is required"
+    if (formData.password.length < 6)                      return "Password must be at least 6 characters"
+    if (!formData.role)                                    return "Please assign a user role"
+    if (!formData.department)                              return "Please assign a department"
+    if (!formData.gender)                                  return "Please select a gender"
+    if (!formData.salary.basic || Number(formData.salary.basic) <= 0)
+                                                           return "Basic salary is required"
     return null
   }
 
@@ -178,6 +170,79 @@ const [formData, setFormData] = useState({
       toast.error(error.message || "Enrollment failed")
     } finally {
       setIsActionLoading(false)
+    }
+  }
+
+  const openEditModal = (user) => {
+    setFormData({
+      ...EMPTY_FORM,
+      firstName:   user.firstName,
+      lastName:    user.lastName,
+      email:       user.email,
+      password:    '',
+      role:        user.role,
+      department:  user.department !== 'N/A' ? user.department : '',
+      phoneNumber: user.phoneNumber,
+      gender:      user.gender !== 'N/A' ? user.gender : '',
+    })
+    setEditUserId(user.id)
+    setIsEditOpen(true)
+  }
+
+  const handleEditUser = async (e) => {
+    e.preventDefault()
+    if (!formData.role || !formData.department || !formData.phoneNumber)
+      return toast.error("Role, Department, and Phone Number are compulsory fields.")
+    setIsActionLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`http://localhost:5001/api/users/${editUserId}`, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body:    JSON.stringify(formData)
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success("User updated successfully")
+        setIsEditOpen(false)
+        fetchUsers()
+      } else {
+        toast.error(data.message || "Update failed")
+      }
+    } catch {
+      toast.error("An error occurred while updating")
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
+
+  const openDeleteModal = (user) => {
+    setDeleteTarget({ id: user.id, name: user.name })
+    setIsDeleteOpen(true)
+  }
+
+  const handleDeleteUser = async () => {
+    if (!deleteTarget) return
+    setIsDeleting(true)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`http://localhost:5001/api/admin/users/${deleteTarget.id}`, {
+        method:  'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success(`${deleteTarget.name} has been removed from the system`)
+        setUsers(prev => prev.filter(u => u.id !== deleteTarget.id))
+        setIsDeleteOpen(false)
+        setDeleteTarget(null)
+      } else {
+        toast.error(data.message || "Delete failed")
+      }
+    } catch {
+      toast.error("An error occurred while deleting")
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -212,11 +277,91 @@ const [formData, setFormData] = useState({
   }
 
   const stats = useMemo(() => ({
-    total: users.length,
-    active: users.filter(u => u.status === 'Active').length,
+    total:    users.length,
+    active:   users.filter(u => u.status === 'Active').length,
     inactive: users.filter(u => u.status === 'Inactive').length
   }), [users])
 
+  // ── Salary Section (reusable inside forms) ───────────────────────────────────
+  const SalarySection = () => (
+    <div className="space-y-3 border rounded-lg p-4 bg-muted/20">
+      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+        Salary Structure (₹)
+      </p>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Basic Salary <span className="text-red-500">*</span></Label>
+          <Input
+            type="number" min="0" placeholder="e.g. 30000"
+            value={formData.salary.basic}
+            onChange={e => handleSalaryChange('basic', null, e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>HRA</Label>
+          <Input
+            type="number" min="0" placeholder="e.g. 12000"
+            value={formData.salary.allowances.hra}
+            onChange={e => handleSalaryChange('allowances', 'hra', e.target.value)}
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label>Transport</Label>
+          <Input
+            type="number" min="0" placeholder="1500"
+            value={formData.salary.allowances.transport}
+            onChange={e => handleSalaryChange('allowances', 'transport', e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Medical</Label>
+          <Input
+            type="number" min="0" placeholder="1250"
+            value={formData.salary.allowances.medical}
+            onChange={e => handleSalaryChange('allowances', 'medical', e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Other Allowance</Label>
+          <Input
+            type="number" min="0" placeholder="0"
+            value={formData.salary.allowances.other}
+            onChange={e => handleSalaryChange('allowances', 'other', e.target.value)}
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label className="text-red-500">PF Deduction</Label>
+          <Input
+            type="number" min="0" placeholder="1800"
+            value={formData.salary.deductions.pf}
+            onChange={e => handleSalaryChange('deductions', 'pf', e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label className="text-red-500">Tax</Label>
+          <Input
+            type="number" min="0" placeholder="0"
+            value={formData.salary.deductions.tax}
+            onChange={e => handleSalaryChange('deductions', 'tax', e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label className="text-red-500">Insurance</Label>
+          <Input
+            type="number" min="0" placeholder="500"
+            value={formData.salary.deductions.insurance}
+            onChange={e => handleSalaryChange('deductions', 'insurance', e.target.value)}
+          />
+        </div>
+      </div>
+    </div>
+  )
+
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -225,7 +370,8 @@ const [formData, setFormData] = useState({
           <p className="text-muted-foreground">Administer employee accounts and system access levels.</p>
         </div>
         <div className="flex gap-2">
-          {/* Bulk Upload Dialog */}
+
+          {/* ── Bulk Upload Dialog ─────────────────────────────────────────── */}
           <Dialog open={isBulkOpen} onOpenChange={setIsBulkOpen}>
             <DialogTrigger asChild>
               <Button variant="outline"><Upload className="mr-2 h-4 w-4" /> Bulk Upload</Button>
@@ -236,7 +382,8 @@ const [formData, setFormData] = useState({
                 <DialogDescription>Upload employee data via CSV format.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                <input type="file" id="bulk-file" className="hidden" accept=".csv" onChange={(e) => setSelectedFile(e.target.files[0])} />
+                <input type="file" id="bulk-file" className="hidden" accept=".csv"
+                  onChange={(e) => setSelectedFile(e.target.files[0])} />
                 <div
                   className="border-2 border-dashed rounded-xl p-12 text-center cursor-pointer hover:bg-muted/50 transition-all"
                   onClick={() => document.getElementById('bulk-file').click()}
@@ -259,12 +406,12 @@ const [formData, setFormData] = useState({
             </DialogContent>
           </Dialog>
 
-          {/* Create User Dialog */}
+          {/* ── Create User Dialog ─────────────────────────────────────────── */}
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="mr-2 h-4 w-4" /> Add Employee</Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[650px]">
+            <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Individual Enrollment</DialogTitle>
                 <DialogDescription>Create a single employee record in the system.</DialogDescription>
@@ -302,17 +449,17 @@ const [formData, setFormData] = useState({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" value={formData.firstName} onChange={handleInputChange} placeholder="Ex: Aditya" />
+                    <Input id="firstName" value={formData.firstName} onChange={handleInputChange} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" value={formData.lastName} onChange={handleInputChange} placeholder="Ex: Chakre" />
+                    <Input id="lastName" value={formData.lastName} onChange={handleInputChange} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Work Email</Label>
-                    <Input id="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="aditya@company.com" />
+                    <Input id="email" type="email" value={formData.email} onChange={handleInputChange} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Initial Password</Label>
@@ -334,7 +481,8 @@ const [formData, setFormData] = useState({
                     <Select value={formData.department} onValueChange={(v) => handleSelectChange('department', v)}>
                       <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
                       <SelectContent>
-                        {["IT", "HR", "Finance", "Sales", "Marketing", "Operations"].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                        {["IT","HR","Finance","Sales","Marketing","Operations"].map(d =>
+                          <SelectItem key={d} value={d}>{d}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -342,7 +490,11 @@ const [formData, setFormData] = useState({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="phoneNumber">Contact Number</Label>
-                    <Input id="phoneNumber" maxLength={10} value={formData.phoneNumber} onChange={(e) => handleInputChange({ target: { id: 'phoneNumber', value: e.target.value.replace(/\D/g, '') } })} placeholder="10-digit mobile number" />
+                    <Input
+                      id="phoneNumber" maxLength={10} value={formData.phoneNumber}
+                      onChange={(e) => handleInputChange({ target: { id: 'phoneNumber', value: e.target.value.replace(/\D/g, '') } })}
+                      placeholder="10-digit mobile number"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Gender</Label>
@@ -356,6 +508,10 @@ const [formData, setFormData] = useState({
                     </Select>
                   </div>
                 </div>
+
+                {/* Salary Section */}
+                <SalarySection />
+
                 <DialogFooter className="pt-6">
                   <Button type="button" variant="ghost" onClick={handleResetForm}>Cancel</Button>
                   <Button type="submit" disabled={isActionLoading}>
@@ -367,12 +523,14 @@ const [formData, setFormData] = useState({
             </DialogContent>
           </Dialog>
 
-          {/* Edit User Dialog */}
+          {/* ── Edit User Dialog ───────────────────────────────────────────── */}
           <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-            <DialogContent className="sm:max-w-[650px]">
+            <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Edit Employee Record</DialogTitle>
-                <DialogDescription>Update system access and personal details. Leave password blank to keep current password.</DialogDescription>
+                <DialogDescription>
+                  Update system access and personal details. Leave password blank to keep current.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleEditUser} className="space-y-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -392,12 +550,13 @@ const [formData, setFormData] = useState({
                   </div>
                   <div className="space-y-2">
                     <Label>New Password</Label>
-                    <Input id="password" type="password" placeholder="Leave blank to keep unchanged" value={formData.password} onChange={handleInputChange} />
+                    <Input id="password" type="password" placeholder="Leave blank to keep unchanged"
+                      value={formData.password} onChange={handleInputChange} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Access Role *</Label>
+                    <Label>Access Role <span className="text-red-500">*</span></Label>
                     <Select value={formData.role} onValueChange={(v) => handleSelectChange('role', v)}>
                       <SelectTrigger><SelectValue placeholder="Select permissions" /></SelectTrigger>
                       <SelectContent>
@@ -406,19 +565,23 @@ const [formData, setFormData] = useState({
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Department *</Label>
+                    <Label>Department <span className="text-red-500">*</span></Label>
                     <Select value={formData.department} onValueChange={(v) => handleSelectChange('department', v)}>
                       <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
                       <SelectContent>
-                        {["IT", "HR", "Finance", "Sales", "Marketing", "Operations"].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                        {["IT","HR","Finance","Sales","Marketing","Operations"].map(d =>
+                          <SelectItem key={d} value={d}>{d}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Contact Number *</Label>
-                    <Input id="phoneNumber" maxLength={10} value={formData.phoneNumber} onChange={(e) => handleInputChange({ target: { id: 'phoneNumber', value: e.target.value.replace(/\D/g, '') } })} />
+                    <Label>Contact Number <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="phoneNumber" maxLength={10} value={formData.phoneNumber}
+                      onChange={(e) => handleInputChange({ target: { id: 'phoneNumber', value: e.target.value.replace(/\D/g, '') } })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Gender</Label>
@@ -432,6 +595,10 @@ const [formData, setFormData] = useState({
                     </Select>
                   </div>
                 </div>
+
+                {/* Salary Section in Edit too */}
+                <SalarySection />
+
                 <DialogFooter className="pt-6">
                   <Button type="button" variant="ghost" onClick={() => setIsEditOpen(false)}>Cancel</Button>
                   <Button type="submit" disabled={isActionLoading}>
@@ -442,17 +609,53 @@ const [formData, setFormData] = useState({
               </form>
             </DialogContent>
           </Dialog>
+
+          {/* ── Delete Confirmation Dialog ─────────────────────────────────── */}
+          <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+            <DialogContent className="sm:max-w-[420px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-red-600">
+                  <Trash2 className="h-5 w-5" /> Remove Employee
+                </DialogTitle>
+                <DialogDescription className="pt-2">
+                  Are you sure you want to remove{" "}
+                  <span className="font-semibold text-foreground">{deleteTarget?.name}</span>{" "}
+                  from the system?
+                  <br /><br />
+                  <span className="text-xs text-muted-foreground">
+                    ⚠️ This is a soft delete — the employee's payroll history, audit logs,
+                    and documents are preserved. Their account will be deactivated and
+                    their Employee status set to <strong>Terminated</strong>.
+                  </span>
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="pt-2">
+                <Button variant="outline" onClick={() => { setIsDeleteOpen(false); setDeleteTarget(null) }} disabled={isDeleting}>
+                  Cancel
+                </Button>
+                <Button variant="destructive" onClick={handleDeleteUser} disabled={isDeleting}
+                  className="bg-red-600 hover:bg-red-700">
+                  {isDeleting
+                    ? <><RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Removing...</>
+                    : <><Trash2 className="mr-2 h-4 w-4" /> Yes, Remove</>
+                  }
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
         </div>
       </div>
 
-
+      {/* ── Stats ─────────────────────────────────────────────────────────────── */}
       <div className="grid gap-4 md:grid-cols-4">
-        <StatsCard title="Total Staff" value={stats.total} icon={<Users className="h-8 w-8" />} variant="blue" />
-        <StatsCard title="Active" value={stats.active} icon={<UserCheck className="h-8 w-8" />} variant="green" />
-        <StatsCard title="Inactive" value={stats.inactive} icon={<ShieldAlert className="h-8 w-8" />} variant="orange" />
-        <StatsCard title="Security Flags" value="0" icon={<ShieldAlert className="h-8 w-8" />} variant="red" />
+        <StatsCard title="Total Staff"    value={stats.total}    icon={<Users className="h-8 w-8" />}       variant="blue"   />
+        <StatsCard title="Active"         value={stats.active}   icon={<UserCheck className="h-8 w-8" />}   variant="green"  />
+        <StatsCard title="Inactive"       value={stats.inactive} icon={<ShieldAlert className="h-8 w-8" />} variant="orange" />
+        <StatsCard title="Security Flags" value="0"              icon={<ShieldAlert className="h-8 w-8" />} variant="red"    />
       </div>
 
+      {/* ── Table ─────────────────────────────────────────────────────────────── */}
       <Card>
         <div className="p-4 border-b flex flex-col md:flex-row gap-4 items-center justify-between bg-muted/20">
           <div className="flex gap-2 w-full md:w-auto">
@@ -491,9 +694,17 @@ const [formData, setFormData] = useState({
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="h-64 text-center text-muted-foreground">Refreshing employee records...</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={6} className="h-64 text-center text-muted-foreground">
+                    Refreshing employee records...
+                  </TableCell>
+                </TableRow>
               ) : users.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="h-64 text-center text-muted-foreground">No matching records found.</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={6} className="h-64 text-center text-muted-foreground">
+                    No matching records found.
+                  </TableCell>
+                </TableRow>
               ) : (
                 users.map((user) => (
                   <TableRow key={user.id} className="hover:bg-muted/10 transition-colors">
@@ -522,22 +733,30 @@ const [formData, setFormData] = useState({
                           ? "bg-green-500/10 text-green-600 border-green-200"
                           : "bg-orange-500/10 text-orange-600 border-orange-200"
                       )}>
-                        <span className={cn("h-1.5 w-1.5 rounded-full", user.status === 'Active' ? "bg-green-600" : "bg-orange-600")} />
+                        <span className={cn("h-1.5 w-1.5 rounded-full",
+                          user.status === 'Active' ? "bg-green-600" : "bg-orange-600")} />
                         {user.status}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => openEditModal(user)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary"
+                          onClick={() => openEditModal(user)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className={cn("h-8 w-8", user.status === 'Active' ? "hover:text-red-500" : "hover:text-green-500")}
+                          variant="ghost" size="icon"
+                          className={cn("h-8 w-8", user.status === 'Active' ? "hover:text-orange-500" : "hover:text-green-500")}
                           onClick={() => handleToggleStatus(user.id, user.status)}
                         >
                           <Power className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-8 w-8 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
+                          onClick={() => openDeleteModal(user)}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -556,32 +775,13 @@ const [formData, setFormData] = useState({
   )
 }
 
+// ── StatsCard ─────────────────────────────────────────────────────────────────
 const StatsCard = ({ title, value, icon, variant }) => {
   const styles = {
-    blue: {
-      card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
-      icon: "text-blue-600 dark:text-blue-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    green: {
-      card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
-      icon: "text-green-600 dark:text-green-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    orange: {
-      card: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30",
-      icon: "text-orange-600 dark:text-orange-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    red: {
-      card: "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30",
-      icon: "text-purple-600 dark:text-purple-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
+    blue:   { card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",         icon: "text-blue-600 dark:text-blue-400",   label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },
+    green:  { card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",     icon: "text-green-600 dark:text-green-400", label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },
+    orange: { card: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30", icon: "text-orange-600 dark:text-orange-400", label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },
+    red:    { card: "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30", icon: "text-purple-600 dark:text-purple-400", label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },
   }
   const s = styles[variant]
   return (
@@ -596,6 +796,5 @@ const StatsCard = ({ title, value, icon, variant }) => {
     </div>
   )
 }
-
 
 export default UserManagement

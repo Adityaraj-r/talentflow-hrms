@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import path from 'path';
 import fs from 'fs';
+import morgan from 'morgan';
 
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
@@ -28,11 +29,10 @@ import departmentSyncRoutes from "./routes/departmentSync.routes";
 import jobRoutes from "./routes/job.routes";
 import { seedRoles } from './utils/roleSeeder';
 import reportsRoutes from "./routes/reports.routes";
-import applicationRoutes from "./routes/application.routes"
-// import { syncUsersToEmployees } from "./controllers/user.controller";
-import router from './routes/user.routes';
+import applicationRoutes from "./routes/application.routes";
 import documentRoutes from './routes/document.routes';
-
+import salaryRoutes from './routes/salary.routes';
+import payrollRoutes from './routes/payroll.routes';
 
 dotenv.config();
 
@@ -49,6 +49,24 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(morgan('dev'));
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const color =
+      res.statusCode >= 500 ? '\x1b[31m' :
+      res.statusCode >= 400 ? '\x1b[33m' :
+      res.statusCode >= 200 ? '\x1b[32m' :
+      '\x1b[0m';
+    console.log(
+      `${color}[${new Date().toLocaleTimeString()}] ${req.method} ${req.path} → ${res.statusCode} (${duration}ms)\x1b[0m`
+    );
+  });
+  next();
+});
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const localUploads = path.join(__dirname, 'uploads');
@@ -60,7 +78,6 @@ if (fs.existsSync(rootUploads)) {
   app.use('/uploads', express.static(localUploads));
 }
 
-// Health check
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
@@ -69,7 +86,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API info
 app.get('/api', (req, res) => {
   res.json({
     success: true,
@@ -87,10 +103,9 @@ app.get('/api', (req, res) => {
   });
 });
 
-// --- API routes ---
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use("/api/employees", employeeRoutes);
+app.use('/api/employees', employeeRoutes);
 
 app.use('/api/admin', adminRoutes);
 app.use('/api/audit', auditRoutes);
@@ -100,40 +115,38 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/departments-sync', departmentSyncRoutes);
-app.use("/api/candidates", candidateRoutes);
+app.use('/api/candidates', candidateRoutes);
 
-app.use("/api/requisitions", requisitionRoutes);
-app.use("/api/job-openings", jobRoutes)
-app.use("/api/applications", applicationRoutes)
+app.use('/api/requisitions', requisitionRoutes);
+app.use('/api/job-openings', jobRoutes);
+app.use('/api/applications', applicationRoutes);
 app.use('/api/onboarding', onboardingRoutes);
-app.use("/api/attendance", attendanceRoutes);
-app.use("/api/tasks", taskRoutes);
-app.use("/api/leaves", leaveRoutes);
-app.use("/api/shifts", shiftRoutes);
-app.use("/api/reports", reportsRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/leaves', leaveRoutes);
+app.use('/api/shifts', shiftRoutes);
+app.use('/api/reports', reportsRoutes);
 
 app.use('/api/performance', performanceRoutes);
-app.use("/api/holidays", holidayRoutes);
-app.use("/api/transfers", transferRoutes);
-app.use("/api/documents", documentRoutes);
+app.use('/api/holidays', holidayRoutes);
+app.use('/api/transfers', transferRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/salary-structure', salaryRoutes);
+app.use('/api/payroll', payrollRoutes);
 
-// router.get("/sync-users", syncUsersToEmployees);
-// 404 handler
 app.use((req, res) => {
+  console.warn(`\x1b[33m[404] Route not found: ${req.method} ${req.path}\x1b[0m`);
   res.status(404).json({ success: false, error: 'Route not found', path: req.path });
 });
 
-// Error handler
-app.use(
-  (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error('Server error:', err);
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
-    });
-  }
-);
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('\x1b[31m[SERVER ERROR]\x1b[0m', err);
+  res.status(500).json({
+    success: false,
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
 
 const startServer = async () => {
   try {
@@ -143,10 +156,11 @@ const startServer = async () => {
     await seedRoles();
 
     app.listen(PORT, () => {
-      console.log(`🚀 Server listening on port ${PORT}`);
+      console.log(`\x1b[36m🚀 Server listening on port ${PORT}\x1b[0m`);
+      console.log(`\x1b[36m📡 Morgan request logger active\x1b[0m`);
     });
   } catch (error: any) {
-    console.error('Failed to start server:', error.message);
+    console.error('\x1b[31mFailed to start server:\x1b[0m', error.message);
     process.exit(1);
   }
 };

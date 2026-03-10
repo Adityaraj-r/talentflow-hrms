@@ -15,6 +15,7 @@ export interface IUser extends Document {
   employeeCode?: string;
   currentShift?: mongoose.Types.ObjectId;
   isActive: boolean;
+  isDeleted: boolean;                      
   isEmailVerified: boolean;
   lastLogin?: Date;
   createdAt: Date;
@@ -30,13 +31,13 @@ const UserSchema = new Schema<IUser>(
       required: [true, 'Email is required'],
       unique: true,
       lowercase: true,
-      trim: true
+      trim: true,
     },
     password: {
       type: String,
       required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters'],
-      select: false
+      select: false,
     },
     role: {
       type: String,
@@ -52,36 +53,43 @@ const UserSchema = new Schema<IUser>(
         'PROJECT_MANAGER',
         'OPERATIONS_MANAGER',
         'ADMIN',
-        'EMPLOYEE'
-      ]
+        'EMPLOYEE',
+      ],
     },
     firstName: {
       type: String,
       required: [true, 'First name is required'],
-      trim: true
+      trim: true,
     },
     lastName: {
       type: String,
       required: [true, 'Last name is required'],
-      trim: true
+      trim: true,
     },
     phoneNumber: {
       type: String,
-      default: null
+      default: null,
     },
     department: {
       type: String,
-      default: null
+      default: null,
     },
     gender: {
       type: String,
       enum: ['Male', 'Female', 'Other'],
-      default: null
+      default: null,
     },
     employeeId: {
       type: Schema.Types.ObjectId,
       ref: 'Employee',
-      default: null
+      default: null,
+    },
+    employeeCode: {
+      type: String,
+      default: null,
+      unique: true,
+      sparse: true,
+      trim: true,
     },
     employeeCode: {
       type: String,
@@ -91,20 +99,24 @@ const UserSchema = new Schema<IUser>(
     currentShift: {
       type: Schema.Types.ObjectId,
       ref: 'Shift',
-      default: null
+      default: null,
     },
     isActive: {
       type: Boolean,
-      default: true
+      default: true,
+    },
+    isDeleted: {                          
+      type: Boolean,
+      default: false,
     },
     isEmailVerified: {
       type: Boolean,
-      default: false
+      default: false,
     },
     lastLogin: {
       type: Date,
-      default: null
-    }
+      default: null,
+    },
   },
   { timestamps: true }
 );

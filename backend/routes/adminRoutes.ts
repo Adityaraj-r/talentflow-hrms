@@ -3,7 +3,7 @@ import multer from 'multer';
 import {
   getAdminMetrics, getRecentActivities, getUserDistribution,
   getDepartmentStats, bulkUploadUsers, getAllUsers,
-  toggleUserStatus, getDashboardStats,
+  toggleUserStatus, getDashboardStats, deleteUser,
 } from '../controllers/adminController';
 import { getSettings, updateSettings } from '../controllers/settingsController';
 import { protect } from '../middleware/auth.middleware';
@@ -26,7 +26,7 @@ router.get('/users',                              authorizeByMatrix(MODULE_KEYS.
 router.post('/enroll-user',                       authorizeByMatrix(MODULE_KEYS.EMPLOYEES, 'write'),  createUser);
 router.patch('/users/:id/toggle-status',          authorizeByMatrix(MODULE_KEYS.EMPLOYEES, 'write'),  toggleUserStatus);
 router.post('/bulk-upload', upload.single('file'), authorizeByMatrix(MODULE_KEYS.EMPLOYEES, 'write'), bulkUploadUsers);
-
+router.delete('/users/:id',                        authorizeByMatrix(MODULE_KEYS.EMPLOYEES, 'delete'), deleteUser); 
 // System Settings
 router.get('/settings',  authorizeByMatrix(MODULE_KEYS.SETTINGS, 'read'),  getSettings);
 router.put('/settings',  authorizeByMatrix(MODULE_KEYS.SETTINGS, 'write'), updateSettings);

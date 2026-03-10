@@ -15,29 +15,29 @@ export interface IPayroll extends Document {
   month: string
   year: number
   employees: IEmployeePayroll[]
-  status: "Draft" | "Generated" | "HR Reviewed" | "Admin Approved" | "Paid"
+  status: "Generated" | "HR Approved" | "Paid"
 }
 
 const EmployeePayrollSchema = new Schema<IEmployeePayroll>({
   employeeId: { type: String, required: true },
-  basic: Number,
-  hra: Number,
-  allowances: Number,
-  bonus: Number,
-  deductions: Number,
-  lopDays: Number,
-  netPay: Number,
+  basic:       Number,
+  hra:         Number,
+  allowances:  Number,
+  bonus:       Number,
+  deductions:  Number,
+  lopDays:     Number,
+  netPay:      Number,
 })
 
 const PayrollSchema = new Schema<IPayroll>(
   {
     month: { type: String, required: true },
-    year: { type: Number, required: true },
+    year:  { type: Number, required: true },
     employees: [EmployeePayrollSchema],
     status: {
-      type: String,
-      enum: ["Draft", "Generated", "HR Reviewed", "Admin Approved", "Paid"],
-      default: "Draft",
+      type:    String,
+      enum:    ["Generated", "HR Approved", "Paid"],
+      default: "Generated",
     },
   },
   { timestamps: true }
