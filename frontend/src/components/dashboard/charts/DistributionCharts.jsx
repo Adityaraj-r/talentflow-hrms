@@ -65,7 +65,7 @@ export const RoleChart = ({ data = [] }) => {
 
           {/* LEFT SIDE – DONUT */}
           <div className="w-[55%] h-full flex items-center justify-start">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
               <PieChart>
                 <Pie
                   data={formattedData}

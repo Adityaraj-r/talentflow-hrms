@@ -20,6 +20,10 @@ import { ROLES } from "@/constants/roles"
 import { cn } from "@/lib/utils"
 
 
+// const [formData, setFormData] = useState({
+//     firstName: '', lastName: '', email: '', password: '',
+//     role: '', department: '', phoneNumber: '', gender: '', employeeCode: ''
+//   })
 const EMPTY_FORM = {
   firstName: '', lastName: '', email: '', password: '',
   role: '', department: '', phoneNumber: '', gender: '',
@@ -44,6 +48,40 @@ const UserManagement = () => {
   const [deleteTarget, setDeleteTarget]         = useState(null)
   const [isDeleting, setIsDeleting]             = useState(false)
   const [formData, setFormData]                 = useState(EMPTY_FORM)
+
+  const [onboardedList, setOnboardedList] = useState([])
+
+  useEffect(() => {
+    const fetchOnboarded = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('http://localhost:5001/api/onboarding/list/all', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        const data = await response.json()
+        setOnboardedList(Array.isArray(data) ? data : [])
+      } catch (error) {
+        console.error("Failed to fetch onboarded employees:", error)
+      }
+    }
+    if (isCreateOpen) fetchOnboarded()
+  }, [isCreateOpen])
+
+  const handleSelectEmployee = (employeeCode) => {
+    const selectedEmp = onboardedList.find(emp => emp.employeeCode === employeeCode)
+    if (selectedEmp) {
+      setFormData(prev => ({
+        ...prev,
+        firstName: selectedEmp.firstName || "",
+        lastName: selectedEmp.lastName || "",
+        department: selectedEmp.department && selectedEmp.department !== 'N/A' ? selectedEmp.department : "",
+        phoneNumber: selectedEmp.phoneNumber || "",
+        gender: selectedEmp.gender || "",
+        employeeCode: selectedEmp.employeeCode, 
+      }))
+      toast.success(`Auto-filled data for ${selectedEmp.employeeCode}`)
+    }
+  }
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true)
@@ -98,6 +136,7 @@ const UserManagement = () => {
   }
 
   const handleResetForm = () => {
+    setFormData({ firstName: '', lastName: '', email: '', password: '', role: '', department: '', phoneNumber: '', gender: '', employeeCode: '' })
     setFormData(EMPTY_FORM)
     setIsCreateOpen(false)
   }
@@ -378,6 +417,35 @@ const UserManagement = () => {
                 <DialogDescription>Create a single employee record in the system.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateUser} className="space-y-4 py-4">
+              {/* AUTO-FILL DROPDOWN START */}
+                <div className="mb-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-lg">
+                  <Label className="text-blue-700 dark:text-blue-400 font-semibold mb-2 block">
+                    Link Onboarded Candidate (Optional)
+                  </Label>
+                  <Select onValueChange={handleSelectEmployee}>
+                    <SelectTrigger className="bg-white dark:bg-background border-blue-200 dark:border-blue-800">
+                      <SelectValue placeholder="Select a newly onboarded employee to auto-fill..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                     {onboardedList.length === 0 ? (
+                        <SelectItem value="none" disabled>No pending candidates</SelectItem>
+                      ) : (
+                        onboardedList.map((emp, index) => {
+                          // Create a guaranteed safe string value to prevent UI crashes
+                          const safeValue = emp.employeeCode || emp._id || `fallback-${index}`;
+                          const displayCode = emp.employeeCode || "No ID";
+                          
+                          return (
+                            <SelectItem key={safeValue} value={safeValue}>
+                              {displayCode} - {emp.firstName} {emp.lastName}
+                            </SelectItem>
+                          );
+                        })
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* AUTO-FILL DROPDOWN END */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
@@ -401,7 +469,7 @@ const UserManagement = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Access Role</Label>
-                    <Select onValueChange={(v) => handleSelectChange('role', v)}>
+                    <Select value={formData.role} onValueChange={(v) => handleSelectChange('role', v)}>
                       <SelectTrigger><SelectValue placeholder="Select permissions" /></SelectTrigger>
                       <SelectContent>
                         {Object.entries(ROLES).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
@@ -410,7 +478,7 @@ const UserManagement = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Department</Label>
-                    <Select onValueChange={(v) => handleSelectChange('department', v)}>
+                    <Select value={formData.department} onValueChange={(v) => handleSelectChange('department', v)}>
                       <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
                       <SelectContent>
                         {["IT","HR","Finance","Sales","Marketing","Operations"].map(d =>
