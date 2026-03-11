@@ -76,6 +76,7 @@ import AttendanceRecords from "./pages/modules/attendance/AttendanceRecords"
 import AdminLeaveManagement from "./pages/role/ADMIN/LeaveManagement"
 import ShiftManagement from "./pages/modules/attendance/ShiftManagement"
 import HolidayManagement from "./pages/modules/attendance/HolidayManagement"
+import ManualAttendance from "./pages/modules/attendance/ManualAttendance"
 
 // Role-Specific Appraisal Pages
 import HRManagerAppraisal from "./pages/role/HR_MANAGER/Appraisal"
@@ -386,6 +387,12 @@ function App() {
                   <Route path="/attendance/leave-management" element={
                     <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "CEO", "COUNTRY_MANAGER"]}>
                       <DashboardLayout><AdminLeaveManagement /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/attendance/manual" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER"]}>
+                      <DashboardLayout><ManualAttendance /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 

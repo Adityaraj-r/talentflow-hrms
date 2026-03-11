@@ -326,7 +326,13 @@ const Sidebar = ({
               <SubLink to="/dashboard/onboarding" label="Onboarding" />
             </SidebarGroup>
           )}
-          {canSee('attendance') && <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />}
+          {canSee('attendance') && (
+            <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+              <SubLink to="/attendance" label="Attendance Records" />
+              <SubLink to="/attendance/manual" label="Manual Attendance" />
+              <SubLink to={getLeaveManagementPath()} label="Leave Management" />
+            </SidebarGroup>
+          )}
           {canSee('employees') && <SidebarLink to="/employee-transfer" icon={RefreshCw} label="Employee Transfer" />}
           {canSee('payroll') && (
             <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
