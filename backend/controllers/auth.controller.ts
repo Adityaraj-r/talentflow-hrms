@@ -46,6 +46,7 @@ export class AuthController {
         token,
         data: {
           id: user._id,
+          employeeCode: user.employeeCode,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -83,6 +84,7 @@ export class AuthController {
         success: true,
         data: {
           id: user._id,
+          employeeCode: user.employeeCode,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
