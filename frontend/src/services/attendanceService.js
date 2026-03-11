@@ -25,7 +25,7 @@ const attendanceService = {
     const params = {};
     if (date) params.date = date;
     if (userId) params.userId = userId;
-    
+
     return await apiClient.get("/attendance/all", { params });
   },
 
@@ -33,7 +33,6 @@ const attendanceService = {
     return await apiClient.post("/attendance/manual", data);
   },
 
-  // YAHAN CHANGE KIYA GAYA HAI: multipart/form-data header add kiya gaya hai
   markBulkAttendance: async (data) => {
     return await apiClient.post("/attendance/bulk", data, {
       headers: {

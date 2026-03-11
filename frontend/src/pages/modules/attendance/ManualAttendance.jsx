@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import Papa from "papaparse";
-import { 
-  UploadCloud, 
-  FileSpreadsheet, 
-  UserCheck, 
-  Calendar, 
-  AlertCircle, 
+import {
+  UploadCloud,
+  FileSpreadsheet,
+  UserCheck,
+  Calendar,
+  AlertCircle,
   Download,
   X,
   ChevronDown
@@ -40,7 +40,7 @@ const SearchableDropdown = ({ value, onChange, options, placeholder, icon: Icon,
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filtered = options.filter(opt => 
+  const filtered = options.filter(opt =>
     String(opt).toLowerCase().includes(String(search).toLowerCase())
   );
 
@@ -64,10 +64,9 @@ const SearchableDropdown = ({ value, onChange, options, placeholder, icon: Icon,
       </div>
 
       {isOpen && (
-        <div 
-          className={`absolute top-full left-0 z-50 w-full mt-1 rounded-md shadow-lg max-h-60 overflow-y-auto border bg-white dark:bg-[#131b2c] dark:border-[#222f43] ${
-            hideScrollbar ? '[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]' : ''
-          }`}
+        <div
+          className={`absolute top-full left-0 z-50 w-full mt-1 rounded-md shadow-lg max-h-60 overflow-y-auto border bg-white dark:bg-[#131b2c] dark:border-[#222f43] ${hideScrollbar ? '[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]' : ''
+            }`}
         >
           <ul className="py-1">
             {filtered.length > 0 ? (
@@ -94,7 +93,6 @@ const SearchableDropdown = ({ value, onChange, options, placeholder, icon: Icon,
   );
 };
 
-// --- CUSTOM 12-HOUR TIME PICKER ---
 const TimeInput = ({ value, onChange, name }) => {
   const initH = () => {
     if (!value) return "";
@@ -136,7 +134,6 @@ const TimeInput = ({ value, onChange, name }) => {
   );
 };
 
-// --- HELPER FUNCTION FOR STATUS BADGES ---
 const getStatusBadgeClasses = (status) => {
   const baseClasses = "border";
   switch (status) {
@@ -148,14 +145,14 @@ const getStatusBadgeClasses = (status) => {
 
 const ManualAttendance = () => {
   const [loading, setLoading] = useState(false);
-  const [employees, setEmployees] = useState([]); 
+  const [employees, setEmployees] = useState([]);
   const [formKey, setFormKey] = useState(0);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const res = await apiClient.get('/users'); 
+        const res = await apiClient.get('/users');
         const data = res.data?.data || res.data;
         setEmployees(Array.isArray(data) ? data : []);
       } catch (error) {
@@ -166,7 +163,7 @@ const ManualAttendance = () => {
   }, []);
 
   const [singleEntry, setSingleEntry] = useState({
-    employeeEmail: "", 
+    employeeEmail: "",
     date: new Date().toISOString().split("T")[0],
     checkIn: "",
     checkOut: "",
@@ -284,20 +281,19 @@ const ManualAttendance = () => {
   };
 
   return (
-    // Yahan main wrapper se 'max-w-6xl' aur 'mx-auto' hata diya gaya hai. Ab yeh full width lega.
     <div className="space-y-6 w-full dark:text-slate-200">
-      
+
       <Tabs defaultValue="single" className="w-full">
         <div className="flex items-center space-x-2 mb-6 bg-slate-100 dark:bg-[#131b2c] p-1 rounded-lg w-max border dark:border-[#222f43]">
           <TabsList className="bg-transparent border-none p-0 h-auto">
-            <TabsTrigger 
-              value="single" 
+            <TabsTrigger
+              value="single"
               className="px-4 py-2 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-[#1e293b] data-[state=active]:text-primary dark:data-[state=active]:text-white data-[state=active]:shadow-sm transition-all text-sm"
             >
               Single Entry
             </TabsTrigger>
-            <TabsTrigger 
-              value="bulk" 
+            <TabsTrigger
+              value="bulk"
               className="px-4 py-2 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-[#1e293b] data-[state=active]:text-primary dark:data-[state=active]:text-white data-[state=active]:shadow-sm transition-all text-sm"
             >
               Bulk Upload
@@ -312,9 +308,9 @@ const ManualAttendance = () => {
                 <CardTitle className="text-xl font-semibold dark:text-white">Record Single Log</CardTitle>
                 <CardDescription className="dark:text-slate-400">Manually correct or insert an attendance record for a specific employee.</CardDescription>
               </CardHeader>
-              
+
               <CardContent className="px-0 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="employeeEmail" className="text-sm font-semibold">
                     Select Employee Email <span className="text-red-500">*</span>
@@ -332,10 +328,10 @@ const ManualAttendance = () => {
                     Log Date <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
-                    <Input 
-                      id="date" 
+                    <Input
+                      id="date"
                       name="date"
-                      type="date" 
+                      type="date"
                       className={`w-full ${inputThemeClasses} [color-scheme:light] dark:[color-scheme:dark]`}
                       value={singleEntry.date}
                       onChange={handleSingleChange}
@@ -368,10 +364,10 @@ const ManualAttendance = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="breakMinutes" className="text-sm font-semibold">Break Deduction (Minutes)</Label>
-                  <Input 
-                    id="breakMinutes" 
+                  <Input
+                    id="breakMinutes"
                     name="breakMinutes"
-                    type="number" 
+                    type="number"
                     min="0"
                     placeholder="e.g. 60"
                     className={`w-full ${inputThemeClasses}`}
@@ -382,8 +378,8 @@ const ManualAttendance = () => {
 
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="notes" className="text-sm font-semibold">Reason / Notes</Label>
-                  <textarea 
-                    id="notes" 
+                  <textarea
+                    id="notes"
                     name="notes"
                     placeholder="Enter attendance comments or reason..."
                     rows={4}
@@ -396,9 +392,9 @@ const ManualAttendance = () => {
               </CardContent>
 
               <CardFooter className="px-0 pt-6 mt-4 flex justify-between items-center border-t border-slate-200 dark:border-slate-800">
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   className="bg-transparent dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                   onClick={() => {
                     setSingleEntry({ employeeEmail: "", date: new Date().toISOString().split("T")[0], checkIn: "", checkOut: "", breakMinutes: "0", status: "", notes: "" });
@@ -407,8 +403,8 @@ const ManualAttendance = () => {
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={loading}
                   className="bg-primary text-primary-foreground dark:bg-white dark:text-black dark:hover:bg-slate-200"
                 >
@@ -433,9 +429,9 @@ const ManualAttendance = () => {
               </div>
             </CardHeader>
             <CardContent className="px-0 pt-6 space-y-6">
-              
+
               {!bulkFile ? (
-                <div 
+                <div
                   className="border-2 border-dashed border-slate-300 dark:border-[#222f43] rounded-xl p-10 flex flex-col items-center justify-center text-center hover:bg-slate-50 dark:hover:bg-[#131b2c] transition-colors cursor-pointer"
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleFileDrop}
@@ -447,7 +443,7 @@ const ManualAttendance = () => {
                   <h3 className="text-lg font-semibold mb-1 dark:text-white">Click or drag file to this area to upload</h3>
                   <p className="text-sm text-muted-foreground mb-4">Support for a single or bulk CSV upload.</p>
                   <Button variant="secondary" type="button" className="dark:bg-[#1e293b] dark:text-white dark:hover:bg-slate-700">Select CSV File</Button>
-                  <input type="file" accept=".csv" className="hidden" ref={fileInputRef} onChange={handleFileDrop}/>
+                  <input type="file" accept=".csv" className="hidden" ref={fileInputRef} onChange={handleFileDrop} />
                 </div>
               ) : (
                 <div className="border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-800/50 rounded-xl p-6 flex items-center justify-between">

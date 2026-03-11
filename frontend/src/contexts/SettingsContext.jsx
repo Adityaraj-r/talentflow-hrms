@@ -63,8 +63,8 @@ export const SettingsProvider = ({ children }) => {
         localStorage.setItem('systemSettings', JSON.stringify(data.settings))
       }
     } catch (error) {
+      if (error?.response?.status === 403) return
       console.error('Failed to fetch settings:', error)
-      // Use cached settings on error
     } finally {
       setLoading(false)
     }

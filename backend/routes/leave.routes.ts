@@ -10,12 +10,9 @@ import { authorize } from "../middleware/role.middleware";
 
 const router = Router();
 
-// Employee-facing endpoints for creating and tracking their own requests.
 router.post("/apply", protect, applyLeave);
 router.get("/my", protect, getMyLeaves);
 
-// Management endpoints. 
-// These require elevated permissions to ensure employees can't approve their own leaves.
 router.get(
   "/all", 
   protect, 
@@ -23,8 +20,6 @@ router.get(
   getAllLeaves
 );
 
-// We use PATCH here because we are only updating a specific part (status/comments) 
-// of the leave record, not replacing the whole thing.
 router.patch(
   "/:id/status", 
   protect, 

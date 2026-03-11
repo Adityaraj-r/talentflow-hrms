@@ -214,13 +214,11 @@ export const markManualAttendance = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: "Missing required fields (Email, Date, Status)." });
     }
 
-    // 1. Find the user by their email
     const user = await User.findOne({ email: employeeEmail });
     if (!user) {
       return res.status(404).json({ success: false, message: `User with email ${employeeEmail} not found.` });
     }
 
-    // 2. Parse dates and calculate hours
     let checkInDate = null;
     let checkOutDate = null;
     let totalHours = 0;
@@ -246,7 +244,6 @@ export const markManualAttendance = async (req: Request, res: Response) => {
       notes: notes || "Manual entry by HR/Admin",
     };
 
-    // 3. Upsert (Update if exists, Create if it doesn't)
     const record = await Attendance.findOneAndUpdate(
       { userId: user._id, date },
       { $set: attendanceData },
@@ -266,7 +263,6 @@ export const markBulkAttendance = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: "No CSV file uploaded." });
     }
 
-    // Convert the uploaded file buffer to a string
     const csvData = req.file.buffer.toString('utf-8');
     const lines = csvData.split('\n').filter(line => line.trim() !== '');
 
@@ -274,7 +270,6 @@ export const markBulkAttendance = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: "CSV file is empty or invalid." });
     }
 
-    // Dynamically find column indexes based on the header row
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
     const emailIdx = headers.findIndex(h => h.includes('email'));
     const dateIdx = headers.findIndex(h => h.includes('date'));
@@ -290,7 +285,6 @@ export const markBulkAttendance = async (req: Request, res: Response) => {
     let processedCount = 0;
     let errorCount = 0;
 
-    // Process each row
     for (let i = 1; i < lines.length; i++) {
       const cols = lines[i].split(',').map(c => c.trim());
       const email = cols[emailIdx];
@@ -315,7 +309,6 @@ export const markBulkAttendance = async (req: Request, res: Response) => {
       let checkOutDate = null;
       let totalHours = 0;
 
-      // Handle standard time formats (e.g., 09:00)
       if (checkIn && checkIn !== '-' && checkIn !== '') checkInDate = new Date(`${date}T${checkIn}`);
       if (checkOut && checkOut !== '-' && checkOut !== '') checkOutDate = new Date(`${date}T${checkOut}`);
 

@@ -1,8 +1,9 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IEmployee extends Document {
+  userId?: mongoose.Types.ObjectId;         
   firstName: string;
-  MiddleName?: string; // Corrected casing to match frontend
+  MiddleName?: string;
   lastName: string;
   email: string;
   phoneNumber: string;
@@ -11,8 +12,9 @@ export interface IEmployee extends Document {
   gender?: 'Male' | 'Female' | 'Other';
   nationality?: string;
   maritalStatus?: 'Single' | 'Married' | 'Divorced' | 'Widowed';
-  currentAddress?: string; // Added to match your UI Textarea
-  
+  currentAddress?: string;
+  role?: string;                             
+
   address?: {
     street: string;
     city: string;
@@ -20,23 +22,22 @@ export interface IEmployee extends Document {
     country: string;
     postalCode: string;
   };
-  
-  employeeCode?: string | "";
+
+  employeeCode?: string;
   joiningDate?: Date;
   department?: string;
   designation?: string;
   employmentType?: 'Full-Time' | 'Part-Time' | 'Contract' | 'Intern';
   workLocation?: string;
   reportingManager?: string;
-  
-  // Salary made optional for step-by-step onboarding
+
   salary?: {
     basic?: number;
     currency?: string;
     allowances?: { hra?: number; transport?: number; medical?: number; other?: number; };
     deductions?: { tax?: number; pf?: number; insurance?: number; other?: number; };
   };
-  
+
   bankDetails?: {
     accountHolderName: string;
     accountNumber: string;
@@ -45,23 +46,23 @@ export interface IEmployee extends Document {
     ifscCode: string;
   };
 
-  kycDetails?: { // Added to match Onboarding.jsx
+  kycDetails?: {
     panNumber: string;
     aadharNumber: string;
     uan?: string;
     pfNumber?: string;
   };
 
-  Documents?: { // NEW: Document File Paths
-  aadharCardPath?: string;
-  panCardPath?: string;
-  resumePath?: string;
-  educationDocsPath?: string;
-  passportPhotoPath?: string;
-  relievingLetterPath?: string;
+  Documents?: {
+    aadharCardPath?: string;
+    panCardPath?: string;
+    resumePath?: string;
+    educationDocsPath?: string;
+    passportPhotoPath?: string;
+    relievingLetterPath?: string;
   };
-  
-  onboardingStatus: string; // Corrected interface type
+
+  onboardingStatus: string;
   status: 'Active' | 'Inactive' | 'On Leave' | 'Terminated';
   createdBy?: mongoose.Types.ObjectId;
   updatedBy?: mongoose.Types.ObjectId;
@@ -69,59 +70,93 @@ export interface IEmployee extends Document {
 
 const EmployeeSchema = new Schema<IEmployee>(
   {
-    firstName: { type: String, required: true, trim: true },
-    MiddleName: { type: String, trim: true }, // Lowercase 'm'
-    lastName: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true },
-    phoneNumber: { type: String, required: true },
-    dateOfBirth: { type: Date },
-    gender: { type: String, enum: ['Male', 'Female', 'Other'] },
-    nationality: { type: String, default: 'Indian' },
-    currentAddress: { type: String }, 
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
 
-    // Employment - Removed 'required' for multi-step save
-    employeeCode: { type: String, unique: false, default: "", sparse: true },
-    joiningDate: { type: Date },
-    department: { type: String },
-    designation: { type: String },
-    workLocation: { type: String },
-    reportingManager: { type: String },
-    
+    firstName:    { type: String, required: true, trim: true },
+    MiddleName:   { type: String, trim: true },
+    lastName:     { type: String, required: true, trim: true },
+    email:        { type: String, required: true, unique: true, lowercase: true },
+    phoneNumber:  { type: String, required: true },
+    alternatePhone: { type: String },
+    dateOfBirth:  { type: Date },
+    gender:       { type: String, enum: ['Male', 'Female', 'Other'] },
+    nationality:  { type: String, default: 'Indian' },
+    maritalStatus:{ type: String, enum: ['Single', 'Married', 'Divorced', 'Widowed'] },
+    currentAddress: { type: String },
+
+    employeeCode: {
+      type: String,
+      default: null,
+      unique: true,
+      sparse: true,
+      trim: true,
+    },
+    role: {                                  
+      type: String,
+      default: null,
+    },
+    joiningDate:     { type: Date },
+    department:      { type: String },
+    designation:     { type: String },
+    employmentType:  { type: String, enum: ['Full-Time', 'Part-Time', 'Contract', 'Intern'] },
+    workLocation:    { type: String },
+    reportingManager:{ type: String },
+
     salary: {
-      basic: { type: Number },
+      basic:    { type: Number, default: 0 },
       currency: { type: String, default: 'INR' },
+      allowances: {
+        hra:       { type: Number, default: 0 },
+        transport: { type: Number, default: 0 },
+        medical:   { type: Number, default: 0 },
+        other:     { type: Number, default: 0 },
+      },
+      deductions: {
+        pf:        { type: Number, default: 0 },
+        tax:       { type: Number, default: 0 },
+        insurance: { type: Number, default: 0 },
+        other:     { type: Number, default: 0 },
+      },
     },
 
     kycDetails: {
-      panNumber: { type: String, uppercase: true },
-      aadharNumber: String,
-      uan: String,
-      pfNumber: String,
-    },
-    
-    bankDetails: {
-      accountHolderName: String,
-      accountNumber: String,
-      bankName: String,
-      branchName: String,
-      ifscCode: String,
+      panNumber:    { type: String, uppercase: true },
+      aadharNumber: { type: String },
+      uan:          { type: String },
+      pfNumber:     { type: String },
     },
 
-    Documents:{
-    aadharCardPath: { type: String, default: null },
-    panCardPath: { type: String, default: null },
-    resumePath: { type: String, default: null },
-    educationDocsPath: { type: String, default: null },
-    passportPhotoPath: { type: String, default: null },
-    relievingLetterPath: { type: String, default: null },
+    bankDetails: {
+      accountHolderName: { type: String },
+      accountNumber:     { type: String },
+      bankName:          { type: String },
+      branchName:        { type: String },
+      ifscCode:          { type: String },
     },
-    
-    onboardingStatus: { 
-      type: String, 
+
+    Documents: {
+      aadharCardPath:     { type: String, default: null },
+      panCardPath:        { type: String, default: null },
+      resumePath:         { type: String, default: null },
+      educationDocsPath:  { type: String, default: null },
+      passportPhotoPath:  { type: String, default: null },
+      relievingLetterPath:{ type: String, default: null },
+    },
+
+    onboardingStatus: {
+      type: String,
       enum: ['Personal', 'Employment', 'Banking', 'Documents', 'Completed'],
-      default: 'Personal' 
+      default: 'Personal',
     },
-    status: { type: String, enum: ['Active', 'Inactive', 'On Leave', 'Terminated'], default: 'Active' },
+    status: {
+      type: String,
+      enum: ['Active', 'Inactive', 'On Leave', 'Terminated'],
+      default: 'Active',
+    },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },

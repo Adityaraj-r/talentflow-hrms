@@ -1,10 +1,10 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IShift extends Document {
-  name: string;         // e.g., "General Shift", "Night Shift"
-  startTime: string;    // e.g., "09:00" (24-hour format)
-  endTime: string;      // e.g., "18:00"
-  lateBuffer: number;   // Minutes allowed before marking "Late" (e.g., 15)
+  name: string;         
+  startTime: string;   
+  endTime: string;      
+  lateBuffer: number;   
   isActive: boolean;
 }
 
@@ -25,7 +25,7 @@ const ShiftSchema = new Schema<IShift>(
     },
     lateBuffer: { 
       type: Number, 
-      default: 15, // Default 15 minutes grace period
+      default: 15,
       min: 0
     },
     isActive: {

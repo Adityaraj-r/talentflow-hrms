@@ -1,16 +1,11 @@
 import { Request, Response } from "express";
 import Shift from "../models/shift.model";
-import User from "../models/User.model"; // <--- ADD THIS LINE HERE
+import User from "../models/User.model"; 
 
-/**
- * Create a new Shift
- * POST /api/shifts/add
- */
 export const createShift = async (req: Request, res: Response) => {
   try {
     const { name, startTime, endTime, lateBuffer } = req.body;
 
-    // Check if shift name exists
     const existing = await Shift.findOne({ name });
     if (existing) {
       return res.status(400).json({ success: false, message: "Shift name already exists" });
@@ -30,10 +25,6 @@ export const createShift = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Get All Shifts
- * GET /api/shifts/all
- */
 export const getAllShifts = async (req: Request, res: Response) => {
   try {
     const shifts = await Shift.find({ isActive: true }).sort({ createdAt: -1 });
@@ -44,10 +35,6 @@ export const getAllShifts = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Delete Shift (Soft Delete)
- * DELETE /api/shifts/:id
- */
 export const deleteShift = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -59,11 +46,6 @@ export const deleteShift = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Assign Shift to Employees
- * PUT /api/shifts/assign
- * Body: { shiftId: "...", employeeIds: ["id1", "id2"] }
- */
 export const assignShift = async (req: Request, res: Response) => {
   try {
     const { shiftId, employeeIds } = req.body;
@@ -71,8 +53,7 @@ export const assignShift = async (req: Request, res: Response) => {
     if (!shiftId || !employeeIds || !Array.isArray(employeeIds)) {
       return res.status(400).json({ success: false, message: "Invalid data" });
     }
-
-    // Update all selected users
+    
     await User.updateMany(
       { _id: { $in: employeeIds } },
       { $set: { currentShift: shiftId } }

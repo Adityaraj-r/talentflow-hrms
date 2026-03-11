@@ -101,7 +101,8 @@ const Sidebar = ({
       payroll:
         path.startsWith("/payroll") ||
         path.startsWith("/tickets") ||
-        path.startsWith("/indemnity"),
+        path.startsWith("/indemnity") ||
+        path.startsWith("/payroll/salary-slip"),
 
       administration:
         path.startsWith("/settings") ||
@@ -226,6 +227,36 @@ const Sidebar = ({
     </li>
   )
 
+  const RecruitmentGroup = () => canSee('recruitment') ? (
+    <SidebarGroup id="recruitment" icon={Briefcase} label={getRecruitmentLabel()}>
+      <SubLink to="/recruitment" label="Recruitment Process" />
+      <SubLink to="/staff-requisition" label="Staff Requisition" />
+      <SubLink to="/dashboard/onboarding" label="Onboarding" />
+    </SidebarGroup>
+  ) : null
+
+  const PayrollGroup = () => canSee('payroll') ? (
+  <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
+    <SubLink to="/payroll" label="Payroll Processing" />
+    <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
+    <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
+    <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
+  </SidebarGroup>
+) : null
+
+
+  const LeaveLink = () => canSee('attendance')
+    ? <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />
+    : null
+
+  const TransferLink = () => canSee('employees')
+    ? <SidebarLink to="/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
+    : null
+
+  const ReportsLink = () => canSee('dashboard')
+    ? <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
+    : null
+
   const renderSidebarContent = () => {
     if (!userRole) return null
 
@@ -285,25 +316,9 @@ const Sidebar = ({
           <SidebarLink to="/employee/dashboard" icon={Home} label="Dashboard" />
           <SidebarLink to="/dashboard/employee/attendance" icon={Calendar} label="My Attendance" />
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
-
-          <Link
-            to="/dashboard/employee/make-transfer"
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-              location.pathname === "/dashboard/employee/make-transfer"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "hover:bg-accent text-foreground"
-            )}
-            title={isCollapsed ? "Make Transfer Request" : ""}
-          >
-            <ArrowLeftRight size={20} className="shrink-0" />
-            <span className={cn("truncate transition-all duration-300", isCollapsed && "w-0 opacity-0 overflow-hidden")}>
-              Make Transfer Request
-            </span>
-          </Link>
-
-          {canSee('attendance') && <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />}
-
+          <SidebarLink to="/dashboard/employee/make-transfer" icon={ArrowLeftRight} label="Make Transfer Request" />
+          <LeaveLink />
+          <SidebarLink to="/payroll/salary-slip" icon={FileText} label="My Salary Slips" />
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
             <SubLink to="/role/employee/appraisal" label="My Appraisal" />
           </SidebarGroup>
