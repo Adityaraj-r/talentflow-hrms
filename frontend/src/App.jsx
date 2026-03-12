@@ -34,6 +34,7 @@ import AuditLogs from "./pages/modules/administration/AuditLogs"
 import Integrations from "./pages/modules/administration/Integrations"
 
 // Recruitment Module
+import Onboarding from "./pages/modules/recruitment/Onboarding"
 import StaffRequisition from "./pages/modules/recruitment/StaffRequisition"
 import Careers from "./pages/Careers"
 import CreateRequisition from "./pages/modules/recruitment/CreateRequisition"
@@ -328,6 +329,12 @@ function App() {
                   } />
 
                   {/* ── Recruitment — MATRIX ENFORCED ────────────────── */}
+
+                  <Route path="/dashboard/onboarding" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER"]}>
+                      <DashboardLayout><Onboarding /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
                  
                   <Route path="/staff-requisition" element={
                     <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>

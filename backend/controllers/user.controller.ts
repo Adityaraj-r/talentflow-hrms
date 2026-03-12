@@ -6,10 +6,7 @@ import Employee from '../models/Employee.model';
 
 export const createUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const {
-      email, password, firstName, lastName, role,
-      phoneNumber, department, gender, salary
-    } = req.body;
+    const { email, password, firstName, lastName, role, phoneNumber, department,gender, employeeCode,salary } = req.body;
 
     if (!email || !password || !firstName || !lastName || !role) {
       res.status(400).json({
@@ -19,6 +16,17 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
+    if (employeeCode) {
+      const existingEmployeeCode = await User.findOne({ employeeCode });
+      if (existingEmployeeCode) {
+        res.status(400).json({ 
+          success: false, 
+          message: `Account creation failed: The ID ${employeeCode} is already linked to an active user account.` 
+        });
+        return;
+      }
+    }
+
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       res.status(400).json({ success: false, message: 'User with this email already exists' });
@@ -26,22 +34,21 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
     }
 
     const empCount        = await Employee.countDocuments();
-    const employeeCode    = `EMP-${String(empCount + 1).padStart(4, '0')}`;
     const salt            = await bcrypt.genSalt(10);
     const hashedPassword  = await bcrypt.hash(password, salt);
 
     const user = await User.create({
-      email:           email.toLowerCase(),
-      password:        hashedPassword,
+      email:email.toLowerCase(),
+      password:   hashedPassword,
       firstName,
       lastName,
       role:            role        || 'EMPLOYEE',
       phoneNumber:     phoneNumber || null,
       department:      department  || null,
       gender:          gender      || null,
-      employeeCode,
       isEmailVerified: true,
-      isActive:        true,
+      employeeCode: employeeCode || null,
+      isActive: true,
     });
 
     const employee = await Employee.create({
