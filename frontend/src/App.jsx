@@ -105,6 +105,7 @@ import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
 import MyAttendance from "./pages/modules/attendance/MyAttendance"
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 import Profile from "./pages/dashboard/Profile"
+import TAPolicyConfig from "./pages/modules/attendance/TAPolicyConfig"
 
 
 const ADMIN_ROLES = ["ADMIN", "SUPER ADMIN"]
@@ -343,17 +344,17 @@ function App() {
                   } />
                   <Route path="/careers" element={<Careers />} />
                   <Route path="/apply/:id" element={<ApplyJob />} />
-                  <Route path="/dashboard/applications" element={ <DashboardLayout> <CandidateApplications /> </DashboardLayout> }/>
-                  <Route path="/dashboard/recruitment-pipeline" element={ <DashboardLayout> <RecruitmentPipeline /> </DashboardLayout>}/>
+                  <Route path="/dashboard/applications" element={<DashboardLayout> <CandidateApplications /> </DashboardLayout>} />
+                  <Route path="/dashboard/recruitment-pipeline" element={<DashboardLayout> <RecruitmentPipeline /> </DashboardLayout>} />
                   <Route path="/application-status" element={<ApplicationStatus />} />
 
                   <Route path="/dashboard/job-openings" element={
                     <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
-                      <DashboardLayout> <JobOpenings /> </DashboardLayout>    
+                      <DashboardLayout> <JobOpenings /> </DashboardLayout>
                     </ProtectedRoute>
-                  }/>
+                  } />
 
-                 
+
 
                   <Route path="/dashboard/offer-management" element={
                     <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
@@ -373,34 +374,40 @@ function App() {
                     </ProtectedRoute>
                   } />
 
-                 {/* ── Attendance — SHARED BY ADMIN & CEO ─────────────────── */}
+                  {/* ── Attendance — MATRIX ENFORCED ─────────────────── */}
                   <Route path="/attendance" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "CEO", "COUNTRY_MANAGER"]}>
+                    <ProtectedRoute requiredPermission={{ module: "attendance", action: "read" }}>
                       <DashboardLayout><AttendanceRecords /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
                   <Route path="/attendance/holidays" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "CEO", "COUNTRY_MANAGER"]}>
+                    <ProtectedRoute requiredPermission={{ module: "attendance", action: "read" }}>
                       <DashboardLayout><HolidayManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
                   <Route path="/attendance/shifts" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "CEO", "COUNTRY_MANAGER"]}>
+                    <ProtectedRoute requiredPermission={{ module: "attendance", action: "write" }}>
                       <DashboardLayout><ShiftManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
                   <Route path="/attendance/leave-management" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "CEO", "COUNTRY_MANAGER"]}>
+                    <ProtectedRoute requiredPermission={{ module: "attendance", action: "write" }}>
                       <DashboardLayout><AdminLeaveManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
                   <Route path="/attendance/manual" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER"]}>
+                    <ProtectedRoute requiredPermission={{ module: "attendance", action: "write" }}>
                       <DashboardLayout><ManualAttendance /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/attendance/policies" element={
+                    <ProtectedRoute allowedRoles={["HR_MANAGER", "ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><TAPolicyConfig /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
@@ -422,11 +429,11 @@ function App() {
                       <DashboardLayout><Indemnity /></DashboardLayout>
                     </ProtectedRoute>
                   } />
-            
+
                   <Route path="/payroll/salary-slip" element={
-                   <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
+                    <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
                       <DashboardLayout><SalarySlip /></DashboardLayout>
-                  </ProtectedRoute>
+                    </ProtectedRoute>
                   } />
 
                   {/* ── Transfers ────────────────────────────────────── */}
@@ -454,7 +461,7 @@ function App() {
                       <DashboardLayout><ReviewDetailPage /></DashboardLayout>
                     </ProtectedRoute>
                   } />
-                  
+
                   <Route path="/role/hr_manager/appraisal" element={
                     <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
                       <DashboardLayout><HRManagerAppraisal /></DashboardLayout>

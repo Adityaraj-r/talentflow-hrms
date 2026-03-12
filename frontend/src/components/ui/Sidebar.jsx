@@ -345,7 +345,7 @@ const Sidebar = ({
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/attendance" label="Attendance Records" />
               <SubLink to="/attendance/manual" label="Manual Attendance" />
-              <SubLink to={getLeaveManagementPath()} label="Leave Management" />
+              <SubLink to="/attendance/policies" label="Attendance Policies" />
             </SidebarGroup>
           )}
           {canSee('employees') && <SidebarLink to="/employee-transfer" icon={RefreshCw} label="Employee Transfer" />}

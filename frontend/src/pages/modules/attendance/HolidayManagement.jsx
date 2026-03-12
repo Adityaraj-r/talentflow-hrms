@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 const HolidayManagement = () => {
     const { user } = useUser();
-    const isAdmin = ["ADMIN", "HR_MANAGER", "CEO"].includes(user?.role?.toUpperCase());
+    const isAdmin = ["ADMIN", "HR_MANAGER"].includes(user?.role?.toUpperCase());
 
     const [holidays, setHolidays] = useState([]);
     const [formData, setFormData] = useState({ name: "", date: "", type: "National Holiday" });
