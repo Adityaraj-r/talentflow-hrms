@@ -74,7 +74,9 @@ const Sidebar = ({
       payroll:
         path.startsWith("/payroll") ||
         path.startsWith("/tickets") ||
-        path.startsWith("/indemnity"),
+        path.startsWith("/indemnity") ||
+        path.startsWith("/payroll/salary-slip"),
+
       administration:
         path.startsWith("/settings") ||
         path.startsWith("/dashboard/users") ||
@@ -205,12 +207,14 @@ const Sidebar = ({
   ) : null
 
   const PayrollGroup = () => canSee('payroll') ? (
-    <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
-      <SubLink to="/payroll" label="Payroll Processing" />
-      <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
-      <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
-    </SidebarGroup>
-  ) : null
+  <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
+    <SubLink to="/payroll" label="Payroll Processing" />
+    <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
+    <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
+    <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
+  </SidebarGroup>
+) : null
+
 
   const LeaveLink = () => canSee('attendance')
     ? <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />
@@ -278,6 +282,7 @@ const Sidebar = ({
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           <SidebarLink to="/dashboard/employee/make-transfer" icon={ArrowLeftRight} label="Make Transfer Request" />
           <LeaveLink />
+          <SidebarLink to="/payroll/salary-slip" icon={FileText} label="My Salary Slips" />
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
             <SubLink to="/role/employee/appraisal" label="My Appraisal" />
           </SidebarGroup>

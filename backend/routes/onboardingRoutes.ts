@@ -1,40 +1,40 @@
 import express, { Router } from 'express';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { saveOnboardingProgress, getOnboardingDetails,getAllOnboardingEmployees } from '../controllers/onboardingController';
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import { saveOnboardingProgress, getOnboardingDetails, getAllOnboardingEmployees } from '../controllers/onboardingController';
+import dotenv from 'dotenv';
+dotenv.config();
 import { protect, authorize } from '../middleware/auth.middleware';
 
 const router: Router = express.Router();
 
-const uploadDir = 'uploads/onboarding';
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
+// 1. Configure Cloudinary with your .env credentials
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const email = req.body.email || 'unknown';
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, `${email}-${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
-    }
+// 2. Set up the Cloud Engine instead of local disk
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    // Extract email prefix for cleaner file names (e.g., 'karan' from 'karan@gmail.com')
+    const emailPrefix = req.body.email ? req.body.email.split('@')[0] : 'unknown';
+    
+    return {
+      folder: 'hrms_onboarding', // This creates a neat folder in your Cloudinary account
+      resource_type: 'auto',     // CRUCIAL: 'auto' allows it to accept both Images AND PDFs
+      allowed_formats: ['jpeg', 'jpg', 'png', 'pdf'],
+      public_id: `${emailPrefix}-${file.fieldname}-${Date.now()}`,
+    };
+  },
 });
 
 const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, 
-    fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|pdf/;
-        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
-        if (extname && mimetype) {
-            return cb(null, true);
-        }
-        cb(new Error('Only .png, .jpg, .jpeg and .pdf formats allowed!'));
-    }
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
 router.use(protect);

@@ -3,7 +3,7 @@ import Role from '../models/Role.model';
 const enterpriseRoles = [
   // --- SYSTEM ADMINS ---
   {
-    name: "Super Admin",
+    name: "ADMIN",
     isSystemRole: true,
     permissions: {
       dashboard: { read: true, write: true, delete: true },
@@ -31,7 +31,7 @@ const enterpriseRoles = [
     }
   },
   {
-    name: "Country Manager",
+    name: "COUNTRY_MANAGER",
     isSystemRole: false,
     permissions: {
       dashboard: { read: true, write: false, delete: false },
@@ -44,7 +44,7 @@ const enterpriseRoles = [
     }
   },
   {
-    name: "Operations Manager",
+    name: "OPERATIONS_MANAGER",
     isSystemRole: false,
     permissions: {
       dashboard: { read: true, write: false, delete: false },
@@ -59,7 +59,7 @@ const enterpriseRoles = [
 
   // --- HR DEPARTMENT ---
   {
-    name: "HR Manager",
+    name: "HR_MANAGER",
     isSystemRole: false,
     permissions: {
       dashboard: { read: true, write: false, delete: false },
@@ -72,7 +72,7 @@ const enterpriseRoles = [
     }
   },
   {
-    name: "HR Officer",
+    name: "HR_OFFICER",
     isSystemRole: false,
     permissions: {
       dashboard: { read: true, write: false, delete: false },
@@ -85,7 +85,7 @@ const enterpriseRoles = [
     }
   },
   {
-    name: "Payroll Officer",
+    name: "PAYROLL_OFFICER",
     isSystemRole: false,
     permissions: {
       dashboard: { read: true, write: false, delete: false },
@@ -100,7 +100,7 @@ const enterpriseRoles = [
 
   // --- MANAGEMENT ---
   {
-    name: "Project Manager",
+    name: "PROJECT_MANAGER",
     isSystemRole: false,
     permissions: {
       dashboard: { read: true, write: false, delete: false },
@@ -113,7 +113,7 @@ const enterpriseRoles = [
     }
   },
   {
-    name: "Department Manager",
+    name: "DEPARTMENT_MANAGER",
     isSystemRole: false,
     permissions: {
       dashboard: { read: true, write: false, delete: false },
@@ -126,7 +126,7 @@ const enterpriseRoles = [
     }
   },
   {
-    name: "Direct Manager", // Often a line manager or supervisor
+    name: "DIRECT_MANAGER", // Often a line manager or supervisor
     isSystemRole: false,
     permissions: {
       dashboard: { read: true, write: false, delete: false },
@@ -141,7 +141,7 @@ const enterpriseRoles = [
 
   // --- GENERAL STAFF ---
   {
-    name: "Employee",
+    name: "EMPLOYEE",
     isSystemRole: true,
     permissions: {
       dashboard: { read: true, write: false, delete: false },
@@ -167,8 +167,7 @@ export const seedRoles = async () => {
         console.log(`🌱 Creating missing role: ${roleDef.name}`);
         await Role.create(roleDef);
       } else {
-        // Optional: Uncomment to force permission updates
-        // console.log(`ℹ️ Role already exists: ${roleDef.name}`);
+  console.log(`ℹ️ Role already exists (skipping): ${roleDef.name}`);
       }
     }
     
@@ -176,4 +175,5 @@ export const seedRoles = async () => {
   } catch (error) {
     console.error('❌ Role seeding failed:', error);
   }
+  
 };
