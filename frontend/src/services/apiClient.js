@@ -33,11 +33,12 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("idToken");
+      localStorage.removeItem("userRole");
       window.location.href = "/login";
     }
-    return Promise.reject(
-      error.response?.data || { message: error.message }
-    );
+    // FIXED: return original Axios error intact
+    // so error.response?.data?.error works everywhere
+    return Promise.reject(error);
   }
 );
 
