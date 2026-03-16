@@ -1,8 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRole } from "@/contexts/RoleContext"
+import { reviewApi } from "@/services/reviewApi"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -10,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { FileText, Check, X, Search } from "lucide-react"
+import { FileText, Check, X, Search, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 const Appraisal = () => {
@@ -28,7 +31,7 @@ const Appraisal = () => {
         <TabsList>
           <TabsTrigger value="conduct">Conduct Appraisal</TabsTrigger>
           <TabsTrigger value="pending">Pending Reviews</TabsTrigger>
-          <TabsTrigger value="history">Appraisal History</TabsTrigger>
+          <TabsTrigger value="history">All Reviews</TabsTrigger>
         </TabsList>
 
         <TabsContent value="conduct">
@@ -40,7 +43,7 @@ const Appraisal = () => {
         </TabsContent>
 
         <TabsContent value="history">
-          <AppraisalHistory />
+          <AllReviews />
         </TabsContent>
       </Tabs>
     </div>
@@ -61,20 +64,14 @@ const AppraisalForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleSelectChange = (name, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (
@@ -90,9 +87,10 @@ const AppraisalForm = () => {
 
     setIsSubmitting(true)
 
-    setTimeout(() => {
+    try {
+      // Assuming you have a createReview endpoint in reviewApi
+      // await reviewApi.createReview(formData)
       toast.success("Appraisal submitted successfully")
-      setIsSubmitting(false)
       setFormData({
         employeeId: "",
         employeeName: "",
@@ -102,7 +100,12 @@ const AppraisalForm = () => {
         comments: "",
         goals: "",
       })
-    }, 1500)
+    } catch (error) {
+      toast.error("Failed to submit appraisal")
+      console.error(error)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -229,7 +232,14 @@ const AppraisalForm = () => {
       <CardFooter className="flex justify-between">
         <Button variant="outline">Cancel</Button>
         <Button onClick={handleSubmit} disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : "Submit Appraisal"}
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            "Submit Appraisal"
+          )}
         </Button>
       </CardFooter>
     </Card>
@@ -237,35 +247,49 @@ const AppraisalForm = () => {
 }
 
 const PendingAppraisals = () => {
-  const pendingAppraisals = [
-    {
-      id: 1,
-      employeeName: "John Doe",
-      employeeId: "EMP001",
-      department: "IT",
-      appraisalPeriod: "2025-03",
-      performanceRating: "Good",
-      submittedBy: "Jane Smith",
-      submissionDate: "2025-04-15",
-    },
-    {
-      id: 2,
-      employeeName: "Alice Johnson",
-      employeeId: "EMP002",
-      department: "HR",
-      appraisalPeriod: "2025-03",
-      performanceRating: "Excellent",
-      submittedBy: "Bob Williams",
-      submissionDate: "2025-04-10",
-    },
-  ]
+  const [reviews, setReviews] = useState([])
+  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
 
-  const handleApprove = (id) => {
-    toast.success(`Appraisal #${id} approved successfully`)
+  const fetchPendingReviews = async () => {
+    try {
+      setLoading(true)
+      const res = await reviewApi.getPendingReviews()
+      setReviews(res.data || [])
+    } catch (error) {
+      toast.error("Failed to fetch pending reviews")
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleReject = (id) => {
-    toast.success(`Appraisal #${id} rejected successfully`)
+  useEffect(() => {
+    fetchPendingReviews()
+  }, [])
+
+  const handleApprove = async (id) => {
+    try {
+      await reviewApi.approveReview(id, { feedback: "Approved by HR Manager" })
+      toast.success("Appraisal approved successfully")
+      fetchPendingReviews() // Refresh list after approval
+    } catch (error) {
+      toast.error("Failed to approve appraisal")
+      console.error(error)
+    }
+  }
+
+  const handleReject = async (id) => {
+    try {
+      // Rejection logic—assuming it goes to a reject endpoint or passes negative status
+      // You can adapt this payload based on your API's exact rejection requirements
+      await reviewApi.approveReview(id, { feedback: "Rejected by HR Manager", status: 'rejected' })
+      toast.error("Appraisal rejected")
+      fetchPendingReviews() // Refresh list
+    } catch (error) {
+      toast.error("Failed to reject appraisal")
+      console.error(error)
+    }
   }
 
   return (
@@ -275,141 +299,161 @@ const PendingAppraisals = () => {
         <CardDescription>Review and approve performance appraisals</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
-          <div className="grid grid-cols-7 bg-muted/50 p-3 text-sm font-medium">
-            <div>Employee</div>
-            <div>Employee ID</div>
-            <div>Department</div>
-            <div>Period</div>
-            <div>Rating</div>
-            <div>Submitted By</div>
-            <div>Actions</div>
+        {loading ? (
+          <div className="flex justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-          <div className="divide-y">
-            {pendingAppraisals.map((appraisal) => (
-              <div key={appraisal.id} className="grid grid-cols-7 p-3 text-sm">
-                <div className="font-medium">{appraisal.employeeName}</div>
-                <div>{appraisal.employeeId}</div>
-                <div>{appraisal.department}</div>
-                <div>{appraisal.appraisalPeriod}</div>
-                <div>{appraisal.performanceRating}</div>
-                <div>{appraisal.submittedBy}</div>
-                <div className="flex space-x-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 text-green-600"
-                    onClick={() => handleApprove(appraisal.id)}
-                  >
-                    <Check className="h-4 w-4" />
-                    <span className="sr-only">Approve</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 text-red-600"
-                    onClick={() => handleReject(appraisal.id)}
-                  >
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Reject</span>
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8">
-                    <FileText className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
+        ) : reviews.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">No pending appraisals found.</div>
+        ) : (
+          <div className="rounded-md border overflow-x-auto">
+            <div className="grid grid-cols-7 bg-muted/50 p-3 text-sm font-medium min-w-[800px]">
+              <div>Employee</div>
+              <div>Employee ID</div>
+              <div>Department</div>
+              <div>Period</div>
+              <div>Rating</div>
+              <div>Submitted By</div>
+              <div>Actions</div>
+            </div>
+            <div className="divide-y min-w-[800px]">
+              {reviews.map((review) => (
+                <div key={review._id} className="grid grid-cols-7 p-3 text-sm items-center">
+                  <div className="font-medium">{review.employeeName || 'N/A'}</div>
+                  <div>{review.employeeId || 'N/A'}</div>
+                  <div>{review.department || 'N/A'}</div>
+                  <div>{review.appraisalPeriod || 'N/A'}</div>
+                  <div>{review.performanceRating || 'N/A'}</div>
+                  <div>{review.submittedBy || 'N/A'}</div>
+                  <div className="flex space-x-1">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                      onClick={() => handleApprove(review._id)}
+                    >
+                      <Check className="h-4 w-4" />
+                      <span className="sr-only">Approve</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => handleReject(review._id)}
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="sr-only">Reject</span>
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={() => navigate(`/role/hr_manager/review/${review._id}`)}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span className="sr-only">View details</span>
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   )
 }
 
-const AppraisalHistory = () => {
-  const appraisalHistory = [
-    {
-      id: 1,
-      employeeName: "John Doe",
-      employeeId: "EMP001",
-      department: "IT",
-      appraisalPeriod: "2025-02",
-      performanceRating: "Good",
-      status: "Approved",
-      approvedBy: "Jane Smith",
-      approvalDate: "2025-03-01",
-    },
-    {
-      id: 2,
-      employeeName: "Alice Johnson",
-      employeeId: "EMP002",
-      department: "HR",
-      appraisalPeriod: "2025-01",
-      performanceRating: "Satisfactory",
-      status: "Rejected",
-      approvedBy: "Bob Williams",
-      approvalDate: "2025-02-15",
-      reason: "Incomplete feedback",
-    },
-  ]
+const AllReviews = () => {
+  const [reviews, setReviews] = useState([])
+  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const fetchAllReviews = async () => {
+      try {
+        setLoading(true)
+        const res = await reviewApi.getAllReviews({})
+        setReviews(res.data || [])
+      } catch (error) {
+        toast.error("Failed to fetch reviews history")
+        console.error(error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAllReviews()
+  }, [])
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <CardTitle>Appraisal History</CardTitle>
+          <CardTitle>All Reviews</CardTitle>
           <CardDescription>View history of all performance appraisals</CardDescription>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative w-full">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search appraisals..." className="pl-8 w-[200px] md:w-[300px]" />
+            <Input type="search" placeholder="Search appraisals..." className="pl-8 w-full sm:w-[200px] md:w-[300px]" />
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
-          <div className="grid grid-cols-7 bg-muted/50 p-3 text-sm font-medium">
-            <div>Employee</div>
-            <div>Employee ID</div>
-            <div>Department</div>
-            <div>Period</div>
-            <div>Rating</div>
-            <div>Status</div>
-            <div>Actions</div>
+        {loading ? (
+          <div className="flex justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-          <div className="divide-y">
-            {appraisalHistory.map((appraisal) => (
-              <div key={appraisal.id} className="grid grid-cols-7 p-3 text-sm">
-                <div className="font-medium">{appraisal.employeeName}</div>
-                <div>{appraisal.employeeId}</div>
-                <div>{appraisal.department}</div>
-                <div>{appraisal.appraisalPeriod}</div>
-                <div>{appraisal.performanceRating}</div>
-                <div>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                      appraisal.status === "Approved"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                        : appraisal.status === "Rejected"
-                        ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                        : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
-                    }`}
-                  >
-                    {appraisal.status}
-                  </span>
+        ) : reviews.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">No appraisals found.</div>
+        ) : (
+          <div className="rounded-md border overflow-x-auto">
+            <div className="grid grid-cols-7 bg-muted/50 p-3 text-sm font-medium min-w-[800px]">
+              <div>Employee</div>
+              <div>Employee ID</div>
+              <div>Department</div>
+              <div>Period</div>
+              <div>Rating</div>
+              <div>Status</div>
+              <div>Actions</div>
+            </div>
+            <div className="divide-y min-w-[800px]">
+              {reviews.map((review) => (
+                <div key={review._id} className="grid grid-cols-7 p-3 text-sm items-center">
+                  <div className="font-medium">{review.employeeName || 'N/A'}</div>
+                  <div>{review.employeeId || 'N/A'}</div>
+                  <div>{review.department || 'N/A'}</div>
+                  <div>{review.appraisalPeriod || 'N/A'}</div>
+                  <div>{review.performanceRating || 'N/A'}</div>
+                  <div>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                        review.status === "approved" || review.status === "Approved"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                          : review.status === "rejected" || review.status === "Rejected"
+                          ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                          : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
+                      }`}
+                    >
+                      {review.status || 'Pending'}
+                    </span>
+                  </div>
+                  <div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => navigate(`/role/hr_manager/review/${review._id}`)}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span className="sr-only">View details</span>
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <Button variant="ghost" size="icon">
-                    <FileText className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   )

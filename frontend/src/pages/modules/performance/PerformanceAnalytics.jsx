@@ -8,6 +8,7 @@ import { TrendingUp, Users, Award, Target, BarChart3, PieChart as PieChartIcon }
 import { Progress } from "@/components/ui/progress";
 import { performanceApi } from "@/services/performanceApi";
 import apiClient from "@/services/apiClient";
+import SkeletonCard from "@/components/reports/SkeletonCard";
 
 const PerformanceAnalytics = () => {
   const [analyticsData, setAnalyticsData] = useState({
@@ -44,7 +45,7 @@ const PerformanceAnalytics = () => {
   const calculateDepartmentComparison = (reviews) => {
     const deptMap = {};
     reviews.forEach(review => {
-      const dept = review.department || review.employeeDepartment || 'Unknown';
+      const dept = review.employeeId?.department || 'Unknown';
       const score = review.avgRating || review.overallRating || 0;
       if (!deptMap[dept]) deptMap[dept] = { total: 0, count: 0 };
       deptMap[dept].total += score;
@@ -81,8 +82,8 @@ const PerformanceAnalytics = () => {
   const calculateTopPerformers = (reviews) => {
     const performerMap = {};
     reviews.forEach(review => {
-      const name = review.employeeName || review.employee?.name || 'Unknown';
-      const dept = review.department || review.employeeDepartment || 'Unknown';
+      const name = `${review.employeeId?.firstName || ''} ${review.employeeId?.lastName || ''}`.trim() || 'Unknown';
+      const dept = review.employeeId?.department || 'Unknown';
       const rating = review.avgRating || review.overallRating || 0;
       if (!performerMap[name] || rating > performerMap[name].rating) {
         performerMap[name] = { name, department: dept, rating };
@@ -105,7 +106,7 @@ const PerformanceAnalytics = () => {
         // ✅ Fetch reviews via apiClient (same as employees fetch)
         let reviews = [];
         try {
-          const reviewsRes = await apiClient.get('/performance/reviews');
+          const reviewsRes = await apiClient.get('/performance/reviews/all');
           reviews = reviewsRes.data || [];
         } catch {
           reviews = [];
@@ -116,7 +117,7 @@ const PerformanceAnalytics = () => {
         if (!totalEmployees) {
           try {
             const usersRes = await apiClient.get('/users');
-            totalEmployees = usersRes.data.filter(u => u.role !== 'admin').length;
+            totalEmployees = usersRes.data.filter(u => u.role?.toUpperCase() !== 'ADMIN').length;
           } catch {
             totalEmployees = 0;
           }
@@ -132,8 +133,6 @@ const PerformanceAnalytics = () => {
           overallAvgRating: stats.avgScore || 0,
           activeCycles: stats.activeCycles || 0
         });
-      } catch (error) {
-        console.error('Analytics load failed:', error);
       } finally {
         setLoading(false);
       }
@@ -141,8 +140,7 @@ const PerformanceAnalytics = () => {
     loadAnalytics();
   }, []);
 
-  if (loading) return <div className="p-8 text-center text-muted-foreground">Loading analytics...</div>;
-
+  if (loading) return <SkeletonCard />;
   return (
     <div className="space-y-6">
       {/* Summary Stats */}

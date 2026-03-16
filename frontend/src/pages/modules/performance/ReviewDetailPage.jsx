@@ -1,12 +1,16 @@
+"use client"
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Clock, Star, Loader2, ThumbsUp } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Star, Loader2, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
 import { reviewApi } from "@/services/reviewApi";
+import { useAuth } from "@/contexts/AuthContext"; // Task 5.2: Added useAuth
 
 const ReviewDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth(); // Task 5.2: Access user role
   const [review, setReview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState(false);
@@ -20,12 +24,16 @@ const ReviewDetailPage = () => {
   const loadReview = async () => {
     try {
       setLoading(true);
-      const res = await reviewApi.getAllReviews({ });
-      const found = res.data?.find(r => r._id === id);
-      if (found) setReview(found);
-      else toast.error('Review not found');
+      // Task 5.1: Replaced getAllReviews with direct getReviewById
+      const res = await reviewApi.getReviewById(id);
+      if (res.data) {
+        setReview(res.data);
+      } else {
+        toast.error('Review not found');
+      }
     } catch (error) {
       toast.error('Failed to load review');
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -90,13 +98,16 @@ const ReviewDetailPage = () => {
             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusStyle(review.status)}`}>
               {review.status?.toUpperCase()}
             </span>
-            {review.status === 'completed' && (
+            
+            {/* Task 5.2: Role check for Approve Button */}
+            {review.status === 'completed' && user?.role === 'HR_MANAGER' && (
               <button onClick={() => setShowApprovePanel(!showApprovePanel)}
                 className="flex items-center gap-2 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 px-4 py-2 rounded-lg transition-colors font-medium text-sm">
                 <ThumbsUp className="w-4 h-4" />
                 Approve Review
               </button>
             )}
+            
             {review.status === 'approved' && (
               <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-medium">
                 <CheckCircle2 className="w-4 h-4" />
@@ -109,10 +120,11 @@ const ReviewDetailPage = () => {
         {/* Approve Panel */}
         {showApprovePanel && (
           <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-6 space-y-4">
+            {/* Task 5.3: Updated labels */}
             <h3 className="font-semibold text-gray-900 dark:text-white">Approve this Review</h3>
             <textarea
               rows={3}
-              placeholder="Optional admin feedback before approving..."
+              placeholder="Optional HR Manager feedback before approving..."
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -130,7 +142,7 @@ const ReviewDetailPage = () => {
           </div>
         )}
 
-        {/* Employee & Reviewer Info */}
+        {/* Info Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
             <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3">Employee</h3>
@@ -154,7 +166,7 @@ const ReviewDetailPage = () => {
           </div>
         </div>
 
-        {/* Overall Rating */}
+        {/* Ratings Section */}
         <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 rounded-xl p-6 flex items-center justify-between">
           <span className="font-semibold text-gray-700 dark:text-gray-300">Overall Rating</span>
           <div className="flex items-center gap-3">
@@ -192,26 +204,30 @@ const ReviewDetailPage = () => {
           </div>
         </div>
 
+        {/* Task 5.4: Missing Manager Comments Section */}
+        {review.managerComments && (
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+            <h3 className="font-bold text-gray-900 dark:text-white mb-2">Manager Comments</h3>
+            <p className="text-gray-600 dark:text-gray-400 text-sm whitespace-pre-wrap">{review.managerComments}</p>
+          </div>
+        )}
+
         {/* Strengths & Improvements */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-6">
             <h3 className="font-bold text-gray-900 dark:text-white mb-2">Strengths</h3>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">
-              {review.strengths || '—'}
-            </p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">{review.strengths || '—'}</p>
           </div>
           <div className="bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/30 rounded-xl p-6">
             <h3 className="font-bold text-gray-900 dark:text-white mb-2">Areas for Improvement</h3>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">
-              {review.areasForImprovement || '—'}
-            </p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">{review.areasForImprovement || '—'}</p>
           </div>
         </div>
 
-        {/* Admin Feedback (if approved) */}
+        {/* Task 5.3: Updated labels for HR Feedback */}
         {review.status === 'approved' && review.adminFeedback && (
           <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-6">
-            <h3 className="font-bold text-gray-900 dark:text-white mb-2">Admin Feedback</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white mb-2">HR Manager Feedback</h3>
             <p className="text-gray-600 dark:text-gray-400 text-sm">{review.adminFeedback}</p>
           </div>
         )}

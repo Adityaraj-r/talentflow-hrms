@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { X, Plus, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { reviewApi } from "../../../services/reviewApi";
-import apiClient from "../../../services/apiClient";
+import { reviewApi } from "../../services/reviewApi";
+import apiClient from "../../services/apiClient";
 
 const DEFAULT_COMPETENCIES = [
   { name: "Communication" },
