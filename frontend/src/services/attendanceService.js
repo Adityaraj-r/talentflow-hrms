@@ -25,8 +25,20 @@ const attendanceService = {
     const params = {};
     if (date) params.date = date;
     if (userId) params.userId = userId;
-    
+
     return await apiClient.get("/attendance/all", { params });
+  },
+
+  markManualAttendance: async (data) => {
+    return await apiClient.post("/attendance/manual", data);
+  },
+
+  markBulkAttendance: async (data) => {
+    return await apiClient.post("/attendance/bulk", data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
   }
 };
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { 
-  Plus, 
-  Trash2
+import {
+    Plus,
+    Trash2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/contexts/UserContext";
 import holidayService from "@/services/holidayService";
-import { toast } from "sonner"; 
+import { toast } from "sonner";
 
 const HolidayManagement = () => {
     const { user } = useUser();
@@ -23,7 +23,7 @@ const HolidayManagement = () => {
         try {
             setLoading(true);
             const res = await holidayService.getHolidays();
-            
+
             if (res?.data?.success && Array.isArray(res.data.data)) {
                 setHolidays(res.data.data);
             } else if (res?.success && Array.isArray(res.data)) {
@@ -100,7 +100,7 @@ const HolidayManagement = () => {
                         <Card className="sticky top-6 border-slate-200 dark:border-slate-800">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Plus className="w-5 h-5 text-blue-600 dark:text-blue-400" /> 
+                                    <Plus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                     Add Holiday
                                 </CardTitle>
                                 <CardDescription>Schedule a new holiday for the year.</CardDescription>
@@ -170,8 +170,8 @@ const HolidayManagement = () => {
                             ) : (
                                 <div className="space-y-3">
                                     {holidays.map((holiday) => (
-                                        <div 
-                                            key={holiday._id} 
+                                        <div
+                                            key={holiday._id}
                                             className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
                                         >
                                             <div className="flex items-center gap-4">
@@ -179,7 +179,7 @@ const HolidayManagement = () => {
                                                     <span className="text-[10px] font-bold uppercase tracking-wider">{getMonth(holiday.date)}</span>
                                                     <span className="text-xl font-bold leading-none">{getDay(holiday.date)}</span>
                                                 </div>
-                                            
+
                                                 <div>
                                                     <h4 className="font-semibold text-slate-900 dark:text-white text-base">{holiday.name}</h4>
                                                     <div className="flex items-center gap-2 mt-1">
@@ -192,9 +192,9 @@ const HolidayManagement = () => {
                                             </div>
 
                                             {isAdmin && (
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon" 
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
                                                     onClick={() => handleDelete(holiday._id)}
                                                     className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                                                 >

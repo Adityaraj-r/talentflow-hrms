@@ -17,7 +17,7 @@ const formatBreakTime = (totalMinutes) => {
 const AttendanceRecord = () => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -77,10 +77,10 @@ const AttendanceRecord = () => {
 
   const calculateDuration = (checkIn, checkOut, totalBreakMinutes = 0) => {
     if (!checkIn || !checkOut) return "-";
-    
+
     const start = new Date(checkIn);
     const end = new Date(checkOut);
-    
+
     if (isNaN(start.getTime()) || isNaN(end.getTime())) return "-";
 
     const diffMs = end - start;
@@ -91,7 +91,7 @@ const AttendanceRecord = () => {
 
     const hours = Math.floor(netMinutes / 60);
     const minutes = Math.floor(netMinutes % 60);
-    
+
     const formattedHours = String(hours).padStart(2, '0');
     const formattedMinutes = String(minutes).padStart(2, '0');
 
@@ -213,7 +213,7 @@ const AttendanceRecord = () => {
                         {formatBreakTime(record.totalBreakMinutes)}
                       </TableCell>
                       <TableCell className="text-right text-sm font-medium text-blue-600 dark:text-blue-400">
-                       {calculateDuration(record.checkIn, record.checkOut, record.totalBreakMinutes)}
+                        {calculateDuration(record.checkIn, record.checkOut, record.totalBreakMinutes)}
                       </TableCell>
                       <TableCell className="text-right">
                         <Badge variant="outline" className={`${getStatusColor(record.status)} px-2 py-0.5 border`}>
