@@ -141,6 +141,7 @@ const Header = ({ toggleSidebar }) => {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [canUseSearch])
 
+  // UPGRADED NOTIFICATION SYSTEM 
   useEffect(() => {
     const fetchRealTimeNotifications = async () => {
       const firstName = user?.firstName || user?.name?.split(" ")[0] || ""
@@ -153,14 +154,28 @@ const Header = ({ toggleSidebar }) => {
           const latest = myTransfers[0]
           
           if (latest && (latest.status === "Approved" || latest.status === "Rejected")) {
-            setNotifications([
-              {
-                id: latest._id,
-                message: `Transfer to ${latest.newDepartment} has been ${latest.status}`,
-                read: false,
-                time: "Just now",
-              },
-            ])
+            
+            const actionDate = new Date(latest.updatedAt || latest.createdAt);
+            const formattedDate = actionDate.toLocaleString('en-US', {
+              month: 'short', day: 'numeric', year: 'numeric', 
+              hour: 'numeric', minute: '2-digit', hour12: true
+            });
+
+            const contextMessage = `Your transfer from ${latest.currentDepartment} to ${latest.newDepartment} has been ${latest.status}.`;
+
+            setNotifications((prev) => {
+              const readNotifs = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+              const isAlreadyRead = readNotifs.includes(latest._id);
+
+              return [
+                {
+                  id: latest._id,
+                  message: contextMessage,
+                  read: isAlreadyRead, 
+                  time: `Actioned on: ${formattedDate}`,
+                },
+              ]
+            })
           }
         } catch (err) {
           console.error("Failed to fetch notifications:", err)
@@ -176,6 +191,12 @@ const Header = ({ toggleSidebar }) => {
   const unreadCount = notifications.filter((n) => !n.read).length
   
   const markAllAsRead = () => {
+    const readNotifs = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+    notifications.forEach(n => {
+      if (!readNotifs.includes(n.id)) readNotifs.push(n.id);
+    });
+    localStorage.setItem('readNotifications', JSON.stringify(readNotifs));
+
     setNotifications(notifications.map((n) => ({ ...n, read: true })))
   }
   
