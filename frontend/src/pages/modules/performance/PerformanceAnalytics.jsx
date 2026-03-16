@@ -26,7 +26,7 @@ const PerformanceAnalytics = () => {
   const calculatePerformanceDistribution = (reviews) => {
     const buckets = { outstanding: 0, exceeds: 0, meets: 0, below: 0, poor: 0 };
     reviews.forEach(review => {
-      const score = review.avgRating || review.overallRating || 0;
+      const score = review.overallRating || 0;
       if (score >= 4.5) buckets.outstanding++;
       else if (score >= 4.0) buckets.exceeds++;
       else if (score >= 3.0) buckets.meets++;
@@ -35,18 +35,18 @@ const PerformanceAnalytics = () => {
     });
     return [
       { name: "Outstanding (4.5-5.0)", value: buckets.outstanding, color: "#10b981" },
-      { name: "Exceeds (4.0-4.4)", value: buckets.exceeds, color: "#3b82f6" },
-      { name: "Meets (3.0-3.9)", value: buckets.meets, color: "#f59e0b" },
-      { name: "Below (2.0-2.9)", value: buckets.below, color: "#ef4444" },
-      { name: "Poor (<2.0)", value: buckets.poor, color: "#991b1b" }
+      { name: "Exceeds (4.0-4.4)",      value: buckets.exceeds,     color: "#3b82f6" },
+      { name: "Meets (3.0-3.9)",        value: buckets.meets,       color: "#f59e0b" },
+      { name: "Below (2.0-2.9)",        value: buckets.below,       color: "#ef4444" },
+      { name: "Poor (<2.0)",            value: buckets.poor,        color: "#991b1b" }
     ];
   };
 
   const calculateDepartmentComparison = (reviews) => {
     const deptMap = {};
     reviews.forEach(review => {
-      const dept = review.employeeId?.department || 'Unknown';
-      const score = review.avgRating || review.overallRating || 0;
+      const dept = review.employeeId?.department || "Unknown";
+      const score = review.overallRating || 0;
       if (!deptMap[dept]) deptMap[dept] = { total: 0, count: 0 };
       deptMap[dept].total += score;
       deptMap[dept].count += 1;
@@ -68,9 +68,9 @@ const PerformanceAnalytics = () => {
   const calculateRatingTrend = (reviews) => {
     const monthly = {};
     reviews.forEach(review => {
-      const month = new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short' });
+      const month = new Date(review.createdAt).toLocaleDateString("en-US", { month: "short" });
       if (!monthly[month]) monthly[month] = { total: 0, count: 0 };
-      monthly[month].total += review.avgRating || review.overallRating || 0;
+      monthly[month].total += review.overallRating || 0;
       monthly[month].count += 1;
     });
     return Object.entries(monthly).map(([month, data]) => ({
@@ -82,9 +82,9 @@ const PerformanceAnalytics = () => {
   const calculateTopPerformers = (reviews) => {
     const performerMap = {};
     reviews.forEach(review => {
-      const name = `${review.employeeId?.firstName || ''} ${review.employeeId?.lastName || ''}`.trim() || 'Unknown';
-      const dept = review.employeeId?.department || 'Unknown';
-      const rating = review.avgRating || review.overallRating || 0;
+      const name = `${review.employeeId?.firstName || ""} ${review.employeeId?.lastName || ""}`.trim() || "Unknown";
+      const dept = review.employeeId?.department || "Unknown";
+      const rating = review.overallRating || 0;
       if (!performerMap[name] || rating > performerMap[name].rating) {
         performerMap[name] = { name, department: dept, rating };
       }
@@ -98,26 +98,34 @@ const PerformanceAnalytics = () => {
     const loadAnalytics = async () => {
       try {
         setLoading(true);
+
         const [stats, cycles] = await Promise.all([
           performanceApi.getStats(),
           performanceApi.getCycles()
         ]);
 
-        // ✅ Fetch reviews via apiClient (same as employees fetch)
+        // apiClient interceptor returns response.data directly
+        // backend returns { success: true, data: [...] } so reviewsRes.data is the array
         let reviews = [];
         try {
-          const reviewsRes = await apiClient.get('/performance/reviews/all');
-          reviews = reviewsRes.data || [];
+          const reviewsRes = await apiClient.get("/performance/reviews/all");
+          reviews = reviewsRes.data ?? [];
         } catch {
           reviews = [];
         }
 
-        // ✅ Fetch total employees count
+        // stats.totalEmployees added to backend getStats in Phase 1
+        // if still 0 (old backend), fall back to users fetch
         let totalEmployees = stats.totalEmployees || 0;
         if (!totalEmployees) {
           try {
-            const usersRes = await apiClient.get('/users');
-            totalEmployees = usersRes.data.filter(u => u.role?.toUpperCase() !== 'ADMIN').length;
+            // apiClient returns response.data directly — usersRes IS the payload
+            // backend /users returns { success, data: [...] } so use usersRes.data
+            const usersRes = await apiClient.get("/users");
+            const usersList = usersRes.data ?? usersRes ?? [];
+            totalEmployees = Array.isArray(usersList)
+              ? usersList.filter(u => u.role?.toUpperCase() !== "ADMIN").length
+              : 0;
           } catch {
             totalEmployees = 0;
           }
@@ -125,13 +133,13 @@ const PerformanceAnalytics = () => {
 
         setAnalyticsData({
           performanceDistribution: calculatePerformanceDistribution(reviews),
-          departmentComparison: calculateDepartmentComparison(reviews),
-          cycleCompletion: calculateCycleCompletion(cycles),
-          ratingTrend: calculateRatingTrend(reviews),
-          topPerformers: calculateTopPerformers(reviews),
+          departmentComparison:    calculateDepartmentComparison(reviews),
+          cycleCompletion:         calculateCycleCompletion(Array.isArray(cycles) ? cycles : []),
+          ratingTrend:             calculateRatingTrend(reviews),
+          topPerformers:           calculateTopPerformers(reviews),
           totalEmployees,
           overallAvgRating: stats.avgScore || 0,
-          activeCycles: stats.activeCycles || 0
+          activeCycles:     stats.activeCycles || 0
         });
       } finally {
         setLoading(false);
@@ -141,6 +149,7 @@ const PerformanceAnalytics = () => {
   }, []);
 
   if (loading) return <SkeletonCard />;
+
   return (
     <div className="space-y-6">
       {/* Summary Stats */}
@@ -195,25 +204,30 @@ const PerformanceAnalytics = () => {
             </CardTitle>
             <p className="text-sm text-muted-foreground">Employee rating breakdown across all reviews</p>
           </CardHeader>
-          <CardContent style={{ height: '350px', minHeight: '350px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={analyticsData.performanceDistribution}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={100}
-                  dataKey="value"
-                >
-                  {analyticsData.performanceDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent style={{ height: "350px", minHeight: "350px" }}>
+            {analyticsData.performanceDistribution.every(d => d.value === 0) ? (
+              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                No review data yet
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={analyticsData.performanceDistribution}
+                    cx="50%" cy="50%"
+                    labelLine={false}
+                    outerRadius={100}
+                    dataKey="value"
+                  >
+                    {analyticsData.performanceDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -225,17 +239,23 @@ const PerformanceAnalytics = () => {
             </CardTitle>
             <p className="text-sm text-muted-foreground">Average ratings by department</p>
           </CardHeader>
-          <CardContent style={{ height: '350px', minHeight: '350px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analyticsData.departmentComparison}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="department" angle={-45} textAnchor="end" height={100} />
-                <YAxis domain={[0, 5]} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="avgScore" fill="#8b5cf6" name="Avg Score" />
-              </BarChart>
-            </ResponsiveContainer>
+          <CardContent style={{ height: "350px", minHeight: "350px" }}>
+            {analyticsData.departmentComparison.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                No department data yet
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analyticsData.departmentComparison}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="department" angle={-45} textAnchor="end" height={100} />
+                  <YAxis domain={[0, 5]} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="avgScore" fill="#8b5cf6" name="Avg Score" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -277,24 +297,30 @@ const PerformanceAnalytics = () => {
             </CardTitle>
             <p className="text-sm text-muted-foreground">Monthly average performance ratings</p>
           </CardHeader>
-          <CardContent style={{ height: '250px', minHeight: '250px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={analyticsData.ratingTrend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis domain={[0, 5]} />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="avgRating"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  name="Avg Rating"
-                  dot={{ fill: '#f59e0b', r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <CardContent style={{ height: "250px", minHeight: "250px" }}>
+            {analyticsData.ratingTrend.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                No trend data yet
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={analyticsData.ratingTrend}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis domain={[0, 5]} />
+                  <Tooltip />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="avgRating"
+                    stroke="#f59e0b"
+                    strokeWidth={2}
+                    name="Avg Rating"
+                    dot={{ fill: "#f59e0b", r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>
