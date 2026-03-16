@@ -5,11 +5,9 @@ import { authorize } from "../middleware/role.middleware";
 
 const router = Router();
 
-// Only Admin/HR can manage shifts
-router.post("/add", protect, authorize("ADMIN", "HR_MANAGER"), createShift);
-router.get("/all", protect, getAllShifts); // Employees might need to see shifts too
+router.post("/add", protect, authorize("ADMIN", "HR_MANAGER" , "CEO"), createShift);
+router.get("/all", protect, getAllShifts); 
 router.delete("/:id", protect, authorize("ADMIN", "HR_MANAGER"), deleteShift);
-//  Add this NEW Route
 router.put("/assign", protect, authorize("ADMIN", "HR_MANAGER"), assignShift);
 
 export default router;

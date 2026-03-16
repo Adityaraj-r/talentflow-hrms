@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import shiftService from "@/services/shiftService";
-import AssignShiftModal from "@/components/dashboard/AssignShiftModal"; 
+import AssignShiftModal from "@/components/dashboard/AssignShiftModal";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton"; 
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Clock,
   Plus,
@@ -15,7 +15,7 @@ import {
   Users,
   Timer
 } from "lucide-react";
-import { toast } from "sonner"; 
+import { toast } from "sonner";
 
 const TimeSelect = ({ value, name, onChange }) => {
   let h12 = "", m = "", ampm = "AM";
@@ -35,7 +35,7 @@ const TimeSelect = ({ value, name, onChange }) => {
     let h24 = parseInt(newH12, 10);
     if (newAmpm === "PM" && h24 !== 12) h24 += 12;
     if (newAmpm === "AM" && h24 === 12) h24 = 0;
-    
+
     const out = `${h24.toString().padStart(2, "0")}:${newM}`;
     onChange({ target: { name, value: out } });
   };
@@ -44,33 +44,33 @@ const TimeSelect = ({ value, name, onChange }) => {
     <div className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 overflow-hidden transition-colors shadow-sm">
       <Clock className="h-4 w-4 mr-2 text-muted-foreground shrink-0" />
       <div className="flex flex-1 items-center justify-between gap-1">
-        <select 
-          value={h12} 
-          onChange={(e) => updateTime(e.target.value, m || "00", ampm)} 
+        <select
+          value={h12}
+          onChange={(e) => updateTime(e.target.value, m || "00", ampm)}
           className="bg-transparent hover:bg-muted focus:bg-muted focus:outline-none appearance-none cursor-pointer text-center w-10 py-1 rounded-sm transition-colors font-medium"
           required
         >
           <option value="" disabled>HH</option>
           {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map(h => <option key={h} value={h}>{h}</option>)}
         </select>
-        
+
         <span className="font-bold text-muted-foreground mb-0.5">:</span>
-        
-        <select 
-          value={m} 
-          onChange={(e) => updateTime(h12 || "09", e.target.value, ampm)} 
+
+        <select
+          value={m}
+          onChange={(e) => updateTime(h12 || "09", e.target.value, ampm)}
           className="bg-transparent hover:bg-muted focus:bg-muted focus:outline-none appearance-none cursor-pointer text-center w-10 py-1 rounded-sm transition-colors font-medium"
           required
         >
           <option value="" disabled>MM</option>
           {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map(min => <option key={min} value={min}>{min}</option>)}
         </select>
-        
+
         <div className="h-4 w-px bg-border mx-1"></div>
-        
-        <select 
-          value={ampm} 
-          onChange={(e) => updateTime(h12 || "09", m || "00", e.target.value)} 
+
+        <select
+          value={ampm}
+          onChange={(e) => updateTime(h12 || "09", m || "00", e.target.value)}
           className="bg-transparent hover:bg-muted focus:bg-muted focus:outline-none appearance-none cursor-pointer text-center w-12 py-1 font-bold text-blue-600 dark:text-blue-400 rounded-sm transition-colors"
         >
           <option value="AM">AM</option>
@@ -155,7 +155,7 @@ const ShiftManagement = () => {
     let hour = parseInt(hourString, 10);
     const ampm = hour >= 12 ? 'PM' : 'AM';
     hour = hour % 12;
-    hour = hour ? hour : 12; 
+    hour = hour ? hour : 12;
     const paddedHour = hour.toString().padStart(2, '0');
     return `${paddedHour}:${minute} ${ampm}`;
   };
@@ -165,7 +165,7 @@ const ShiftManagement = () => {
     const [sH, sM] = start.split(":").map(Number);
     const [eH, eM] = end.split(":").map(Number);
     let diff = (eH * 60 + eM) - (sH * 60 + sM);
-    if (diff < 0) diff += 1440; 
+    if (diff < 0) diff += 1440;
     const h = Math.floor(diff / 60);
     return `${h} Hours`;
   };
@@ -219,18 +219,18 @@ const ShiftManagement = () => {
                 <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Start Time</label>
-                    <TimeSelect 
-                      name="startTime" 
-                      value={formData.startTime} 
-                      onChange={handleChange} 
+                    <TimeSelect
+                      name="startTime"
+                      value={formData.startTime}
+                      onChange={handleChange}
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">End Time</label>
-                    <TimeSelect 
-                      name="endTime" 
-                      value={formData.endTime} 
-                      onChange={handleChange} 
+                    <TimeSelect
+                      name="endTime"
+                      value={formData.endTime}
+                      onChange={handleChange}
                     />
                   </div>
                 </div>

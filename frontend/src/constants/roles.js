@@ -15,6 +15,7 @@ export const ROLES = {
   export const PERMISSIONS = {
     [ROLES.CEO]: {
       dashboard: true,
+      attendance: true,
       recruitment: {
         recruitmentProcess: true,
         staffRequisition: true,

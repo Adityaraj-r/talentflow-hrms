@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Attendance from "../models/Attendance.model";
+import User from "../models/User.model"; 
 
 const OFFICE_START_HOUR = 9;
 const OFFICE_START_MINUTE = 30;
@@ -202,5 +203,142 @@ export const getAllAttendance = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("getAllAttendance error:", error);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export const markManualAttendance = async (req: Request, res: Response) => {
+  try {
+    const { employeeEmail, date, checkIn, checkOut, breakMinutes, status, notes } = req.body;
+
+    if (!employeeEmail || !date || !status) {
+      return res.status(400).json({ success: false, message: "Missing required fields (Email, Date, Status)." });
+    }
+
+    const user = await User.findOne({ email: employeeEmail });
+    if (!user) {
+      return res.status(404).json({ success: false, message: `User with email ${employeeEmail} not found.` });
+    }
+
+    let checkInDate = null;
+    let checkOutDate = null;
+    let totalHours = 0;
+
+    if (checkIn) checkInDate = new Date(`${date}T${checkIn}`);
+    if (checkOut) checkOutDate = new Date(`${date}T${checkOut}`);
+
+    if (checkInDate && checkOutDate) {
+      const grossMinutes = Math.round((checkOutDate.getTime() - checkInDate.getTime()) / 60000);
+      const netMinutes = Math.max(0, grossMinutes - Number(breakMinutes || 0));
+      totalHours = Number((netMinutes / 60).toFixed(2));
+    }
+
+    const attendanceData = {
+      userId: user._id,
+      date,
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
+      totalBreakMinutes: Number(breakMinutes || 0),
+      totalHours,
+      status,
+      state: checkOutDate ? "CHECKED_OUT" : (checkInDate ? "CHECKED_IN" : "MANUAL_ENTRY"),
+      notes: notes || "Manual entry by HR/Admin",
+    };
+
+    const record = await Attendance.findOneAndUpdate(
+      { userId: user._id, date },
+      { $set: attendanceData },
+      { new: true, upsert: true }
+    );
+
+    res.json({ success: true, message: "Manual attendance saved successfully", data: record });
+  } catch (error) {
+    console.error("markManualAttendance error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export const markBulkAttendance = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No CSV file uploaded." });
+    }
+
+    const csvData = req.file.buffer.toString('utf-8');
+    const lines = csvData.split('\n').filter(line => line.trim() !== '');
+
+    if (lines.length < 2) {
+      return res.status(400).json({ success: false, message: "CSV file is empty or invalid." });
+    }
+
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const emailIdx = headers.findIndex(h => h.includes('email'));
+    const dateIdx = headers.findIndex(h => h.includes('date'));
+    const checkInIdx = headers.findIndex(h => h.includes('check in') || h.includes('checkin'));
+    const checkOutIdx = headers.findIndex(h => h.includes('check out') || h.includes('checkout'));
+    const breakIdx = headers.findIndex(h => h.includes('break'));
+    const statusIdx = headers.findIndex(h => h.includes('status'));
+
+    if (emailIdx === -1 || dateIdx === -1 || statusIdx === -1) {
+      return res.status(400).json({ success: false, message: "CSV must contain at least 'Email', 'Date', and 'Status' columns." });
+    }
+
+    let processedCount = 0;
+    let errorCount = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(c => c.trim());
+      const email = cols[emailIdx];
+      const date = cols[dateIdx];
+      const checkIn = checkInIdx !== -1 ? cols[checkInIdx] : null;
+      const checkOut = checkOutIdx !== -1 ? cols[checkOutIdx] : null;
+      const breakMinutes = breakIdx !== -1 ? Number(cols[breakIdx]) || 0 : 0;
+      const status = cols[statusIdx];
+
+      if (!email || !date || !status) {
+        errorCount++;
+        continue;
+      }
+
+      const user = await User.findOne({ email });
+      if (!user) {
+        errorCount++;
+        continue;
+      }
+
+      let checkInDate = null;
+      let checkOutDate = null;
+      let totalHours = 0;
+
+      if (checkIn && checkIn !== '-' && checkIn !== '') checkInDate = new Date(`${date}T${checkIn}`);
+      if (checkOut && checkOut !== '-' && checkOut !== '') checkOutDate = new Date(`${date}T${checkOut}`);
+
+      if (checkInDate && checkOutDate) {
+        const grossMinutes = Math.round((checkOutDate.getTime() - checkInDate.getTime()) / 60000);
+        const netMinutes = Math.max(0, grossMinutes - breakMinutes);
+        totalHours = Number((netMinutes / 60).toFixed(2));
+      }
+
+      await Attendance.findOneAndUpdate(
+        { userId: user._id, date },
+        {
+          $set: {
+            checkIn: checkInDate,
+            checkOut: checkOutDate,
+            totalBreakMinutes: breakMinutes,
+            totalHours,
+            status,
+            state: checkOutDate ? "CHECKED_OUT" : (checkInDate ? "CHECKED_IN" : "MANUAL_ENTRY"),
+            notes: "Bulk CSV Upload"
+          }
+        },
+        { new: true, upsert: true }
+      );
+      processedCount++;
+    }
+
+    res.json({ success: true, message: `Processed successfully. Inserted/Updated: ${processedCount}, Errors/Skipped: ${errorCount}` });
+  } catch (error) {
+    console.error("markBulkAttendance error:", error);
+    res.status(500).json({ success: false, message: "Server error processing bulk upload." });
   }
 };
