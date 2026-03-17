@@ -1,105 +1,151 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
-import { useRole } from "@/contexts/RoleContext"
+import { useNavigate } from "react-router-dom"
+import { reviewApi } from "@/services/reviewApi"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText, Search } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { FileText, Search, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { toast } from "sonner"
 
 const Appraisal = () => {
-  const { user } = useAuth()
-  const { hasRole } = useRole()
-
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Performance Appraisal (Employee)</h1>
-        <p className="text-muted-foreground">View your performance appraisal history</p>
+        <h1 className="text-3xl font-bold tracking-tight">Performance Appraisal</h1>
+        <p className="text-muted-foreground">View your performance appraisal history and self-assessments</p>
       </div>
-      <AppraisalHistory />
+
+      <Tabs defaultValue="history" className="w-full">
+        <TabsList>
+          <TabsTrigger value="history">Appraisal History</TabsTrigger>
+          <TabsTrigger value="self">Self Assessment</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="history">
+          <AppraisalHistory />
+        </TabsContent>
+
+        <TabsContent value="self">
+          <Card>
+            <CardHeader>
+              <CardTitle>Self Assessment</CardTitle>
+              <CardDescription>Reflect on your performance for the current period</CardDescription>
+            </CardHeader>
+            <CardContent className="h-40 flex items-center justify-center border-2 border-dashed rounded-lg">
+              <p className="text-muted-foreground font-medium">Self-assessment coming soon</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
 
 const AppraisalHistory = () => {
-  const appraisalHistory = [
-    {
-      id: 1,
-      employeeName: "John Doe",
-      employeeId: "EMP001",
-      department: "IT",
-      appraisalPeriod: "2025-02",
-      performanceRating: "Good",
-      status: "Approved",
-      approvedBy: "Jane Smith",
-      approvalDate: "2025-03-01",
-    },
-    {
-      id: 2,
-      employeeName: "John Doe",
-      employeeId: "EMP001",
-      department: "IT",
-      appraisalPeriod: "2025-01",
-      performanceRating: "Satisfactory",
-      status: "Approved",
-      approvedBy: "Bob Williams",
-      approvalDate: "2025-02-15",
-    },
-  ]
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const [reviews, setReviews] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+
+  useEffect(() => {
+    const fetchMyReviews = async () => {
+      try {
+        setLoading(true)
+        const res = await reviewApi.getEmployeeReviews(user.id)
+        setReviews(res.data || [])
+      } catch (error) {
+        console.error("Error fetching reviews:", error)
+        toast.error("Failed to load your review history")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (user?.id) {
+      fetchMyReviews()
+    }
+  }, [user.id])
+
+  const filteredReviews = reviews.filter((r) =>
+    r.appraisalPeriod?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.performanceRating?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Appraisal History</CardTitle>
-          <CardDescription>View your performance appraisal history</CardDescription>
+          <CardTitle>My Reviews</CardTitle>
+          <CardDescription>Historical record of your performance evaluations</CardDescription>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search appraisals..." className="pl-8 w-[200px] md:w-[300px]" />
+            <Input 
+              type="search" 
+              placeholder="Filter by period..." 
+              className="pl-8 w-[200px]" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
-          <div className="grid grid-cols-6 bg-muted/50 p-3 text-sm font-medium">
-            <div>Employee</div>
-            <div>Employee ID</div>
+          <div className="grid grid-cols-5 bg-muted/50 p-3 text-sm font-medium">
             <div>Period</div>
             <div>Rating</div>
+            <div>Reviewer</div>
             <div>Status</div>
-            <div>Actions</div>
+            <div className="text-right">Actions</div>
           </div>
+          
           <div className="divide-y">
-            {appraisalHistory.map((appraisal) => (
-              <div key={appraisal.id} className="grid grid-cols-6 p-3 text-sm">
-                <div className="font-medium">{appraisal.employeeName}</div>
-                <div>{appraisal.employeeId}</div>
-                <div>{appraisal.appraisalPeriod}</div>
-                <div>{appraisal.performanceRating}</div>
-                <div>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                      appraisal.status === "Approved"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                        : appraisal.status === "Rejected"
-                        ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                        : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
-                    }`}
-                  >
-                    {appraisal.status}
-                  </span>
-                </div>
-                <div>
-                  <Button variant="ghost" size="icon">
-                    <FileText className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
-                </div>
+            {loading ? (
+              <div className="p-8 flex flex-col items-center justify-center gap-2">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Loading your reviews...</p>
               </div>
-            ))}
+            ) : filteredReviews.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground">
+                No reviews yet
+              </div>
+            ) : (
+              filteredReviews.map((review) => (
+                <div key={review._id} className="grid grid-cols-5 p-3 text-sm items-center">
+                  <div className="font-medium">{review.appraisalPeriod}</div>
+                  <div className="capitalize">{review.performanceRating}</div>
+                  <div>{review.reviewerName || "Manager"}</div>
+                  <div>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                        review.status === "Approved"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                          : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
+                      }`}
+                    >
+                      {review.status || "Pending"}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => navigate(`/role/hr_manager/review/${review._id}`)}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span className="sr-only">View details</span>
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </CardContent>

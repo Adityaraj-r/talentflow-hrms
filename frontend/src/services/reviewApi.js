@@ -1,17 +1,30 @@
-import api from './apiClient';
+import apiClient from "./apiClient";
 
 export const reviewApi = {
+  assignReview: (data) =>
+    apiClient.post("/performance/reviews/assign", data),
 
-  assignReview: (data) => api.post('/performance/reviews/assign', data),
+  getAllReviews: (params) =>
+    apiClient.get("/performance/reviews/all", { params }),
 
-  getAllReviews: (params) => api.get('/performance/reviews/all', { params }),
-  getPendingReviews: () => api.get('/performance/reviews/pending'),
-  getEmployeeReviews: (employeeId) => api.get(`/performance/reviews/employee/${employeeId}`),
+  getPendingReviews: () =>
+    apiClient.get("/performance/reviews/pending"),
 
-  submitReview: (reviewId, data) => api.put(`/performance/reviews/${reviewId}/submit`, data),
-  approveReview: (reviewId, data) => api.put(`/performance/reviews/${reviewId}/approve`, data),
-  getAnalyticsSummary: () => api.get('/performance/analytics/summary'),
+  getEmployeeReviews: (employeeId) =>
+    apiClient.get(`/performance/reviews/employee/${employeeId}`),
 
+  // ADDED: getReviewById — fetches a single review by ID
+  // Previously ReviewDetailPage was fetching ALL reviews and filtering — O(n) disaster
+  getReviewById: (reviewId) =>
+    apiClient.get(`/performance/reviews/${reviewId}`),
+
+  submitReview: (reviewId, data) =>
+    apiClient.put(`/performance/reviews/${reviewId}/submit`, data),
+
+  approveReview: (reviewId, data) =>
+    apiClient.put(`/performance/reviews/${reviewId}/approve`, data),
+
+  // REMOVED: getAnalyticsSummary — route does not exist in backend (would 404)
 };
 
 export default reviewApi;

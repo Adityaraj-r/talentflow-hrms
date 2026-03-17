@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import apiClient from '@/services/apiClient';
 
 const AuthContext = createContext();
 
@@ -9,65 +10,69 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [userRole, setUserRole] = useState(null);
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser]                   = useState(null);
+  const [userData, setUserData]           = useState(null);
+  const [loading, setLoading]             = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const setAuthState = (userData, token) => {
     setUser(userData);
     setUserData(userData);
-    setUserRole(userData.role);
     setIsAuthenticated(true);
     localStorage.setItem('token', token);
-    localStorage.setItem('userRole', userData.role);
-    localStorage.setItem('userData', JSON.stringify(userData));
+    // Only store role string — NOT full userData object (XSS risk)
+    localStorage.setItem('userRole', typeof userData.role === 'string'
+      ? userData.role
+      : userData.role?.name || '');
   };
 
   const clearAuthState = () => {
     setUser(null);
     setUserData(null);
-    setUserRole(null);
     setIsAuthenticated(false);
     localStorage.removeItem('token');
     localStorage.removeItem('userRole');
-    localStorage.removeItem('userData');
   };
 
+  // On mount: validate token by fetching profile
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) { setLoading(false); return; }
+    if (!token) {
+      setLoading(false);
+      return;
+    }
 
-    fetch('http://localhost:5001/api/auth/profile', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
+    apiClient.get('/auth/profile')
       .then((res) => {
-        setUser(res.data);
-        setUserData(res.data);
-        setUserRole(res.data.role);
+        // apiClient interceptor returns response.data
+        // backend returns { success: true, data: { user object } }
+        const userData = res.data ?? res;
+        setUser(userData);
+        setUserData(userData);
         setIsAuthenticated(true);
-        localStorage.setItem('userRole', res.data.role);
-        localStorage.setItem('userData', JSON.stringify(res.data));
+        localStorage.setItem('userRole', typeof userData.role === 'string'
+          ? userData.role
+          : userData.role?.name || '');
       })
-      .catch(() => clearAuthState())
+      .catch(() => {
+        clearAuthState();
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const login = async (email, password) => {
-    const res = await fetch('http://localhost:5001/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
+    // FIXED: use apiClient instead of hardcoded fetch
+    // apiClient returns response.data → { success, token, data: { user } }
+    const res = await apiClient.post('/auth/login', { email, password });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Login failed');
+    // Backend shape: { success: true, token: "...", data: { id, email, role, ... } }
+    const userData = res.data ?? res;
+    const token    = res.token;
 
-    // Backend returns { success, token, data: { id, email, role, ... } }
-    setAuthState(data.data, data.token);
-    return { success: true, user: data.data };
+    if (!token) throw new Error('Login failed — no token received');
+
+    setAuthState(userData, token);
+    return { success: true, user: userData };
   };
 
   const logout = () => {
@@ -75,15 +80,20 @@ export const AuthProvider = ({ children }) => {
     window.location.href = '/login';
   };
 
+  // userRole derived from user — never stale
+  const userRole = user
+    ? (typeof user.role === 'string' ? user.role : user.role?.name || '')
+    : null;
+
   const value = {
     user,
-    userRole,
+    userRole,          // derived, always in sync with user
     userData,
     loading,
     isAuthenticated,
-    currentUser: user,
+    currentUser: user, // alias for backward compatibility
     login,
-    logout
+    logout,
   };
 
   return (
