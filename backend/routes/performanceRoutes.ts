@@ -3,47 +3,50 @@ import { PerformanceController } from '../controllers/performanceController';
 import { protect } from '../middleware/auth.middleware';
 import { authorize } from '../middleware/role.middleware';
 
-
 const router = Router();
 
-// All performance routes require authentication
+// All routes require authentication
 router.use(protect as any);
 
+// ─── CYCLES (HRMANAGER only for mutations) ────────────────────────────────────
+router.post('/cycles', authorize('HRMANAGER', 'SUPER ADMIN'), PerformanceController.createCycle);
+router.get('/cycles', PerformanceController.getCycles);
+router.get('/cycles/:id', PerformanceController.getCycleById);
+router.put('/cycles/:id', authorize('HRMANAGER', 'SUPER ADMIN'), PerformanceController.updateCycle);
+router.delete('/cycles/:id', authorize('HRMANAGER', 'SUPER ADMIN'), PerformanceController.deleteCycle);
 
-// ── Cycle Management (HR_MANAGER only) ──────────────────────────────────────
-router.post(  '/cycles',     authorize('HR_MANAGER', 'SUPER ADMIN'), PerformanceController.createCycle);
-router.get(   '/cycles',     PerformanceController.getCycles);
-router.get(   '/cycles/:id', PerformanceController.getCycleById);
-router.put(   '/cycles/:id', authorize('HR_MANAGER', 'SUPER ADMIN'), PerformanceController.updateCycle);
-router.delete('/cycles/:id', authorize('HR_MANAGER', 'SUPER ADMIN'), PerformanceController.deleteCycle);
-
-
-// ── Stats (HR_MANAGER, CEO, SUPER ADMIN) ────────────────────────────────────
+// ─── STATS ────────────────────────────────────────────────────────────────────
 router.get('/stats', PerformanceController.getStats);
 
+// ─── ANALYTICS ────────────────────────────────────────────────────────────────
+router.get('/analytics-summary', PerformanceController.getAnalyticsSummary);
 
-// ── Reviews ─────────────────────────────────────────────────────────────────
+// ─── PHASE 5: NEW WORKFLOW ENDPOINTS ─────────────────────────────────────────
+// IMPORTANT: specific named routes MUST come before /:id wildcard
 
-// Assign: HR_MANAGER designates reviewer for an employee
-router.post('/reviews/assign',                  authorize('HR_MANAGER', 'SUPER ADMIN'),  PerformanceController.assignReview);
+// Employee self-assessment
+router.post('/self-assessment', authorize('EMPLOYEE'), PerformanceController.submitSelfAssessment);
 
-// IMPORTANT: specific routes before :id wildcard routes
-router.get('/reviews/pending',                  PerformanceController.getPendingReviews);
-router.get('/reviews/all',                      PerformanceController.getAllReviews);
-router.get('/reviews/employee/:employeeId',     PerformanceController.getEmployeeReviews);
+// Manager submits review (Direct or Department Manager)
+router.post('/manager-review', authorize('DIRECTMANAGER', 'DEPARTMENTMANAGER', 'SUPER ADMIN'), PerformanceController.submitManagerReview);
 
-// ADDED: get single review by ID (fixes ReviewDetailPage fetching ALL reviews)
-router.get('/reviews/:id',                      PerformanceController.getReviewById);
+// HR Manager adds HR-level review notes
+router.patch('/hr-review/:id', authorize('HRMANAGER', 'SUPER ADMIN'), PerformanceController.submitHRReview);
 
-// Submit: reviewer (manager) fills in ratings
-router.put('/reviews/:id/submit',               PerformanceController.submitReview);
+// HR Manager finalizes the review
+router.patch('/finalize/:id', authorize('HRMANAGER', 'SUPER ADMIN'), PerformanceController.finalizeReview);
 
-// Approve: HR_MANAGER approves completed reviews
-router.put('/reviews/:id/approve',              authorize('HR_MANAGER', 'SUPER ADMIN'),  PerformanceController.approveReview);
+// Employee views their own review for a specific cycle
+router.get('/my-review/:cycleId', authorize('EMPLOYEE'), PerformanceController.getMyReview);
 
-
-// ── Analytics ────────────────────────────────────────────────────────────────
-router.get('/analytics/summary', PerformanceController.getAnalyticsSummary);
-
+// ─── REVIEWS ──────────────────────────────────────────────────────────────────
+// NOTE: specific routes before /:id wildcard
+router.post('/reviews/assign', authorize('HRMANAGER', 'SUPER ADMIN'), PerformanceController.assignReview);
+router.get('/reviews/pending', PerformanceController.getPendingReviews);
+router.get('/reviews/all', PerformanceController.getAllReviews);
+router.get('/reviews/employee/:employeeId', PerformanceController.getEmployeeReviews);
+router.get('/reviews/:id', PerformanceController.getReviewById);          // FIXED: added in Phase 1
+router.put('/reviews/:id/submit', PerformanceController.submitReview);
+router.put('/reviews/:id/approve', authorize('HRMANAGER', 'SUPER ADMIN'), PerformanceController.approveReview);
 
 export default router;
