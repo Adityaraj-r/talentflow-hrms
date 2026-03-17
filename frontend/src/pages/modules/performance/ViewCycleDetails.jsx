@@ -15,15 +15,18 @@ import {
   FileText,
   BarChart3,
   Plus,
-  Loader2
+  Loader2,
+  Inbox
 } from "lucide-react";
 import { toast } from "sonner";
 import { performanceApi } from "@/services/performanceApi";
 import { reviewApi } from "@/services/reviewApi";
+import { useAuth } from "@/contexts/AuthContext"; // Ensure this path matches your project structure
 import AssignReviewModal from "@/components/performance/AssignReviewModal";
 import SubmitReviewModal from "@/components/performance/SubmitReviewModal";
 
 const ViewCycleDetails = () => {
+  const { user: currentUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
@@ -48,12 +51,11 @@ const ViewCycleDetails = () => {
         reviewApi.getAllReviews({ cycleId: id })
       ]);
 
-      // performanceApi uses .then(r => r.data) — cycleRes may already be unwrapped
-      // safe unwrap handles both { data: cycle } and plain cycle object
-      setCycle(cycleRes?.data ?? cycleRes);
+      const cycleData = cycleRes?.data ?? cycleRes;
+      if (cycleData) {
+        setCycle(cycleData);
+      }
 
-      // reviewApi has no unwrap — reviewsRes is { success, data: [...] }
-      // filter to only show reviews for this specific cycle
       const allReviews = reviewsRes?.data ?? [];
       setReviews(
         Array.isArray(allReviews)
@@ -65,6 +67,7 @@ const ViewCycleDetails = () => {
       );
 
     } catch (error) {
+      console.error("Error loading cycle:", error);
       toast.error("Failed to load cycle details");
     } finally {
       setLoading(false);
@@ -86,9 +89,9 @@ const ViewCycleDetails = () => {
 
   const getStatusStyle = (status) => {
     const styles = {
-      completed:    "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/30",
+      completed:     "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/30",
       "in-progress":"bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-500/30",
-      pending:      "bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400 border border-gray-200 dark:border-gray-500/30"
+      pending:       "bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400 border border-gray-200 dark:border-gray-500/30"
     };
     return styles[status] || styles.pending;
   };
@@ -132,8 +135,7 @@ const ViewCycleDetails = () => {
             <p className="text-muted-foreground mb-6">
               The performance cycle you're looking for doesn't exist.
             </p>
-            {/* FIXED: was /role/admin/appraisal */}
-            <Button onClick={() => navigate("/role/hr_manager/appraisal/cycles")}>
+            <Button onClick={() => navigate("/role/hr-manager/appraisal/cycles")}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Performance
             </Button>
@@ -147,12 +149,10 @@ const ViewCycleDetails = () => {
     <div className="min-h-screen bg-white dark:bg-gray-950 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
 
-        {/* ─── Header ─────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {/* FIXED: was /role/admin/appraisal */}
             <button
-              onClick={() => navigate("/role/hr_manager/appraisal/cycles")}
+              onClick={() => navigate("/role/hr-manager/appraisal/cycles")}
               className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               <ArrowLeft className="h-4 w-4 text-gray-700 dark:text-gray-300" />
@@ -187,9 +187,7 @@ const ViewCycleDetails = () => {
           </div>
         </div>
 
-        {/* ─── Stats Cards ─────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-
           <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-6">
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -234,7 +232,6 @@ const ViewCycleDetails = () => {
           </div>
         </div>
 
-        {/* ─── Status Summary ───────────────────────────────────────────── */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
@@ -265,7 +262,6 @@ const ViewCycleDetails = () => {
           </div>
         </div>
 
-        {/* ─── Description ─────────────────────────────────────────────── */}
         {cycle.description && (
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
@@ -276,7 +272,6 @@ const ViewCycleDetails = () => {
           </div>
         )}
 
-        {/* ─── Reviews Table ────────────────────────────────────────────── */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
           <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
             <div>
@@ -305,82 +300,95 @@ const ViewCycleDetails = () => {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                 {reviews.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                      No reviews assigned yet.
-                      {cycle.status === "active" && (
-                        <button
-                          onClick={() => setShowAssignModal(true)}
-                          className="ml-2 text-blue-600 dark:text-blue-400 underline font-medium"
-                        >
-                          Assign the first review
-                        </button>
-                      )}
+                    <td colSpan={7} className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-3">
+                        <Inbox className="h-10 w-10 text-gray-300" />
+                        <div className="space-y-1">
+                          <p className="text-gray-500 dark:text-gray-400 font-medium">No reviews assigned yet.</p>
+                          {cycle.status === "active" && (
+                            <button
+                              onClick={() => setShowAssignModal(true)}
+                              className="text-blue-600 dark:text-blue-400 underline text-sm hover:text-blue-700 transition-colors font-medium"
+                            >
+                              Assign the first review to start this cycle
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 ) : (
-                  reviews.map((review) => (
-                    <tr
-                      key={review._id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                    >
-                      <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                        {getEmployeeName(review)}
-                      </td>
-                      <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
-                        {review.employeeId?.department ?? "—"}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 w-fit ${getStatusStyle(review.status)}`}>
-                          {getStatusIcon(review.status)}
-                          {review.status?.replace("-", " ").toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 font-semibold">
-                        {review.overallRating > 0
-                          ? <span className="text-orange-600 dark:text-orange-400">{review.overallRating}/5</span>
-                          : <span className="text-gray-400">—</span>
-                        }
-                      </td>
-                      <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
-                        {getReviewerName(review)}
-                      </td>
-                      <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
-                        {review.submittedAt
-                          ? new Date(review.submittedAt).toLocaleDateString("en-US", {
-                              month: "short", day: "numeric", year: "numeric"
-                            })
-                          : "—"
-                        }
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        {review.status === "pending" && (
-                          <button
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium transition-colors"
-                            onClick={() => { setSelectedReview(review); setShowSubmitModal(true); }}
-                          >
-                            Start Review
-                          </button>
-                        )}
-                        {/* FIXED: was /role/admin/review — now correct path */}
-                        {review.status === "completed" && (
-                          <button
-                            className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm font-medium transition-colors"
-                            onClick={() => navigate(`/role/hr_manager/review/${review._id}`)}
-                          >
-                            View Details
-                          </button>
-                        )}
-                        {review.status === "approved" && (
-                          <button
-                            className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 text-sm font-medium transition-colors"
-                            onClick={() => navigate(`/role/hr_manager/review/${review._id}`)}
-                          >
-                            View Approved
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
+                  reviews.map((review) => {
+                    const reviewerId = typeof review.reviewerId === 'object' 
+                      ? review.reviewerId?._id 
+                      : review.reviewerId;
+                    
+                    const isAssignedReviewer = (reviewerId === currentUser?.id || reviewerId === currentUser?._id);
+
+                    return (
+                      <tr
+                        key={review._id}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                      >
+                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                          {getEmployeeName(review)}
+                        </td>
+                        <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
+                          {review.employeeId?.department ?? "—"}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 w-fit ${getStatusStyle(review.status)}`}>
+                            {getStatusIcon(review.status)}
+                            {review.status?.replace("-", " ").toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-semibold">
+                          {review.overallRating > 0
+                            ? <span className="text-orange-600 dark:text-orange-400">{review.overallRating}/5</span>
+                            : <span className="text-gray-400">—</span>
+                          }
+                        </td>
+                        <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
+                          {getReviewerName(review)}
+                        </td>
+                        <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
+                          {review.submittedAt
+                            ? new Date(review.submittedAt).toLocaleDateString("en-US", {
+                                month: "short", day: "numeric", year: "numeric"
+                              })
+                            : "—"
+                          }
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {review.status === "pending" && isAssignedReviewer && (
+                            <button
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium transition-colors"
+                              onClick={() => { setSelectedReview(review); setShowSubmitModal(true); }}
+                            >
+                              Start Review
+                            </button>
+                          )}
+                          
+                          {review.status === "completed" && (
+                            <button
+                              className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm font-medium transition-colors"
+                              onClick={() => navigate(`/role/hr-manager/review/${review._id}`)}
+                            >
+                              View Details
+                            </button>
+                          )}
+                          {review.status === "approved" && (
+                            <button
+                              className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 text-sm font-medium transition-colors"
+                              onClick={() => navigate(`/role/hr-manager/review/${review._id}`)}
+                            >
+                              View Approved
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -389,7 +397,6 @@ const ViewCycleDetails = () => {
 
       </div>
 
-      {/* ─── Assign Review Modal ─────────────────────────────────────────── */}
       <AssignReviewModal
         isOpen={showAssignModal}
         onClose={() => setShowAssignModal(false)}
@@ -402,7 +409,6 @@ const ViewCycleDetails = () => {
         }}
       />
 
-      {/* ─── Submit Review Modal ─────────────────────────────────────────── */}
       <SubmitReviewModal
         isOpen={showSubmitModal}
         onClose={() => { setShowSubmitModal(false); setSelectedReview(null); }}
