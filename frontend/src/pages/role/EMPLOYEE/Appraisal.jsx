@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FileText, Search, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const Appraisal = () => {
   return (
@@ -73,7 +74,8 @@ const AppraisalHistory = () => {
 
   const filteredReviews = reviews.filter((r) =>
     r.appraisalPeriod?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.performanceRating?.toLowerCase().includes(searchQuery.toLowerCase())
+    r.performanceRating?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.status?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   return (
@@ -108,6 +110,16 @@ const AppraisalHistory = () => {
           
           <div className="divide-y">
             {loading ? (
+              Array(3).fill(0).map((_, i) => (
+                <div key={i} className="grid grid-cols-5 p-3 items-center gap-4">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                  <Skeleton className="h-8 w-8 ml-auto" />
+                </div>
+              ))
+            ) : filteredReviews.length === 0 ? (
               <div className="p-8 flex flex-col items-center justify-center gap-2">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 <p className="text-sm text-muted-foreground">Loading your reviews...</p>
@@ -137,7 +149,7 @@ const AppraisalHistory = () => {
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      onClick={() => navigate(`/role/hr_manager/review/${review._id}`)}
+                      onClick={() => navigate(`/role/EMPLOYEE/review/${review._id}`)}
                     >
                       <FileText className="h-4 w-4" />
                       <span className="sr-only">View details</span>

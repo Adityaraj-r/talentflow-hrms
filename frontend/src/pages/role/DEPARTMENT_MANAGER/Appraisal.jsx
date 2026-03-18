@@ -1,17 +1,17 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAuth } from "@/contexts/AuthContext"
-import { useRole } from "@/contexts/RoleContext"
 import { useNavigate } from "react-router-dom"
+import { useAuth } from "@/contexts/AuthContext"
 import { reviewApi } from "@/services/reviewApi"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton" // Added Skeleton import
 import { FileText, Search, Plus } from "lucide-react"
 import { toast } from "sonner"
-import SubmitReviewModal from "@/components/performance/SubmitReviewModal";
+import SubmitReviewModal from "@/components/performance/SubmitReviewModal"
 
 const Appraisal = () => {
   return (
@@ -42,7 +42,21 @@ const AppraisalHistory = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Fetch reviews on mount
+  // 1. IMPROVED SKELETON STATE
+  const LoadingSkeleton = () => (
+    Array(5).fill(0).map((_, i) => (
+      <div key={i} className="grid grid-cols-7 p-3 items-center gap-4">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-4 w-12" />
+        <Skeleton className="h-6 w-20 rounded-full" />
+        <Skeleton className="h-8 w-8 ml-auto" />
+      </div>
+    ))
+  )
+
   useEffect(() => {
     const fetchReviews = async () => {
       try {
@@ -58,17 +72,12 @@ const AppraisalHistory = () => {
     }
 
     if (user?.id) fetchReviews()
-  }, [user.id])
+  }, [user?.id])
 
-  // Filter logic for search bar
   const filteredReviews = reviews.filter((review) =>
     review.employeeName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     review.employeeId?.toLowerCase().includes(searchQuery.toLowerCase())
   )
-
-  const handleViewDetails = (reviewId) => {
-    navigate(`/role/hr_manager/review/${reviewId}`)
-  }
 
   return (
     <Card>
@@ -106,12 +115,14 @@ const AppraisalHistory = () => {
           </div>
           <div className="divide-y">
             {isLoading ? (
-              <div className="p-4 text-center text-muted-foreground">Loading reviews...</div>
+              <LoadingSkeleton />
             ) : filteredReviews.length === 0 ? (
-              <div className="p-4 text-center text-muted-foreground">No appraisals found.</div>
+              <div className="p-8 text-center text-muted-foreground">
+                No appraisals found.
+              </div>
             ) : (
               filteredReviews.map((review) => (
-                <div key={review._id} className="grid grid-cols-7 p-3 text-sm items-center">
+                <div key={review._id} className="grid grid-cols-7 p-3 text-sm items-center hover:bg-muted/50 transition-colors">
                   <div className="font-medium">{review.employeeName}</div>
                   <div>{review.employeeId}</div>
                   <div>{review.department}</div>
@@ -134,7 +145,8 @@ const AppraisalHistory = () => {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      onClick={() => handleViewDetails(review._id)}
+                      // 2. UPDATED NAVIGATION TO DEPARTMENT_MANAGER ROLE
+                      onClick={() => navigate(`/role/DEPARTMENT_MANAGER/review/${review._id}`)}
                     >
                       <FileText className="h-4 w-4" />
                       <span className="sr-only">View details</span>
@@ -151,8 +163,8 @@ const AppraisalHistory = () => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSuccess={() => {
-            // Refresh logic here if needed
-            setIsModalOpen(false)
+          // Re-fetch logic or local state update could go here
+          setIsModalOpen(false)
         }}
       />
     </Card>

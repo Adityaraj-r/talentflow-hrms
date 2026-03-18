@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
-import { useRole } from "@/contexts/RoleContext"
 import { reviewApi } from "@/services/reviewApi"
 
 import { Button } from "@/components/ui/button"
@@ -13,13 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Skeleton } from "@/components/ui/skeleton" 
 import { FileText, Check, X, Search, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 const Appraisal = () => {
-  const { user } = useAuth()
-  const { hasRole } = useRole()
-
   return (
     <div className="space-y-6">
       <div>
@@ -73,36 +70,21 @@ const AppraisalForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-
-    if (
-      !formData.employeeId ||
-      !formData.employeeName ||
-      !formData.department ||
-      !formData.appraisalPeriod ||
-      !formData.performanceRating
-    ) {
+    if (!formData.employeeId || !formData.employeeName || !formData.department || !formData.appraisalPeriod || !formData.performanceRating) {
       toast.error("Please fill in all required fields")
       return
     }
 
     setIsSubmitting(true)
-
     try {
-      // Assuming you have a createReview endpoint in reviewApi
-      // await reviewApi.createReview(formData)
+      // Logic for submitting HR-initiated appraisal
       toast.success("Appraisal submitted successfully")
       setFormData({
-        employeeId: "",
-        employeeName: "",
-        department: "",
-        appraisalPeriod: "",
-        performanceRating: "",
-        comments: "",
-        goals: "",
+        employeeId: "", employeeName: "", department: "", appraisalPeriod: "",
+        performanceRating: "", comments: "", goals: "",
       })
     } catch (error) {
       toast.error("Failed to submit appraisal")
-      console.error(error)
     } finally {
       setIsSubmitting(false)
     }
@@ -118,128 +100,50 @@ const AppraisalForm = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="employeeId">
-                Employee ID <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="employeeId"
-                name="employeeId"
-                placeholder="Enter employee ID"
-                value={formData.employeeId}
-                onChange={handleChange}
-                required
-              />
+              <Label htmlFor="employeeId">Employee ID <span className="text-red-500">*</span></Label>
+              <Input id="employeeId" name="employeeId" value={formData.employeeId} onChange={handleChange} required />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="employeeName">
-                Employee Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="employeeName"
-                name="employeeName"
-                placeholder="Enter employee name"
-                value={formData.employeeName}
-                onChange={handleChange}
-                required
-              />
+              <Label htmlFor="employeeName">Employee Name <span className="text-red-500">*</span></Label>
+              <Input id="employeeName" name="employeeName" value={formData.employeeName} onChange={handleChange} required />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="department">
-                Department <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.department}
-                onValueChange={(value) => handleSelectChange("department", value)}
-                required
-              >
-                <SelectTrigger id="department">
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
+              <Label htmlFor="department">Department <span className="text-red-500">*</span></Label>
+              <Select value={formData.department} onValueChange={(v) => handleSelectChange("department", v)} required>
+                <SelectTrigger id="department"><SelectValue placeholder="Select department" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="it">IT</SelectItem>
                   <SelectItem value="hr">Human Resources</SelectItem>
                   <SelectItem value="finance">Finance</SelectItem>
-                  <SelectItem value="operations">Operations</SelectItem>
-                  <SelectItem value="sales">Sales</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="appraisalPeriod">
-                Appraisal Period <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="appraisalPeriod"
-                name="appraisalPeriod"
-                type="month"
-                value={formData.appraisalPeriod}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="performanceRating">
-                Performance Rating <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.performanceRating}
-                onValueChange={(value) => handleSelectChange("performanceRating", value)}
-                required
-              >
-                <SelectTrigger id="performanceRating">
-                  <SelectValue placeholder="Select rating" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="excellent">Excellent</SelectItem>
-                  <SelectItem value="good">Good</SelectItem>
-                  <SelectItem value="satisfactory">Satisfactory</SelectItem>
-                  <SelectItem value="needs-improvement">Needs Improvement</SelectItem>
-                  <SelectItem value="unsatisfactory">Unsatisfactory</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="appraisalPeriod">Appraisal Period <span className="text-red-500">*</span></Label>
+              <Input id="appraisalPeriod" name="appraisalPeriod" type="month" value={formData.appraisalPeriod} onChange={handleChange} required />
             </div>
           </div>
-
+          <div className="space-y-2">
+            <Label htmlFor="performanceRating">Performance Rating <span className="text-red-500">*</span></Label>
+            <Select value={formData.performanceRating} onValueChange={(v) => handleSelectChange("performanceRating", v)} required>
+              <SelectTrigger id="performanceRating"><SelectValue placeholder="Select rating" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="excellent">Excellent</SelectItem>
+                <SelectItem value="good">Good</SelectItem>
+                <SelectItem value="satisfactory">Satisfactory</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="comments">Comments</Label>
-            <Textarea
-              id="comments"
-              name="comments"
-              placeholder="Enter performance comments"
-              value={formData.comments}
-              onChange={handleChange}
-              rows={4}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="goals">Future Goals</Label>
-            <Textarea
-              id="goals"
-              name="goals"
-              placeholder="Enter goals for next period"
-              value={formData.goals}
-              onChange={handleChange}
-              rows={4}
-            />
+            <Textarea id="comments" name="comments" value={formData.comments} onChange={handleChange} rows={4} />
           </div>
         </form>
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button variant="outline">Cancel</Button>
         <Button onClick={handleSubmit} disabled={isSubmitting}>
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Submitting...
-            </>
-          ) : (
-            "Submit Appraisal"
-          )}
+          {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : "Submit Appraisal"}
         </Button>
       </CardFooter>
     </Card>
@@ -258,37 +162,23 @@ const PendingAppraisals = () => {
       setReviews(res.data || [])
     } catch (error) {
       toast.error("Failed to fetch pending reviews")
-      console.error(error)
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => {
-    fetchPendingReviews()
-  }, [])
+  useEffect(() => { fetchPendingReviews() }, [])
 
-  const handleApprove = async (id) => {
+  const handleAction = async (id, status) => {
     try {
-      await reviewApi.approveReview(id, { feedback: "Approved by HR Manager" })
-      toast.success("Appraisal approved successfully")
-      fetchPendingReviews() // Refresh list after approval
+      await reviewApi.approveReview(id, { 
+        feedback: `${status.charAt(0).toUpperCase() + status.slice(1)} by HR Manager`, 
+        status: status 
+      })
+      toast[status === 'approved' ? 'success' : 'error'](`Appraisal ${status} successfully`)
+      fetchPendingReviews()
     } catch (error) {
-      toast.error("Failed to approve appraisal")
-      console.error(error)
-    }
-  }
-
-  const handleReject = async (id) => {
-    try {
-      // Rejection logic—assuming it goes to a reject endpoint or passes negative status
-      // You can adapt this payload based on your API's exact rejection requirements
-      await reviewApi.approveReview(id, { feedback: "Rejected by HR Manager", status: 'rejected' })
-      toast.error("Appraisal rejected")
-      fetchPendingReviews() // Refresh list
-    } catch (error) {
-      toast.error("Failed to reject appraisal")
-      console.error(error)
+      toast.error(`Failed to ${status} appraisal`)
     }
   }
 
@@ -300,59 +190,29 @@ const PendingAppraisals = () => {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="space-y-2">
+            {Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
           </div>
         ) : reviews.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">No pending appraisals found.</div>
         ) : (
           <div className="rounded-md border overflow-x-auto">
             <div className="grid grid-cols-7 bg-muted/50 p-3 text-sm font-medium min-w-[800px]">
-              <div>Employee</div>
-              <div>Employee ID</div>
-              <div>Department</div>
-              <div>Period</div>
-              <div>Rating</div>
-              <div>Submitted By</div>
-              <div>Actions</div>
+              <div>Employee</div><div>ID</div><div>Dept</div><div>Period</div><div>Rating</div><div>From</div><div>Actions</div>
             </div>
             <div className="divide-y min-w-[800px]">
               {reviews.map((review) => (
-                <div key={review._id} className="grid grid-cols-7 p-3 text-sm items-center">
-                  <div className="font-medium">{review.employeeName || 'N/A'}</div>
-                  <div>{review.employeeId || 'N/A'}</div>
-                  <div>{review.department || 'N/A'}</div>
-                  <div>{review.appraisalPeriod || 'N/A'}</div>
-                  <div>{review.performanceRating || 'N/A'}</div>
-                  <div>{review.submittedBy || 'N/A'}</div>
+                <div key={review._id} className="grid grid-cols-7 p-3 text-sm items-center hover:bg-muted/30 transition-colors">
+                  <div className="font-medium">{review.employeeName}</div>
+                  <div>{review.employeeId}</div>
+                  <div>{review.department}</div>
+                  <div>{review.appraisalPeriod}</div>
+                  <div className="capitalize">{review.performanceRating}</div>
+                  <div>{review.submittedBy}</div>
                   <div className="flex space-x-1">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-                      onClick={() => handleApprove(review._id)}
-                    >
-                      <Check className="h-4 w-4" />
-                      <span className="sr-only">Approve</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => handleReject(review._id)}
-                    >
-                      <X className="h-4 w-4" />
-                      <span className="sr-only">Reject</span>
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-8 w-8"
-                      onClick={() => navigate(`/role/hr_manager/review/${review._id}`)}
-                    >
-                      <FileText className="h-4 w-4" />
-                      <span className="sr-only">View details</span>
-                    </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8 text-green-600 hover:bg-green-50" onClick={() => handleAction(review._id, 'approved')}><Check className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={() => handleAction(review._id, 'rejected')}><X className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(`/role/HR_MANAGER/review/${review._id}`)}><FileText className="h-4 w-4" /></Button>
                   </div>
                 </div>
               ))}
@@ -367,6 +227,7 @@ const PendingAppraisals = () => {
 const AllReviews = () => {
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -377,14 +238,18 @@ const AllReviews = () => {
         setReviews(res.data || [])
       } catch (error) {
         toast.error("Failed to fetch reviews history")
-        console.error(error)
       } finally {
         setLoading(false)
       }
     }
-
     fetchAllReviews()
   }, [])
+
+  const filteredReviews = reviews.filter((r) =>
+    r.employeeName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.employeeId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.department?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   return (
     <Card>
@@ -393,61 +258,47 @@ const AllReviews = () => {
           <CardTitle>All Reviews</CardTitle>
           <CardDescription>View history of all performance appraisals</CardDescription>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative w-full">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search appraisals..." className="pl-8 w-full sm:w-[200px] md:w-[300px]" />
-          </div>
+        <div className="relative w-full sm:w-[300px]">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input 
+            type="search" 
+            placeholder="Search by name, ID or dept..." 
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="space-y-2">
+            {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
           </div>
-        ) : reviews.length === 0 ? (
+        ) : filteredReviews.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">No appraisals found.</div>
         ) : (
           <div className="rounded-md border overflow-x-auto">
             <div className="grid grid-cols-7 bg-muted/50 p-3 text-sm font-medium min-w-[800px]">
-              <div>Employee</div>
-              <div>Employee ID</div>
-              <div>Department</div>
-              <div>Period</div>
-              <div>Rating</div>
-              <div>Status</div>
-              <div>Actions</div>
+              <div>Employee</div><div>ID</div><div>Dept</div><div>Period</div><div>Rating</div><div>Status</div><div className="text-right">Action</div>
             </div>
             <div className="divide-y min-w-[800px]">
-              {reviews.map((review) => (
+              {filteredReviews.map((review) => (
                 <div key={review._id} className="grid grid-cols-7 p-3 text-sm items-center">
-                  <div className="font-medium">{review.employeeName || 'N/A'}</div>
-                  <div>{review.employeeId || 'N/A'}</div>
-                  <div>{review.department || 'N/A'}</div>
-                  <div>{review.appraisalPeriod || 'N/A'}</div>
-                  <div>{review.performanceRating || 'N/A'}</div>
+                  <div className="font-medium">{review.employeeName}</div>
+                  <div>{review.employeeId}</div>
+                  <div>{review.department}</div>
+                  <div>{review.appraisalPeriod}</div>
+                  <div className="capitalize">{review.performanceRating}</div>
                   <div>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                        review.status === "approved" || review.status === "Approved"
-                          ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                          : review.status === "rejected" || review.status === "Rejected"
-                          ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                          : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
-                      }`}
-                    >
+                    <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                      review.status?.toLowerCase() === "approved" ? "bg-green-100 text-green-700" : 
+                      review.status?.toLowerCase() === "rejected" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"
+                    }`}>
                       {review.status || 'Pending'}
                     </span>
                   </div>
-                  <div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => navigate(`/role/hr_manager/review/${review._id}`)}
-                    >
-                      <FileText className="h-4 w-4" />
-                      <span className="sr-only">View details</span>
-                    </Button>
+                  <div className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => navigate(`/role/HR_MANAGER/review/${review._id}`)}><FileText className="h-4 w-4" /></Button>
                   </div>
                 </div>
               ))}
