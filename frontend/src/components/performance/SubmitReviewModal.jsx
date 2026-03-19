@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState, useEffect } from "react";
 import { X, Loader2, Star } from "lucide-react";
 import { toast } from "sonner";
@@ -6,6 +8,8 @@ import { reviewApi } from "@/services/reviewApi";
 const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
   const [submitting, setSubmitting] = useState(false);
   const [competencies, setCompetencies] = useState([]);
+  const [strengths, setStrengths] = useState('');
+  const [improvements, setImprovements] = useState('');
 
   useEffect(() => {
     if (review?.competencies?.length > 0) {
@@ -14,12 +18,13 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
         rating: c.rating || 1, 
         comments: c.comments || '' 
       })));
+      // Task 6.1: Reset strengths and improvements when the review changes
+      setStrengths(review.strengths || '');
+      setImprovements(review.areasForImprovement || '');
     }
   }, [review]);
 
-  const [strengths, setStrengths] = useState('');
-  const [improvements, setImprovements] = useState('');
-
+  // Task 6.2: Fix 0/5 flash by checking competencies length
   const overallRating = competencies.length > 0
     ? parseFloat((competencies.reduce((sum, c) => sum + c.rating, 0) / competencies.length).toFixed(2))
     : 0;
@@ -69,8 +74,12 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
               </span>
             </p>
           </div>
-          <button onClick={onClose} disabled={submitting}
-            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
+          <button 
+            type="button" 
+            onClick={onClose} 
+            disabled={submitting}
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -80,7 +89,10 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
           {/* Overall Rating Preview */}
           <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 rounded-xl p-4 flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Overall Rating (auto-calculated)</span>
-            <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">{overallRating}/5</span>
+            {/* Task 6.2: Conditional render to avoid 0/5 flash */}
+            <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                {competencies.length > 0 ? `${overallRating}/5` : '—'}
+            </span>
           </div>
 
           {/* Competency Ratings */}
@@ -95,8 +107,12 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
                     <span className="font-medium text-gray-900 dark:text-white text-sm">{comp.name}</span>
                     <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map(star => (
-                        <button key={star} onClick={() => handleRatingChange(index, star)}
-                          className={`transition-colors ${star <= comp.rating ? 'text-orange-400' : 'text-gray-300 dark:text-gray-600'}`}>
+                        <button 
+                          key={star} 
+                          type="button" // Task 6.3: Added explicit type
+                          onClick={() => handleRatingChange(index, star)}
+                          className={`transition-colors ${star <= comp.rating ? 'text-orange-400' : 'text-gray-300 dark:text-gray-600'}`}
+                        >
                           <Star className="h-5 w-5 fill-current" />
                         </button>
                       ))}
@@ -145,12 +161,20 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
 
         {/* Footer */}
         <div className="flex justify-end gap-2 p-6 border-t border-gray-200 dark:border-gray-800">
-          <button onClick={onClose} disabled={submitting}
-            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white rounded-lg transition-colors">
+          <button 
+            type="button" 
+            onClick={onClose} 
+            disabled={submitting}
+            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white rounded-lg transition-colors"
+          >
             Cancel
           </button>
-          <button onClick={handleSubmit} disabled={submitting}
-            className="px-4 py-2 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-lg transition-colors font-medium flex items-center gap-2">
+          <button 
+            type="button" 
+            onClick={handleSubmit} 
+            disabled={submitting}
+            className="px-4 py-2 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-lg transition-colors font-medium flex items-center gap-2"
+          >
             {submitting ? <><Loader2 className="h-4 w-4 animate-spin" />Submitting...</> : 'Submit Review'}
           </button>
         </div>

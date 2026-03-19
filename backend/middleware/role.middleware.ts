@@ -3,20 +3,22 @@ import Role from '../models/Role.model';
 import { ResponseHandler } from '../utils/responseHandler';
 import { logger } from '../utils/logger';
 
+
 export const ROLES = {
-  SUPER_ADMIN: 'SUPER_ADMIN',
-  CEO: 'CEO',
-  COUNTRY_MANAGER: 'COUNTRY_MANAGER',
-  HR_MANAGER: 'HR_MANAGER',
-  HR_OFFICER: 'HR_OFFICER',
+  SUPER_ADMIN:      'SUPER_ADMIN',
+  CEO:               'CEO',
+  COUNTRY_MANAGER:   'COUNTRY_MANAGER',
+  HR_MANAGER:         'HR_MANAGER',
+  HR_OFFICER:         'HR_OFFICER',
   DEPARTMENT_MANAGER: 'DEPARTMENT_MANAGER',
-  DIRECT_MANAGER: 'DIRECT_MANAGER',
-  PAYROLL_OFFICER: 'PAYROLL_OFFICER',
-  PROJECT_MANAGER: 'PROJECT_MANAGER',
+  DIRECT_MANAGER:     'DIRECT_MANAGER',
+  PAYROLL_OFFICER:    'PAYROLL_OFFICER',
+  PROJECT_MANAGER:    'PROJECT_MANAGER',
   OPERATIONS_MANAGER: 'OPERATIONS_MANAGER',
-  ADMIN: 'ADMIN',
-  EMPLOYEE: 'EMPLOYEE',
+  ADMIN:              'ADMIN',
+  EMPLOYEE:           'EMPLOYEE',
 };
+
 
 export const MODULE_KEYS = {
   DASHBOARD:   'dashboard',
@@ -28,13 +30,16 @@ export const MODULE_KEYS = {
   ROLES:       'roles',
 } as const;
 
-export type ModuleKey = typeof MODULE_KEYS[keyof typeof MODULE_KEYS];
+
+export type ModuleKey       = typeof MODULE_KEYS[keyof typeof MODULE_KEYS];
 export type PermissionAction = 'read' | 'write' | 'delete';
 
+// FIXED: normalize SUPER ADMIN - previously 'Super Admin' title-case
 const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'];
 
 const normalizeRole = (str: string | undefined): string => {
   if (!str) return '';
+  // Strips spaces and underscores, ensures uppercase
   return str.toUpperCase().replace(/[\s_]/g, "");
 };
 
@@ -53,9 +58,11 @@ export const authorize = (...allowedRoles: string[]) => {
       ResponseHandler.forbidden(res, 'You do not have permission to access this resource');
       return;
     }
+
     next();
   };
 };
+
 
 export const authorizeByMatrix = (module: ModuleKey, action: PermissionAction) => {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {

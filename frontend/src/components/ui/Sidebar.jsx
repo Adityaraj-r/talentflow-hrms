@@ -15,7 +15,6 @@ import {
   Briefcase,
   Plane,
   Calculator,
-  User,
   LogOut,
   Clock,
   Settings,
@@ -31,7 +30,6 @@ import {
 import { cn } from "@/lib/utils"
 import { ROLES } from "@/constants/roles"
 import { useUser } from "@/contexts/UserContext"
-
 
 const Sidebar = ({
   isOpen,
@@ -67,27 +65,21 @@ const Sidebar = ({
   }, [isCollapsed])
 
   useEffect(() => {
-    if (isCollapsed) return;
-
-    const path = location.pathname;
+    if (isCollapsed) return
+    const path = location.pathname
 
     const isDashboardPath =
       path === "/dashboard" ||
       path === "/admin/dashboard" ||
-      path === "/employee/dashboard";
+      path === "/employee/dashboard"
 
     if (isDashboardPath) {
       setOpenGroups({
-        employeeCenter: false,
-        recruitment: false,
-        timeAttendance: false,
-        payroll: false,
-        administration: false,
-        appraisal: false,
-        disciplinaryActions: false,
-        documentRequests: false,
-      });
-      return;
+        employeeCenter: false, recruitment: false, timeAttendance: false,
+        payroll: false, administration: false, appraisal: false,
+        disciplinaryActions: false, documentRequests: false,
+      })
+      return
     }
 
     setOpenGroups({
@@ -102,8 +94,7 @@ const Sidebar = ({
       payroll:
         path.startsWith("/payroll") ||
         path.startsWith("/tickets") ||
-        path.startsWith("/indemnity") ||
-        path.startsWith("/payroll/salary-slip"),
+        path.startsWith("/indemnity"),
 
       administration:
         path.startsWith("/settings") ||
@@ -111,19 +102,21 @@ const Sidebar = ({
         (path.startsWith("/admin/") && !path.startsWith("/admin/dashboard")),
 
       recruitment:
-        path.startsWith("/recruitment") ||
         path.startsWith("/staff-requisition") ||
-        path.startsWith("/dashboard/candidate-management") ||
-        path.startsWith("/dashboard/offer-management"),
+        path.startsWith("/dashboard/applications") ||
+        path.startsWith("/dashboard/recruitment-pipeline") ||
+        path.startsWith("/dashboard/job-openings") ||
+        path.startsWith("/dashboard/offer-management") ||
+        path.startsWith("/dashboard/onboarding"),
 
       documentRequests: path.includes("document-requests"),
       disciplinaryActions: path.includes("disciplinary-actions"),
-      appraisal: path.includes("/appraisal"),
-    });
-  }, [location.pathname, isCollapsed]);
+      appraisal: path.includes("/appraisal") || path.includes("/role/hr_manager/review"),
+    })
+  }, [location.pathname, isCollapsed])
 
   const canSee = (moduleKey) => {
-    if (['SUPER ADMIN', 'ADMIN'].includes(userRole)) return true
+    if (["SUPER ADMIN", "ADMIN"].includes(userRole)) return true
     return dbPermissions[moduleKey]?.read !== false
   }
 
@@ -163,12 +156,19 @@ const Sidebar = ({
       to={to}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-        location.pathname === to ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-accent text-foreground"
+        location.pathname === to
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "hover:bg-accent text-foreground"
       )}
       title={isCollapsed ? label : ""}
     >
       {Icon && <Icon size={20} className="shrink-0" />}
-      <span className={cn("truncate transition-all duration-300", isCollapsed && "w-0 opacity-0 overflow-hidden")}>{label}</span>
+      <span className={cn(
+        "truncate transition-all duration-300",
+        isCollapsed && "w-0 opacity-0 overflow-hidden"
+      )}>
+        {label}
+      </span>
     </Link>
   )
 
@@ -190,22 +190,18 @@ const Sidebar = ({
           title={isCollapsed ? label : ""}
         >
           {Icon ? <Icon size={20} className="shrink-0" /> : null}
-          <span
-            className={cn(
-              "flex-1 truncate text-left transition-all duration-300",
-              isCollapsed && "w-0 opacity-0 overflow-hidden"
-            )}
-          >
+          <span className={cn(
+            "flex-1 truncate text-left transition-all duration-300",
+            isCollapsed && "w-0 opacity-0 overflow-hidden"
+          )}>
             {label}
           </span>
-          {!isCollapsed &&
-            (openGroups[id] ? (
-              <ChevronDown className="h-4 w-4 shrink-0" />
-            ) : (
-              <ChevronRight className="h-4 w-4 shrink-0" />
-            ))}
+          {!isCollapsed && (
+            openGroups[id]
+              ? <ChevronDown className="h-4 w-4 shrink-0" />
+              : <ChevronRight className="h-4 w-4 shrink-0" />
+          )}
         </button>
-
         {openGroups[id] && !isCollapsed && (
           <ul className="ml-9 space-y-1 border-l pl-2">{children}</ul>
         )}
@@ -219,7 +215,9 @@ const Sidebar = ({
         to={to}
         className={cn(
           "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
-          location.pathname === to ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-accent hover:text-foreground"
+          location.pathname === to
+            ? "bg-primary/10 text-primary font-medium"
+            : "text-muted-foreground hover:bg-accent hover:text-foreground"
         )}
       >
         {Icon && <Icon className="h-4 w-4 shrink-0" />}
@@ -228,15 +226,7 @@ const Sidebar = ({
     </li>
   )
 
-  const RecruitmentGroup = () => canSee('recruitment') ? (
-    <SidebarGroup id="recruitment" icon={Briefcase} label={getRecruitmentLabel()}>
-      <SubLink to="/recruitment" label="Recruitment Process" />
-      <SubLink to="/staff-requisition" label="Staff Requisition" />
-      <SubLink to="/dashboard/onboarding" label="Onboarding" />
-    </SidebarGroup>
-  ) : null
-
-  const PayrollGroup = () => canSee('payroll') ? (
+  const PayrollGroup = () => canSee("payroll") ? (
     <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
       <SubLink to="/payroll" label="Payroll Processing" />
       <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
@@ -245,23 +235,15 @@ const Sidebar = ({
     </SidebarGroup>
   ) : null
 
-
-  const LeaveLink = () => canSee('attendance')
+  const LeaveLink = () => canSee("attendance")
     ? <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />
-    : null
-
-  const TransferLink = () => canSee('employees')
-    ? <SidebarLink to="/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
-    : null
-
-  const ReportsLink = () => canSee('dashboard')
-    ? <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
     : null
 
   const renderSidebarContent = () => {
     if (!userRole) return null
 
-    if (userRole === "ADMIN") {
+    // ── ADMIN ────────────────────────────────────────────────────────
+    if (userRole === "ADMIN" || userRole === "SUPER ADMIN") {
       return (
         <>
           <SidebarLink to="/admin/dashboard" icon={Home} label="Dashboard" />
@@ -274,12 +256,10 @@ const Sidebar = ({
           </SidebarGroup>
 
           <SidebarGroup id="recruitment" icon={Briefcase} label="Recruitment & Staffing">
-            <SubLink to="/recruitment" label="Recruitment Process" />
             <SubLink to="/staff-requisition" label="Staff Requisition" />
             <SubLink to="/dashboard/job-openings" label="Job Openings" />
             <SubLink to="/dashboard/applications" label="Applications" />
             <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
-            <SubLink to="/dashboard/candidate-management" label="Candidate Management" />
             <SubLink to="/dashboard/offer-management" label="Offer Management" />
           </SidebarGroup>
 
@@ -294,9 +274,11 @@ const Sidebar = ({
             <SubLink to="/payroll" label="Payroll Processing" />
             <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
             <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
+            <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
           </SidebarGroup>
 
-          <SidebarLink to="/role/admin/appraisal" icon={Award} label="Performance (PMS)" />
+          {/* FIXED: Admin has ZERO PMS access per doc — PMS link removed */}
+
           <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
           <SidebarGroup id="administration" icon={Settings} label="Administration">
@@ -311,6 +293,7 @@ const Sidebar = ({
       )
     }
 
+    // ── EMPLOYEE ─────────────────────────────────────────────────────
     if (userRole === "EMPLOYEE") {
       return (
         <>
@@ -320,6 +303,8 @@ const Sidebar = ({
           <SidebarLink to="/dashboard/employee/make-transfer" icon={ArrowLeftRight} label="Make Transfer Request" />
           <LeaveLink />
           <SidebarLink to="/payroll/salary-slip" icon={FileText} label="My Salary Slips" />
+
+          {/* FIXED: path updated to correct PMS employee route */}
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
             <SubLink to="/role/employee/appraisal" label="My Appraisal" />
           </SidebarGroup>
@@ -331,18 +316,24 @@ const Sidebar = ({
       )
     }
 
+    // ── HR MANAGER ───────────────────────────────────────────────────
     if (userRole === ROLES.HR_MANAGER) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
-          {canSee('recruitment') && (
+
+          {canSee("recruitment") && (
             <SidebarGroup id="recruitment" icon={Users} label={getRecruitmentLabel()}>
-              <SubLink to="/recruitment" label="Recruitment Process" />
               <SubLink to="/staff-requisition" label="Staff Requisition" />
+              <SubLink to="/dashboard/job-openings" label="Job Openings" />
+              <SubLink to="/dashboard/applications" label="Applications" />
+              <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
               <SubLink to="/dashboard/onboarding" label="Onboarding" />
+              <SubLink to="/dashboard/offer-management" label="Offer Management" />
             </SidebarGroup>
           )}
-          {canSee('attendance') && (
+
+          {canSee("attendance") && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/attendance" label="Attendance Records" />
               <SubLink to="/attendance/manual" label="Manual Attendance" />
@@ -352,34 +343,47 @@ const Sidebar = ({
               <SubLink to="/attendance/correction-requests" label="Correction Requests" />
             </SidebarGroup>
           )}
-          {canSee('employees') && <SidebarLink to="/employee-transfer" icon={RefreshCw} label="Employee Transfer" />}
-          {canSee('payroll') && (
+
+          {canSee("employees") && (
+            <SidebarLink to="/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
+          )}
+
+          {canSee("payroll") && (
             <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
               <SubLink to="/payroll" label="Payroll Processing" />
               <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
               <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
             </SidebarGroup>
           )}
-          <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
-            <SubLink to="/role/hr_manager/appraisal" label="HR Manager Appraisal" />
+
+          {/* FIXED: Full PMS access for HR Manager with all 3 sublinks */}
+          <SidebarGroup id="appraisal" icon={Award} label="Performance (PMS)">
+            <SubLink to="/role/hr_manager/appraisal" label="Appraisal Hub" />
+            <SubLink to="/role/hr_manager/appraisal/cycles" label="Manage Cycles" />
+            <SubLink to="/role/ceo/appraisal" label="Analytics" icon={TrendingUp} />
           </SidebarGroup>
+
           <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
             <SubLink to="/role/hr_manager/disciplinary-actions" label="Manage Actions" />
           </SidebarGroup>
+
           <SidebarGroup id="documentRequests" icon={FileCheck} label="Documents">
             <SubLink to="/role/hr_manager/document-requests" label="HR Manager Requests" />
           </SidebarGroup>
+
+          <LeaveLink />
         </>
       )
     }
 
+    // ── HR OFFICER ───────────────────────────────────────────────────
     if (userRole === ROLES.HR_OFFICER) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
-          {canSee('recruitment') && (
+
+          {canSee("recruitment") && (
             <SidebarGroup id="recruitment" icon={Users} label={getRecruitmentLabel()}>
-              <SubLink to="/recruitment" label="Recruitment Process" />
               <SubLink to="/staff-requisition" label="Staff Requisition" />
               <SubLink to="/dashboard/onboarding" label="Onboarding" />
             </SidebarGroup>
@@ -399,12 +403,13 @@ const Sidebar = ({
               <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
             </SidebarGroup>
           )}
-          <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
-            <SubLink to="/role/hr_officer/appraisal" label="HR Officer Appraisal" />
-          </SidebarGroup>
+
+          {/* FIXED: HR Officer has no PMS route in App.jsx — removed broken link */}
+
           <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
             <SubLink to="/role/hr_officer/disciplinary-actions" label="Manage Actions" />
           </SidebarGroup>
+
           <SidebarGroup id="documentRequests" icon={FileCheck} label="Documents">
             <SubLink to="/role/hr_officer/document-requests" label="Requests" />
           </SidebarGroup>
@@ -412,11 +417,13 @@ const Sidebar = ({
       )
     }
 
+    // ── CEO / COUNTRY MANAGER ────────────────────────────────────────
     if (userRole === ROLES.CEO || userRole === ROLES.COUNTRY_MANAGER) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
-          {canSee('attendance') && (
+
+          {canSee("attendance") && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/attendance" label="Attendance Records" />
               <SubLink to="/attendance/shifts" label="Shift Roster" />
@@ -424,15 +431,24 @@ const Sidebar = ({
               <SubLink to="/attendance/leave-management" label="Leave Management" />
             </SidebarGroup>
           )}
-          {canSee('recruitment') && (
-            <SidebarLink to="/recruitment" icon={Briefcase} label="View Recruitment" />
-          )}
-          {canSee('reports') && <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />}
 
+          {canSee("recruitment") && (
+            <SidebarLink to="/dashboard/recruitment-pipeline" icon={Briefcase} label="View Recruitment" />
+          )}
+
+          {/* FIXED: CEO analytics route added */}
+          <SidebarGroup id="appraisal" icon={Award} label="Performance (PMS)">
+            <SubLink to="/role/ceo/appraisal" label="Analytics Dashboard" icon={TrendingUp} />
+          </SidebarGroup>
+
+          {canSee("reports") && (
+            <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
+          )}
         </>
       )
     }
 
+    // ── DEPARTMENT MANAGER ───────────────────────────────────────────
     if (userRole === ROLES.DEPARTMENT_MANAGER) {
       return (
         <>
@@ -451,6 +467,7 @@ const Sidebar = ({
       )
     }
 
+    // ── DIRECT MANAGER ───────────────────────────────────────────────
     if (userRole === ROLES.DIRECT_MANAGER) {
       return (
         <>
@@ -468,6 +485,7 @@ const Sidebar = ({
       )
     }
 
+    // ── PAYROLL OFFICER ──────────────────────────────────────────────
     if (userRole === ROLES.PAYROLL_OFFICER) {
       return (
         <>
@@ -480,26 +498,35 @@ const Sidebar = ({
               <SubLink to="/payroll" label="Payroll Processing" />
               <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
               <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
+              <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
             </SidebarGroup>
           )}
         </>
       )
     }
 
+    // ── PROJECT MANAGER ──────────────────────────────────────────────
     if (userRole === ROLES.PROJECT_MANAGER) {
       return (
         <>
-          <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
-          {canSee('attendance') && <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />}
+          <SidebarLink to="/dashboard/project-manager" icon={Home} label="Dashboard" />
+          <SidebarLink to="/dashboard/pm/tasks" icon={FileCheck} label="Task Board" />
+          <SidebarLink to="/dashboard/pm/safety" icon={AlertTriangle} label="Safety Incidents" />
+          <SidebarLink to="/dashboard/pm/timesheets" icon={Clock} label="Timesheet Approvals" />
+          {canSee("attendance") && <LeaveLink />}
         </>
       )
     }
 
+    // ── OPERATIONS MANAGER ───────────────────────────────────────────
     if (userRole === ROLES.OPERATIONS_MANAGER) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
-          {canSee('attendance') && <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />}
+          {canSee("attendance") && <LeaveLink />}
+          {canSee("employees") && (
+            <SidebarLink to="/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
+          )}
         </>
       )
     }
@@ -509,7 +536,9 @@ const Sidebar = ({
 
   return (
     <>
-      {isOpen && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={toggleSidebar} />}
+      {isOpen && (
+        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={toggleSidebar} />
+      )}
       <aside
         className={cn(
           "fixed left-0 top-0 z-50 flex h-screen flex-col border-r bg-background transition-all duration-300 ease-in-out shadow-lg",
@@ -522,13 +551,22 @@ const Sidebar = ({
           className="absolute -right-3 top-6 z-50 flex h-7 w-7 items-center justify-center rounded-full border bg-background text-foreground shadow-md transition-colors hover:bg-accent lg:flex"
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          {isCollapsed
+            ? <ChevronRight className="h-4 w-4" />
+            : <ChevronLeft className="h-4 w-4" />
+          }
         </button>
 
-        <div className={cn("flex h-16 items-center px-4 border-b transition-all", isCollapsed ? "justify-center" : "justify-between")}>
+        <div className={cn(
+          "flex h-16 items-center px-4 border-b transition-all",
+          isCollapsed ? "justify-center" : "justify-between"
+        )}>
           <div className="flex items-center gap-2 overflow-hidden">
             <Briefcase className="h-8 w-8 text-primary shrink-0" />
-            <span className={cn("text-lg font-bold truncate transition-all duration-300", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>
+            <span className={cn(
+              "text-lg font-bold truncate transition-all duration-300",
+              isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+            )}>
               {companyName || "HRMS"}
             </span>
           </div>

@@ -7,13 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import axios from "axios"; 
+import { useAuth } from "@/contexts/AuthContext";
 
 const TransferRequestForm = () => {
+    const { user } = useAuth();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
-        employeeId: "",
-        employeeName: "",
-        currentDepartment: "",
+        employeeId: user?.employeeCode || "",
+        employeeName: `${user?.firstName || ""} ${user?.lastName || ""}`.trim(),
+        currentDepartment: user?.department || "",
         newDepartment: "",
         transferType: "",
         effectiveDate: "",
@@ -34,6 +36,21 @@ const TransferRequestForm = () => {
         formData.transferType &&
         formData.effectiveDate &&
         formData.declaration;
+
+        const ALL_DEPARTMENTS = [
+        { value: "IT", label: "IT" },
+        { value: "HR", label: "Human Resources" },
+        { value: "Operations", label: "Operations" },
+        { value: "Sales", label: "Sales" },
+        { value: "Marketing", label: "Marketing" },
+        { value: "Finance", label: "Finance" }
+    ];
+
+    const availableDepartments = ALL_DEPARTMENTS.filter(
+        (dept) => 
+            dept.value.toLowerCase() !== (formData.currentDepartment || "").toLowerCase() &&
+            dept.label.toLowerCase() !== (formData.currentDepartment || "").toLowerCase()
+    );
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -64,21 +81,23 @@ const TransferRequestForm = () => {
         }
     };
 
-    return (
-        <div className="w-full flex justify-center py-2 px-4"> 
-            <div className="w-full max-w-5xl bg-white dark:bg-gray-800 rounded-xl shadow-md border dark:border-gray-700 p-8 transition-all duration-300">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+return (
+        <div className="w-full"> 
+            <div className="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-6 transition-all duration-300">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                         {/* Employee ID */}
                         <div className="space-y-1.5">
                             <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                                 Employee ID <span className="text-red-500">*</span>
                             </Label>
-                            <Input 
+                           <Input 
                                 name="employeeId"
                                 placeholder="e.g. EMP001"
                                 value={formData.employeeId} 
-                                onChange={handleChange}
+                                readOnly
+                                disabled
+                                className="bg-gray-50 text-gray-500 cursor-not-allowed dark:bg-slate-800/50 dark:text-gray-400 dark:border-slate-700"
                             />
                         </div>
 
@@ -87,11 +106,13 @@ const TransferRequestForm = () => {
                             <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                                 Employee Name <span className="text-red-500">*</span>
                             </Label>
-                            <Input 
+                           <Input 
                                 name="employeeName"
                                 placeholder="Enter your full name"
                                 value={formData.employeeName} 
-                                onChange={handleChange}
+                                readOnly
+                                disabled
+                                className="bg-gray-50 text-gray-500 cursor-not-allowed dark:bg-slate-800/50 dark:text-gray-400 dark:border-slate-700"
                             />
                         </div>
 
@@ -104,12 +125,14 @@ const TransferRequestForm = () => {
                                 name="currentDepartment"
                                 placeholder="e.g. IT"
                                 value={formData.currentDepartment} 
-                                onChange={handleChange}
+                                readOnly
+                                disabled
+                                className="bg-gray-50 text-gray-500 cursor-not-allowed dark:bg-slate-800/50 dark:text-gray-400 dark:border-slate-700"
                             />
                         </div>
 
                         {/* New Department */}
-                        <div className="space-y-1.5">
+                       <div className="space-y-1.5">
                             <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                                 New Department <span className="text-red-500">*</span>
                             </Label>
@@ -117,14 +140,16 @@ const TransferRequestForm = () => {
                                 value={formData.newDepartment} 
                                 onValueChange={(v) => setFormData({ ...formData, newDepartment: v })}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger className="dark:bg-slate-900 dark:border-slate-700">
                                     <SelectValue placeholder="Select New Department" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="IT">IT</SelectItem>
-                                    <SelectItem value="HR">Human Resources</SelectItem>
-                                    <SelectItem value="Operations">Operations</SelectItem>
-                                    <SelectItem value="Sales">Sales</SelectItem>
+                                <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                                    {/* Dynamically render ONLY the filtered departments */}
+                                    {availableDepartments.map((dept) => (
+                                        <SelectItem key={dept.value} value={dept.value}>
+                                            {dept.label}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -138,10 +163,10 @@ const TransferRequestForm = () => {
                                 value={formData.transferType} 
                                 onValueChange={(v) => setFormData({ ...formData, transferType: v })}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger className="dark:bg-slate-900 dark:border-slate-700">
                                     <SelectValue placeholder="Select Type" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
                                     <SelectItem value="Departmental">Departmental Transfer</SelectItem>
                                     <SelectItem value="Location">Location Transfer</SelectItem>
                                 </SelectContent>
@@ -158,6 +183,7 @@ const TransferRequestForm = () => {
                                 type="date"
                                 value={formData.effectiveDate} 
                                 onChange={handleChange}
+                                className="w-full relative pr-10 dark:bg-slate-900 dark:border-slate-700 dark:[color-scheme:dark] [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                             />
                         </div>
                     </div>
@@ -169,18 +195,19 @@ const TransferRequestForm = () => {
                             placeholder="Briefly explain your request..."
                             value={formData.reason}
                             onChange={handleChange}
-                            className="min-h-[100px] resize-none"
+                            className="min-h-[80px] resize-none dark:bg-slate-900 dark:border-slate-700"
                         />
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t dark:border-gray-700">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t dark:border-slate-800">
                         <div className="flex items-center gap-2">
                             <Checkbox
                                 id="terms"
                                 checked={formData.declaration}
                                 onCheckedChange={(checked) => setFormData({ ...formData, declaration: !!checked })}
+                                className="dark:border-slate-600"
                             />
-                            <Label htmlFor="terms" className="text-sm cursor-pointer select-none">
+                            <Label htmlFor="terms" className="text-sm cursor-pointer select-none dark:text-gray-300">
                                 I confirm these details are accurate.
                             </Label>
                         </div>

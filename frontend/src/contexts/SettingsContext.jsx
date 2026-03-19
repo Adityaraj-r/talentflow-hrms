@@ -44,12 +44,22 @@ export const SettingsProvider = ({ children }) => {
   const [loading, setLoading] = useState(false)
 
   // Fetch settings only when authenticated
-  useEffect(() => {
-    const token = localStorage.getItem('token') || localStorage.getItem('idToken')
+useEffect(() => {
+    const token = localStorage.getItem('token') || localStorage.getItem('idToken');
     
-    // Only fetch if user is logged in
     if (token) {
-      fetchSettings()
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        
+        if (payload.role === 'ADMIN' || payload.role === 'SUPER_ADMIN' || payload.role === 'HR_MANAGER') {
+          fetchSettings();
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error decoding token in SettingsContext:', error);
+        setLoading(false);
+      }
     }
   }, [])
 
@@ -59,7 +69,6 @@ export const SettingsProvider = ({ children }) => {
       const data = await adminService.getSettings()
       if (data && data.settings) {
         setSettings(data.settings)
-        // Cache in localStorage
         localStorage.setItem('systemSettings', JSON.stringify(data.settings))
       }
     } catch (error) {

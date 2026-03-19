@@ -35,19 +35,19 @@ const EMPTY_FORM = {
 }
 
 const UserManagement = () => {
-  const [isCreateOpen, setIsCreateOpen]         = useState(false)
-  const [isBulkOpen, setIsBulkOpen]             = useState(false)
-  const [isLoading, setIsLoading]               = useState(true)
-  const [isActionLoading, setIsActionLoading]   = useState(false)
-  const [users, setUsers]                       = useState([])
-  const [filters, setFilters]                   = useState({ search: '', role: 'all' })
-  const [selectedFile, setSelectedFile]         = useState(null)
-  const [isEditOpen, setIsEditOpen]             = useState(false)
-  const [editUserId, setEditUserId]             = useState(null)
-  const [isDeleteOpen, setIsDeleteOpen]         = useState(false)
-  const [deleteTarget, setDeleteTarget]         = useState(null)
-  const [isDeleting, setIsDeleting]             = useState(false)
-  const [formData, setFormData]                 = useState(EMPTY_FORM)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [isBulkOpen, setIsBulkOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isActionLoading, setIsActionLoading] = useState(false)
+  const [users, setUsers] = useState([])
+  const [filters, setFilters] = useState({ search: '', role: 'all' })
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [editUserId, setEditUserId] = useState(null)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [formData, setFormData] = useState(EMPTY_FORM)
 
   const [onboardedList, setOnboardedList] = useState([])
 
@@ -77,7 +77,7 @@ const UserManagement = () => {
         department: selectedEmp.department && selectedEmp.department !== 'N/A' ? selectedEmp.department : "",
         phoneNumber: selectedEmp.phoneNumber || "",
         gender: selectedEmp.gender || "",
-        employeeCode: selectedEmp.employeeCode, 
+        employeeCode: selectedEmp.employeeCode,
       }))
       toast.success(`Auto-filled data for ${selectedEmp.employeeCode}`)
     }
@@ -89,17 +89,17 @@ const UserManagement = () => {
       const response = await adminService.getUsers(filters)
       const userData = response.data || []
       const formatted = userData.map(u => ({
-        id:          u._id,
-        firstName:   u.firstName || '',
-        lastName:    u.lastName  || '',
-        name:        `${u.firstName || ''} ${u.lastName || ''}`,
-        email:       u.email,
-        role:        u.role,
-        department:  u.department  || 'N/A',
+        id: u._id,
+        firstName: u.firstName || '',
+        lastName: u.lastName || '',
+        name: `${u.firstName || ''} ${u.lastName || ''}`,
+        email: u.email,
+        role: u.role,
+        department: u.department || 'N/A',
         phoneNumber: u.phoneNumber || '',
-        gender:      u.gender      || 'N/A',
-        status:      u.isActive ? 'Active' : 'Inactive',
-        avatar:      (u.firstName?.[0] || 'U').toUpperCase()
+        gender: u.gender || 'N/A',
+        status: u.isActive ? 'Active' : 'Inactive',
+        avatar: (u.firstName?.[0] || 'U').toUpperCase()
       }))
       setUsers(formatted)
     } catch (error) {
@@ -142,15 +142,15 @@ const UserManagement = () => {
   }
 
   const validateForm = () => {
-    if (!formData.firstName.trim())                        return "First name is required"
-    if (!formData.lastName.trim())                         return "Last name is required"
-    if (!formData.email.includes("@"))                     return "Valid work email is required"
-    if (formData.password.length < 6)                      return "Password must be at least 6 characters"
-    if (!formData.role)                                    return "Please assign a user role"
-    if (!formData.department)                              return "Please assign a department"
-    if (!formData.gender)                                  return "Please select a gender"
+    if (!formData.firstName.trim()) return "First name is required"
+    if (!formData.lastName.trim()) return "Last name is required"
+    if (!formData.email.includes("@")) return "Valid work email is required"
+    if (formData.password.length < 6) return "Password must be at least 6 characters"
+    if (!formData.role) return "Please assign a user role"
+    if (!formData.department) return "Please assign a department"
+    if (!formData.gender) return "Please select a gender"
     if (!formData.salary.basic || Number(formData.salary.basic) <= 0)
-                                                           return "Basic salary is required"
+      return "Basic salary is required"
     return null
   }
 
@@ -176,14 +176,14 @@ const UserManagement = () => {
   const openEditModal = (user) => {
     setFormData({
       ...EMPTY_FORM,
-      firstName:   user.firstName,
-      lastName:    user.lastName,
-      email:       user.email,
-      password:    '',
-      role:        user.role,
-      department:  user.department !== 'N/A' ? user.department : '',
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      password: '',
+      role: user.role,
+      department: user.department !== 'N/A' ? user.department : '',
       phoneNumber: user.phoneNumber,
-      gender:      user.gender !== 'N/A' ? user.gender : '',
+      gender: user.gender !== 'N/A' ? user.gender : '',
     })
     setEditUserId(user.id)
     setIsEditOpen(true)
@@ -197,9 +197,9 @@ const UserManagement = () => {
     try {
       const token = localStorage.getItem('token')
       const res = await fetch(`http://localhost:5001/api/users/${editUserId}`, {
-        method:  'PUT',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body:    JSON.stringify(formData)
+        body: JSON.stringify(formData)
       })
       const data = await res.json()
       if (data.success) {
@@ -227,7 +227,7 @@ const UserManagement = () => {
     try {
       const token = localStorage.getItem('token')
       const res = await fetch(`http://localhost:5001/api/admin/users/${deleteTarget.id}`, {
-        method:  'DELETE',
+        method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       })
       const data = await res.json()
@@ -277,8 +277,8 @@ const UserManagement = () => {
   }
 
   const stats = useMemo(() => ({
-    total:    users.length,
-    active:   users.filter(u => u.status === 'Active').length,
+    total: users.length,
+    active: users.filter(u => u.status === 'Active').length,
     inactive: users.filter(u => u.status === 'Inactive').length
   }), [users])
 
@@ -416,8 +416,8 @@ const UserManagement = () => {
                 <DialogTitle>Individual Enrollment</DialogTitle>
                 <DialogDescription>Create a single employee record in the system.</DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleCreateUser} className="space-y-4 py-4">
-              {/* AUTO-FILL DROPDOWN START */}
+              <form onSubmit={handleCreateUser} autoComplete="off" className="space-y-4 py-4">
+                {/* AUTO-FILL DROPDOWN START */}
                 <div className="mb-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-lg">
                   <Label className="text-blue-700 dark:text-blue-400 font-semibold mb-2 block">
                     Link Onboarded Candidate (Optional)
@@ -427,14 +427,14 @@ const UserManagement = () => {
                       <SelectValue placeholder="Select a newly onboarded employee to auto-fill..." />
                     </SelectTrigger>
                     <SelectContent>
-                     {onboardedList.length === 0 ? (
+                      {onboardedList.length === 0 ? (
                         <SelectItem value="none" disabled>No pending candidates</SelectItem>
                       ) : (
                         onboardedList.map((emp, index) => {
                           // Create a guaranteed safe string value to prevent UI crashes
                           const safeValue = emp.employeeCode || emp._id || `fallback-${index}`;
                           const displayCode = emp.employeeCode || "No ID";
-                          
+
                           return (
                             <SelectItem key={safeValue} value={safeValue}>
                               {displayCode} - {emp.firstName} {emp.lastName}
@@ -459,11 +459,11 @@ const UserManagement = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Work Email</Label>
-                    <Input id="email" type="email" value={formData.email} onChange={handleInputChange} />
+                    <Input id="email" type="email" value={formData.email} onChange={handleInputChange} autoComplete="new-password" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Initial Password</Label>
-                    <Input id="password" type="password" value={formData.password} onChange={handleInputChange} />
+                    <Input id="password" type="password" value={formData.password} onChange={handleInputChange} autoComplete="new-password" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -481,7 +481,7 @@ const UserManagement = () => {
                     <Select value={formData.department} onValueChange={(v) => handleSelectChange('department', v)}>
                       <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
                       <SelectContent>
-                        {["IT","HR","Finance","Sales","Marketing","Operations"].map(d =>
+                        {["IT", "HR", "Finance", "Sales", "Marketing", "Operations"].map(d =>
                           <SelectItem key={d} value={d}>{d}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -569,7 +569,7 @@ const UserManagement = () => {
                     <Select value={formData.department} onValueChange={(v) => handleSelectChange('department', v)}>
                       <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
                       <SelectContent>
-                        {["IT","HR","Finance","Sales","Marketing","Operations"].map(d =>
+                        {["IT", "HR", "Finance", "Sales", "Marketing", "Operations"].map(d =>
                           <SelectItem key={d} value={d}>{d}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -649,10 +649,10 @@ const UserManagement = () => {
 
       {/* ── Stats ─────────────────────────────────────────────────────────────── */}
       <div className="grid gap-4 md:grid-cols-4">
-        <StatsCard title="Total Staff"    value={stats.total}    icon={<Users className="h-8 w-8" />}       variant="blue"   />
-        <StatsCard title="Active"         value={stats.active}   icon={<UserCheck className="h-8 w-8" />}   variant="green"  />
-        <StatsCard title="Inactive"       value={stats.inactive} icon={<ShieldAlert className="h-8 w-8" />} variant="orange" />
-        <StatsCard title="Security Flags" value="0"              icon={<ShieldAlert className="h-8 w-8" />} variant="red"    />
+        <StatsCard title="Total Staff" value={stats.total} icon={<Users className="h-8 w-8" />} variant="blue" />
+        <StatsCard title="Active" value={stats.active} icon={<UserCheck className="h-8 w-8" />} variant="green" />
+        <StatsCard title="Inactive" value={stats.inactive} icon={<ShieldAlert className="h-8 w-8" />} variant="orange" />
+        <StatsCard title="Security Flags" value="0" icon={<ShieldAlert className="h-8 w-8" />} variant="red" />
       </div>
 
       {/* ── Table ─────────────────────────────────────────────────────────────── */}
@@ -778,10 +778,10 @@ const UserManagement = () => {
 // ── StatsCard ─────────────────────────────────────────────────────────────────
 const StatsCard = ({ title, value, icon, variant }) => {
   const styles = {
-    blue:   { card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",         icon: "text-blue-600 dark:text-blue-400",   label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },
-    green:  { card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",     icon: "text-green-600 dark:text-green-400", label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },
+    blue: { card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30", icon: "text-blue-600 dark:text-blue-400", label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },
+    green: { card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30", icon: "text-green-600 dark:text-green-400", label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },
     orange: { card: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30", icon: "text-orange-600 dark:text-orange-400", label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },
-    red:    { card: "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30", icon: "text-purple-600 dark:text-purple-400", label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },
+    red: { card: "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30", icon: "text-purple-600 dark:text-purple-400", label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },
   }
   const s = styles[variant]
   return (
