@@ -48,11 +48,9 @@ const AppraisalHistory = () => {
     const fetchMyReviews = async () => {
       try {
         setLoading(true)
-        // reviewApi.getEmployeeReviews returns res directly (apiClient unwraps response.data)
         const res = await reviewApi.getEmployeeReviews(user.id)
-        // res is { success, data: [...] } — extract data array
         setReviews(Array.isArray(res) ? res : res?.data ?? [])
-      } catch (error) {
+      } catch {
         toast.error("Failed to load your review history")
       } finally {
         setLoading(false)
@@ -141,10 +139,11 @@ const AppraisalHistory = () => {
                     </span>
                   </div>
                   <div className="text-right">
+                    {/* FIXED: employee uses /role/employee/review route */}
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => navigate(`/role/hr_manager/review/${review._id}`)}
+                      onClick={() => navigate(`/role/employee/review/${review._id}`)}
                     >
                       <FileText className="h-4 w-4" />
                       <span className="sr-only">View details</span>
@@ -161,7 +160,6 @@ const AppraisalHistory = () => {
 }
 
 const SelfAssessmentForm = () => {
-  const { user } = useAuth()
   const [cycles, setCycles] = useState([])
   const [selectedCycleId, setSelectedCycleId] = useState("")
   const [selfRating, setSelfRating] = useState(0)
@@ -174,9 +172,9 @@ const SelfAssessmentForm = () => {
     const fetchCycles = async () => {
       try {
         setLoadingCycles(true)
-        const res = await apiClient.get("performance/cycles")
+        // FIXED: leading slash + apiClient already unwraps so res IS { success, data:[...] }
+        const res = await apiClient.get("/performance/cycles")
         const all = Array.isArray(res) ? res : res?.data ?? []
-        // Only show active cycles
         setCycles(all.filter((c) => c.status === "active"))
       } catch {
         toast.error("Failed to load performance cycles")
@@ -193,7 +191,8 @@ const SelfAssessmentForm = () => {
     if (selfRating < 1) { toast.error("Please select a self-rating"); return }
     try {
       setSubmitting(true)
-      await apiClient.post("performance/self-assessment", {
+      // FIXED: added leading slash
+      await apiClient.post("/performance/self-assessment", {
         cycleId: selectedCycleId,
         selfRating,
         selfComments,
@@ -217,7 +216,6 @@ const SelfAssessmentForm = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Cycle Select */}
           <div className="space-y-2">
             <Label>Review Cycle <span className="text-red-500">*</span></Label>
             {loadingCycles ? (
@@ -239,7 +237,6 @@ const SelfAssessmentForm = () => {
             )}
           </div>
 
-          {/* Star Rating */}
           <div className="space-y-2">
             <Label>Self Rating <span className="text-red-500">*</span></Label>
             <div className="flex items-center gap-1">
@@ -267,7 +264,6 @@ const SelfAssessmentForm = () => {
             </div>
           </div>
 
-          {/* Comments */}
           <div className="space-y-2">
             <Label>Comments</Label>
             <Textarea

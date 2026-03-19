@@ -42,26 +42,31 @@ const AdminPerformance = () => {
   }, []);
 
     const loadPerformanceData = async () => {
-    try {
-      setLoading(true);
-      const [statsResponse, cyclesResponse] = await Promise.all([
-        performanceApi.getStats(),
-        performanceApi.getCycles()
-      ]);
-      setPerformanceData({
-        totalCycles: statsResponse.totalCycles,
-        activeCycles: statsResponse.activeCycles,
-        totalReviews: statsResponse.totalReviews,
-        avgScore: statsResponse.avgScore,
-        cycles: cyclesResponse
-      });
-    } catch (error) {
-      console.error('Failed to load performance data:', error);
-      toast.error('Failed to load performance data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    const [statsResponse, cyclesResponse] = await Promise.all([
+      performanceApi.getStats(),
+      performanceApi.getCycles()
+    ]);
+
+    // FIXED: unwrap .data since performanceApi no longer does .then(r => r.data)
+    const stats  = statsResponse?.data  ?? statsResponse  ?? {};
+    const cycles = cyclesResponse?.data ?? cyclesResponse ?? [];
+
+    setPerformanceData({
+      totalCycles:  stats.totalCycles  || 0,
+      activeCycles: stats.activeCycles || 0,
+      totalReviews: stats.totalReviews || 0,
+      avgScore:     stats.avgScore     || 0,
+      cycles: Array.isArray(cycles) ? cycles : []
+    });
+  } catch (error) {
+    console.error('Failed to load performance data:', error);
+    toast.error('Failed to load performance data');
+  } finally {
+    setLoading(false);
+  }
+};
 
 
 

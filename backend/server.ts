@@ -21,6 +21,8 @@ import requisitionRoutes from "./routes/requisition.routes";
 import roleRoutes from './routes/role.routes';
 import departmentRoutes from './routes/department.routes';
 import performanceRoutes from './routes/performanceRoutes';
+import goalRoutes from './routes/goalRoutes'
+import pipRoutes from './routes/pipRoutes'
 import transferRoutes from "./routes/transferRoutes";
 import auditRoutes from './routes/audit.routes';
 import googleRoutes from './routes/google.routes';
@@ -129,6 +131,8 @@ app.use('/api/shifts', shiftRoutes);
 app.use('/api/reports', reportsRoutes);
 
 app.use('/api/performance', performanceRoutes);
+app.use('/api/performance/goals', goalRoutes)
+app.use('/api/performance/pips', pipRoutes)
 app.use('/api/holidays', holidayRoutes);
 app.use('/api/ta-policies', taPolicyRoutes);
 app.use('/api/transfers', transferRoutes);

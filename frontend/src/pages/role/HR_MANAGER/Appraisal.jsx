@@ -38,7 +38,6 @@ const Appraisal = () => {
   )
 }
 
-// Tab 1: Reviews with status "completed" — HR Manager approves these
 const PendingApprovals = () => {
   const navigate = useNavigate()
   const [reviews, setReviews] = useState([])
@@ -49,7 +48,6 @@ const PendingApprovals = () => {
   const fetchCompletedReviews = async () => {
     try {
       setLoading(true)
-      // Fetch reviews with status=completed — these are ready for HR approval
       const res = await reviewApi.getAllReviews({ status: "completed" })
       setReviews(Array.isArray(res) ? res : res?.data ?? [])
     } catch {
@@ -123,7 +121,6 @@ const PendingApprovals = () => {
                     </Button>
                   </div>
                 </div>
-                {/* HR Feedback + Approve */}
                 <div className="space-y-2">
                   <Textarea
                     placeholder="Optional HR Manager feedback before approving..."
@@ -154,7 +151,6 @@ const PendingApprovals = () => {
   )
 }
 
-// Tab 2: Reviews with status "manager review done" — HR submits their review notes
 const HRReviewQueue = () => {
   const navigate = useNavigate()
   const [reviews, setReviews] = useState([])
@@ -183,7 +179,8 @@ const HRReviewQueue = () => {
     }
     try {
       setSubmittingId(reviewId)
-      await apiClient.patch(`performance/hr-review/${reviewId}`, {
+      // FIXED: added leading slash
+      await apiClient.patch(`/performance/hr-review/${reviewId}`, {
         adminFeedback: feedbackMap[reviewId],
       })
       toast.success("HR review submitted successfully!")
@@ -271,7 +268,6 @@ const HRReviewQueue = () => {
   )
 }
 
-// Tab 3: All reviews — searchable full list
 const AllReviews = () => {
   const navigate = useNavigate()
   const [reviews, setReviews] = useState([])

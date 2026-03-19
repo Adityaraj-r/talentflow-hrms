@@ -6,7 +6,6 @@ import {
 } from "recharts";
 import { TrendingUp, Users, Award, Target, BarChart3, PieChart as PieChartIcon } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { performanceApi } from "@/services/performanceApi";
 import apiClient from "@/services/apiClient";
 import SkeletonCard from "@/components/reports/SkeletonCard";
 
@@ -45,6 +44,7 @@ const PerformanceAnalytics = () => {
   const calculateDepartmentComparison = (reviews) => {
     const deptMap = {};
     reviews.forEach(review => {
+      // FIXED: correct field path after populate
       const dept = review.employeeId?.department || "Unknown";
       const score = review.overallRating || 0;
       if (!deptMap[dept]) deptMap[dept] = { total: 0, count: 0 };
@@ -61,7 +61,9 @@ const PerformanceAnalytics = () => {
   const calculateCycleCompletion = (cycles) => {
     return cycles.map(cycle => ({
       cycle: cycle.name,
-      completion: cycle.completionRate || 0
+      completion: cycle.totalReviews > 0
+        ? Math.round((cycle.completedReviews / cycle.totalReviews) * 100)
+        : 0
     }));
   };
 
@@ -82,8 +84,12 @@ const PerformanceAnalytics = () => {
   const calculateTopPerformers = (reviews) => {
     const performerMap = {};
     reviews.forEach(review => {
-      const name = `${review.employeeId?.firstName || ""} ${review.employeeId?.lastName || ""}`.trim() || "Unknown";
-      const dept = review.employeeId?.department || "Unknown";
+      // FIXED: correct name field from populated employeeId
+      const emp = review.employeeId;
+      const name = emp
+        ? `${emp.firstName || ""} ${emp.lastName || ""}`.trim()
+        : "Unknown";
+      const dept = emp?.department || "Unknown";
       const rating = review.overallRating || 0;
       if (!performerMap[name] || rating > performerMap[name].rating) {
         performerMap[name] = { name, department: dept, rating };
@@ -99,42 +105,38 @@ const PerformanceAnalytics = () => {
       try {
         setLoading(true);
 
-        const [stats, cycles] = await Promise.all([
-          performanceApi.getStats(),
-          performanceApi.getCycles()
+        // FIXED: apiClient already unwraps response.data
+        // so these calls return { success, data: {...} } directly
+        // stats.data has totalEmployees, avgScore, activeCycles
+        // cycles.data has the array
+        const [statsRes, cyclesRes] = await Promise.all([
+          apiClient.get("/performance/stats"),
+          apiClient.get("/performance/cycles")
         ]);
 
-        // apiClient interceptor returns response.data directly
-        // backend returns { success: true, data: [...] } so reviewsRes.data is the array
+        const stats = statsRes?.data ?? statsRes ?? {};
+        const cycles = Array.isArray(cyclesRes)
+          ? cyclesRes
+          : cyclesRes?.data ?? [];
+
+        // FIXED: apiClient unwraps so reviewsRes IS the payload { success, data: [...] }
         let reviews = [];
         try {
           const reviewsRes = await apiClient.get("/performance/reviews/all");
-          reviews = reviewsRes.data ?? [];
+          reviews = Array.isArray(reviewsRes)
+            ? reviewsRes
+            : reviewsRes?.data ?? [];
         } catch {
           reviews = [];
         }
 
-        // stats.totalEmployees added to backend getStats in Phase 1
-        // if still 0 (old backend), fall back to users fetch
-        let totalEmployees = stats.totalEmployees || 0;
-        if (!totalEmployees) {
-          try {
-            // apiClient returns response.data directly — usersRes IS the payload
-            // backend /users returns { success, data: [...] } so use usersRes.data
-            const usersRes = await apiClient.get("/users");
-            const usersList = usersRes.data ?? usersRes ?? [];
-            totalEmployees = Array.isArray(usersList)
-              ? usersList.filter(u => u.role?.toUpperCase() !== "ADMIN").length
-              : 0;
-          } catch {
-            totalEmployees = 0;
-          }
-        }
+        // totalEmployees comes from backend getStats — no extra /users call needed
+        const totalEmployees = stats.totalEmployees || 0;
 
         setAnalyticsData({
           performanceDistribution: calculatePerformanceDistribution(reviews),
           departmentComparison:    calculateDepartmentComparison(reviews),
-          cycleCompletion:         calculateCycleCompletion(Array.isArray(cycles) ? cycles : []),
+          cycleCompletion:         calculateCycleCompletion(cycles),
           ratingTrend:             calculateRatingTrend(reviews),
           topPerformers:           calculateTopPerformers(reviews),
           totalEmployees,
@@ -325,7 +327,7 @@ const PerformanceAnalytics = () => {
         </Card>
       </div>
 
-      {/* Top Performers Table */}
+      {/* Top Performers */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
