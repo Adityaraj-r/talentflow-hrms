@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import Document from '../models/Document.model';
 import { v2 as cloudinary } from 'cloudinary';
+import Employee from '../models/Employee.model';
 
 const router = express.Router();
 const uploadDir = 'uploads/documents';
@@ -30,21 +31,48 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
       return;
     }
 
-    const { employeeId, category, uploadedBy } = req.body;
+    const { employeeId, category, uploadedBy, documentTitle } = req.body;
     const fileSizeMB = (req.file.size / (1024 * 1024)).toFixed(2) + " MB";
 
     // DYNAMIC CLOUDINARY FOLDER ROUTING
-    let cloudFolder = "hrms/Uncategorized";
-    if (category === "Personal IDs") cloudFolder = "hrms/Personal_IDs";
-    else if (category === "Education") cloudFolder = "hrms/Education";
-    else if (category === "Contracts") cloudFolder = "hrms/Contracts";
-    else if (category === "Payroll") cloudFolder = "hrms/Payroll";
-    else if (category === "Onboarding") cloudFolder = "hrms/Onboarding";
+  let cloudFolder = "hrms/Uncategorized";
+    const safeEmployeeId = employeeId ? employeeId.toString().trim() : 'Unknown_Employee';
+    let emailPrefix = "unknown"; 
+
+    if (category === "Onboarding") {
+      try {
+        let emp = await Employee.findOne({ employeeCode: safeEmployeeId });
+        
+        if (!emp && safeEmployeeId.length === 24) {
+          emp = await Employee.findById(safeEmployeeId);
+        }
+
+        if (emp && emp.email) {
+          emailPrefix = emp.email.split('@')[0].toLowerCase();
+        }
+      } catch (err) {
+        console.error("Could not fetch employee email:", err);
+      }
+  
+      cloudFolder = `hrms_onboarding/${emailPrefix}`; 
+      
+    } else {
+      let baseFolder = "hrms/Uncategorized";
+      if (category === "Personal" || category === "Personal IDs") baseFolder = "hrms/Personal_IDs";
+      else if (category === "Education") baseFolder = "hrms/Education";
+      else if (category === "Employment" || category === "Contracts") baseFolder = "hrms/Contracts";
+      else if (category === "Payroll") baseFolder = "hrms/Payroll";
+
+      cloudFolder = `${baseFolder}/${safeEmployeeId}`;
+    }
+    const safeDocName = (documentTitle || "doc").replace(/[^a-zA-Z0-9]/g, ''); // Removes spaces
+    const customPublicId = `${category === "Onboarding" && emailPrefix !== "unknown" ? emailPrefix : safeEmployeeId}-${safeDocName}-${Date.now()}`;
 
     // UPLOAD TO CLOUDINARY
     const cloudResult = await cloudinary.uploader.upload(req.file.path, {
       folder: cloudFolder,
       resource_type: 'auto',
+      public_id: customPublicId 
     });
 
     //  CLEAN UP LOCAL TEMP FILE
@@ -57,7 +85,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
       employeeId,
       uploadedBy,
       fileName: req.file.filename,
-      originalName: req.file.originalname,
+      originalName: documentTitle || req.file.originalname,
       fileType: req.file.mimetype,
       fileSize: fileSizeMB,
       filePath: cloudResult.secure_url,
@@ -69,11 +97,11 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     res.status(201).json(newDoc);
   } catch (error) {
     console.error("Cloudinary Upload Error:", error);
-    
+
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
-    
+
     res.status(500).json({ message: "Server Error during cloud upload", error });
   }
 });
@@ -96,12 +124,13 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
     }
 
     if (doc.filePath) {
+
       // CLOUDINARY DELETION LOGIC
       if (doc.filePath.includes('cloudinary.com')) {
-        
+
         const urlParts = doc.filePath.split('/');
         const uploadIndex = urlParts.findIndex(part => part === 'upload');
-        
+
         if (uploadIndex !== -1) {
 
           const publicIdWithExt = urlParts.slice(uploadIndex + 2).join('/');
@@ -111,19 +140,20 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
           await cloudinary.uploader.destroy(publicId);
           console.log(`✅ Cloud file permanently destroyed!`);
         }
-      } 
+      }
+      
       //  LOCAL FILE DELETION 
       else {
         const fileToDelete = path.join(__dirname, '..', doc.filePath);
         if (fs.existsSync(fileToDelete)) {
-          fs.unlinkSync(fileToDelete); 
+          fs.unlinkSync(fileToDelete);
           console.log(`✅ Physical local file deleted: ${fileToDelete}`);
         } else {
           console.log(`⚠️ Physical file not found on disk, skipping: ${fileToDelete}`);
         }
       }
     }
-    
+
     //  MONGODB DELETION
     await Document.findByIdAndDelete(req.params.id);
     res.json({ message: "Document deleted successfully from DB and Storage Vault" });
@@ -136,7 +166,7 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
 router.patch('/:id/status', async (req: Request, res: Response): Promise<void> => {
   try {
     const { status } = req.body;
-    
+
     const validStatuses = ['Pending', 'Verified', 'Rejected'];
     if (!validStatuses.includes(status)) {
       res.status(400).json({ message: "Invalid status value" });
@@ -146,7 +176,7 @@ router.patch('/:id/status', async (req: Request, res: Response): Promise<void> =
     const updatedDoc = await Document.findByIdAndUpdate(
       req.params.id,
       { status },
-      { new: true } 
+      { new: true }
     );
 
     if (!updatedDoc) {

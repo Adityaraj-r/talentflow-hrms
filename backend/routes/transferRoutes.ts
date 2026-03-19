@@ -5,8 +5,11 @@ import {
     updateTransferStatus ,
     getEmployeeLatestTransfer
 } from '../controllers/transferController';
+import { protect } from '../middleware/auth.middleware';
 
 const router = express.Router();
+
+router.use(protect as any); 
 
 //  /api/transfers/submit
 router.post('/submit', createTransferRequest);

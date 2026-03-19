@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import axios from "axios"
+import apiClient from "@/services/apiClient"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -17,7 +17,7 @@ const Onboarding = () => {
 
   const [formData, setFormData] = useState({
     firstName: "",
-    MiddleName: "", 
+    MiddleName: "",
     lastName: "",
     dateOfBirth: "",
     gender: "",
@@ -43,15 +43,10 @@ const Onboarding = () => {
     const fetchProgress = async () => {
       if (formData.email && activeTab !== "personal") {
         try {
-          const token = localStorage.getItem('token');
-          const response = await axios.get(
-            `http://localhost:5001/api/onboarding/${formData.email}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-
-          if (response.data.success) {
-            // NORMALIZATION LOGIC ---
-            const fetchedData = { ...response.data.data };
+          // const token = localStorage.getItem('token');
+          const response = await apiClient.get(`/onboarding/${formData.email}`);
+          if (response.success) {
+            const fetchedData = { ...response.data };
 
             if (fetchedData.gender) {
               fetchedData.gender = fetchedData.gender.charAt(0).toUpperCase() +
@@ -130,7 +125,7 @@ const Onboarding = () => {
     }
   };
 
- const getTabValidationError = (tab) => {
+  const getTabValidationError = (tab) => {
     if (tab === "personal") {
       const { firstName, MiddleName, lastName, dateOfBirth, gender, email, phoneNumber, currentAddress } = formData;
       if (firstName.trim() === "") return "First Name is required.";
@@ -192,7 +187,7 @@ const Onboarding = () => {
   const handleSaveProgress = async (nextTab) => {
     const errorMessage = getTabValidationError(activeTab);
     if (errorMessage) {
-      toast.error(errorMessage); 
+      toast.error(errorMessage);
       return;
     }
     if (!formData.email) {
@@ -233,18 +228,14 @@ const Onboarding = () => {
       if (formData.passportPhoto) data.append('passportPhoto', formData.passportPhoto);
       if (formData.relievingLetter) data.append('relievingLetter', formData.relievingLetter);
 
-      const response = await axios.post(
-        "http://localhost:5001/api/onboarding/save",
+      const response = await apiClient.post(
+        "/onboarding/save",
         data,
         {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
+          headers: { 'Content-Type': 'multipart/form-data' }
         }
       );
-
-      if (response.data.success) {
+      if (response.success) {
         toast.success(`${activeTab.toUpperCase()} details saved!`);
         if (nextTab) setActiveTab(nextTab);
       }
@@ -286,7 +277,7 @@ const Onboarding = () => {
             Documents
           </TabsTrigger>
         </TabsList>
-        
+
 
         {/* PERSONAL TAB */}
         <TabsContent value="personal">
@@ -403,6 +394,7 @@ const Onboarding = () => {
                 <div className="space-y-2">
                   <Label>Employee ID *</Label>
                   <Input
+                    disabled
                     value={formData.employeeCode || ""}
                     onChange={(e) => handleChange("employeeCode", e.target.value)}
                     placeholder="EMP-001"
@@ -605,7 +597,7 @@ const Onboarding = () => {
                   Back to Employment
                 </Button>
 
-               <Button onClick={() => handleSaveProgress("documents")}>
+                <Button onClick={() => handleSaveProgress("documents")}>
                   Next: Documents
                 </Button>
               </div>

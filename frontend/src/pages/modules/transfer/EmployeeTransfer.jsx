@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { FileText, Check, X, Search, ArrowLeftRight, CheckCircle2, Clock, XCircle } from "lucide-react"
 import { toast } from "sonner"
-import axios from "axios"
+import apiClient from "@/services/apiClient"
 import { cn } from "@/lib/utils"
 
 const EmployeeTransfer = () => {
@@ -17,16 +17,13 @@ const EmployeeTransfer = () => {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ total: 0, approved: 0, pending: 0, rejected: 0 })
   const { hasRole } = useRole()
-  
-  const API_URL = "http://localhost:5001/api/transfers"
 
   const fetchTransfers = async () => {
     try {
       setLoading(true)
-      const res = await axios.get(`${API_URL}/all`)
-      const data = res.data
+      const data = await apiClient.get("/transfers/all")
       setTransfers(data)
-      
+
       setStats({
         total: data.length,
         approved: data.filter(t => t.status === "Approved").length,
@@ -35,31 +32,36 @@ const EmployeeTransfer = () => {
       })
     } catch (error) {
       console.error("Fetch error:", error)
-      toast.error("Failed to load transfer requests from database")
+      toast.error("Failed to load transfer requests")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleUpdateStatus = async (id, newStatus) => {
+    try {
+      const response = await apiClient.patch(`/transfers/update/${id}`, {
+        status: newStatus,
+        adminRemarks: `Action taken by Admin on ${new Date().toLocaleDateString()}`
+      })
+
+      // Check response.success explicitly
+      if (response && response.success) {
+        toast.success(`Request ${newStatus} successfully`)
+        await fetchTransfers() // Added await to ensure sequence
+      } else {
+        toast.error(response?.message || "Failed to update status")
+      }
+    } catch (error) {
+      console.error("Update Error:", error);
+      const errorMsg = error.message || error.error || "Error updating transfer status";
+      toast.error(errorMsg);
     }
   }
 
   useEffect(() => {
     fetchTransfers()
   }, [])
-
-  const handleUpdateStatus = async (id, newStatus) => {
-    try {
-      const response = await axios.patch(`${API_URL}/update/${id}`, {
-        status: newStatus,
-        adminRemarks: `Action taken by Admin on ${new Date().toLocaleDateString()}`
-      })
-
-      if (response.data.success) {
-        toast.success(`Request ${newStatus} successfully`)
-        fetchTransfers() 
-      }
-    } catch (error) {
-      toast.error("Error updating transfer status")
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -82,18 +84,18 @@ const EmployeeTransfer = () => {
         </TabsList>
 
         <TabsContent value="pending" className="mt-4">
-          <TransferTable 
-            data={transfers.filter(t => t.status === "Pending")} 
-            onAction={handleUpdateStatus} 
-            isHistory={false} 
+          <TransferTable
+            data={transfers.filter(t => t.status === "Pending")}
+            onAction={handleUpdateStatus}
+            isHistory={false}
             loading={loading}
           />
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
-          <TransferTable 
-            data={transfers.filter(t => t.status !== "Pending")} 
-            isHistory={true} 
+          <TransferTable
+            data={transfers.filter(t => t.status !== "Pending")}
+            isHistory={true}
             loading={loading}
           />
         </TabsContent>
@@ -117,7 +119,7 @@ const StatCard = ({ title, value, icon, color = "text-foreground" }) => (
 const TransferTable = ({ data, onAction, isHistory, loading }) => {
   const [searchTerm, setSearchTerm] = useState("")
 
-  const filteredData = data.filter(item => 
+  const filteredData = data.filter(item =>
     item.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -129,10 +131,10 @@ const TransferTable = ({ data, onAction, isHistory, loading }) => {
           <CardTitle className="text-lg">Transfer Logs</CardTitle>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input 
-              type="search" 
-              placeholder="Search transfers..." 
-              className="pl-8 w-[200px] md:w-[300px]" 
+            <Input
+              type="search"
+              placeholder="Search transfers..."
+              className="pl-8 w-[200px] md:w-[300px]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -179,18 +181,18 @@ const TransferTable = ({ data, onAction, isHistory, loading }) => {
                         </div>
                       ) : (
                         <div className="flex justify-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-8 w-8 text-green-600 hover:bg-green-50" 
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 text-green-600 hover:bg-green-50"
                             onClick={() => onAction(item._id, 'Approved')}
                           >
                             <Check className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-8 w-8 text-red-600 hover:bg-red-50" 
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 text-red-600 hover:bg-red-50"
                             onClick={() => onAction(item._id, 'Rejected')}
                           >
                             <X className="h-4 w-4" />

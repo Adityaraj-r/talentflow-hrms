@@ -55,7 +55,7 @@ const UserManagement = () => {
     const fetchOnboarded = async () => {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:5001/api/onboarding/list/all', {
+        const response = await fetch('http://localhost:5001/api/onboarding/list/all?unenrolled=true', {
           headers: { 'Authorization': `Bearer ${token}` }
         })
         const data = await response.json()

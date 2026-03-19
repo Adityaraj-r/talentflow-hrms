@@ -84,17 +84,12 @@ const UserSchema = new Schema<IUser>(
       ref: 'Employee',
       default: null,
     },
-    employeeCode: {
+   employeeCode: {
       type: String,
       default: null,
       unique: true,
       sparse: true,
       trim: true,
-    },
-    employeeCode: {
-      type: String,
-      trim: true,
-      default: null
     },
     currentShift: {
       type: Schema.Types.ObjectId,
