@@ -25,7 +25,8 @@ import {
   Shield,
   Layers,
   Database,
-  Building
+  Building,
+  ClipboardList,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ROLES } from "@/constants/roles"
@@ -152,9 +153,9 @@ const Sidebar = ({
   }
 
   const getLeaveManagementPath = () => {
-    if (userRole === "ADMIN") return "/role/admin/leave-management"
     if (userRole === ROLES.EMPLOYEE) return "/role/employee/leave-management"
-    return `/role/${userRole?.toLowerCase() || 'employee'}/leave-management`
+
+    return "/attendance/leave-management"
   }
 
   const SidebarLink = ({ to, icon: Icon, label }) => (
@@ -236,13 +237,13 @@ const Sidebar = ({
   ) : null
 
   const PayrollGroup = () => canSee('payroll') ? (
-  <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
-    <SubLink to="/payroll" label="Payroll Processing" />
-    <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
-    <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
-    <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
-  </SidebarGroup>
-) : null
+    <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
+      <SubLink to="/payroll" label="Payroll Processing" />
+      <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
+      <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
+      <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
+    </SidebarGroup>
+  ) : null
 
 
   const LeaveLink = () => canSee('attendance')
@@ -345,7 +346,10 @@ const Sidebar = ({
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/attendance" label="Attendance Records" />
               <SubLink to="/attendance/manual" label="Manual Attendance" />
-              <SubLink to="/attendance/policies" label="Attendance Policies" />
+              <SubLink to="/attendance/shifts" label="Shift Roster" />
+              <SubLink to="/attendance/holidays" label="Holiday List" />
+              <SubLink to="/attendance/leave-management" label="Leave Management" />
+              <SubLink to="/attendance/correction-requests" label="Correction Requests" />
             </SidebarGroup>
           )}
           {canSee('employees') && <SidebarLink to="/employee-transfer" icon={RefreshCw} label="Employee Transfer" />}
@@ -380,7 +384,14 @@ const Sidebar = ({
               <SubLink to="/dashboard/onboarding" label="Onboarding" />
             </SidebarGroup>
           )}
-          {canSee('attendance') && <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />}
+          {canSee('attendance') && (
+            <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+              <SubLink to="/attendance" label="Attendance Records" />
+              <SubLink to="/attendance/leave-management" label="Leave Management" />
+              <SubLink to="/attendance/correction-requests" label="Correction Requests" />
+            </SidebarGroup>
+          )}
+
           {canSee('payroll') && (
             <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
               <SubLink to="/payroll" label="Payroll Processing" />
@@ -413,11 +424,11 @@ const Sidebar = ({
               <SubLink to="/attendance/leave-management" label="Leave Management" />
             </SidebarGroup>
           )}
-           {canSee('recruitment') && (
+          {canSee('recruitment') && (
             <SidebarLink to="/recruitment" icon={Briefcase} label="View Recruitment" />
           )}
-           {canSee('reports') && <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />}
-           
+          {canSee('reports') && <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />}
+
         </>
       )
     }
@@ -427,7 +438,14 @@ const Sidebar = ({
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
           {canSee('recruitment') && <SidebarLink to="/staff-requisition" icon={Users} label={getRecruitmentLabel()} />}
-          {canSee('attendance') && <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />}
+          {canSee('attendance') && (
+            <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+              <SubLink to="/attendance/leave-management" label="Leave Management" />
+              <SubLink to="/attendance/correction-requests" label="Correction Requests" />
+              <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
+            </SidebarGroup>
+          )}
+
           <SidebarLink to="/role/department_manager/appraisal" icon={Award} label="Appraisal" />
         </>
       )
@@ -437,7 +455,14 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
-          {canSee('attendance') && <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />}
+          {canSee('attendance') && (
+            <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+              <SubLink to="/attendance/leave-management" label="Leave Management" />
+              <SubLink to="/attendance/correction-requests" label="Correction Requests" />
+              <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
+            </SidebarGroup>
+          )}
+
           <SidebarLink to="/role/direct_manager/appraisal" icon={Award} label="Appraisal" />
         </>
       )
@@ -447,7 +472,9 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
-          {canSee('attendance') && <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />}
+          {canSee('attendance') && (
+            <SidebarLink to="/attendance" icon={Clock} label="Attendance Records" />
+          )}
           {canSee('payroll') && (
             <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
               <SubLink to="/payroll" label="Payroll Processing" />

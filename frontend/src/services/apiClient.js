@@ -1,7 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -11,13 +10,9 @@ const apiClient = axios.create({
   },
 });
 
-// Add auth token automatically
 apiClient.interceptors.request.use(
   (config) => {
-    const token =
-      localStorage.getItem("token") ||
-      localStorage.getItem("idToken");
-
+    const token = localStorage.getItem("token") || localStorage.getItem("idToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -26,7 +21,6 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Handle auth errors globally
 apiClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
@@ -35,9 +29,7 @@ apiClient.interceptors.response.use(
       localStorage.removeItem("idToken");
       window.location.href = "/login";
     }
-    return Promise.reject(
-      error.response?.data || { message: error.message }
-    );
+    return Promise.reject(error.response?.data || { message: error.message });
   }
 );
 

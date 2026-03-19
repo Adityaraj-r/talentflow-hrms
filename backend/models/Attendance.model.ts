@@ -8,14 +8,23 @@ export interface IBreak {
 
 export interface IAttendance extends Document {
   userId: mongoose.Types.ObjectId;
-  date: string; 
-  checkIn?: Date;
-  checkOut?: Date;
-  status: "Present" | "Absent" | "Late" | "Half Day" | "Weekend";
+  date: string;
+  clockIn?: Date;
+  clockOut?: Date;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
+  status: "Present" | "Absent" | "Half Day" | "Late" | "Leave" | "Holiday" | "Weekend";
   state: "NOT_STARTED" | "CHECKED_IN" | "ON_BREAK" | "CHECKED_OUT" | "AUTO_CLOSED";
   breaks: IBreak[];
   totalBreakMinutes: number;
   totalHours?: number;
+  overtimeHours?: number;
+  approvedBy?: mongoose.Types.ObjectId;
+  isLocked: boolean;
+  notes?: string;
 }
 
 const BreakSchema = new Schema<IBreak>({
@@ -26,26 +35,18 @@ const BreakSchema = new Schema<IBreak>({
 
 const AttendanceSchema = new Schema<IAttendance>(
   {
-    userId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      index: true,
-    },
-    date: {
-      type: String,
-      required: true,
-      index: true,
-    },
-    checkIn: {
-      type: Date,
-    },
-    checkOut: {
-      type: Date,
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    date: { type: String, required: true, index: true },
+    clockIn: { type: Date },
+    clockOut: { type: Date },
+    location: {
+      latitude: { type: Number },
+      longitude: { type: Number },
+      address: { type: String },
     },
     status: {
       type: String,
-      enum: ["Present", "Absent", "Late", "Half Day", "Weekend"],
+      enum: ["Present", "Absent", "Half Day", "Late", "Leave", "Holiday", "Weekend"],
       default: "Present",
     },
     state: {
@@ -54,17 +55,14 @@ const AttendanceSchema = new Schema<IAttendance>(
       default: "CHECKED_IN",
     },
     breaks: [BreakSchema],
-    totalBreakMinutes: {
-      type: Number,
-      default: 0,
-    },
-    totalHours: {
-      type: Number,
-    },
+    totalBreakMinutes: { type: Number, default: 0 },
+    totalHours: { type: Number },
+    overtimeHours: { type: Number },
+    approvedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    isLocked: { type: Boolean, default: false },
+    notes: { type: String },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 AttendanceSchema.index({ userId: 1, date: 1 }, { unique: true });

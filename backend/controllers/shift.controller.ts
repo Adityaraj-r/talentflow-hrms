@@ -4,7 +4,7 @@ import User from "../models/User.model";
 
 export const createShift = async (req: Request, res: Response) => {
   try {
-    const { name, startTime, endTime, lateBuffer } = req.body;
+    const { name, startTime, endTime, graceMinutes } = req.body;
 
     const existing = await Shift.findOne({ name });
     if (existing) {
@@ -15,13 +15,12 @@ export const createShift = async (req: Request, res: Response) => {
       name,
       startTime,
       endTime,
-      lateBuffer
+      graceMinutes
     });
 
     res.status(201).json({ success: true, message: "Shift created successfully", data: newShift });
-  } catch (error) {
-    console.error("createShift error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -29,9 +28,8 @@ export const getAllShifts = async (req: Request, res: Response) => {
   try {
     const shifts = await Shift.find({ isActive: true }).sort({ createdAt: -1 });
     res.json({ success: true, data: shifts });
-  } catch (error) {
-    console.error("getAllShifts error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -40,9 +38,8 @@ export const deleteShift = async (req: Request, res: Response) => {
     const { id } = req.params;
     await Shift.findByIdAndUpdate(id, { isActive: false });
     res.json({ success: true, message: "Shift deleted successfully" });
-  } catch (error) {
-    console.error("deleteShift error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -59,9 +56,12 @@ export const assignShift = async (req: Request, res: Response) => {
       { $set: { currentShift: shiftId } }
     );
 
+    await Shift.findByIdAndUpdate(shiftId, {
+      $addToSet: { assignedTo: { $each: employeeIds } }
+    });
+
     res.json({ success: true, message: "Shift assigned successfully" });
-  } catch (error) {
-    console.error("assignShift error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

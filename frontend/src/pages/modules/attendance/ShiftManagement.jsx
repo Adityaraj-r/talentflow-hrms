@@ -5,16 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Clock,
-  Plus,
-  Trash2,
-  Shield,
-  Briefcase,
-  AlertCircle,
-  Users,
-  Timer
-} from "lucide-react";
+import { Clock, Plus, Trash2, Shield, Briefcase, AlertCircle, Users, Timer } from "lucide-react";
 import { toast } from "sonner";
 
 const TimeSelect = ({ value, name, onChange }) => {
@@ -90,7 +81,7 @@ const ShiftManagement = () => {
     name: "",
     startTime: "",
     endTime: "",
-    lateBuffer: 15
+    graceMinutes: 15
   });
 
   const fetchShifts = async () => {
@@ -98,17 +89,12 @@ const ShiftManagement = () => {
       setLoading(true);
       const res = await shiftService.getAllShifts();
 
-      if (res?.data?.success && Array.isArray(res.data.data)) {
-        setShifts(res.data.data);
-      } else if (res?.success && Array.isArray(res.data)) {
+      if (res?.success && Array.isArray(res.data)) {
         setShifts(res.data);
-      } else if (Array.isArray(res)) {
-        setShifts(res);
       } else {
         setShifts([]);
       }
     } catch (error) {
-      console.error("Error fetching shifts:", error);
       toast.error("Failed to load shifts");
     } finally {
       setLoading(false);
@@ -127,11 +113,10 @@ const ShiftManagement = () => {
     e.preventDefault();
     try {
       await shiftService.createShift(formData);
-      setFormData({ name: "", startTime: "", endTime: "", lateBuffer: 15 });
+      setFormData({ name: "", startTime: "", endTime: "", graceMinutes: 15 });
       toast.success("Shift created successfully");
       fetchShifts();
     } catch (error) {
-      console.error("Error adding shift:", error);
       toast.error(error.response?.data?.message || "Failed to add shift");
     }
   };
@@ -143,7 +128,6 @@ const ShiftManagement = () => {
         toast.success("Shift deleted");
         fetchShifts();
       } catch (error) {
-        console.error("Delete failed", error);
         toast.error("Failed to delete shift");
       }
     }
@@ -237,14 +221,14 @@ const ShiftManagement = () => {
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center justify-between">
-                    Late Buffer (Minutes)
+                    Grace Minutes
                     <AlertCircle className="h-4 w-4 text-muted-foreground" />
                   </label>
                   <input
                     type="number"
-                    name="lateBuffer"
+                    name="graceMinutes"
                     min="0"
-                    value={formData.lateBuffer}
+                    value={formData.graceMinutes}
                     onChange={handleChange}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 shadow-sm"
                   />
@@ -299,7 +283,7 @@ const ShiftManagement = () => {
                     <div className="grid grid-cols-2 gap-3 mt-2">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary/50 p-2 rounded-md">
                         <Shield className="h-4 w-4 text-orange-500" />
-                        <span>Buffer: <b className="text-foreground">{shift.lateBuffer}m</b></span>
+                        <span>Buffer: <b className="text-foreground">{shift.graceMinutes}m</b></span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary/50 p-2 rounded-md">
                         <Timer className="h-4 w-4 text-indigo-500" />

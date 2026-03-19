@@ -73,12 +73,14 @@ import TaskBoard from "./pages/role/PROJECT_MANAGER/TaskBoard"
 import SafetyIncidents from "./pages/role/PROJECT_MANAGER/SafetyIncidents"
 import TimesheetApprovals from "./pages/role/PROJECT_MANAGER/TimesheetApprovals"
 
-// Admin Role Pages
+// Attendance Module
 import AttendanceRecords from "./pages/modules/attendance/AttendanceRecords"
-import AdminLeaveManagement from "./pages/role/ADMIN/LeaveManagement"
 import ShiftManagement from "./pages/modules/attendance/ShiftManagement"
 import HolidayManagement from "./pages/modules/attendance/HolidayManagement"
 import ManualAttendance from "./pages/modules/attendance/ManualAttendance"
+import MyAttendance from "./pages/modules/attendance/MyAttendance"
+import LeaveManagement from "./pages/modules/attendance/LeaveApprovals"
+import CorrectionRequests from "./pages/modules/attendance/CorrectionRequests"
 
 // Role-Specific Appraisal Pages
 import HRManagerAppraisal from "./pages/role/HR_MANAGER/Appraisal"
@@ -97,20 +99,16 @@ import DocumentRequestsHROfficer from "./pages/role/HR_OFFICER/DocumentRequests"
 import DocumentRequestsEmployee from "./pages/role/EMPLOYEE/DocumentRequests"
 
 // Role-Specific Leave Management Pages
-import CEOLeaveManagement from "./pages/role/CEO/LeaveManagement"
+import CEOLeaveManagement from "./pages/modules/attendance/LeaveApprovals"
 import HRManagerLeaveManagement from "./pages/role/HR_MANAGER/LeaveManagement"
 import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
 
 // Employee Role Pages
-import MyAttendance from "./pages/modules/attendance/MyAttendance"
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 import Profile from "./pages/dashboard/Profile"
-import TAPolicyConfig from "./pages/modules/attendance/TAPolicyConfig"
-
 
 const ADMIN_ROLES = ["ADMIN", "SUPER ADMIN"]
 
-// ProtectedRoute
 const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
   const { user, isAuthenticated, loading } = useAuth()
   const [permLoading, setPermLoading] = useState(false)
@@ -143,7 +141,6 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
     checkMatrix()
   }, [user, requiredPermission, userRoleStr])
 
-  // Auth loading
   if (loading || permLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-950">
@@ -160,9 +157,8 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
 
-
   if (requiredPermission) {
-    if (hasPermission === null) return null // still resolving
+    if (hasPermission === null) return null
     return hasPermission ? children : <Navigate to="/unauthorized" replace />
   }
 
@@ -330,31 +326,29 @@ function App() {
                   } />
 
                   {/* ── Recruitment — MATRIX ENFORCED ────────────────── */}
-
                   <Route path="/dashboard/onboarding" element={
                     <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER"]}>
                       <DashboardLayout><Onboarding /></DashboardLayout>
                     </ProtectedRoute>
                   } />
-                 
+
                   <Route path="/staff-requisition" element={
                     <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
                       <DashboardLayout><StaffRequisition /></DashboardLayout>
                     </ProtectedRoute>
                   } />
+
                   <Route path="/careers" element={<Careers />} />
                   <Route path="/apply/:id" element={<ApplyJob />} />
-                  <Route path="/dashboard/applications" element={<DashboardLayout> <CandidateApplications /> </DashboardLayout>} />
-                  <Route path="/dashboard/recruitment-pipeline" element={<DashboardLayout> <RecruitmentPipeline /> </DashboardLayout>} />
+                  <Route path="/dashboard/applications" element={<DashboardLayout><CandidateApplications /></DashboardLayout>} />
+                  <Route path="/dashboard/recruitment-pipeline" element={<DashboardLayout><RecruitmentPipeline /></DashboardLayout>} />
                   <Route path="/application-status" element={<ApplicationStatus />} />
 
                   <Route path="/dashboard/job-openings" element={
                     <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
-                      <DashboardLayout> <JobOpenings /> </DashboardLayout>
+                      <DashboardLayout><JobOpenings /></DashboardLayout>
                     </ProtectedRoute>
                   } />
-
-
 
                   <Route path="/dashboard/offer-management" element={
                     <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
@@ -395,7 +389,7 @@ function App() {
 
                   <Route path="/attendance/leave-management" element={
                     <ProtectedRoute requiredPermission={{ module: "attendance", action: "write" }}>
-                      <DashboardLayout><AdminLeaveManagement /></DashboardLayout>
+                      <DashboardLayout><LeaveManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
@@ -405,9 +399,9 @@ function App() {
                     </ProtectedRoute>
                   } />
 
-                  <Route path="/attendance/policies" element={
-                    <ProtectedRoute allowedRoles={["HR_MANAGER", "ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><TAPolicyConfig /></DashboardLayout>
+                  <Route path="/attendance/correction-requests" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                      <DashboardLayout><CorrectionRequests /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
@@ -545,7 +539,7 @@ function App() {
 
                   {/* ── Employee Self-Service ────────────────────────── */}
                   <Route path="/dashboard/employee/attendance" element={
-                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                    <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER"]}>
                       <DashboardLayout><MyAttendance /></DashboardLayout>
                     </ProtectedRoute>
                   } />

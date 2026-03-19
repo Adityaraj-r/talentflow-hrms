@@ -1,6 +1,5 @@
 import apiClient from "./apiClient";
 
-
 const shiftService = {
   getAllShifts: async () => {
     return await apiClient.get("/shifts/all");
@@ -11,7 +10,6 @@ const shiftService = {
   deleteShift: async (id) => {
     return await apiClient.delete(`/shifts/${id}`);
   },
-
   assignShift: async (shiftId, employeeIds) => {
     return await apiClient.put("/shifts/assign", { shiftId, employeeIds });
   }

@@ -16,14 +16,14 @@ router.get("/my", protect, getMyLeaves);
 router.get(
   "/all", 
   protect, 
-  authorize("ADMIN", "HR_MANAGER","CEO"), 
+  authorize("ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "SUPER_ADMIN"), 
   getAllLeaves
 );
 
 router.patch(
   "/:id/status", 
   protect, 
-  authorize("ADMIN", "HR_MANAGER","CEO"), 
+  authorize("ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "SUPER_ADMIN"), 
   updateLeaveStatus
 );
 
