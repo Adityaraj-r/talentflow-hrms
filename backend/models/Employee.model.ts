@@ -1,10 +1,11 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IEmployee extends Document {
-  userId?: mongoose.Types.ObjectId;         
+  userId?: mongoose.Types.ObjectId;
   firstName: string;
   MiddleName?: string;
   lastName: string;
+  workEmail?: string;
   email: string;
   phoneNumber: string;
   alternatePhone?: string;
@@ -13,7 +14,7 @@ export interface IEmployee extends Document {
   nationality?: string;
   maritalStatus?: 'Single' | 'Married' | 'Divorced' | 'Widowed';
   currentAddress?: string;
-  role?: string;                             
+  role?: string;
 
   address?: {
     street: string;
@@ -76,16 +77,17 @@ const EmployeeSchema = new Schema<IEmployee>(
       default: null,
     },
 
-    firstName:    { type: String, required: true, trim: true },
-    MiddleName:   { type: String, trim: true },
-    lastName:     { type: String, required: true, trim: true },
-    email:        { type: String, required: true, unique: true, lowercase: true },
-    phoneNumber:  { type: String, required: true },
+    firstName: { type: String, required: true, trim: true },
+    MiddleName: { type: String, trim: true },
+    lastName: { type: String, required: true, trim: true },
+    workEmail: { type: String, lowercase: true },
+    email: { type: String, required: true, unique: true, lowercase: true },
+    phoneNumber: { type: String, required: true },
     alternatePhone: { type: String },
-    dateOfBirth:  { type: Date },
-    gender:       { type: String, enum: ['Male', 'Female', 'Other'] },
-    nationality:  { type: String, default: 'Indian' },
-    maritalStatus:{ type: String, enum: ['Single', 'Married', 'Divorced', 'Widowed'] },
+    dateOfBirth: { type: Date },
+    gender: { type: String, enum: ['Male', 'Female', 'Other'] },
+    nationality: { type: String, default: 'Indian' },
+    maritalStatus: { type: String, enum: ['Single', 'Married', 'Divorced', 'Widowed'] },
     currentAddress: { type: String },
 
     employeeCode: {
@@ -95,56 +97,56 @@ const EmployeeSchema = new Schema<IEmployee>(
       sparse: true,
       trim: true,
     },
-    role: {                                  
+    role: {
       type: String,
       default: null,
     },
-    joiningDate:     { type: Date },
-    department:      { type: String },
-    designation:     { type: String },
-    employmentType:  { type: String, enum: ['Full-Time', 'Part-Time', 'Contract', 'Intern'] },
-    workLocation:    { type: String },
-    reportingManager:{ type: String },
+    joiningDate: { type: Date },
+    department: { type: String },
+    designation: { type: String },
+    employmentType: { type: String, enum: ['Full-Time', 'Part-Time', 'Contract', 'Intern'] },
+    workLocation: { type: String },
+    reportingManager: { type: String },
 
     salary: {
-      basic:    { type: Number, default: 0 },
+      basic: { type: Number, default: 0 },
       currency: { type: String, default: 'INR' },
       allowances: {
-        hra:       { type: Number, default: 0 },
+        hra: { type: Number, default: 0 },
         transport: { type: Number, default: 0 },
-        medical:   { type: Number, default: 0 },
-        other:     { type: Number, default: 0 },
+        medical: { type: Number, default: 0 },
+        other: { type: Number, default: 0 },
       },
       deductions: {
-        pf:        { type: Number, default: 0 },
-        tax:       { type: Number, default: 0 },
+        pf: { type: Number, default: 0 },
+        tax: { type: Number, default: 0 },
         insurance: { type: Number, default: 0 },
-        other:     { type: Number, default: 0 },
+        other: { type: Number, default: 0 },
       },
     },
 
     kycDetails: {
-      panNumber:    { type: String, uppercase: true },
+      panNumber: { type: String, uppercase: true },
       aadharNumber: { type: String },
-      uan:          { type: String },
-      pfNumber:     { type: String },
+      uan: { type: String },
+      pfNumber: { type: String },
     },
 
     bankDetails: {
       accountHolderName: { type: String },
-      accountNumber:     { type: String },
-      bankName:          { type: String },
-      branchName:        { type: String },
-      ifscCode:          { type: String },
+      accountNumber: { type: String },
+      bankName: { type: String },
+      branchName: { type: String },
+      ifscCode: { type: String },
     },
 
     Documents: {
-      aadharCardPath:     { type: String, default: null },
-      panCardPath:        { type: String, default: null },
-      resumePath:         { type: String, default: null },
-      educationDocsPath:  { type: String, default: null },
-      passportPhotoPath:  { type: String, default: null },
-      relievingLetterPath:{ type: String, default: null },
+      aadharCardPath: { type: String, default: null },
+      panCardPath: { type: String, default: null },
+      resumePath: { type: String, default: null },
+      educationDocsPath: { type: String, default: null },
+      passportPhotoPath: { type: String, default: null },
+      relievingLetterPath: { type: String, default: null },
     },
 
     onboardingStatus: {

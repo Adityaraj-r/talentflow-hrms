@@ -1,30 +1,11 @@
 import { useState, useEffect } from "react"
 import { Link, useLocation } from "react-router-dom"
 import {
-  Users,
-  Calendar,
-  RefreshCw,
-  DollarSign,
-  Award,
-  AlertTriangle,
-  FileCheck,
-  Home,
-  ChevronDown,
-  ChevronRight,
-  ChevronLeft,
-  Briefcase,
-  Plane,
-  Calculator,
-  LogOut,
-  Clock,
-  Settings,
-  FileText,
-  ArrowLeftRight,
-  TrendingUp,
-  Shield,
-  Layers,
-  Database,
-  Building
+  Users, Calendar, RefreshCw, DollarSign, Award, AlertTriangle,
+  FileCheck, Home, ChevronDown, ChevronRight, ChevronLeft,
+  Briefcase, Plane, Calculator, LogOut, Clock, Settings,
+  FileText, ArrowLeftRight, TrendingUp, Shield, Layers, Database, Building,
+  LayoutDashboard, CircleDollarSign, Target, Network, FileBadge
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ROLES } from "@/constants/roles"
@@ -409,34 +390,45 @@ const Sidebar = ({
     }
 
     // ── CEO / COUNTRY MANAGER ────────────────────────────────────────
-    if (userRole === ROLES.CEO || userRole === ROLES.COUNTRY_MANAGER) {
+   if (userRole === ROLES.CEO || userRole === ROLES.COUNTRY_MANAGER) {
       return (
         <>
-          <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          {/* MAIN CEO DASHBOARD ROUTE */}
+          <SidebarLink to="/ceo/dashboard" icon={LayoutDashboard} label="Dashboard" />
+          
+          {/* CEO MODULES */}
+          <SidebarLink to="/ceo/analytics" icon={Users} label="Workforce Analytics" />
+          <SidebarLink to="/ceo/payroll" icon={CircleDollarSign} label="Payroll & Cost" />
+          <SidebarLink to="/ceo/org-structure" icon={Network} label="Org Structure" />
+          <SidebarLink to="/ceo/audit" icon={FileBadge} label="Audit Summary" />
 
+          {/* DROPDOWN FOR ATTENDANCE */}
           {canSee("attendance") && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
-              <SubLink to="/attendance" label="Attendance Records" />
+              <SubLink to="/ceo/attendance" label="CEO Attendance View" />
+              <SubLink to="/attendance" label="All Attendance Records" />
               <SubLink to="/attendance/shifts" label="Shift Roster" />
               <SubLink to="/attendance/holidays" label="Holiday List" />
               <SubLink to="/attendance/leave-management" label="Leave Management" />
             </SidebarGroup>
           )}
 
+          {/* RECRUITMENT ROUTE */}
           {canSee("recruitment") && (
-            <SidebarLink to="/dashboard/recruitment-pipeline" icon={Briefcase} label="View Recruitment" />
+            <SidebarLink to="/ceo/recruitment" icon={Briefcase} label="View Recruitment" />
           )}
 
-          {/* FIXED: CEO analytics route added */}
           <SidebarGroup id="appraisal" icon={Award} label="Performance (PMS)">
+            <SubLink to="/ceo/performance" label="CEO Overview" icon={Target} />
             <SubLink to="/role/ceo/appraisal" label="Analytics Dashboard" icon={TrendingUp} />
           </SidebarGroup>
 
+          {/* REPORTS */}
           {canSee("reports") && (
             <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
           )}
         </>
-      )
+      );
     }
 
     // ── DEPARTMENT MANAGER ───────────────────────────────────────────
