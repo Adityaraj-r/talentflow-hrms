@@ -45,6 +45,8 @@ import ApplyJob from "./pages/ApplyJob"
 import CandidateApplications from "./pages/modules/recruitment/CandidateApplications"
 import RecruitmentPipeline from "./pages/modules/recruitment/RecruitmentPipeline"
 import ApplicationStatus from "./pages/ApplicationStatus"
+import AdminRecruitmentSuggestions from "./pages/modules/recruitment/AdminRecruitmentSuggestions"
+import RecruitmentSuggestionsInbox from "./pages/modules/recruitment/RecruitmentSuggestionsInbox"
 
 // Payroll Module
 import Payroll from "./pages/modules/payroll/Payroll"
@@ -124,7 +126,8 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
   useEffect(() => {
     if (!requiredPermission || !user) return
 
-    if (ADMIN_ROLES.includes(userRoleStr.toUpperCase())) {
+    const upper = userRoleStr.toUpperCase()
+    if (upper === "SUPER ADMIN" || upper === "SUPER_ADMIN") {
       setHasPermission(true)
       return
     }
@@ -329,6 +332,11 @@ function App() {
                       <DashboardLayout><Integrations /></DashboardLayout>
                     </ProtectedRoute>
                   } />
+                  <Route path="/admin/recruitment-suggestions" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><AdminRecruitmentSuggestions /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
 
                   {/* ── Employee Center — MATRIX ENFORCED ────────────── */}
                   <Route path="/employee-center/all-employees" element={
@@ -344,7 +352,7 @@ function App() {
 
                   {/* ── Recruitment — MATRIX ENFORCED ────────────────── */}
                   <Route path="/dashboard/onboarding" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER"]}>
+                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
                       <DashboardLayout><Onboarding /></DashboardLayout>
                     </ProtectedRoute>
                   } />
@@ -369,18 +377,23 @@ function App() {
                     </ProtectedRoute>
                   } />
                   <Route path="/dashboard/offer-management" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
+                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
                       <DashboardLayout><OfferManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />
                   <Route path="/dashboard/generate-offer" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
+                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
                       <DashboardLayout><OfferManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />
                   <Route path="/dashboard/offer/:offerId" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
+                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
                       <DashboardLayout><OfferManagement /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard/recruitment-suggestions" element={
+                    <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "SUPER ADMIN"]}>
+                      <DashboardLayout><RecruitmentSuggestionsInbox /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 

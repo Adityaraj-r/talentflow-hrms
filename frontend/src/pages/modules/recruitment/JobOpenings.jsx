@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react"
-import axios from "axios"
+import apiClient from "@/services/apiClient"
+import { useUser } from "@/contexts/UserContext"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Plus } from "lucide-react"
 
 const JobOpenings = () => {
+  const { user } = useUser()
+  const canWrite = user?.can?.("recruitment", "write")
   const [jobs, setJobs] = useState([])
   const [showForm, setShowForm] = useState(false)
 
@@ -19,10 +22,8 @@ const JobOpenings = () => {
 
   const fetchJobs = async () => {
     try {
-      const res = await axios.get(
-        "http://localhost:5001/api/job-openings"
-      )
-      setJobs(res.data)
+      const data = await apiClient.get("/job-openings")
+      setJobs(Array.isArray(data) ? data : [])
     } catch (error) {
       console.log(error)
     }
@@ -63,10 +64,7 @@ const handleSubmit = async (e) => {
       status: "Draft"
     }
 
-    await axios.post(
-      "http://localhost:5001/api/job-openings",
-      payload
-    )
+    await apiClient.post("/job-openings", payload)
 
     setShowForm(false)
 
@@ -86,9 +84,7 @@ const handleSubmit = async (e) => {
 }
   const publishJob = async (id) => {
     try {
-      await axios.put(
-        `http://localhost:5001/api/job-openings/${id}/publish`
-      )
+      await apiClient.put(`/job-openings/${id}/publish`)
       fetchJobs()
     } catch (error) {
       console.log(error)
@@ -97,9 +93,7 @@ const handleSubmit = async (e) => {
 
   const closeJob = async (id) => {
     try {
-      await axios.put(
-        `http://localhost:5001/api/job-openings/${id}/close`
-      )
+      await apiClient.put(`/job-openings/${id}/close`)
       fetchJobs()
     } catch (error) {
       console.log(error)
@@ -119,10 +113,12 @@ const handleSubmit = async (e) => {
           Job Openings
         </h1>
 
-        <Button onClick={() => setShowForm(true)}>
-          <Plus size={16} className="mr-2" />
-          Create Job
-        </Button>
+        {canWrite && (
+          <Button onClick={() => setShowForm(true)}>
+            <Plus size={16} className="mr-2" />
+            Create Job
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -147,7 +143,7 @@ const handleSubmit = async (e) => {
         </CardContent></Card>
       </div>
 
-      {showForm && (
+      {canWrite && showForm && (
         <Card>
           <CardContent className="p-6 space-y-4">
             <h2 className="text-lg font-semibold">
@@ -236,13 +232,13 @@ const handleSubmit = async (e) => {
               <div className="flex gap-3 items-center">
                 <Badge>{job.status}</Badge>
 
-                {job.status === "Draft" && (
+                {canWrite && job.status === "Draft" && (
                   <Button size="sm" onClick={() => publishJob(job._id)}>
                     Publish
                   </Button>
                 )}
 
-                {job.status === "Published" && (
+                {canWrite && job.status === "Published" && (
                   <Button
                     size="sm"
                     variant="destructive"

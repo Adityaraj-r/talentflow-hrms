@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react"
-import axios from "axios"
+import apiClient from "@/services/apiClient"
+import { useUser } from "@/contexts/UserContext"
 
 const RecruitmentPipeline = () => {
+  const { user } = useUser()
+  const canWrite = user?.can?.("recruitment", "write")
 
   const [applications,setApplications] = useState([])
   const [loading,setLoading] = useState(true)
@@ -28,11 +31,8 @@ const RecruitmentPipeline = () => {
 
     try{
 
-      const res = await axios.get(
-        "http://localhost:5001/api/applications"
-      )
-
-      setApplications(res.data)
+      const data = await apiClient.get("/applications")
+      setApplications(Array.isArray(data) ? data : [])
 
     }catch(error){
       console.log(error)
@@ -50,10 +50,7 @@ const RecruitmentPipeline = () => {
 
     try{
 
-      await axios.put(
-        `http://localhost:5001/api/applications/${id}/status`,
-        { status:newStatus }
-      )
+      await apiClient.put(`/applications/${id}/status`, { status: newStatus })
 
       setApplications(prev =>
         prev.map(app =>
@@ -220,44 +217,40 @@ const RecruitmentPipeline = () => {
                 </td>
 
                 <td className="px-6 py-4">
-
-                  <select
-                    value={app.status}
-                    onChange={(e)=>handleStageChange(app._id,e.target.value)}
-                    className={`text-xs rounded-full px-3 py-1 border font-medium bg-transparent cursor-pointer ${stageColors[app.status]}`}
-                  >
-
-                    {Object.keys(stageCounts).map(s=>(
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-
-                  </select>
-
+                  {canWrite ? (
+                    <select
+                      value={app.status}
+                      onChange={(e)=>handleStageChange(app._id,e.target.value)}
+                      className={`text-xs rounded-full px-3 py-1 border font-medium bg-transparent cursor-pointer ${stageColors[app.status]}`}
+                    >
+                      {Object.keys(stageCounts).map(s=>(
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className={`text-xs rounded-full px-3 py-1 border font-medium ${stageColors[app.status]}`}>
+                      {app.status}
+                    </span>
+                  )}
                 </td>
 
                 <td className="px-6 py-4">
-
                   <div className="flex justify-end gap-2">
-
-                    <button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-xs">
+                    <button type="button" className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-xs">
                       View
                     </button>
-
-                    {app.status !== "Rejected" && (
-
+                    {canWrite && app.status !== "Rejected" && (
                       <button
+                        type="button"
                         onClick={()=>handleStageChange(app._id,"Rejected")}
                         className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs"
                       >
                         Reject
                       </button>
-
                     )}
-
                   </div>
-
                 </td>
 
               </tr>

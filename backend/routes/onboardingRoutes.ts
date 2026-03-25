@@ -5,7 +5,8 @@ import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import { saveOnboardingProgress, getOnboardingDetails, getAllOnboardingEmployees } from '../controllers/onboardingController';
 import dotenv from 'dotenv';
 dotenv.config();
-import { protect, authorize } from '../middleware/auth.middleware';
+import { protect } from '../middleware/auth.middleware';
+import { authorizeByMatrix, MODULE_KEYS } from '../middleware/role.middleware';
 
 const router: Router = express.Router();
 
@@ -37,7 +38,6 @@ const upload = multer({
 });
 
 router.use(protect);
-router.use(authorize('ADMIN', 'Admin', 'Super Admin'));
 
 router.post(
     '/save', 
@@ -49,10 +49,11 @@ router.post(
         { name: 'passportPhoto', maxCount: 1 },  
         { name: 'relievingLetter', maxCount: 1 }
     ]), 
+    authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'write') as any,
     saveOnboardingProgress
 );
 
-router.get('/list/all', getAllOnboardingEmployees);
-router.get('/:email', getOnboardingDetails);
+router.get('/list/all', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read') as any, getAllOnboardingEmployees);
+router.get('/:email', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read') as any, getOnboardingDetails);
 
 export default router;

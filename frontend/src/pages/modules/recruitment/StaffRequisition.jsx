@@ -2,6 +2,8 @@
 
 import { useState,useEffect  } from "react"
 import { useAuth } from "@/contexts/AuthContext"
+import { useUser } from "@/contexts/UserContext"
+import apiClient from "@/services/apiClient"
 import { useRole } from "@/contexts/RoleContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -90,19 +92,13 @@ const RequisitionForm = () => {
 
   setIsSubmitting(true);
   try {
-    await fetch("http://localhost:5001/api/requisitions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        position: formData.position,
-        department: formData.department,
-        experience: formData.jobType,
-        salaryRange: `${formData.minSalary}-${formData.maxSalary}`,
-        reason: formData.reason,
-        urgency: formData.urgency,
-      }),
+    await apiClient.post("/requisitions", {
+      position: formData.position,
+      department: formData.department,
+      experience: formData.jobType,
+      salaryRange: `${formData.minSalary}-${formData.maxSalary}`,
+      reason: formData.reason,
+      urgency: formData.urgency,
     });
 
     toast.success("Requisition submitted successfully");
@@ -303,13 +299,14 @@ const RequisitionForm = () => {
 }
 
 const PendingRequisitions = () => {
+  const { user } = useUser()
+  const canWriteRecruitment = user?.can?.("recruitment", "write")
   const [pendingRequisitions, setPendingRequisitions] = useState([]);
 
   const fetchPending = async () => {
     try {
-      const res = await fetch("http://localhost:5001/api/requisitions/pending");
-      const data = await res.json();
-      setPendingRequisitions(data);
+      const data = await apiClient.get("/requisitions/pending");
+      setPendingRequisitions(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
     }
@@ -321,11 +318,7 @@ const PendingRequisitions = () => {
 
   const handleApprove = async (id) => {
     try {
-      await fetch(
-        `http://localhost:5001/api/requisitions/${id}/approve`,
-        { method: "PUT" }
-      );
-
+      await apiClient.put(`/requisitions/${id}/approve`);
       toast.success("Requisition approved successfully");
       fetchPending();
     } catch {
@@ -335,11 +328,7 @@ const PendingRequisitions = () => {
 
   const handleReject = async (id) => {
     try {
-      await fetch(
-        `http://localhost:5001/api/requisitions/${id}/reject`,
-        { method: "PUT" }
-      );
-
+      await apiClient.put(`/requisitions/${id}/reject`);
       toast.success("Requisition rejected successfully");
       fetchPending();
     } catch {
@@ -354,7 +343,9 @@ const PendingRequisitions = () => {
           Pending Requisition Approvals ({pendingRequisitions.length})
         </CardTitle>
         <CardDescription>
-            Review and approve staff requisitions
+            {canWriteRecruitment
+              ? "Review and approve staff requisitions"
+              : "Read-only oversight — approvals are performed by authorized HR roles"}
         </CardDescription>
       </CardHeader>
 
@@ -395,22 +386,25 @@ const PendingRequisitions = () => {
           </div>
 
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white cursor-pointer"
-              onClick={() => handleApprove(req._id)}
-            >
-              Approve
-            </Button>
-
-            <Button
-              size="sm"
-              variant="destructive"
-              className="cursor-pointer"
-              onClick={() => handleReject(req._id)}
-            >
-              Reject
-            </Button>
+            {canWriteRecruitment && (
+              <>
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+                  onClick={() => handleApprove(req._id)}
+                >
+                  Approve
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="cursor-pointer"
+                  onClick={() => handleReject(req._id)}
+                >
+                  Reject
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -426,9 +420,13 @@ const RequisitionHistory = () => {
   const [history, setHistory] = useState([]);
 
   const fetchHistory = async () => {
-    const res = await fetch("http://localhost:5001/api/requisitions/history");
-    const data = await res.json();
-    setHistory(data);
+    try {
+      const data = await apiClient.get("/requisitions/history");
+      setHistory(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+      setHistory([]);
+    }
   };
 
   useEffect(() => {

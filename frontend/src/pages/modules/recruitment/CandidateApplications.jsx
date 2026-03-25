@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react"
-import axios from "axios"
+import apiClient from "@/services/apiClient"
+import { useUser } from "@/contexts/UserContext"
 import { Users, UserCheck, UserX, FileText } from "lucide-react"
 
 const CandidateApplications = () => {
+  const { user } = useUser()
+  const canWrite = user?.can?.("recruitment", "write")
 
   const [applications,setApplications] = useState([])
   const [search,setSearch] = useState("")
 
   const fetchApplications = async () => {
 
-    const res = await axios.get(
-      "http://localhost:5001/api/applications"
-    )
-
-    setApplications(res.data)
+    const data = await apiClient.get("/applications")
+    setApplications(Array.isArray(data) ? data : [])
 
   }
 
@@ -25,10 +25,7 @@ const CandidateApplications = () => {
 
     try{
 
-      await axios.put(
-        `http://localhost:5001/api/applications/${id}/status`,
-        { status: "Shortlisted" }
-      )
+      await apiClient.put(`/applications/${id}/status`, { status: "Shortlisted" })
 
       fetchApplications()
 
@@ -42,10 +39,7 @@ const CandidateApplications = () => {
 
     try{
 
-      await axios.put(
-        `http://localhost:5001/api/applications/${id}/status`,
-        { status: "Rejected" }
-      )
+      await apiClient.put(`/applications/${id}/status`, { status: "Rejected" })
 
       fetchApplications()
 
@@ -280,21 +274,24 @@ const CandidateApplications = () => {
 
               )}
 
-              <button
-                onClick={()=>handleShortlist(app._id)}
-                disabled={app.status !== "Applied"}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-40"
-              >
-                Shortlist
-              </button>
-
-              <button
-                onClick={()=>handleReject(app._id)}
-                disabled={app.status !== "Applied"}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-40"
-              >
-                Reject
-              </button>
+              {canWrite && (
+                <>
+                  <button
+                    onClick={()=>handleShortlist(app._id)}
+                    disabled={app.status !== "Applied"}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-40"
+                  >
+                    Shortlist
+                  </button>
+                  <button
+                    onClick={()=>handleReject(app._id)}
+                    disabled={app.status !== "Applied"}
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-40"
+                  >
+                    Reject
+                  </button>
+                </>
+              )}
 
             </div>
 

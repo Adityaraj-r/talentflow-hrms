@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import apiClient from "@/services/apiClient"
+import { useUser } from "@/contexts/UserContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,11 +11,77 @@ import { Textarea } from "@/components/ui/textarea"
 import { UserPlus, Upload, CreditCard, Building, FileText, CheckCircle2, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
-const Onboarding = () => {
+function AdminOnboardingReadOnly() {
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    apiClient
+      .get("/onboarding/list/all")
+      .then((res) => {
+        const data = res?.data ?? res
+        setRows(Array.isArray(data) ? data : [])
+      })
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  return (
+    <div className="space-y-6 max-w-5xl">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Onboarding & KYC</h1>
+        <p className="text-muted-foreground mt-1">
+          Read-only oversight. Operational onboarding is handled by HR roles.
+        </p>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Candidates in pipeline</CardTitle>
+          <CardDescription>From onboarding records with document activity.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+            </p>
+          ) : rows.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No records found.</p>
+          ) : (
+            <div className="rounded-md border overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50 text-left">
+                    <th className="p-3">Name</th>
+                    <th className="p-3">Code</th>
+                    <th className="p-3">Department</th>
+                    <th className="p-3">Phone</th>
+                    <th className="p-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr key={r._id || r.employeeCode} className="border-b last:border-0">
+                      <td className="p-3">{r.firstName} {r.lastName}</td>
+                      <td className="p-3 font-mono text-xs">{r.employeeCode}</td>
+                      <td className="p-3">{r.department || "—"}</td>
+                      <td className="p-3">{r.phoneNumber || "—"}</td>
+                      <td className="p-3">{r.onboardingStatus || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+const OnboardingForm = () => {
   const [activeTab, setActiveTab] = useState("personal")
   const [loading, setLoading] = useState(false)
   const [isConfirmed, setIsConfirmed] = useState(false);
-
   const [formData, setFormData] = useState({
     firstName: "",
     MiddleName: "",
@@ -681,6 +748,20 @@ const Onboarding = () => {
       </Tabs>
     </div>
   )
+}
+
+const Onboarding = () => {
+  const { user, loading: permLoading } = useUser()
+  if (permLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+  const canWrite = user?.can?.("recruitment", "write")
+  if (!canWrite) return <AdminOnboardingReadOnly />
+  return <OnboardingForm />
 }
 
 export default Onboarding

@@ -179,9 +179,9 @@ export const ROLES = {
     [ROLES.ADMIN]: {
       dashboard: true,
       recruitment: {
-        recruitmentProcess: false,
-        staffRequisition: false,
-        onboarding: false,
+        recruitmentProcess: true,
+        staffRequisition: true,
+        onboarding: true,
       },
       leaveManagement: false,
       employeeTransfer: false,

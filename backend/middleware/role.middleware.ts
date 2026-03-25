@@ -36,7 +36,7 @@ export type PermissionAction = 'read' | 'write' | 'delete';
 
 // FIXED: normalize SUPER ADMIN — previously 'Super Admin' title-case
 // would never match DB value 'SUPER ADMIN'
-const ADMIN_ROLES = ['ADMIN', 'SUPER ADMIN'];
+const SUPER_ADMIN_ROLES = ['SUPER ADMIN'];
 
 
 export const authorize = (...allowedRoles: string[]) => {
@@ -76,12 +76,10 @@ export const authorizeByMatrix = (module: ModuleKey, action: PermissionAction) =
       return;
     }
 
-    // FIXED: normalize before ADMIN_ROLES check
-    // Previously 'Super Admin' (title-case from some auth flows) would
-    // not match 'SUPER ADMIN' and fall through to DB lookup unnecessarily
+    // Only SUPER ADMIN bypasses the matrix. ADMIN follows DB permissions (e.g. recruitment read-only).
     const userRole = (req.user.role?.toString() || '').toUpperCase();
 
-    if (ADMIN_ROLES.includes(userRole)) {
+    if (SUPER_ADMIN_ROLES.includes(userRole)) {
       next();
       return;
     }

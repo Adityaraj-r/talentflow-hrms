@@ -8,19 +8,19 @@ import {
   rejectCandidate,
   deleteCandidate
 } from "../controllers/candidate.controller";
-import { protect, authorize } from "../middleware/auth.middleware";
+import { protect } from "../middleware/auth.middleware";
+import { authorizeByMatrix, MODULE_KEYS } from "../middleware/role.middleware";
 
 const router = express.Router();
 
 router.use(protect as any);
-router.use(authorize("CEO", "COUNTRY_MANAGER", "HR_MANAGER", "HR_OFFICER", "ADMIN") as any);
 
-router.get("/",                 getCandidates);
-router.get("/:id",              getCandidateById);
-router.post("/",                createCandidate);
-router.put("/:id",              updateCandidate);
-router.patch("/:id/stage",      updateCandidateStage);
-router.patch("/:id/reject",     rejectCandidate);
-router.delete("/:id",           deleteCandidate);
+router.get("/",                 authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read'), getCandidates);
+router.get("/:id",              authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read'), getCandidateById);
+router.post("/",                authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'write'), createCandidate);
+router.put("/:id",              authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'write'), updateCandidate);
+router.patch("/:id/stage",      authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'write'), updateCandidateStage);
+router.patch("/:id/reject",     authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'write'), rejectCandidate);
+router.delete("/:id",           authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'delete'), deleteCandidate);
 
 export default router;
