@@ -36,7 +36,7 @@ export type PermissionAction = 'read' | 'write' | 'delete';
 
 // FIXED: normalize SUPER ADMIN — previously 'Super Admin' title-case
 // would never match DB value 'SUPER ADMIN'
-const SUPER_ADMIN_ROLES = ['SUPER ADMIN'];
+const SUPER_ADMIN_ROLES = ['SUPER ADMIN', 'SUPER_ADMIN'];
 
 
 export const authorize = (...allowedRoles: string[]) => {
@@ -49,11 +49,12 @@ export const authorize = (...allowedRoles: string[]) => {
     // FIXED: normalize both sides to uppercase before comparing
     // Previously userRole was .toUpperCase() but allowedRoles were not,
     // causing 'HR_MANAGER' !== 'hr_manager' mismatches
-    const userRole   = (req.user.role?.toString() || '').toUpperCase();
-    const normalized = allowedRoles.map(r => r.toUpperCase());
+    const normalizeRole = (role: string) => role.toString().toUpperCase().replace(/\s+/g, '_');
+    const userRole = normalizeRole(req.user.role?.toString() || '');
+    const normalized = allowedRoles.map(r => normalizeRole(r));
 
     // SUPER ADMIN always passes
-    if (userRole === 'SUPER ADMIN') {
+    if (userRole === 'SUPER_ADMIN') {
       next();
       return;
     }

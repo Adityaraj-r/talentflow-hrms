@@ -31,7 +31,8 @@ const Sidebar = ({
     appraisal: false, disciplinaryActions: false, documentRequests: false,
   })
 
-  const userRole = (user?.role || "").toUpperCase()
+  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
+  const userRole = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
   const dbPermissions = user?.permissions || {}
 
   useEffect(() => {
@@ -119,6 +120,7 @@ const Sidebar = ({
   const getRecruitmentLabel = () => {
     if ([ROLES.HR_MANAGER, ROLES.HR_OFFICER].includes(userRole)) return "Manage Recruitment"
     if ([ROLES.CEO, ROLES.COUNTRY_MANAGER].includes(userRole)) return "View Recruitment"
+    if (userRole === ROLES.OPERATIONS_MANAGER) return "Recruitment Oversight"
     if (userRole === ROLES.DEPARTMENT_MANAGER) return "Staff Requisition"
     if (userRole === "ADMIN") return "Recruitment & Staffing (view only)"
     return "Recruitment"
@@ -518,6 +520,16 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          {canSee("recruitment") && (
+            <SidebarGroup id="recruitment" icon={Briefcase} label={getRecruitmentLabel()}>
+              <SubLink to="/staff-requisition" label="Staff Requisition" />
+              <SubLink to="/dashboard/job-openings" label="Job Openings" />
+              <SubLink to="/dashboard/applications" label="Applications" />
+              <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
+              <SubLink to="/dashboard/offer-management" label="Offer Management" />
+              <SubLink to="/dashboard/onboarding" label="Onboarding" />
+            </SidebarGroup>
+          )}
           {canSee("attendance") && <LeaveLink />}
           {canSee("employees") && (
             <SidebarLink to="/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
