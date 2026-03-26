@@ -23,6 +23,7 @@ import Dashboard from "./pages/dashboard/Dashboard"
 import AdminDashboard from "./pages/dashboard/AdminDashboard"
 import EmployeeDashboard from "./pages/dashboard/EmployeeDashboard"
 import ProjectManagerDashboard from "./pages/dashboard/ProjectManagerDashboard"
+import ExecutiveDashboard from "./pages/dashboard/ExecutiveDashboard"
 import Unauthorized from "./pages/Unauthorized"
 
 // Administration Module
@@ -202,6 +203,7 @@ const DashboardRouter = () => {
   const role = userRoleStr.toUpperCase()
 
   if (role === "ADMIN" || role === "SUPER ADMIN") return <Navigate to="/admin/dashboard" replace />
+  if (role === "CEO") return <Navigate to="/ceo/dashboard" replace />
   if (role === "EMPLOYEE") return <Navigate to="/employee/dashboard" replace />
   if (role === "PROJECT_MANAGER") return <Navigate to="/dashboard/project-manager" replace />
   if (role === "CEO") return <Navigate to="/dashboard" replace />
@@ -248,6 +250,14 @@ function App() {
                   <Route path="/admin/dashboard" element={
                     <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
                       <DashboardLayout><AdminDashboard /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/ceo/dashboard" element={
+                    <ProtectedRoute allowedRoles={["CEO"]}>
+                      <DashboardLayout>
+                        <ExecutiveDashboard />
+                      </DashboardLayout>
                     </ProtectedRoute>
                   } />
 

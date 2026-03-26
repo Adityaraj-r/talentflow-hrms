@@ -3,8 +3,11 @@ import apiClient from './apiClient';
 export const getRoles = async () => {
   try {
     const response = await apiClient.get('/roles');
+    
     if (response.success) {          
-      return response.roles;        
+      return response.roles || response.data || [];        
+    } else if (Array.isArray(response)) {
+      return response; 
     }
     return [];
   } catch (error) {

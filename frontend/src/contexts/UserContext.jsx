@@ -16,26 +16,50 @@ export const UserProvider = ({ children }) => {
         setLoading(false);
         return;
       }
+
       try {
         setLoading(true);
         const res = await apiClient.get("/roles");
-        const roles = res.data ?? res;
-        const roleName =
-          typeof user.role === "string" ? user.role : user.role?.name;
-        const matchedRole = roles.find(
+        
+        // SENIOR FIX: Safely extract the array whether it's in res.roles, res.data, or is a direct array
+        const extractedRoles = res?.roles || res?.data || res;
+        const validRoles = Array.isArray(extractedRoles) ? extractedRoles : [];
+
+        const roleName = typeof user.role === "string" ? user.role : user.role?.name;
+
+        const matchedRole = validRoles.find(
           (r) =>
             r.name?.toLowerCase().replace(/\s+/g, "") ===
             roleName?.toLowerCase().replace(/\s+/g, "")
         );
+
         setRolePermissions(matchedRole?.permissions ?? {});
       } catch (err) {
-        setRolePermissions({});
+        console.error("Failed to load permissions", err);
+        setRolePermissions({}); 
       } finally {
         setLoading(false);
       }
     };
+
     loadPermissions();
-  }, [user?.role, isAuthenticated]); // FIXED: was [user] — caused stale closure on can()
+  }, [user?.role, isAuthenticated]); 
+
+  const can = (module, action = 'read') => {
+    if (
+      user?.role === 'Super Admin' || 
+      user?.role === 'SUPER ADMIN' || 
+      user?.role === 'ADMIN' || 
+      user?.role === 'Admin'
+    ) return true;
+
+    if (!rolePermissions) return false;
+
+    const modulePerms = rolePermissions[module];
+    if (!modulePerms) return false;
+
+    return modulePerms[action] === true;
+  };
 
   // FIXED: can() is inside useMemo so it always uses the current rolePermissions
   const enrichedUser = useMemo(() => {

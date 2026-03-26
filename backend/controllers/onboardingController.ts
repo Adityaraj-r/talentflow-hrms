@@ -113,6 +113,10 @@ export const getOnboardingDetails = async (req: Request, res: Response): Promise
 export const getAllOnboardingEmployees = async (req: Request, res: Response): Promise<void> => {
   try {
     const { unenrolled } = req.query; 
+    
+    // TRACER 1: Tells us if the endpoint is actually being hit, and what the frontend sent!
+    console.log(`[TRACER] /onboarding/all hit! Unenrolled flag received:`, unenrolled);
+
     let dbQuery: any = { 
       employeeCode: { $regex: /^EMP-\d+/ },
       $or: [
@@ -125,25 +129,26 @@ export const getAllOnboardingEmployees = async (req: Request, res: Response): Pr
       ]
     };
 
+    // We check for both string 'true' and boolean true just in case Axios parses it differently
     if (unenrolled === 'true') {
-      const existingUsers = await User.find({ 
-        employeeCode: { $regex: /^EMP-\d+/ } 
-      }).select('employeeCode').lean();
+      console.log(`[TRACER] Applying the userId: null filter!`);
       
-      const enrolledCodes = existingUsers.map((user: any) => user.employeeCode).filter(Boolean);
-      
-      dbQuery.employeeCode = { $nin: enrolledCodes, $regex: /^EMP-\d+/ };
+      // SENIOR OPTIMIZATION (Strict Null Check)
+      dbQuery.userId = null; 
 
       dbQuery["department"] = { $exists: true, $nin: [null, ""] };
       dbQuery["designation"] = { $exists: true, $nin: [null, ""] };
       dbQuery["bankDetails"] = { $exists: true, $ne: null };
       dbQuery["kycDetails"] = { $exists: true, $ne: null };
+    } else {
+      console.log(`[TRACER] WARNING: unenrolled flag was NOT true. Skipping filter!`);
     }
 
     const employees = await Employee.find(dbQuery)
-      .select('firstName lastName employeeCode department gender phoneNumber createdAt onboardingStatus')
+      .select('firstName lastName employeeCode department gender phoneNumber createdAt onboardingStatus userId')
       .sort({ createdAt: -1 }); 
 
+    console.log(`[TRACER] Returning ${employees.length} candidates to the dropdown.`);
     res.status(200).json(employees);
   } catch (error: any) {
     console.error("Error fetching onboarding list:", error);

@@ -43,8 +43,6 @@ export const getActiveOnboarding = async (req: Request, res: Response) => {
   }
 };
 
-
-
 export const getEmployeeById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params

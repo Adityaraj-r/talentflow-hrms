@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import axios from "axios"; 
+import apiClient from "@/services/apiClient";
 import { useAuth } from "@/contexts/AuthContext";
 
 const TransferRequestForm = () => {
@@ -28,7 +28,7 @@ const TransferRequestForm = () => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const isFormValid = 
+    const isFormValid =
         formData.employeeId &&
         formData.employeeName &&
         formData.currentDepartment &&
@@ -37,7 +37,7 @@ const TransferRequestForm = () => {
         formData.effectiveDate &&
         formData.declaration;
 
-        const ALL_DEPARTMENTS = [
+    const ALL_DEPARTMENTS = [
         { value: "IT", label: "IT" },
         { value: "HR", label: "Human Resources" },
         { value: "Operations", label: "Operations" },
@@ -47,7 +47,7 @@ const TransferRequestForm = () => {
     ];
 
     const availableDepartments = ALL_DEPARTMENTS.filter(
-        (dept) => 
+        (dept) =>
             dept.value.toLowerCase() !== (formData.currentDepartment || "").toLowerCase() &&
             dept.label.toLowerCase() !== (formData.currentDepartment || "").toLowerCase()
     );
@@ -57,9 +57,8 @@ const TransferRequestForm = () => {
         setIsSubmitting(true);
 
         try {
-            const response = await axios.post("http://localhost:5001/api/transfers/submit", formData);
-            
-            if (response.data.success) {
+            const response = await apiClient.post("/transfers/submit", formData);
+            if (response.success) {
                 toast.success("Transfer request submitted successfully!");
                 setFormData({
                     employeeId: "",
@@ -81,8 +80,8 @@ const TransferRequestForm = () => {
         }
     };
 
-return (
-        <div className="w-full"> 
+    return (
+        <div className="w-full">
             <div className="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-6 transition-all duration-300">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
@@ -91,10 +90,10 @@ return (
                             <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                                 Employee ID <span className="text-red-500">*</span>
                             </Label>
-                           <Input 
+                            <Input
                                 name="employeeId"
                                 placeholder="e.g. EMP001"
-                                value={formData.employeeId} 
+                                value={formData.employeeId}
                                 readOnly
                                 disabled
                                 className="bg-gray-50 text-gray-500 cursor-not-allowed dark:bg-slate-800/50 dark:text-gray-400 dark:border-slate-700"
@@ -106,10 +105,10 @@ return (
                             <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                                 Employee Name <span className="text-red-500">*</span>
                             </Label>
-                           <Input 
+                            <Input
                                 name="employeeName"
                                 placeholder="Enter your full name"
-                                value={formData.employeeName} 
+                                value={formData.employeeName}
                                 readOnly
                                 disabled
                                 className="bg-gray-50 text-gray-500 cursor-not-allowed dark:bg-slate-800/50 dark:text-gray-400 dark:border-slate-700"
@@ -121,10 +120,10 @@ return (
                             <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                                 Current Department <span className="text-red-500">*</span>
                             </Label>
-                            <Input 
+                            <Input
                                 name="currentDepartment"
                                 placeholder="e.g. IT"
-                                value={formData.currentDepartment} 
+                                value={formData.currentDepartment}
                                 readOnly
                                 disabled
                                 className="bg-gray-50 text-gray-500 cursor-not-allowed dark:bg-slate-800/50 dark:text-gray-400 dark:border-slate-700"
@@ -132,12 +131,12 @@ return (
                         </div>
 
                         {/* New Department */}
-                       <div className="space-y-1.5">
+                        <div className="space-y-1.5">
                             <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                                 New Department <span className="text-red-500">*</span>
                             </Label>
-                            <Select 
-                                value={formData.newDepartment} 
+                            <Select
+                                value={formData.newDepartment}
                                 onValueChange={(v) => setFormData({ ...formData, newDepartment: v })}
                             >
                                 <SelectTrigger className="dark:bg-slate-900 dark:border-slate-700">
@@ -159,8 +158,8 @@ return (
                             <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                                 Transfer Type <span className="text-red-500">*</span>
                             </Label>
-                            <Select 
-                                value={formData.transferType} 
+                            <Select
+                                value={formData.transferType}
                                 onValueChange={(v) => setFormData({ ...formData, transferType: v })}
                             >
                                 <SelectTrigger className="dark:bg-slate-900 dark:border-slate-700">
@@ -178,10 +177,10 @@ return (
                             <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                                 Effective Date <span className="text-red-500">*</span>
                             </Label>
-                            <Input 
+                            <Input
                                 name="effectiveDate"
                                 type="date"
-                                value={formData.effectiveDate} 
+                                value={formData.effectiveDate}
                                 onChange={handleChange}
                                 className="w-full relative pr-10 dark:bg-slate-900 dark:border-slate-700 dark:[color-scheme:dark] [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                             />
@@ -190,7 +189,7 @@ return (
 
                     <div className="space-y-1.5">
                         <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Reason for Transfer</Label>
-                        <Textarea 
+                        <Textarea
                             name="reason"
                             placeholder="Briefly explain your request..."
                             value={formData.reason}
@@ -211,7 +210,7 @@ return (
                                 I confirm these details are accurate.
                             </Label>
                         </div>
-                        <Button 
+                        <Button
                             type="submit"
                             disabled={!isFormValid || isSubmitting}
                             className="w-full sm:w-[200px] shadow-sm font-semibold"
