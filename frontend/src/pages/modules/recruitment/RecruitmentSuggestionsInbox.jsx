@@ -15,20 +15,17 @@ import { Navigate } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
 export default function RecruitmentSuggestionsInbox() {
   const { user } = useUser()
-  const role = (user?.role || "").toString().toUpperCase().replace(/\s/g, "_")
+  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
+  const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [notes, setNotes] = useState({})
 
   const allowed =
-    role === "HR_MANAGER" ||
-    role === "HRMANAGER" ||
-    role === "HR_OFFICER" ||
-    role === "HROFFICER" ||
-    role === "SUPER_ADMIN" ||
-    role === "SUPER ADMIN"
+    role === "ADMIN" ||
+    role === "SUPER_ADMIN"
 
-  const canAck = role === "HR_MANAGER" || role === "HRMANAGER" || role === "SUPER_ADMIN" || role === "SUPER ADMIN"
+  const canAck = role === "ADMIN" || role === "SUPER_ADMIN"
 
   const load = async () => {
     try {

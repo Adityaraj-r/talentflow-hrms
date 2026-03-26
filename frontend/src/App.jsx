@@ -392,7 +392,7 @@ function App() {
                     </ProtectedRoute>
                   } />
                   <Route path="/dashboard/recruitment-suggestions" element={
-                    <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "SUPER ADMIN"]}>
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "SUPER_ADMIN"]}>
                       <DashboardLayout><RecruitmentSuggestionsInbox /></DashboardLayout>
                     </ProtectedRoute>
                   } />

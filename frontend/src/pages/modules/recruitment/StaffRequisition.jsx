@@ -1,10 +1,8 @@
 "use client"
 
 import { useState,useEffect  } from "react"
-import { useAuth } from "@/contexts/AuthContext"
 import { useUser } from "@/contexts/UserContext"
 import apiClient from "@/services/apiClient"
-import { useRole } from "@/contexts/RoleContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -12,13 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { FileText, Check, X, Search } from "lucide-react"
 import { toast } from "sonner"
 
 const StaffRequisition = () => {
-  const { user } = useAuth()
-  const { hasRole } = useRole()
-  const canCreateRequisition = hasRole(["CEO", "Country Manager", "HR Manager", "Department Manager"])
+  const { user } = useUser()
+  const canCreateRequisition = user?.can?.("recruitment", "write")
 
   return (
     <div className="space-y-6">
@@ -302,6 +300,8 @@ const PendingRequisitions = () => {
   const { user } = useUser()
   const canWriteRecruitment = user?.can?.("recruitment", "write")
   const [pendingRequisitions, setPendingRequisitions] = useState([]);
+  const [selectedReq, setSelectedReq] = useState(null)
+  const [viewOpen, setViewOpen] = useState(false)
 
   const fetchPending = async () => {
     try {
@@ -386,6 +386,17 @@ const PendingRequisitions = () => {
           </div>
 
           <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setSelectedReq(req)
+                  setViewOpen(true)
+                }}
+                className="cursor-pointer"
+              >
+                View
+              </Button>
             {canWriteRecruitment && (
               <>
                 <Button
@@ -412,12 +423,78 @@ const PendingRequisitions = () => {
   )}
 </CardContent>
 
+      <Dialog
+        open={viewOpen}
+        onOpenChange={(open) => {
+          setViewOpen(open)
+          if (!open) setSelectedReq(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-[650px]">
+          <DialogHeader>
+            <DialogTitle>Requisition Details</DialogTitle>
+            <DialogDescription>
+              Review staff requisition information.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedReq ? (
+            <div className="space-y-3 text-sm">
+              <div>
+                <div className="text-xs text-muted-foreground">Position</div>
+                <div className="font-medium">{selectedReq.position}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Department</div>
+                <div className="font-medium">{selectedReq.department}</div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs text-muted-foreground">Urgency</div>
+                  <div className="font-medium">{selectedReq.urgency || "N/A"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Status</div>
+                  <div className="font-medium">{selectedReq.status}</div>
+                </div>
+              </div>
+              {selectedReq.salaryRange && (
+                <div>
+                  <div className="text-xs text-muted-foreground">Salary Range</div>
+                  <div className="font-medium">{selectedReq.salaryRange}</div>
+                </div>
+              )}
+              {selectedReq.experience && (
+                <div>
+                  <div className="text-xs text-muted-foreground">Experience</div>
+                  <div className="font-medium">{selectedReq.experience}</div>
+                </div>
+              )}
+              {selectedReq.reason && (
+                <div>
+                  <div className="text-xs text-muted-foreground">Reason</div>
+                  <div className="font-medium whitespace-pre-wrap">{selectedReq.reason}</div>
+                </div>
+              )}
+              <div className="pt-2 text-xs text-muted-foreground">
+                Created:{" "}
+                {selectedReq.createdAt ? new Date(selectedReq.createdAt).toLocaleString() : "N/A"}
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No requisition selected.</div>
+          )}
+        </DialogContent>
+      </Dialog>
+
     </Card>
   );
 };
 
 const RequisitionHistory = () => {
   const [history, setHistory] = useState([]);
+  const [selectedReq, setSelectedReq] = useState(null)
+  const [viewOpen, setViewOpen] = useState(false)
 
   const fetchHistory = async () => {
     try {
@@ -447,18 +524,95 @@ const RequisitionHistory = () => {
                 {req.department}
               </p>
             </div>
-            <span
-              className={`px-2 py-1 text-xs rounded ${
-                req.status === "Approved"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-red-100 text-red-700"
-              }`}
-            >
-              {req.status}
-            </span>
+            <div className="flex items-center gap-3">
+              <span
+                className={`px-2 py-1 text-xs rounded ${
+                  req.status === "Approved"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-red-100 text-red-700"
+                }`}
+              >
+                {req.status}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setSelectedReq(req)
+                  setViewOpen(true)
+                }}
+                className="cursor-pointer"
+              >
+                View
+              </Button>
+            </div>
           </div>
         ))}
       </CardContent>
+
+      <Dialog
+        open={viewOpen}
+        onOpenChange={(open) => {
+          setViewOpen(open)
+          if (!open) setSelectedReq(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-[650px]">
+          <DialogHeader>
+            <DialogTitle>Requisition Details</DialogTitle>
+            <DialogDescription>
+              Review staff requisition information.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedReq ? (
+            <div className="space-y-3 text-sm">
+              <div>
+                <div className="text-xs text-muted-foreground">Position</div>
+                <div className="font-medium">{selectedReq.position}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Department</div>
+                <div className="font-medium">{selectedReq.department}</div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs text-muted-foreground">Urgency</div>
+                  <div className="font-medium">{selectedReq.urgency || "N/A"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Status</div>
+                  <div className="font-medium">{selectedReq.status}</div>
+                </div>
+              </div>
+              {selectedReq.salaryRange && (
+                <div>
+                  <div className="text-xs text-muted-foreground">Salary Range</div>
+                  <div className="font-medium">{selectedReq.salaryRange}</div>
+                </div>
+              )}
+              {selectedReq.experience && (
+                <div>
+                  <div className="text-xs text-muted-foreground">Experience</div>
+                  <div className="font-medium">{selectedReq.experience}</div>
+                </div>
+              )}
+              {selectedReq.reason && (
+                <div>
+                  <div className="text-xs text-muted-foreground">Reason</div>
+                  <div className="font-medium whitespace-pre-wrap">{selectedReq.reason}</div>
+                </div>
+              )}
+              <div className="pt-2 text-xs text-muted-foreground">
+                Created:{" "}
+                {selectedReq.createdAt ? new Date(selectedReq.createdAt).toLocaleString() : "N/A"}
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No requisition selected.</div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

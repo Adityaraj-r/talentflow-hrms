@@ -34,7 +34,8 @@ const contextOptions = [
 
 export default function AdminRecruitmentSuggestions() {
   const { user } = useUser()
-  const role = (user?.role || "").toString().toUpperCase()
+  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
+  const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
   const [subject, setSubject] = useState("")
   const [message, setMessage] = useState("")
   const [contextType, setContextType] = useState("general")
@@ -56,10 +57,10 @@ export default function AdminRecruitmentSuggestions() {
   }
 
   useEffect(() => {
-    if (role === "ADMIN" || role === "SUPER ADMIN") loadMine()
+    if (role === "ADMIN" || role === "SUPER_ADMIN") loadMine()
   }, [role])
 
-  if (role !== "ADMIN" && role !== "SUPER ADMIN") {
+  if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
     return <Navigate to="/unauthorized" replace />
   }
 

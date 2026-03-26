@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import apiClient from "@/services/apiClient"
 import { useUser } from "@/contexts/UserContext"
 import { Users, UserCheck, UserX, FileText } from "lucide-react"
@@ -9,6 +9,15 @@ const CandidateApplications = () => {
 
   const [applications,setApplications] = useState([])
   const [search,setSearch] = useState("")
+
+  const uploadBaseUrl = useMemo(
+    () =>
+      (import.meta.env.VITE_API_URL || "http://localhost:5001/api").replace(
+        /\/api\/?$/,
+        ""
+      ),
+    []
+  )
 
   const fetchApplications = async () => {
 
@@ -49,8 +58,14 @@ const CandidateApplications = () => {
 
   }
 
-  const filteredApplications = applications.filter(app =>
-    app.name.toLowerCase().includes(search.toLowerCase())
+  const filteredApplications = useMemo(
+    () =>
+      applications.filter((app) =>
+        (app.name || "")
+          .toLowerCase()
+          .includes(search.toLowerCase())
+      ),
+    [applications, search]
   )
 
   const getStatusStyle = (status) => {
@@ -71,10 +86,15 @@ const CandidateApplications = () => {
       STATS CALCULATION
   ====================== */
 
-  const total = applications.length
-  const shortlisted = applications.filter(a=>a.status==="Shortlisted").length
-  const rejected = applications.filter(a=>a.status==="Rejected").length
-  const applied = applications.filter(a=>a.status==="Applied").length
+  const stats = useMemo(() => {
+    const total = applications.length
+    const shortlisted = applications.filter(a => a.status === "Shortlisted").length
+    const rejected = applications.filter(a => a.status === "Rejected").length
+    const applied = applications.filter(a => a.status === "Applied").length
+    return { total, shortlisted, rejected, applied }
+  }, [applications])
+
+  const { total, shortlisted, rejected, applied } = stats
 
 
   return (
@@ -264,7 +284,7 @@ const CandidateApplications = () => {
               {app.resume && (
 
                 <a
-                  href={`http://localhost:5001/uploads/${app.resume}`}
+                  href={`${uploadBaseUrl}/uploads/${app.resume}`}
                   target="_blank"
                   rel="noreferrer"
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm"

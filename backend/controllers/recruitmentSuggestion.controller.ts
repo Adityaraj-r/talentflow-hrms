@@ -1,10 +1,26 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import RecruitmentSuggestion from '../models/RecruitmentSuggestion.model';
-const isAdmin = (role?: string) => (role || '').toUpperCase() === 'ADMIN';
-const isHrManager = (role?: string) => {
-  const r = (role || '').toUpperCase().replace(/\s/g, '_');
-  return r === 'HR_MANAGER' || r === 'HRMANAGER';
+
+const normalizeRole = (role?: string) =>
+  (role || '').toString().toUpperCase().trim().replace(/\s+/g, '_');
+
+const isAdminOrSuperAdmin = (role?: string) => {
+  const r = normalizeRole(role);
+  return r === 'ADMIN' || r === 'SUPER_ADMIN';
+};
+
+const isHrManagerOrOfficer = (role?: string) => {
+  const r = normalizeRole(role);
+
+  // Allow both DB-style (HR_MANAGER/HR_OFFICER) and any legacy compact forms.
+  const compact = r.replace(/_/g, '');
+  return (
+    r === 'HR_MANAGER' ||
+    r === 'HR_OFFICER' ||
+    compact === 'HRMANAGER' ||
+    compact === 'HROFFICER'
+  );
 };
 
 export const createRecruitmentSuggestion = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -13,7 +29,7 @@ export const createRecruitmentSuggestion = async (req: AuthRequest, res: Respons
       res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
     }
-    if (!isAdmin(req.user.role)) {
+    if (!isAdminOrSuperAdmin(req.user.role)) {
       res.status(403).json({ success: false, error: 'Only Admin can raise suggestions to HR Manager' });
       return;
     }
@@ -45,17 +61,10 @@ export const listRecruitmentSuggestionsForHr = async (req: AuthRequest, res: Res
       res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
     }
-    const role = req.user.role;
-    const r = (role || '').toUpperCase().replace(/\s/g, '_');
-    const allowed =
-      r === 'HR_MANAGER' ||
-      r === 'HRMANAGER' ||
-      r === 'HR_OFFICER' ||
-      r === 'HROFFICER' ||
-      r === 'SUPER ADMIN' ||
-      r === 'SUPER_ADMIN';
+
+    const allowed = isAdminOrSuperAdmin(req.user.role);
     if (!allowed) {
-      res.status(403).json({ success: false, error: 'HR access required' });
+      res.status(403).json({ success: false, error: 'Admin access required' });
       return;
     }
 
@@ -77,7 +86,7 @@ export const listRecruitmentSuggestionsForHr = async (req: AuthRequest, res: Res
 
 export const listMyRecruitmentSuggestions = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user?.id || !isAdmin(req.user.role)) {
+    if (!req.user?.id || !isAdminOrSuperAdmin(req.user.role)) {
       res.status(403).json({ success: false, error: 'Admin only' });
       return;
     }
@@ -95,8 +104,14 @@ export const listMyRecruitmentSuggestions = async (req: AuthRequest, res: Respon
 
 export const acknowledgeRecruitmentSuggestion = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user?.id || !isHrManager(req.user.role)) {
-      res.status(403).json({ success: false, error: 'Only HR Manager can acknowledge or close suggestions' });
+    if (
+      !req.user?.id ||
+      !isAdminOrSuperAdmin(req.user.role)
+    ) {
+      res.status(403).json({
+        success: false,
+        error: 'Only ADMIN/SUPER ADMIN can acknowledge or close suggestions',
+      });
       return;
     }
 
