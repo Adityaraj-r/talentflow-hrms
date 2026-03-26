@@ -33,7 +33,6 @@ import applicationRoutes from "./routes/application.routes";
 import documentRoutes from './routes/document.routes';
 import salaryRoutes from './routes/salary.routes';
 import payrollRoutes from './routes/payroll.routes';
-import taPolicyRoutes from './routes/taPolicy.routes';
 import recruitmentSuggestionRoutes from './routes/recruitmentSuggestion.routes';
 
 dotenv.config();
@@ -132,7 +131,6 @@ app.use('/api/reports', reportsRoutes);
 
 app.use('/api/performance', performanceRoutes);
 app.use('/api/holidays', holidayRoutes);
-app.use('/api/ta-policies', taPolicyRoutes);
 app.use('/api/transfers', transferRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/salary-structure', salaryRoutes);
