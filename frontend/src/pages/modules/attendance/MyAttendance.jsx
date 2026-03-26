@@ -4,36 +4,39 @@ import attendanceService from "@/services/attendanceService";
 import holidayService from "@/services/holidayService";
 import AttendanceWidget from "@/components/ui/AttendanceWidget";
 import CorrectionRequestModal from "./CorrectionRequestModal";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Download,
   Briefcase,
   CheckCircle,
+  CheckCircle2,
   XCircle,
   Clock,
-  User,
-  Calendar,
+  Timer,
+  Users,
   CalendarDays,
+  Download,
   FilePen,
+  Lock,
+  ChevronRight,
+  TrendingUp,
+  Sun,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const formatDate = (dateString) => {
   if (!dateString) return "-";
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Date(dateString).toLocaleDateString("en-GB", {
     day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
-  }).format(date);
+    month: "short",
+    year: "numeric",
+  });
 };
 
 const formatTime = (dateString) => {
   if (!dateString) return "-";
-  const date = new Date(dateString);
-  return date.toLocaleTimeString("en-US", {
+  return new Date(dateString).toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
@@ -41,422 +44,62 @@ const formatTime = (dateString) => {
 };
 
 const formatBreakTime = (totalMinutes) => {
-  if (!totalMinutes) return "0m";
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  if (!totalMinutes) return "—";
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
 };
 
-const calculateTotalHours = (clockIn, clockOut, totalBreakMinutes = 0) => {
-  if (!clockIn || !clockOut) return "-";
-  const start = new Date(clockIn);
-  const end = new Date(clockOut);
-  const diffMs = end - start;
-  if (diffMs < 0) return "-";
-  const grossMinutes = Math.floor(diffMs / 1000 / 60);
-  const netMinutes = Math.max(0, grossMinutes - (totalBreakMinutes || 0));
-  const hours = Math.floor(netMinutes / 60);
-  const minutes = Math.floor(netMinutes % 60);
-  return `${hours}h ${minutes}m`;
+const formatOTHours = (hours) => {
+  if (!hours || hours <= 0) return null;
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  if (h === 0) return `+${m}m`;
+  if (m === 0) return `+${h}h`;
+  return `+${h}h ${m}m`;
 };
 
-const getStatusBadge = (status) => {
-  const styles = {
-    Present:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
-    Late: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800",
-    Absent:
-      "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800",
-    "Half Day":
-      "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800",
-    Holiday:
-      "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800",
-  };
-  return (
-    <Badge
-      variant="outline"
-      className={`${styles[status] || "bg-slate-100 text-slate-700"} px-2 py-0.5 border whitespace-nowrap`}
-    >
-      {status || "Unknown"}
-    </Badge>
-  );
+const calculateTotalHours = (clockIn, clockOut, breakMins = 0) => {
+  if (!clockIn || !clockOut) return "—";
+  const diffMs = new Date(clockOut) - new Date(clockIn);
+  if (diffMs < 0) return "—";
+  const net = Math.max(0, Math.floor(diffMs / 60000) - (breakMins || 0));
+  const h = Math.floor(net / 60);
+  const m = net % 60;
+  return `${h}h ${m}m`;
 };
 
-const getMonth = (dateStr) =>
-  new Date(dateStr).toLocaleString("default", { month: "short" });
-const getDay = (dateStr) => new Date(dateStr).getDate();
-
-const MyAttendance = () => {
-  const { user } = useUser();
-
-  const [loading, setLoading] = useState(true);
-  const [history, setHistory] = useState([]);
-  const [holidays, setHolidays] = useState([]);
-  const [usedThisMonth, setUsedThisMonth] = useState(0);
-
-  const [selectedRecord, setSelectedRecord] = useState(null);
-  const [correctionModalOpen, setCorrectionModalOpen] = useState(false);
-
-  const [stats, setStats] = useState({
-    workingDays: 0,
-    present: 0,
-    absent: 0,
-    late: 0,
-  });
-
-  const employeeType = user?.employeeType || "Full-Time";
-  const requiredHours =
-    employeeType === "Part-Time" ? 4 : employeeType === "Intern" ? 6 : 9;
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-
-      const [attRes, holRes, corrRes] = await Promise.all([
-        attendanceService.getMyAttendance(),
-        holidayService.getHolidays(),
-        attendanceService.getMyCorrectionRequests(),
-      ]);
-
-      const attData =
-        attRes?.success && Array.isArray(attRes.data) ? attRes.data : [];
-      setHistory(attData);
-
-      const holData =
-        holRes?.success && Array.isArray(holRes.data) ? holRes.data : [];
-      setHolidays(holData);
-
-      const used = corrRes?.meta?.usedThisMonth ?? 0;
-      setUsedThisMonth(used);
-
-      const today = new Date();
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
-
-      const businessDaysSoFar = (() => {
-        let count = 0;
-        const curDate = new Date(currentYear, currentMonth, 1);
-        while (curDate <= today) {
-          const day = curDate.getDay();
-          if (day !== 0 && day !== 6) count++;
-          curDate.setDate(curDate.getDate() + 1);
-        }
-        return count;
-      })();
-
-      const currentMonthData = attData.filter((d) => {
-        if (!d.date && !d.clockIn) return false;
-        const dDate = new Date(d.date || d.clockIn);
-        return (
-          dDate.getMonth() === currentMonth &&
-          dDate.getFullYear() === currentYear
-        );
-      });
-
-      const present = currentMonthData.filter(
-        (d) => d.status === "Present"
-      ).length;
-      const late = currentMonthData.filter((d) => d.status === "Late").length;
-      const totalAttended =
-        present +
-        late +
-        currentMonthData.filter((d) => d.status === "Half Day").length;
-
-      setStats({
-        workingDays: businessDaysSoFar,
-        present,
-        late,
-        absent: Math.max(0, businessDaysSoFar - totalAttended),
-      });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const handleCorrectionClick = (record) => {
-    setSelectedRecord(record);
-    setCorrectionModalOpen(true);
-  };
-
-  const handleCorrectionClose = () => {
-    setCorrectionModalOpen(false);
-    setSelectedRecord(null);
-  };
-
-  if (loading)
-    return (
-      <div className="p-6 text-muted-foreground flex justify-center items-center min-h-[50vh]">
-        Loading...
-      </div>
-    );
-
-  return (
-    <div className="space-y-6 w-full max-w-full overflow-hidden px-2 sm:px-4 md:px-0">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-3 mb-1">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
-              My Attendance
-            </h1>
-            <Badge
-              variant="secondary"
-              className="text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800"
-            >
-              <User className="w-3 h-3 mr-1" /> {employeeType}
-            </Badge>
-          </div>
-          <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base">
-            Target:{" "}
-            <span className="font-medium text-slate-900 dark:text-white">
-              {requiredHours} Hours/Day
-            </span>
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          className="w-full sm:w-auto dark:bg-slate-800 dark:text-white dark:border-slate-700"
-        >
-          <Download className="mr-2 h-4 w-4" /> Export Report
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard
-          title="Working Days"
-          value={stats.workingDays}
-          icon={<Briefcase className="h-8 w-8" />}
-          variant="blue"
-        />
-        <StatsCard
-          title="Present"
-          value={stats.present}
-          icon={<CheckCircle className="h-8 w-8" />}
-          variant="green"
-        />
-        <StatsCard
-          title="Late"
-          value={stats.late}
-          icon={<Clock className="h-8 w-8" />}
-          variant="orange"
-        />
-        <StatsCard
-          title="Absent"
-          value={stats.absent}
-          icon={<XCircle className="h-8 w-8" />}
-          variant="red"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="space-y-6 min-w-0">
-          <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 border-blue-100 dark:border-slate-700">
-            <CardContent className="p-6 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">
-                  Current Shift
-                </p>
-                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white break-words">
-                  {user?.currentShift
-                    ? user.currentShift.name
-                    : "No Shift Assigned"}
-                </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1 whitespace-nowrap">
-                  {user?.currentShift ? (
-                    <>
-                      <Clock className="w-4 h-4 shrink-0" />
-                      {user.currentShift.startTime} -{" "}
-                      {user.currentShift.endTime}
-                    </>
-                  ) : (
-                    "Contact Admin"
-                  )}
-                </p>
-              </div>
-              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm shrink-0 ml-4">
-                <Briefcase className="w-5 h-5 sm:w-6 sm:w-6 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <AttendanceWidget employeeName={user?.firstName || "Employee"} />
-
-          <Card>
-            <CardHeader className="border-b p-4">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <CalendarDays className="w-4 h-4 text-blue-500" /> Upcoming
-                Holidays
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {holidays.length === 0 ? (
-                <p className="p-4 text-sm text-muted-foreground text-center">
-                  No upcoming holidays.
-                </p>
-              ) : (
-                <div className="max-h-[300px] overflow-y-auto">
-                  {holidays.map((h) => (
-                    <div
-                      key={h._id}
-                      className="flex items-center gap-3 p-3 border-b last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                    >
-                      <div className="flex flex-col items-center justify-center w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800 shrink-0">
-                        <span className="text-[9px] font-bold uppercase">
-                          {getMonth(h.date)}
-                        </span>
-                        <span className="text-sm font-bold leading-none">
-                          {getDay(h.date)}
-                        </span>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                          {h.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {h.type}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="lg:col-span-2 min-w-0">
-          <CardHeader className="border-b p-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <Calendar className="w-5 h-5 text-muted-foreground" /> Recent
-                History
-              </CardTitle>
-              <span className="text-xs text-muted-foreground">
-                Corrections used this month:{" "}
-                <span className="font-semibold text-slate-700 dark:text-slate-300">
-                  {usedThisMonth} / 3
-                </span>
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {history.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">
-                No attendance records found.
-              </div>
-            ) : (
-              <div className="relative w-full overflow-x-auto">
-                <table className="w-full min-w-[780px] caption-bottom text-sm">
-                  <thead className="[&_tr]:border-b bg-slate-50/50 dark:bg-slate-800/20">
-                    <tr className="border-b transition-colors border-gray-200 dark:border-slate-800">
-                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 whitespace-nowrap">
-                        Date
-                      </th>
-                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 whitespace-nowrap">
-                        Status
-                      </th>
-                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 whitespace-nowrap">
-                        In
-                      </th>
-                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 whitespace-nowrap">
-                        Out
-                      </th>
-                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-slate-400 whitespace-nowrap">
-                        Break
-                      </th>
-                      <th className="h-12 px-4 text-right align-middle font-medium text-gray-500 dark:text-slate-400 whitespace-nowrap">
-                        Total Hrs
-                      </th>
-                      <th className="h-12 px-4 text-right align-middle font-medium text-gray-500 dark:text-slate-400 whitespace-nowrap">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="[&_tr:last-child]:border-0">
-                    {history.map((day, i) => (
-                      <tr
-                        key={i}
-                        className="border-b transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/50 border-gray-100 dark:border-slate-800"
-                      >
-                        <td className="p-4 align-middle font-medium text-gray-900 dark:text-slate-200 whitespace-nowrap">
-                          {formatDate(day.date || day.clockIn)}
-                        </td>
-                        <td className="p-4 align-middle whitespace-nowrap">
-                          {getStatusBadge(day.status)}
-                        </td>
-                        <td className="p-4 align-middle text-gray-600 dark:text-slate-400 whitespace-nowrap">
-                          {day.clockIn ? (
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] shrink-0" />
-                              {formatTime(day.clockIn)}
-                            </div>
-                          ) : (
-                            "-"
-                          )}
-                        </td>
-                        <td className="p-4 align-middle text-gray-600 dark:text-slate-400 whitespace-nowrap">
-                          {day.clockOut ? (
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] shrink-0" />
-                              {formatTime(day.clockOut)}
-                            </div>
-                          ) : (
-                            "-"
-                          )}
-                        </td>
-                        <td className="p-4 align-middle text-gray-600 dark:text-slate-400 font-mono text-xs whitespace-nowrap">
-                          {formatBreakTime(day.totalBreakMinutes)}
-                        </td>
-                        <td className="p-4 align-middle text-right font-mono text-blue-600 dark:text-blue-400 whitespace-nowrap">
-                          {calculateTotalHours(
-                            day.clockIn,
-                            day.clockOut,
-                            day.totalBreakMinutes
-                          )}
-                        </td>
-                        <td className="p-4 align-middle text-right whitespace-nowrap">
-                          {!day.isLocked ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleCorrectionClick(day)}
-                              className="h-7 px-2 text-xs text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 gap-1"
-                            >
-                              <FilePen className="w-3.5 h-3.5" />
-                              Correct
-                            </Button>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">
-                              Locked
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <CorrectionRequestModal
-        open={correctionModalOpen}
-        onClose={handleCorrectionClose}
-        record={selectedRecord}
-        usedThisMonth={usedThisMonth}
-        onSuccess={fetchData}
-      />
-    </div>
-  );
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
 };
 
+const statusConfig = {
+  Present: {
+    dot: "bg-emerald-500",
+    badge: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800",
+  },
+  Late: {
+    dot: "bg-yellow-500",
+    badge: "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800",
+  },
+  Absent: {
+    dot: "bg-red-500",
+    badge: "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800",
+  },
+  "Half Day": {
+    dot: "bg-orange-500",
+    badge: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800",
+  },
+  Holiday: {
+    dot: "bg-blue-500",
+    badge: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800",
+  },
+};
+
+/* ── StatsCard — exact copy from AttendanceRecords.jsx ──────────────── */
 const StatsCard = ({ title, value, icon, variant }) => {
   const styles = {
     blue: {
@@ -483,6 +126,12 @@ const StatsCard = ({ title, value, icon, variant }) => {
       label: "text-gray-600 dark:text-gray-400",
       value: "text-gray-900 dark:text-white",
     },
+    amber: {
+      card: "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30",
+      icon: "text-amber-600 dark:text-amber-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+    },
   };
 
   const s = styles[variant] || styles.blue;
@@ -499,8 +148,553 @@ const StatsCard = ({ title, value, icon, variant }) => {
           <p className={cn("text-sm", s.label)}>{title}</p>
           <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
         </div>
-        <div className={cn("h-8 w-8 shrink-0", s.icon)}>{icon}</div>
+        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
       </div>
+    </div>
+  );
+};
+
+const MyAttendance = () => {
+  const { user } = useUser();
+
+  const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState([]);
+  const [holidays, setHolidays] = useState([]);
+  const [usedThisMonth, setUsedThisMonth] = useState(0);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [correctionModalOpen, setCorrectionModalOpen] = useState(false);
+  const [stats, setStats] = useState({
+    workingDays: 0,
+    present: 0,
+    late: 0,
+    absent: 0,
+    overtimeDays: 0,
+  });
+
+  const employeeType = user?.employeeType || "Full-Time";
+  const todayStr = new Date().toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [attRes, holRes, corrRes] = await Promise.all([
+        attendanceService.getMyAttendance(),
+        holidayService.getHolidays(),
+        attendanceService.getMyCorrectionRequests(),
+      ]);
+
+      const attData = attRes?.success && Array.isArray(attRes.data) ? attRes.data : [];
+      setHistory(attData);
+      setHolidays(holRes?.success && Array.isArray(holRes.data) ? holRes.data : []);
+      setUsedThisMonth(corrRes?.meta?.usedThisMonth ?? 0);
+
+      const today = new Date();
+      const cm = today.getMonth();
+      const cy = today.getFullYear();
+
+      let bDays = 0;
+      const d = new Date(cy, cm, 1);
+      while (d <= today) {
+        if (d.getDay() !== 0 && d.getDay() !== 6) bDays++;
+        d.setDate(d.getDate() + 1);
+      }
+
+      const monthData = attData.filter((r) => {
+        const rd = new Date(r.date || r.clockIn);
+        return rd.getMonth() === cm && rd.getFullYear() === cy;
+      });
+
+      const present = monthData.filter((d) => d.status === "Present").length;
+      const late = monthData.filter((d) => d.status === "Late").length;
+      const halfDay = monthData.filter((d) => d.status === "Half Day").length;
+
+      setStats({
+        workingDays: bDays,
+        present,
+        late,
+        absent: Math.max(0, bDays - (present + late + halfDay)),
+        overtimeDays: monthData.filter((d) => d.overtimeHours > 0).length,
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+          <p className="text-sm text-muted-foreground">Loading your attendance...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const upcomingHolidays = holidays.filter(
+    (h) => new Date(h.date) >= new Date()
+  ).slice(0, 5);
+
+  return (
+    <div className="space-y-6 max-w-full">
+
+      {/* ── Page Header ─────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Sun className="w-5 h-5 text-amber-500" />
+            <span className="text-sm text-muted-foreground font-medium">
+              {getGreeting()}, {user?.firstName}
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+            My Attendance
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">{todayStr}</p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {user?.currentShift && (
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-full">
+              <Briefcase className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                {user.currentShift.name} &middot; {user.currentShift.startTime}–{user.currentShift.endTime}
+              </span>
+            </div>
+          )}
+          <Button variant="outline" size="sm" className="gap-2">
+            <Download className="w-4 h-4" /> Export
+          </Button>
+        </div>
+      </div>
+
+      {/* ── Top Stats Row ────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <StatsCard
+          title="Working Days"
+          value={stats.workingDays}
+          icon={<CalendarDays className="h-8 w-8" />}
+          variant="blue"
+        />
+        <StatsCard
+          title="Present"
+          value={stats.present}
+          icon={<CheckCircle className="h-8 w-8" />}
+          variant="green"
+        />
+        <StatsCard
+          title="Late Arrivals"
+          value={stats.late}
+          icon={<Clock className="h-8 w-8" />}
+          variant="red"
+        />
+        <StatsCard
+          title="Absent"
+          value={stats.absent}
+          icon={<XCircle className="h-8 w-8" />}
+          variant="orange"
+        />
+        <StatsCard
+          title="OT Days"
+          value={stats.overtimeDays}
+          icon={<Timer className="h-8 w-8" />}
+          variant="amber"
+        />
+      </div>
+
+      {/* ── Main Grid ───────────────────────────────────────── */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+        {/* Left Column */}
+        <div className="xl:col-span-2 space-y-6">
+
+          {/* Clock Widget — Hero */}
+          <AttendanceWidget employeeName={user?.firstName || "Employee"} />
+
+          {/* Attendance History */}
+          <Card className="border-slate-200 dark:border-slate-800 overflow-hidden">
+            <CardHeader className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  <TrendingUp className="w-4 h-4 text-blue-500" />
+                  Attendance History
+                </CardTitle>
+                <span className="text-xs text-muted-foreground px-2.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700">
+                  Corrections:{" "}
+                  <span
+                    className={cn(
+                      "font-semibold",
+                      usedThisMonth >= 3
+                        ? "text-red-500"
+                        : "text-slate-600 dark:text-slate-300"
+                    )}
+                  >
+                    {usedThisMonth}/3
+                  </span>{" "}
+                  this month
+                </span>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              {history.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                  <CalendarDays className="w-10 h-10 mb-3 opacity-30" />
+                  <p className="text-sm">No attendance records yet.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[720px]">
+                    <thead>
+                      <tr className="border-b border-slate-100 dark:border-slate-800">
+                        {["Date", "Status", "Clock In", "Clock Out", "Break", "Total", "OT", ""].map((h) => (
+                          <th
+                            key={h}
+                            className={cn(
+                              "px-4 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider",
+                              h === "" || h === "OT" || h === "Total" ? "text-right" : "text-left"
+                            )}
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                      {history.map((day, i) => {
+                        const sc = statusConfig[day.status] || statusConfig["Present"];
+                        const otFmt = formatOTHours(day.overtimeHours);
+                        const isToday = day.date === new Date().toISOString().split("T")[0];
+
+                        return (
+                          <tr
+                            key={i}
+                            className={cn(
+                              "group transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/30",
+                              isToday && "bg-blue-50/40 dark:bg-blue-900/10"
+                            )}
+                          >
+                            {/* Date */}
+                            <td className="px-4 py-3.5 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                {isToday && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                                )}
+                                <div>
+                                  <p
+                                    className={cn(
+                                      "text-sm font-medium",
+                                      isToday
+                                        ? "text-blue-700 dark:text-blue-400"
+                                        : "text-slate-800 dark:text-slate-200"
+                                    )}
+                                  >
+                                    {formatDate(day.date || day.clockIn)}
+                                  </p>
+                                  {isToday && (
+                                    <p className="text-[10px] text-blue-500 dark:text-blue-400 leading-none mt-0.5">
+                                      Today
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Status */}
+                            <td className="px-4 py-3.5 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5">
+                                <span className={cn("w-2 h-2 rounded-full shrink-0", sc.dot)} />
+                                <Badge
+                                  variant="outline"
+                                  className={cn("text-xs px-2 py-0.5 border font-normal", sc.badge)}
+                                >
+                                  {day.status}
+                                </Badge>
+                              </div>
+                            </td>
+
+                            {/* Clock In */}
+                            <td className="px-4 py-3.5 whitespace-nowrap">
+                              <span
+                                className={cn(
+                                  "text-sm tabular-nums",
+                                  day.clockIn
+                                    ? "text-slate-700 dark:text-slate-300"
+                                    : "text-slate-300 dark:text-slate-600"
+                                )}
+                              >
+                                {day.clockIn ? formatTime(day.clockIn) : "—"}
+                              </span>
+                            </td>
+
+                            {/* Clock Out */}
+                            <td className="px-4 py-3.5 whitespace-nowrap">
+                              <span
+                                className={cn(
+                                  "text-sm tabular-nums",
+                                  day.clockOut
+                                    ? "text-slate-700 dark:text-slate-300"
+                                    : "text-slate-300 dark:text-slate-600"
+                                )}
+                              >
+                                {day.clockOut ? formatTime(day.clockOut) : "—"}
+                              </span>
+                            </td>
+
+                            {/* Break */}
+                            <td className="px-4 py-3.5 whitespace-nowrap">
+                              <span className="text-sm text-slate-500 dark:text-slate-400 tabular-nums">
+                                {formatBreakTime(day.totalBreakMinutes)}
+                              </span>
+                            </td>
+
+                            {/* Total Hours */}
+                            <td className="px-4 py-3.5 whitespace-nowrap text-right">
+                              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 tabular-nums">
+                                {calculateTotalHours(day.clockIn, day.clockOut, day.totalBreakMinutes)}
+                              </span>
+                            </td>
+
+                            {/* OT */}
+                            <td className="px-4 py-3.5 whitespace-nowrap text-right">
+                              {otFmt ? (
+                                <div className="flex flex-col items-end gap-0.5">
+                                  <span className="text-sm font-semibold text-amber-600 dark:text-amber-400 tabular-nums">
+                                    {otFmt}
+                                  </span>
+                                  {day.isOtApproved ? (
+                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium leading-none">
+                                      ✓ Approved
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] text-yellow-600 dark:text-yellow-400 font-medium leading-none">
+                                      Pending
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-slate-300 dark:text-slate-600 text-sm">—</span>
+                              )}
+                            </td>
+
+                            {/* Action */}
+                            <td className="px-4 py-3.5 whitespace-nowrap text-right">
+                              {day.isLocked ? (
+                                <span className="inline-flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
+                                  <Lock className="w-3 h-3" /> Locked
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setSelectedRecord(day);
+                                    setCorrectionModalOpen(true);
+                                  }}
+                                  className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
+                                >
+                                  <FilePen className="w-3.5 h-3.5" />
+                                  Correct
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column — Sidebar */}
+        <div className="space-y-5">
+
+          {/* Shift Card */}
+          <div className="rounded-2xl border border-blue-100 dark:border-blue-900/50 bg-gradient-to-br from-blue-50 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                Current Shift
+              </p>
+              <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm">
+                <Briefcase className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+            {user?.currentShift ? (
+              <>
+                <p className="text-xl font-bold text-slate-900 dark:text-white mb-1">
+                  {user.currentShift.name}
+                </p>
+                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                  <Clock className="w-3.5 h-3.5 text-blue-500" />
+                  <span className="tabular-nums">
+                    {user.currentShift.startTime} — {user.currentShift.endTime}
+                  </span>
+                </div>
+                {user.currentShift.graceMinutes > 0 && (
+                  <div className="mt-3 pt-3 border-t border-blue-100 dark:border-blue-900/50">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Grace period:{" "}
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">
+                        {user.currentShift.graceMinutes} minutes
+                      </span>
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                No shift assigned. Contact your HR Manager.
+              </p>
+            )}
+          </div>
+
+          {/* This Month Summary */}
+          <Card className="border-slate-200 dark:border-slate-800">
+            <CardHeader className="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
+              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+                This Month
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {[
+                {
+                  label: "Attendance Rate",
+                  value:
+                    stats.workingDays > 0
+                      ? `${Math.round(
+                          ((stats.present + stats.late) / stats.workingDays) * 100
+                        )}%`
+                      : "—",
+                  color: "text-emerald-600 dark:text-emerald-400",
+                },
+                {
+                  label: "Days Present",
+                  value: stats.present,
+                  color: "text-slate-700 dark:text-slate-300",
+                },
+                {
+                  label: "Late Arrivals",
+                  value: stats.late,
+                  color:
+                    stats.late > 0
+                      ? "text-yellow-600 dark:text-yellow-400"
+                      : "text-slate-700 dark:text-slate-300",
+                },
+                {
+                  label: "Absent Days",
+                  value: stats.absent,
+                  color:
+                    stats.absent > 0
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-slate-700 dark:text-slate-300",
+                },
+                {
+                  label: "Overtime Days",
+                  value: stats.overtimeDays,
+                  color:
+                    stats.overtimeDays > 0
+                      ? "text-amber-600 dark:text-amber-400"
+                      : "text-slate-700 dark:text-slate-300",
+                },
+                {
+                  label: "Corrections Used",
+                  value: `${usedThisMonth} / 3`,
+                  color:
+                    usedThisMonth >= 3
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-slate-700 dark:text-slate-300",
+                },
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between px-4 py-3 border-b border-slate-50 dark:border-slate-800/50 last:border-0"
+                >
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{item.label}</span>
+                  <span className={cn("text-sm font-semibold tabular-nums", item.color)}>
+                    {item.value}
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Upcoming Holidays */}
+          <Card className="border-slate-200 dark:border-slate-800">
+            <CardHeader className="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
+              <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <CalendarDays className="w-4 h-4 text-blue-500" />
+                Upcoming Holidays
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {upcomingHolidays.length === 0 ? (
+                <p className="px-4 py-5 text-xs text-muted-foreground text-center">
+                  No upcoming holidays.
+                </p>
+              ) : (
+                <div className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                  {upcomingHolidays.map((h) => {
+                    const d = new Date(h.date);
+                    const daysLeft = Math.ceil((d - new Date()) / 86400000);
+                    return (
+                      <div
+                        key={h._id}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors"
+                      >
+                        <div className="flex flex-col items-center justify-center w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 shrink-0">
+                          <span className="text-[9px] font-bold uppercase text-blue-500 dark:text-blue-400 tracking-wider leading-none">
+                            {d.toLocaleString("default", { month: "short" })}
+                          </span>
+                          <span className="text-base font-bold text-blue-700 dark:text-blue-300 leading-tight">
+                            {d.getDate()}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+                            {h.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {daysLeft === 0
+                              ? "Today"
+                              : daysLeft === 1
+                              ? "Tomorrow"
+                              : `In ${daysLeft} days`}
+                          </p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+        </div>
+      </div>
+
+      <CorrectionRequestModal
+        open={correctionModalOpen}
+        onClose={() => {
+          setCorrectionModalOpen(false);
+          setSelectedRecord(null);
+        }}
+        record={selectedRecord}
+        usedThisMonth={usedThisMonth}
+        onSuccess={fetchData}
+      />
     </div>
   );
 };

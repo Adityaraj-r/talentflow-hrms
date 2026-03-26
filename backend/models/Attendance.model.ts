@@ -22,6 +22,8 @@ export interface IAttendance extends Document {
   totalBreakMinutes: number;
   totalHours?: number;
   overtimeHours?: number;
+  isOtApproved: boolean;
+  otApprovedBy?: mongoose.Types.ObjectId;
   approvedBy?: mongoose.Types.ObjectId;
   isLocked: boolean;
   notes?: string;
@@ -30,12 +32,17 @@ export interface IAttendance extends Document {
 const BreakSchema = new Schema<IBreak>({
   startTime: { type: Date, required: true },
   endTime: { type: Date },
-  totalMinutes: { type: Number, default: 0 }
+  totalMinutes: { type: Number, default: 0 },
 });
 
 const AttendanceSchema = new Schema<IAttendance>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     date: { type: String, required: true, index: true },
     clockIn: { type: Date },
     clockOut: { type: Date },
@@ -52,12 +59,14 @@ const AttendanceSchema = new Schema<IAttendance>(
     state: {
       type: String,
       enum: ["NOT_STARTED", "CHECKED_IN", "ON_BREAK", "CHECKED_OUT", "AUTO_CLOSED"],
-      default: "CHECKED_IN",
+      default: "NOT_STARTED",
     },
     breaks: [BreakSchema],
     totalBreakMinutes: { type: Number, default: 0 },
     totalHours: { type: Number },
-    overtimeHours: { type: Number },
+    overtimeHours: { type: Number, default: 0 },
+    isOtApproved: { type: Boolean, default: false },
+    otApprovedBy: { type: Schema.Types.ObjectId, ref: "User" },
     approvedBy: { type: Schema.Types.ObjectId, ref: "User" },
     isLocked: { type: Boolean, default: false },
     notes: { type: String },
@@ -66,5 +75,6 @@ const AttendanceSchema = new Schema<IAttendance>(
 );
 
 AttendanceSchema.index({ userId: 1, date: 1 }, { unique: true });
+AttendanceSchema.index({ isOtApproved: 1, overtimeHours: 1 });
 
 export default mongoose.model<IAttendance>("Attendance", AttendanceSchema);

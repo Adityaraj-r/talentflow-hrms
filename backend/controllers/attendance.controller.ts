@@ -41,9 +41,26 @@ const recalculateHours = (
   );
   const netMinutes = Math.max(0, grossMinutes - totalBreakMinutes);
   const totalHours = Number((netMinutes / 60).toFixed(2));
-  const overtimeHours =
-    totalHours > 9 ? Number((totalHours - 9).toFixed(2)) : 0;
-  return { totalHours, overtimeHours };
+  return { totalHours };
+};
+
+const calculateOvertimeHours = (
+  clockOut: Date,
+  date: string,
+  shiftEndTime: string | null
+): number => {
+  if (!shiftEndTime) return 0;
+
+  const [endHour, endMin] = shiftEndTime.split(":").map(Number);
+  const shiftEnd = new Date(`${date}T00:00:00`);
+  shiftEnd.setHours(endHour, endMin, 0, 0);
+
+  if (clockOut <= shiftEnd) return 0;
+
+  const otMinutes = Math.round(
+    (clockOut.getTime() - shiftEnd.getTime()) / 60000
+  );
+  return Number((otMinutes / 60).toFixed(2));
 };
 
 export const getMyAttendance = async (req: Request, res: Response) => {
@@ -102,12 +119,10 @@ export const clockIn = async (req: Request, res: Response) => {
     });
 
     if (existingRecord?.isLocked) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Attendance is locked for payroll",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Attendance is locked for payroll",
+      });
     }
 
     if (existingRecord) {
@@ -149,6 +164,8 @@ export const clockIn = async (req: Request, res: Response) => {
       breaks: [],
       totalBreakMinutes: 0,
       isLocked: false,
+      isOtApproved: false,
+      overtimeHours: 0,
     });
 
     res.json({ success: true, data: newAttendance });
@@ -269,14 +286,26 @@ export const clockOut = async (req: Request, res: Response) => {
     attendance.state = "CHECKED_OUT";
 
     if (attendance.clockIn) {
-      const { totalHours, overtimeHours } = recalculateHours(
+      const { totalHours } = recalculateHours(
         attendance.clockIn,
         now,
         attendance.totalBreakMinutes
       );
       attendance.totalHours = totalHours;
-      attendance.overtimeHours = overtimeHours;
     }
+
+    const user = await User.findById(userId).populate("currentShift");
+    const shiftEndTime =
+      user?.currentShift ? (user.currentShift as any).endTime : null;
+
+    const otHours = calculateOvertimeHours(
+      now,
+      todayDateString,
+      shiftEndTime
+    );
+
+    attendance.overtimeHours = otHours;
+    attendance.isOtApproved = otHours > 0 ? false : attendance.isOtApproved;
 
     await attendance.save();
 
@@ -294,6 +323,9 @@ export const runAutoCheckout = async (req: Request, res: Response) => {
       date: { $ne: todayDateString },
       state: { $in: ["CHECKED_IN", "ON_BREAK"] },
       isLocked: false,
+    }).populate({
+      path: "userId",
+      populate: { path: "currentShift" },
     });
 
     let closedCount = 0;
@@ -313,6 +345,16 @@ export const runAutoCheckout = async (req: Request, res: Response) => {
         );
         record.totalHours = totalHours;
       }
+
+      const user = record.userId as any;
+      const shiftEndTime = user?.currentShift?.endTime || null;
+      const otHours = calculateOvertimeHours(
+        autoOutTime,
+        record.date,
+        shiftEndTime
+      );
+      record.overtimeHours = otHours;
+      record.isOtApproved = false;
 
       await record.save();
       closedCount++;
@@ -363,7 +405,9 @@ export const markManualAttendance = async (req: Request, res: Response) => {
         .json({ success: false, message: "Missing required fields" });
     }
 
-    const user = await User.findOne({ email: employeeEmail });
+    const user = await User.findOne({ email: employeeEmail }).populate(
+      "currentShift"
+    );
     if (!user) {
       return res
         .status(404)
@@ -383,7 +427,7 @@ export const markManualAttendance = async (req: Request, res: Response) => {
     let checkInDate = null;
     let checkOutDate = null;
     let totalHours = 0;
-    let overtimeHours = 0;
+    let otHours = 0;
 
     if (clockIn) checkInDate = new Date(`${date}T${clockIn}`);
     if (clockOut) checkOutDate = new Date(`${date}T${clockOut}`);
@@ -395,7 +439,11 @@ export const markManualAttendance = async (req: Request, res: Response) => {
         Number(breakMinutes || 0)
       );
       totalHours = result.totalHours;
-      overtimeHours = result.overtimeHours;
+
+      const shiftEndTime = user.currentShift
+        ? (user.currentShift as any).endTime
+        : null;
+      otHours = calculateOvertimeHours(checkOutDate, date, shiftEndTime);
     }
 
     const attendanceData = {
@@ -405,7 +453,8 @@ export const markManualAttendance = async (req: Request, res: Response) => {
       clockOut: checkOutDate,
       totalBreakMinutes: Number(breakMinutes || 0),
       totalHours,
-      overtimeHours,
+      overtimeHours: otHours,
+      isOtApproved: false,
       status,
       state: checkOutDate
         ? "CHECKED_OUT"
@@ -480,7 +529,7 @@ export const markBulkAttendance = async (req: Request, res: Response) => {
         continue;
       }
 
-      const user = await User.findOne({ email });
+      const user = await User.findOne({ email }).populate("currentShift");
       if (!user) {
         errorCount++;
         continue;
@@ -498,7 +547,7 @@ export const markBulkAttendance = async (req: Request, res: Response) => {
       let checkInDate = null;
       let checkOutDate = null;
       let totalHours = 0;
-      let overtimeHours = 0;
+      let otHours = 0;
 
       if (clockIn && clockIn !== "-")
         checkInDate = new Date(`${date}T${clockIn}`);
@@ -512,7 +561,11 @@ export const markBulkAttendance = async (req: Request, res: Response) => {
           breakMinutes
         );
         totalHours = result.totalHours;
-        overtimeHours = result.overtimeHours;
+
+        const shiftEndTime = user.currentShift
+          ? (user.currentShift as any).endTime
+          : null;
+        otHours = calculateOvertimeHours(checkOutDate, date, shiftEndTime);
       }
 
       await Attendance.findOneAndUpdate(
@@ -523,7 +576,8 @@ export const markBulkAttendance = async (req: Request, res: Response) => {
             clockOut: checkOutDate,
             totalBreakMinutes: breakMinutes,
             totalHours,
-            overtimeHours,
+            overtimeHours: otHours,
+            isOtApproved: false,
             status,
             state: checkOutDate
               ? "CHECKED_OUT"
@@ -647,7 +701,10 @@ export const correctAttendance = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { clockIn, clockOut, status, notes, breakMinutes } = req.body;
 
-    const record = await Attendance.findById(id);
+    const record = await Attendance.findById(id).populate({
+      path: "userId",
+      populate: { path: "currentShift" },
+    });
 
     if (!record) {
       return res
@@ -671,14 +728,23 @@ export const correctAttendance = async (req: Request, res: Response) => {
       record.totalBreakMinutes = Number(breakMinutes);
 
     if (record.clockIn && record.clockOut) {
-      const { totalHours, overtimeHours } = recalculateHours(
+      const { totalHours } = recalculateHours(
         record.clockIn,
         record.clockOut,
         record.totalBreakMinutes
       );
       record.totalHours = totalHours;
-      record.overtimeHours = overtimeHours;
       record.state = "CHECKED_OUT";
+
+      const user = record.userId as any;
+      const shiftEndTime = user?.currentShift?.endTime || null;
+      const otHours = calculateOvertimeHours(
+        record.clockOut,
+        record.date,
+        shiftEndTime
+      );
+      record.overtimeHours = otHours;
+      record.isOtApproved = otHours > 0 ? false : record.isOtApproved;
     }
 
     await record.save();
@@ -857,7 +923,10 @@ export const reviewCorrectionRequest = async (req: Request, res: Response) => {
     if (action === "Approved") {
       const attendanceRecord = await Attendance.findById(
         correctionRequest.attendanceId
-      );
+      ).populate({
+        path: "userId",
+        populate: { path: "currentShift" },
+      });
 
       if (attendanceRecord && !attendanceRecord.isLocked) {
         if (correctionRequest.requestedClockIn) {
@@ -868,14 +937,24 @@ export const reviewCorrectionRequest = async (req: Request, res: Response) => {
         }
 
         if (attendanceRecord.clockIn && attendanceRecord.clockOut) {
-          const { totalHours, overtimeHours } = recalculateHours(
+          const { totalHours } = recalculateHours(
             attendanceRecord.clockIn,
             attendanceRecord.clockOut,
             attendanceRecord.totalBreakMinutes
           );
           attendanceRecord.totalHours = totalHours;
-          attendanceRecord.overtimeHours = overtimeHours;
           attendanceRecord.state = "CHECKED_OUT";
+
+          const user = attendanceRecord.userId as any;
+          const shiftEndTime = user?.currentShift?.endTime || null;
+          const otHours = calculateOvertimeHours(
+            attendanceRecord.clockOut,
+            attendanceRecord.date,
+            shiftEndTime
+          );
+          attendanceRecord.overtimeHours = otHours;
+          attendanceRecord.isOtApproved =
+            otHours > 0 ? false : attendanceRecord.isOtApproved;
         }
 
         attendanceRecord.approvedBy = new mongoose.Types.ObjectId(reviewerId);
@@ -921,6 +1000,103 @@ export const getMyCorrectionRequests = async (req: Request, res: Response) => {
         remainingThisMonth: Math.max(0, 3 - usedThisMonth),
       },
     });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getOvertimePending = async (req: Request, res: Response) => {
+  try {
+    const userRole = req.user?.role?.toUpperCase().replace(/[\s_]/g, "");
+    const userId = req.user?.id;
+    const { startDate, endDate } = req.query;
+
+    const filter: any = {
+      overtimeHours: { $gt: 0 },
+      isOtApproved: false,
+      isLocked: false,
+    };
+
+    if (startDate) filter.date = { ...filter.date, $gte: startDate };
+    if (endDate) filter.date = { ...filter.date, $lte: endDate };
+
+    let records;
+
+    if (
+      ["HRMANAGER", "ADMIN", "SUPERADMIN"].includes(userRole || "")
+    ) {
+      records = await Attendance.find(filter)
+        .populate("userId", "firstName lastName email department employeeCode")
+        .populate("otApprovedBy", "firstName lastName")
+        .sort({ date: -1 });
+    } else if (
+      ["DEPARTMENTMANAGER", "DIRECTMANAGER"].includes(userRole || "")
+    ) {
+      const currentUser = await User.findById(userId);
+      const teamMembers = await User.find({
+        department: currentUser?.department,
+        isActive: true,
+        isDeleted: false,
+      }).select("_id");
+
+      const teamIds = teamMembers.map((m) => m._id);
+      filter.userId = { $in: teamIds };
+
+      records = await Attendance.find(filter)
+        .populate("userId", "firstName lastName email department employeeCode")
+        .populate("otApprovedBy", "firstName lastName")
+        .sort({ date: -1 });
+    } else {
+      return res
+        .status(403)
+        .json({ success: false, message: "Access denied" });
+    }
+
+    res.json({ success: true, count: records.length, data: records });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const approveOvertime = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const managerId = req.user?.id;
+
+    const record = await Attendance.findById(id);
+
+    if (!record) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Attendance record not found" });
+    }
+
+    if (record.isLocked) {
+      return res.status(403).json({
+        success: false,
+        message: "Record is locked for payroll. Cannot approve OT.",
+      });
+    }
+
+    if (!record.overtimeHours || record.overtimeHours <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "This record has no overtime hours to approve.",
+      });
+    }
+
+    if (record.isOtApproved) {
+      return res.status(400).json({
+        success: false,
+        message: "Overtime for this record has already been approved.",
+      });
+    }
+
+    record.isOtApproved = true;
+    record.otApprovedBy = new mongoose.Types.ObjectId(managerId);
+    await record.save();
+
+    res.json({ success: true, data: record });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

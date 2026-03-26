@@ -107,13 +107,14 @@ import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
 // Employee Role Pages
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 import Profile from "./pages/dashboard/Profile"
+import OvertimeApprovals from "./pages/modules/attendance/OvertimeApprovals"
 
 const ADMIN_ROLES = ["ADMIN", "SUPER ADMIN"]
 
 const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
   const { user, isAuthenticated, loading } = useAuth()
-  const [permLoading, setPermLoading]      = useState(false)
-  const [hasPermission, setHasPermission]  = useState(null)
+  const [permLoading, setPermLoading] = useState(false)
+  const [hasPermission, setHasPermission] = useState(null)
 
   const userRoleStr = typeof user?.role === "string"
     ? user.role
@@ -168,7 +169,7 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
   }
 
   if (allowedRoles && allowedRoles.length > 0) {
-    const userRole   = userRoleStr.toUpperCase()
+    const userRole = userRoleStr.toUpperCase()
     const normalized = allowedRoles.map(r => r.toUpperCase())
 
     if (!normalized.includes(userRole)) {
@@ -200,14 +201,14 @@ const DashboardRouter = () => {
   const userRoleStr = typeof user?.role === "string" ? user.role : user?.role?.name || ""
   const role = userRoleStr.toUpperCase()
 
-  if (role === "ADMIN" || role === "SUPER ADMIN")  return <Navigate to="/admin/dashboard" replace />
-  if (role === "EMPLOYEE")                          return <Navigate to="/employee/dashboard" replace />
-  if (role === "PROJECT_MANAGER")                   return <Navigate to="/dashboard/project-manager" replace />
-  if (role === "CEO")                               return <Navigate to="/dashboard" replace />
+  if (role === "ADMIN" || role === "SUPER ADMIN") return <Navigate to="/admin/dashboard" replace />
+  if (role === "EMPLOYEE") return <Navigate to="/employee/dashboard" replace />
+  if (role === "PROJECT_MANAGER") return <Navigate to="/dashboard/project-manager" replace />
+  if (role === "CEO") return <Navigate to="/dashboard" replace />
   if (role === "HR_MANAGER" || role === "HR_OFFICER"
     || role === "DEPARTMENT_MANAGER"
     || role === "DIRECT_MANAGER"
-    || role === "OPERATIONS_MANAGER")               return <Navigate to="/dashboard" replace />
+    || role === "OPERATIONS_MANAGER") return <Navigate to="/dashboard" replace />
 
   return <Navigate to="/dashboard" replace />
 }
@@ -224,16 +225,16 @@ function App() {
                 <Routes>
 
                   {/* ── Auth ─────────────────────────────────────────── */}
-                  <Route path="/login"            element={<Login />} />
-                  <Route path="/signup"           element={<Signup />} />
-                  <Route path="/forgot-password"  element={<ForgotPassword />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/otp-verification" element={<OtpVerification />} />
-                  <Route path="/unauthorized"     element={<Unauthorized />} />
+                  <Route path="/unauthorized" element={<Unauthorized />} />
                   <Route path="/dashboard-redirect" element={<DashboardRouter />} />
 
                   {/* ── Public Recruitment ───────────────────────────── */}
-                  <Route path="/careers"            element={<Careers />} />
-                  <Route path="/apply/:id"          element={<ApplyJob />} />
+                  <Route path="/careers" element={<Careers />} />
+                  <Route path="/apply/:id" element={<ApplyJob />} />
                   <Route path="/application-status" element={<ApplicationStatus />} />
 
                   {/* ── Profile (any authenticated user) ─────────────── */}
@@ -403,6 +404,12 @@ function App() {
                   <Route path="/attendance/correction-requests" element={
                     <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
                       <DashboardLayout><CorrectionRequests /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/attendance/overtime-approvals" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                      <DashboardLayout><OvertimeApprovals /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 

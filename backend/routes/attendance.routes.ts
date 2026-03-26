@@ -19,6 +19,8 @@ import {
   getCorrectionRequests,
   reviewCorrectionRequest,
   getMyCorrectionRequests,
+  getOvertimePending,
+  approveOvertime,
 } from "../controllers/attendance.controller";
 import { protect } from "../middleware/auth.middleware";
 import { authorize } from "../middleware/role.middleware";
@@ -36,11 +38,24 @@ router.post("/end-break", endBreak);
 
 router.get(
   "/all",
-  authorize("ADMIN", "CEO", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "PAYROLL_OFFICER", "SUPER_ADMIN"),
+  authorize(
+    "ADMIN",
+    "CEO",
+    "HR_MANAGER",
+    "HR_OFFICER",
+    "DEPARTMENT_MANAGER",
+    "DIRECT_MANAGER",
+    "PAYROLL_OFFICER",
+    "SUPER_ADMIN"
+  ),
   getAllAttendance
 );
 
-router.post("/auto-checkout", authorize("ADMIN", "SUPER_ADMIN"), runAutoCheckout);
+router.post(
+  "/auto-checkout",
+  authorize("ADMIN", "SUPER_ADMIN"),
+  runAutoCheckout
+);
 
 router.post(
   "/manual",
@@ -53,18 +68,6 @@ router.post(
   authorize("ADMIN", "HR_MANAGER", "HR_OFFICER", "SUPER_ADMIN"),
   upload.single("file"),
   markBulkAttendance
-);
-
-router.patch(
-  "/:id/approve",
-  authorize("ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "SUPER_ADMIN"),
-  approveAttendance
-);
-
-router.patch(
-  "/:id/correct",
-  authorize("ADMIN", "HR_MANAGER", "HR_OFFICER", "SUPER_ADMIN"),
-  correctAttendance
 );
 
 router.get(
@@ -95,14 +98,70 @@ router.post(
 
 router.get(
   "/correction-requests",
-  authorize("ADMIN", "SUPER_ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"),
+  authorize(
+    "ADMIN",
+    "SUPER_ADMIN",
+    "HR_MANAGER",
+    "HR_OFFICER",
+    "DEPARTMENT_MANAGER",
+    "DIRECT_MANAGER"
+  ),
   getCorrectionRequests
 );
 
 router.patch(
   "/correction-requests/:id/review",
-  authorize("ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"),
+  authorize(
+    "ADMIN",
+    "HR_MANAGER",
+    "HR_OFFICER",
+    "DEPARTMENT_MANAGER",
+    "DIRECT_MANAGER"
+  ),
   reviewCorrectionRequest
+);
+
+router.get(
+  "/overtime-pending",
+  authorize(
+    "ADMIN",
+    "SUPER_ADMIN",
+    "HR_MANAGER",
+    "DEPARTMENT_MANAGER",
+    "DIRECT_MANAGER"
+  ),
+  getOvertimePending
+);
+
+router.patch(
+  "/:id/approve-ot",
+  authorize(
+    "ADMIN",
+    "SUPER_ADMIN",
+    "HR_MANAGER",
+    "DEPARTMENT_MANAGER",
+    "DIRECT_MANAGER"
+  ),
+  approveOvertime
+);
+
+router.patch(
+  "/:id/approve",
+  authorize(
+    "ADMIN",
+    "HR_MANAGER",
+    "HR_OFFICER",
+    "DEPARTMENT_MANAGER",
+    "DIRECT_MANAGER",
+    "SUPER_ADMIN"
+  ),
+  approveAttendance
+);
+
+router.patch(
+  "/:id/correct",
+  authorize("ADMIN", "HR_MANAGER", "HR_OFFICER", "SUPER_ADMIN"),
+  correctAttendance
 );
 
 export default router;

@@ -78,6 +78,17 @@ const attendanceService = {
   getMyCorrectionRequests: async () => {
     return await apiClient.get("/attendance/my-correction-requests");
   },
+
+  getOvertimePending: async (startDate = "", endDate = "") => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    return await apiClient.get("/attendance/overtime-pending", { params });
+  },
+
+  approveOvertime: async (id) => {
+    return await apiClient.patch(`/attendance/${id}/approve-ot`);
+  },
 };
 
 export default attendanceService;

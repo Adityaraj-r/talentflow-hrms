@@ -26,6 +26,7 @@ import {
   Database,
   Building,
   ClipboardList,
+  Timer,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ROLES } from "@/constants/roles"
@@ -89,7 +90,7 @@ const Sidebar = ({
         path.startsWith("/employee-transfer") ||
         path.startsWith("/digital-locker"),
 
-      timeAttendance: path.startsWith("/attendance"),
+      timeAttendance: path.startsWith("/attendance") || path.includes("/employee/attendance"),
 
       payroll:
         path.startsWith("/payroll") ||
@@ -265,9 +266,12 @@ const Sidebar = ({
 
           <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
             <SubLink to="/attendance" label="Attendance Records" />
+            <SubLink to="/attendance/manual" label="Manual Attendance" />
             <SubLink to="/attendance/shifts" label="Shift Roster" />
             <SubLink to="/attendance/holidays" label="Holiday List" />
             <SubLink to="/attendance/leave-management" label="Leave Management" />
+            <SubLink to="/attendance/correction-requests" label="Correction Requests" />
+            <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" />
           </SidebarGroup>
 
           <SidebarGroup id="payroll" icon={DollarSign} label="Payroll & Compliance">
@@ -341,6 +345,7 @@ const Sidebar = ({
               <SubLink to="/attendance/holidays" label="Holiday List" />
               <SubLink to="/attendance/leave-management" label="Leave Management" />
               <SubLink to="/attendance/correction-requests" label="Correction Requests" />
+              <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" />
             </SidebarGroup>
           )}
 
@@ -391,6 +396,7 @@ const Sidebar = ({
           {canSee('attendance') && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/attendance" label="Attendance Records" />
+              <SubLink to="/attendance/manual" label="Manual Attendance" />
               <SubLink to="/attendance/leave-management" label="Leave Management" />
               <SubLink to="/attendance/correction-requests" label="Correction Requests" />
             </SidebarGroup>
@@ -423,12 +429,11 @@ const Sidebar = ({
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
 
-          {canSee("attendance") && (
+         {canSee("attendance") && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/attendance" label="Attendance Records" />
-              <SubLink to="/attendance/shifts" label="Shift Roster" />
               <SubLink to="/attendance/holidays" label="Holiday List" />
-              <SubLink to="/attendance/leave-management" label="Leave Management" />
+              <SubLink to={userRole === ROLES.CEO ? "/role/ceo/leave-management" : "/attendance/leave-management"} label="Leave Management" />
             </SidebarGroup>
           )}
 
@@ -456,9 +461,11 @@ const Sidebar = ({
           {canSee('recruitment') && <SidebarLink to="/staff-requisition" icon={Users} label={getRecruitmentLabel()} />}
           {canSee('attendance') && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+              <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
+              <SubLink to="/attendance" label="Attendance Records" />
               <SubLink to="/attendance/leave-management" label="Leave Management" />
               <SubLink to="/attendance/correction-requests" label="Correction Requests" />
-              <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
+              <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" />
             </SidebarGroup>
           )}
 
@@ -474,9 +481,11 @@ const Sidebar = ({
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
           {canSee('attendance') && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+              <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
+              <SubLink to="/attendance" label="Attendance Records" />
               <SubLink to="/attendance/leave-management" label="Leave Management" />
               <SubLink to="/attendance/correction-requests" label="Correction Requests" />
-              <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
+              <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" />
             </SidebarGroup>
           )}
 
@@ -490,8 +499,10 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
-          {canSee('attendance') && (
-            <SidebarLink to="/attendance" icon={Clock} label="Attendance Records" />
+         {canSee('attendance') && (
+            <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+              <SubLink to="/attendance" label="Attendance Records" />
+            </SidebarGroup>
           )}
           {canSee('payroll') && (
             <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
@@ -513,7 +524,11 @@ const Sidebar = ({
           <SidebarLink to="/dashboard/pm/tasks" icon={FileCheck} label="Task Board" />
           <SidebarLink to="/dashboard/pm/safety" icon={AlertTriangle} label="Safety Incidents" />
           <SidebarLink to="/dashboard/pm/timesheets" icon={Clock} label="Timesheet Approvals" />
-          {canSee("attendance") && <LeaveLink />}
+          {canSee("attendance") && (
+            <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+              <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
+            </SidebarGroup>
+          )}
         </>
       )
     }
