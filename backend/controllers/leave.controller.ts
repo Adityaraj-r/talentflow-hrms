@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import Leave from "../models/leave.model";
+import Leave from "../models/Leave.model";
 
 export const applyLeave = async (req: Request, res: Response) => {
   try {
@@ -11,23 +11,28 @@ export const applyLeave = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
-    if (new Date(startDate) > new Date(endDate)) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (start > end) {
       return res.status(400).json({ success: false, message: "Start date cannot be after end date" });
     }
+
+    const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) + 1;
 
     const newLeave = await Leave.create({
       userId,
       leaveType,
       startDate,
       endDate,
+      totalDays,
       reason,
       status: "Pending" 
     });
 
     res.status(201).json({ success: true, message: "Leave applied successfully", data: newLeave });
-  } catch (error) {
-    console.error("applyLeave error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -36,9 +41,8 @@ export const getMyLeaves = async (req: Request, res: Response) => {
     const userId = req.user?.id;
     const leaves = await Leave.find({ userId }).sort({ createdAt: -1 });
     res.json({ success: true, data: leaves });
-  } catch (error) {
-    console.error("getMyLeaves error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -54,16 +58,15 @@ export const getAllLeaves = async (req: Request, res: Response) => {
       .sort({ createdAt: -1 });
 
     res.json({ success: true, data: leaves });
-  } catch (error) {
-    console.error("getAllLeaves error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 export const updateLeaveStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { status, adminComment } = req.body; 
+    const { status, rejectionReason } = req.body; 
 
     const leave = await Leave.findById(id);
     if (!leave) {
@@ -76,13 +79,12 @@ export const updateLeaveStatus = async (req: Request, res: Response) => {
         leave.approvedBy = new mongoose.Types.ObjectId(req.user.id);
     }
     
-    if (adminComment) leave.adminComment = adminComment;
+    if (rejectionReason) leave.rejectionReason = rejectionReason;
 
     await leave.save();
 
     res.json({ success: true, message: `Leave ${status}`, data: leave });
-  } catch (error) {
-    console.error("updateLeaveStatus error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

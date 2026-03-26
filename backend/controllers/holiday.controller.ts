@@ -5,14 +5,14 @@ export const getHolidays = async (req: Request, res: Response) => {
   try {
     const holidays = await Holiday.find().sort({ date: 1 });
     res.json({ success: true, data: holidays });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 export const addHoliday = async (req: Request, res: Response) => {
   try {
-    const { name, date, type } = req.body;
+    const { name, date, type, country, isPaid } = req.body;
 
     const existing = await Holiday.findOne({ date });
     if (existing) {
@@ -21,10 +21,10 @@ export const addHoliday = async (req: Request, res: Response) => {
 
     const year = new Date(date).getFullYear();
 
-    const newHoliday = await Holiday.create({ name, date, type, year });
+    const newHoliday = await Holiday.create({ name, date, type, country, isPaid, year });
     res.status(201).json({ success: true, data: newHoliday });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -32,7 +32,7 @@ export const deleteHoliday = async (req: Request, res: Response) => {
   try {
     await Holiday.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Holiday deleted' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
