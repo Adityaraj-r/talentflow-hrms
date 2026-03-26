@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-    Plus,
-    Trash2
-} from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,28 +10,22 @@ import { toast } from "sonner";
 
 const HolidayManagement = () => {
     const { user } = useUser();
-    const isAdmin = ["ADMIN", "HR_MANAGER"].includes(user?.role?.toUpperCase());
+    const isAdmin = ["ADMIN", "SUPER_ADMIN", "HR_MANAGER"].includes(user?.role?.toUpperCase());
 
     const [holidays, setHolidays] = useState([]);
-    const [formData, setFormData] = useState({ name: "", date: "", type: "National Holiday" });
+    const [formData, setFormData] = useState({ name: "", date: "", type: "National" });
     const [loading, setLoading] = useState(true);
 
     const fetchHolidays = async () => {
         try {
             setLoading(true);
             const res = await holidayService.getHolidays();
-
-            if (res?.data?.success && Array.isArray(res.data.data)) {
-                setHolidays(res.data.data);
-            } else if (res?.success && Array.isArray(res.data)) {
-                setHolidays(res.data);
-            } else if (Array.isArray(res?.data)) {
+            if (res?.success && Array.isArray(res.data)) {
                 setHolidays(res.data);
             } else {
                 setHolidays([]);
             }
         } catch (error) {
-            console.error("Failed to fetch holidays", error);
             toast.error("Failed to load holidays");
         } finally {
             setLoading(false);
@@ -55,7 +46,7 @@ const HolidayManagement = () => {
 
         try {
             await holidayService.addHoliday(formData);
-            setFormData({ name: "", date: "", type: "National Holiday" });
+            setFormData({ name: "", date: "", type: "National" });
             toast.success("Holiday added successfully");
             fetchHolidays();
         } catch (error) {
@@ -70,7 +61,6 @@ const HolidayManagement = () => {
             toast.success("Holiday deleted");
             fetchHolidays();
         } catch (error) {
-            console.error("Delete failed");
             toast.error("Failed to delete holiday");
         }
     };
@@ -94,7 +84,6 @@ const HolidayManagement = () => {
             </div>
 
             <div className="grid lg:grid-cols-3 gap-8">
-
                 {isAdmin && (
                     <div className="lg:col-span-1">
                         <Card className="sticky top-6 border-slate-200 dark:border-slate-800">
@@ -140,7 +129,9 @@ const HolidayManagement = () => {
                                             value={formData.type}
                                             onChange={handleChange}
                                         >
-                                            <option className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white" value="National Holiday">National Holiday</option>
+                                            <option className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white" value="National">National</option>
+                                            <option className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white" value="Regional">Regional</option>
+                                            <option className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white" value="Company">Company</option>
                                         </select>
                                     </div>
 
@@ -208,7 +199,6 @@ const HolidayManagement = () => {
                         </CardContent>
                     </Card>
                 </div>
-
             </div>
         </div>
     );

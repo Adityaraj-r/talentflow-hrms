@@ -1,13 +1,44 @@
 import { Router } from "express";
-import { createShift, getAllShifts, deleteShift, assignShift } from "../controllers/shift.controller";
+import {
+  createShift,
+  getAllShifts,
+  updateShift,
+  deleteShift,
+  assignShift,
+} from "../controllers/shift.controller";
 import { protect } from "../middleware/auth.middleware";
 import { authorize } from "../middleware/role.middleware";
 
 const router = Router();
 
-router.post("/add", protect, authorize("ADMIN", "HR_MANAGER" , "CEO"), createShift);
-router.get("/all", protect, getAllShifts); 
-router.delete("/:id", protect, authorize("ADMIN", "HR_MANAGER"), deleteShift);
-router.put("/assign", protect, authorize("ADMIN", "HR_MANAGER"), assignShift);
+router.get("/all", protect, getAllShifts);
+
+router.post(
+  "/add",
+  protect,
+  authorize("ADMIN", "SUPER_ADMIN", "HR_MANAGER"),
+  createShift
+);
+
+router.put(
+  "/assign",
+  protect,
+  authorize("ADMIN", "SUPER_ADMIN", "HR_MANAGER", "HR_OFFICER"),
+  assignShift
+);
+
+router.put(
+  "/:id",
+  protect,
+  authorize("ADMIN", "SUPER_ADMIN", "HR_MANAGER"),
+  updateShift
+);
+
+router.delete(
+  "/:id",
+  protect,
+  authorize("ADMIN", "SUPER_ADMIN", "HR_MANAGER"),
+  deleteShift
+);
 
 export default router;

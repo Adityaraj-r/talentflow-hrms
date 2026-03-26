@@ -75,12 +75,14 @@ import TaskBoard from "./pages/role/PROJECT_MANAGER/TaskBoard"
 import SafetyIncidents from "./pages/role/PROJECT_MANAGER/SafetyIncidents"
 import TimesheetApprovals from "./pages/role/PROJECT_MANAGER/TimesheetApprovals"
 
-// Admin Role Pages
+// Attendance Module
 import AttendanceRecords from "./pages/modules/attendance/AttendanceRecords"
-import AdminLeaveManagement from "./pages/role/ADMIN/LeaveManagement"
 import ShiftManagement from "./pages/modules/attendance/ShiftManagement"
 import HolidayManagement from "./pages/modules/attendance/HolidayManagement"
 import ManualAttendance from "./pages/modules/attendance/ManualAttendance"
+import MyAttendance from "./pages/modules/attendance/MyAttendance"
+import LeaveManagement from "./pages/modules/attendance/LeaveApprovals"
+import CorrectionRequests from "./pages/modules/attendance/CorrectionRequests"
 
 // Role-Specific Appraisal Pages
 import HRManagerAppraisal from "./pages/role/HR_MANAGER/Appraisal"
@@ -99,19 +101,17 @@ import DocumentRequestsHROfficer from "./pages/role/HR_OFFICER/DocumentRequests"
 import DocumentRequestsEmployee from "./pages/role/EMPLOYEE/DocumentRequests"
 
 // Role-Specific Leave Management Pages
-import CEOLeaveManagement from "./pages/role/CEO/LeaveManagement"
+import CEOLeaveManagement from "./pages/modules/attendance/LeaveApprovals"
 import HRManagerLeaveManagement from "./pages/role/HR_MANAGER/LeaveManagement"
 import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
 
 // Employee Role Pages
-import MyAttendance from "./pages/modules/attendance/MyAttendance"
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 import Profile from "./pages/dashboard/Profile"
-import TAPolicyConfig from "./pages/modules/attendance/TAPolicyConfig"
+import OvertimeApprovals from "./pages/modules/attendance/OvertimeApprovals"
 
 const ADMIN_ROLES = ["ADMIN", "SUPER ADMIN"]
 
-// ProtectedRoute
 const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
   const { user, isAuthenticated, loading } = useAuth()
   const [permLoading, setPermLoading] = useState(false)
@@ -402,7 +402,7 @@ function App() {
                   } />
                   <Route path="/attendance/leave-management" element={
                     <ProtectedRoute requiredPermission={{ module: "attendance", action: "write" }}>
-                      <DashboardLayout><AdminLeaveManagement /></DashboardLayout>
+                      <DashboardLayout><LeaveManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />
                   <Route path="/attendance/manual" element={
@@ -410,9 +410,16 @@ function App() {
                       <DashboardLayout><ManualAttendance /></DashboardLayout>
                     </ProtectedRoute>
                   } />
-                  <Route path="/attendance/policies" element={
-                    <ProtectedRoute allowedRoles={["HR_MANAGER", "ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><TAPolicyConfig /></DashboardLayout>
+
+                  <Route path="/attendance/correction-requests" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                      <DashboardLayout><CorrectionRequests /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/attendance/overtime-approvals" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                      <DashboardLayout><OvertimeApprovals /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
@@ -545,7 +552,7 @@ function App() {
 
                   {/* ── Employee Self-Service ────────────────────────── */}
                   <Route path="/dashboard/employee/attendance" element={
-                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                    <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER"]}>
                       <DashboardLayout><MyAttendance /></DashboardLayout>
                     </ProtectedRoute>
                   } />
