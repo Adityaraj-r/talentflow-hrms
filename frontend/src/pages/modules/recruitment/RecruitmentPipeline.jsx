@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState, useEffect } from "react"
 import apiClient from "@/services/apiClient"
 import { useUser } from "@/contexts/UserContext"
+import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
 import {
   Dialog,
   DialogContent,
@@ -19,7 +21,10 @@ const STAGE_COLORS = {
 
 const RecruitmentPipeline = () => {
   const { user } = useUser()
-  const canWrite = user?.can?.("recruitment", "write")
+  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
+  const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
+  const isOperationsManager = role === "OPERATIONS_MANAGER"
+  const canWrite = user?.can?.("recruitment", "write") && !isOperationsManager
 
   const [applications,setApplications] = useState([])
   const [loading,setLoading] = useState(true)
@@ -49,7 +54,8 @@ const RecruitmentPipeline = () => {
       const data = await apiClient.get("/applications")
       setApplications(Array.isArray(data) ? data : [])
     }catch(error){
-      console.log(error)
+      toast.error(error?.response?.data?.error || "Failed to load applications")
+      setApplications([])
     }
     setLoading(false)
   }, [])
@@ -70,7 +76,7 @@ const RecruitmentPipeline = () => {
         )
       )
     } catch (error) {
-      console.log(error)
+      toast.error(error?.response?.data?.error || "Update failed")
     }
   }, [])
 
@@ -238,24 +244,25 @@ const RecruitmentPipeline = () => {
 
                 <td className="px-6 py-4">
                   <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-xs"
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => {
                         setSelectedApplication(app)
                         setViewOpen(true)
                       }}
                     >
                       View
-                    </button>
+                    </Button>
                     {canWrite && app.status !== "Rejected" && (
-                      <button
+                      <Button
                         type="button"
                         onClick={()=>handleStageChange(app._id,"Rejected")}
-                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs"
+                        size="sm"
+                        variant="destructive"
                       >
                         Reject
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </td>

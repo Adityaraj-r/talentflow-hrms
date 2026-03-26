@@ -17,6 +17,15 @@ router.get("/status/:email", getApplicationStatus)
 router.use(protect as any)
 
 router.get("/", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "read"), getApplications)
-router.put("/:id/status", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), updateApplicationStatus)
+router.put(
+  "/:id/status",
+  authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"),
+  (req: any, res: any, next: any) => {
+    const role = (req.user?.role || "").toString().toUpperCase().replace(/\s+/g, "_")
+    if (role === "OPERATIONS_MANAGER") return res.status(403).json({ message: "Access denied" })
+    next()
+  },
+  updateApplicationStatus
+)
 
 export default router

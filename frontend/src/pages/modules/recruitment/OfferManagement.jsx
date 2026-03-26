@@ -7,7 +7,10 @@ import { useUser } from "@/contexts/UserContext";
 
 const OfferManagement = () => {
   const { user } = useUser();
-  const canWrite = user?.can?.("recruitment", "write");
+  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
+  const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
+  const isOperationsManager = role === "OPERATIONS_MANAGER"
+  const canWrite = user?.can?.("recruitment", "write") && !isOperationsManager;
   const [search, setSearch] = useState("");
   const [offers, setOffers] = useState(() => {
     const stored = localStorage.getItem("offers");
@@ -47,7 +50,6 @@ const OfferManagement = () => {
   return (
     <div className="space-y-6">
 
-      {/* GENERATE OFFER PAGE */}
       {isGeneratePage && !canWrite && (
         <Card>
           <CardHeader>
@@ -91,7 +93,6 @@ const OfferManagement = () => {
         </Card>
       )}
 
-      {/* OFFER DETAILS PAGE */}
       {isDetailsPage && (() => {
         const offer = offers.find(o => o.offerId === offerId);
         if (!offer) return <div className="text-muted-foreground">Offer Not Found</div>;
@@ -123,7 +124,6 @@ const OfferManagement = () => {
         );
       })()}
 
-      {/* MAIN OFFER LIST PAGE */}
       {!isGeneratePage && !isDetailsPage && (
         <>
           <div className="grid grid-cols-5 gap-4">

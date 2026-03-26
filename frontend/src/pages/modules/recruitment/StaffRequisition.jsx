@@ -16,7 +16,10 @@ import { toast } from "sonner"
 
 const StaffRequisition = () => {
   const { user } = useUser()
-  const canCreateRequisition = user?.can?.("recruitment", "write")
+  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
+  const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
+  const isOperationsManager = role === "OPERATIONS_MANAGER"
+  const canCreateRequisition = user?.can?.("recruitment", "write") && !isOperationsManager
 
   return (
     <div className="space-y-6">
@@ -298,10 +301,17 @@ const RequisitionForm = () => {
 
 const PendingRequisitions = () => {
   const { user } = useUser()
+  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
+  const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
+  const isOperationsManager = role === "OPERATIONS_MANAGER"
   const canWriteRecruitment = user?.can?.("recruitment", "write")
+  const canApproveRecruitment = canWriteRecruitment && !isOperationsManager
+  const canRecommend = canWriteRecruitment && isOperationsManager
   const [pendingRequisitions, setPendingRequisitions] = useState([]);
   const [selectedReq, setSelectedReq] = useState(null)
   const [viewOpen, setViewOpen] = useState(false)
+  const [recommendation, setRecommendation] = useState("")
+  const [savingRecommendation, setSavingRecommendation] = useState(false)
 
   const fetchPending = async () => {
     try {
@@ -335,6 +345,25 @@ const PendingRequisitions = () => {
       toast.error("Rejection failed");
     }
   };
+
+  const submitRecommendation = async () => {
+    if (!selectedReq?._id) return
+    const text = recommendation.trim()
+    if (!text) return
+
+    setSavingRecommendation(true)
+    try {
+      const updated = await apiClient.patch(`/requisitions/${selectedReq._id}/recommendations`, { text })
+      setSelectedReq(updated)
+      setRecommendation("")
+      toast.success("Recommendation saved")
+      fetchPending()
+    } catch {
+      toast.error("Failed to save recommendation")
+    } finally {
+      setSavingRecommendation(false)
+    }
+  }
 
   return (
     <Card>
@@ -397,7 +426,7 @@ const PendingRequisitions = () => {
               >
                 View
               </Button>
-            {canWriteRecruitment && (
+            {canApproveRecruitment && (
               <>
                 <Button
                   size="sm"
@@ -480,6 +509,48 @@ const PendingRequisitions = () => {
                 Created:{" "}
                 {selectedReq.createdAt ? new Date(selectedReq.createdAt).toLocaleString() : "N/A"}
               </div>
+
+              {Array.isArray(selectedReq.recommendations) && selectedReq.recommendations.length > 0 && (
+                <div className="pt-3 border-t space-y-2">
+                  <div className="text-sm font-medium">Recommendations</div>
+                  <div className="space-y-2">
+                    {selectedReq.recommendations
+                      .slice()
+                      .reverse()
+                      .slice(0, 10)
+                      .map((r, idx) => (
+                        <div key={idx} className="rounded-md border p-2">
+                          <div className="text-xs text-muted-foreground">
+                            {(r.createdByRole || "").toString()}{" "}
+                            {r.createdAt ? `· ${new Date(r.createdAt).toLocaleString()}` : ""}
+                          </div>
+                          <div className="text-sm whitespace-pre-wrap">{r.text}</div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {canRecommend && (
+                <div className="pt-3 border-t space-y-2">
+                  <div className="text-sm font-medium">Add recommendation</div>
+                  <Textarea
+                    rows={3}
+                    value={recommendation}
+                    onChange={(e) => setRecommendation(e.target.value)}
+                    placeholder="Write your operational recommendation"
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      onClick={submitRecommendation}
+                      disabled={savingRecommendation || !recommendation.trim()}
+                    >
+                      {savingRecommendation ? "Saving..." : "Save"}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-sm text-muted-foreground">No requisition selected.</div>
@@ -495,6 +566,14 @@ const RequisitionHistory = () => {
   const [history, setHistory] = useState([]);
   const [selectedReq, setSelectedReq] = useState(null)
   const [viewOpen, setViewOpen] = useState(false)
+  const { user } = useUser()
+  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
+  const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
+  const isOperationsManager = role === "OPERATIONS_MANAGER"
+  const canWriteRecruitment = user?.can?.("recruitment", "write")
+  const canRecommend = canWriteRecruitment && isOperationsManager
+  const [recommendation, setRecommendation] = useState("")
+  const [savingRecommendation, setSavingRecommendation] = useState(false)
 
   const fetchHistory = async () => {
     try {
@@ -509,6 +588,25 @@ const RequisitionHistory = () => {
   useEffect(() => {
     fetchHistory();
   }, []);
+
+  const submitRecommendation = async () => {
+    if (!selectedReq?._id) return
+    const text = recommendation.trim()
+    if (!text) return
+
+    setSavingRecommendation(true)
+    try {
+      const updated = await apiClient.patch(`/requisitions/${selectedReq._id}/recommendations`, { text })
+      setSelectedReq(updated)
+      setRecommendation("")
+      toast.success("Recommendation saved")
+      fetchHistory()
+    } catch {
+      toast.error("Failed to save recommendation")
+    } finally {
+      setSavingRecommendation(false)
+    }
+  }
 
   return (
     <Card>
@@ -607,6 +705,48 @@ const RequisitionHistory = () => {
                 Created:{" "}
                 {selectedReq.createdAt ? new Date(selectedReq.createdAt).toLocaleString() : "N/A"}
               </div>
+
+              {Array.isArray(selectedReq.recommendations) && selectedReq.recommendations.length > 0 && (
+                <div className="pt-3 border-t space-y-2">
+                  <div className="text-sm font-medium">Recommendations</div>
+                  <div className="space-y-2">
+                    {selectedReq.recommendations
+                      .slice()
+                      .reverse()
+                      .slice(0, 10)
+                      .map((r, idx) => (
+                        <div key={idx} className="rounded-md border p-2">
+                          <div className="text-xs text-muted-foreground">
+                            {(r.createdByRole || "").toString()}{" "}
+                            {r.createdAt ? `· ${new Date(r.createdAt).toLocaleString()}` : ""}
+                          </div>
+                          <div className="text-sm whitespace-pre-wrap">{r.text}</div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {canRecommend && (
+                <div className="pt-3 border-t space-y-2">
+                  <div className="text-sm font-medium">Add recommendation</div>
+                  <Textarea
+                    rows={3}
+                    value={recommendation}
+                    onChange={(e) => setRecommendation(e.target.value)}
+                    placeholder="Write your operational recommendation"
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      onClick={submitRecommendation}
+                      disabled={savingRecommendation || !recommendation.trim()}
+                    >
+                      {savingRecommendation ? "Saving..." : "Save"}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-sm text-muted-foreground">No requisition selected.</div>
