@@ -13,7 +13,6 @@ const isAdminOrSuperAdmin = (role?: string) => {
 const isHrManagerOrOfficer = (role?: string) => {
   const r = normalizeRole(role);
 
-  // Allow both DB-style (HR_MANAGER/HR_OFFICER) and any legacy compact forms.
   const compact = r.replace(/_/g, '');
   return (
     r === 'HR_MANAGER' ||

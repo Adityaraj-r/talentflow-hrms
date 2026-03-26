@@ -102,8 +102,6 @@ const RecruitmentPipeline = () => {
 
     <div className="p-6 space-y-6">
 
-      {/* Header */}
-
       <div>
         <h2 className="text-2xl font-semibold">
           Recruitment Pipeline
@@ -113,8 +111,6 @@ const RecruitmentPipeline = () => {
           Track and manage all job applications
         </p>
       </div>
-
-      {/* Stats */}
 
       <div className="grid grid-cols-5 gap-3">
 
@@ -139,8 +135,6 @@ const RecruitmentPipeline = () => {
         ))}
 
       </div>
-
-      {/* Filters */}
 
       <div className="flex items-center gap-4">
 
@@ -169,8 +163,6 @@ const RecruitmentPipeline = () => {
         </select>
 
       </div>
-
-      {/* Table */}
 
       <div className="rounded-xl border overflow-hidden">
 
