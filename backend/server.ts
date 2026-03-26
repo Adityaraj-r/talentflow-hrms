@@ -33,6 +33,7 @@ import applicationRoutes from "./routes/application.routes";
 import documentRoutes from './routes/document.routes';
 import salaryRoutes from './routes/salary.routes';
 import payrollRoutes from './routes/payroll.routes';
+import recruitmentSuggestionRoutes from './routes/recruitmentSuggestion.routes';
 
 dotenv.config();
 
@@ -121,6 +122,7 @@ app.use('/api/requisitions', requisitionRoutes);
 app.use('/api/job-openings', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/recruitment-suggestions', recruitmentSuggestionRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/leaves', leaveRoutes);

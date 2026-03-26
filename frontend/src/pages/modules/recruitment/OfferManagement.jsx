@@ -3,8 +3,14 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useUser } from "@/contexts/UserContext";
 
 const OfferManagement = () => {
+  const { user } = useUser();
+  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
+  const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
+  const isOperationsManager = role === "OPERATIONS_MANAGER"
+  const canWrite = user?.can?.("recruitment", "write") && !isOperationsManager;
   const [search, setSearch] = useState("");
   const [offers, setOffers] = useState(() => {
     const stored = localStorage.getItem("offers");
@@ -44,8 +50,18 @@ const OfferManagement = () => {
   return (
     <div className="space-y-6">
 
-      {/* GENERATE OFFER PAGE */}
-      {isGeneratePage && (
+      {isGeneratePage && !canWrite && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Generate Offer</CardTitle>
+          </CardHeader>
+          <CardContent className="text-muted-foreground">
+            View only — generating and updating offers is restricted to authorized HR roles.
+          </CardContent>
+        </Card>
+      )}
+
+      {isGeneratePage && canWrite && (
         <Card>
           <CardHeader>
             <CardTitle>Generate Offer</CardTitle>
@@ -77,7 +93,6 @@ const OfferManagement = () => {
         </Card>
       )}
 
-      {/* OFFER DETAILS PAGE */}
       {isDetailsPage && (() => {
         const offer = offers.find(o => o.offerId === offerId);
         if (!offer) return <div className="text-muted-foreground">Offer Not Found</div>;
@@ -91,7 +106,7 @@ const OfferManagement = () => {
               <div><strong>Salary:</strong> ₹{offer.salary}</div>
               <div><strong>Joining Date:</strong> {offer.joiningDate}</div>
               <div><strong>Status:</strong> {offer.status}</div>
-              {offer.status === "Offered" && (
+              {canWrite && offer.status === "Offered" && (
                 <div className="flex gap-4">
                   <Button onClick={() => handleStatusUpdate(offer.offerId, "Accepted")}>
                     Accept
@@ -109,7 +124,6 @@ const OfferManagement = () => {
         );
       })()}
 
-      {/* MAIN OFFER LIST PAGE */}
       {!isGeneratePage && !isDetailsPage && (
         <>
           <div className="grid grid-cols-5 gap-4">
@@ -151,11 +165,13 @@ const OfferManagement = () => {
                 <h3 className="text-lg font-semibold">Offer Management</h3>
                 <p className="text-sm text-muted-foreground">Track and manage all offers</p>
               </div>
-              <Link to="/dashboard/generate-offer">
-                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                  Generate Offer
-                </Button>
-              </Link>
+              {canWrite && (
+                <Link to="/dashboard/generate-offer">
+                  <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                    Generate Offer
+                  </Button>
+                </Link>
+              )}
             </CardContent>
           </Card>
 

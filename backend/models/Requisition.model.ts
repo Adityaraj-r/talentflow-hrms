@@ -41,6 +41,15 @@ const requisitionSchema = new mongoose.Schema(
     },
 
     approvalDate: Date,
+
+    recommendations: [
+      {
+        text: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now },
+        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        createdByRole: { type: String },
+      },
+    ],
   },
   { timestamps: true }
 );

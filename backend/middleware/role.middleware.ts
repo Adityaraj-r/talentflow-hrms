@@ -37,6 +37,10 @@ export type PermissionAction = 'read' | 'write' | 'delete';
 // FIXED: normalize SUPER ADMIN - previously 'Super Admin' title-case
 const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'];
 
+// FIXED: normalize SUPER ADMIN — previously 'Super Admin' title-case
+// would never match DB value 'SUPER ADMIN'
+const SUPER_ADMIN_ROLES = ['SUPER ADMIN'];
+
 const normalizeRole = (str: string | undefined): string => {
   if (!str) return '';
   // Strips spaces and underscores, ensures uppercase
@@ -71,6 +75,10 @@ export const authorizeByMatrix = (module: ModuleKey, action: PermissionAction) =
       return;
     }
 
+    // Only SUPER ADMIN bypasses the matrix. ADMIN follows DB permissions (e.g. recruitment read-only).
+    const userRole = (req.user.role?.toString() || '').toUpperCase();
+
+    if (SUPER_ADMIN_ROLES.includes(userRole)) {
     const rawUserRole = req.user.role;
     const normalizedUserRole = normalizeRole(rawUserRole);
 
@@ -108,4 +116,5 @@ export const authorizeByMatrix = (module: ModuleKey, action: PermissionAction) =
       ResponseHandler.serverError(res, 'Permission check failed');
     }
   };
+}
 };

@@ -94,12 +94,32 @@ export const PERMISSIONS = {
       staffRequisition: false,
       onboarding: true,
     },
+<<<<<<< HEAD
+    [ROLES.ADMIN]: {
+      dashboard: true,
+      recruitment: {
+        recruitmentProcess: true,
+        staffRequisition: true,
+        onboarding: true,
+      },
+      leaveManagement: false,
+      employeeTransfer: false,
+      payroll: {
+        payrollProcessing: false,
+        ticketsAndAdvances: false,
+        indemnityCalculation: false,
+      },
+      appraisal: false,
+      disciplinaryActions: false,
+      documentRequests: false,
+=======
     leaveManagement: true,
     employeeTransfer: false,
     payroll: {
       payrollProcessing: true,
       ticketsAndAdvances: true,
       indemnityCalculation: true,
+>>>>>>> e6790e6d88b5e4767c31bb10ec96fa54e93b8a44
     },
     appraisal: false,
     disciplinaryActions: true,

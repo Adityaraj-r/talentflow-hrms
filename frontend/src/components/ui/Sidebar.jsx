@@ -96,7 +96,10 @@ const Sidebar = ({
   }, [location.pathname, isCollapsed])
 
   const canSee = (moduleKey) => {
-    if (["SUPER ADMIN", "ADMIN"].includes(userRole)) return true
+    if (userRole === "SUPER ADMIN") return true
+    if (userRole === "ADMIN") {
+      return user?.permissions?.[moduleKey]?.read === true
+    }
     return dbPermissions[moduleKey]?.read !== false
   }
 
@@ -117,6 +120,7 @@ const Sidebar = ({
     if ([ROLES.HR_MANAGER, ROLES.HR_OFFICER].includes(userRole)) return "Manage Recruitment"
     if ([ROLES.CEO, ROLES.COUNTRY_MANAGER].includes(userRole)) return "View Recruitment"
     if (userRole === ROLES.DEPARTMENT_MANAGER) return "Staff Requisition"
+    if (userRole === "ADMIN") return "Recruitment & Staffing (view only)"
     return "Recruitment"
   }
 
@@ -230,18 +234,23 @@ const Sidebar = ({
 
           <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
             <SubLink to="/employee-center/all-employees" label="All Employees" />
-            <SubLink to="/dashboard/onboarding" label="Onboarding & KYC" />
+            {canSee("recruitment") && (
+              <SubLink to="/dashboard/onboarding" label="Onboarding & KYC (view)" />
+            )}
             <SubLink to="/employee-transfer" label="Transfers & Promotions" />
             <SubLink to="/digital-locker" label="Digital Locker (Docs)" />
           </SidebarGroup>
 
-          <SidebarGroup id="recruitment" icon={Briefcase} label="Recruitment & Staffing">
-            <SubLink to="/staff-requisition" label="Staff Requisition" />
-            <SubLink to="/dashboard/job-openings" label="Job Openings" />
-            <SubLink to="/dashboard/applications" label="Applications" />
-            <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
-            <SubLink to="/dashboard/offer-management" label="Offer Management" />
-          </SidebarGroup>
+          {canSee("recruitment") && (
+            <SidebarGroup id="recruitment" icon={Briefcase} label={getRecruitmentLabel()}>
+              <SubLink to="/staff-requisition" label="Staff Requisition" />
+              <SubLink to="/dashboard/job-openings" label="Job Openings" />
+              <SubLink to="/dashboard/applications" label="Applications" />
+              <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
+              <SubLink to="/dashboard/offer-management" label="Offer Management" />
+              <SubLink to="/admin/recruitment-suggestions" label="Suggest to HR Manager" />
+            </SidebarGroup>
+          )}
 
           <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
             <SubLink to="/attendance" label="Attendance Records" />
@@ -313,6 +322,7 @@ const Sidebar = ({
               <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
               <SubLink to="/dashboard/onboarding" label="Onboarding" />
               <SubLink to="/dashboard/offer-management" label="Offer Management" />
+              <SubLink to="/dashboard/recruitment-suggestions" label="Admin suggestions inbox" />
             </SidebarGroup>
           )}
 

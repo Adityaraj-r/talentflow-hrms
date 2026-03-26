@@ -8,7 +8,8 @@ const enterpriseRoles = [
     permissions: {
       dashboard: { read: true, write: true, delete: true },
       employees: { read: true, write: true, delete: true },
-      recruitment: { read: true, write: true, delete: true },
+      // Governance: full visibility, no operational recruitment actions (see Recruitment & Staffing RBAC)
+      recruitment: { read: true, write: false, delete: false },
       payroll: { read: true, write: true, delete: true },
       attendance: { read: true, write: true, delete: true },
       settings: { read: true, write: true, delete: true },
@@ -167,7 +168,18 @@ export const seedRoles = async () => {
         console.log(`🌱 Creating missing role: ${roleDef.name}`);
         await Role.create(roleDef);
       } else {
-  console.log(`ℹ️ Role already exists (skipping): ${roleDef.name}`);
+        console.log(`ℹ️ Role already exists (skipping): ${roleDef.name}`);
+        if (roleDef.name === 'ADMIN') {
+          await Role.updateOne(
+            { name: 'ADMIN' },
+            {
+              $set: {
+                'permissions.recruitment': { read: true, write: false, delete: false }
+              }
+            }
+          );
+          console.log('🔄 ADMIN recruitment permissions synced to read-only (write/delete false).');
+        }
       }
     }
     
