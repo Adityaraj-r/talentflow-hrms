@@ -39,7 +39,7 @@ const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'];
 
 // FIXED: normalize SUPER ADMIN — previously 'Super Admin' title-case
 // would never match DB value 'SUPER ADMIN'
-const SUPER_ADMIN_ROLES = ['SUPER ADMIN'];
+const SUPER_ADMIN_ROLES = ['SUPER ADMIN', 'SUPER_ADMIN'];
 
 const normalizeRole = (str: string | undefined): string => {
   if (!str) return '';

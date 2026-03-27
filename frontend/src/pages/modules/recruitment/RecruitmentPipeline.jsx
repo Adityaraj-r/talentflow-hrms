@@ -19,6 +19,18 @@ const STAGE_COLORS = {
   Rejected:"bg-red-500/15 text-red-500 border-red-500/30"
 }
 
+const normalizeStage = (status) => {
+  const s = (status || "").toString().trim().toLowerCase()
+
+  if (["applied", "screening", "new", "submitted"].includes(s)) return "Applied"
+  if (["shortlisted", "shortlist"].includes(s)) return "Shortlisted"
+  if (["interview", "interview scheduled", "interview_scheduled"].includes(s)) return "Interview"
+  if (["selected", "hired", "offer accepted", "offer_accepted"].includes(s)) return "Selected"
+  if (["rejected", "declined"].includes(s)) return "Rejected"
+
+  return "Applied"
+}
+
 const RecruitmentPipeline = () => {
   const { user } = useUser()
   const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
@@ -40,11 +52,11 @@ const RecruitmentPipeline = () => {
 
   const stageCounts = useMemo(
     () => ({
-      Applied: applications.filter(a => a.status === "Applied").length,
-      Shortlisted: applications.filter(a => a.status === "Shortlisted").length,
-      Interview: applications.filter(a => a.status === "Interview").length,
-      Selected: applications.filter(a => a.status === "Selected").length,
-      Rejected: applications.filter(a => a.status === "Rejected").length
+      Applied: applications.filter(a => normalizeStage(a.status) === "Applied").length,
+      Shortlisted: applications.filter(a => normalizeStage(a.status) === "Shortlisted").length,
+      Interview: applications.filter(a => normalizeStage(a.status) === "Interview").length,
+      Selected: applications.filter(a => normalizeStage(a.status) === "Selected").length,
+      Rejected: applications.filter(a => normalizeStage(a.status) === "Rejected").length
     }),
     [applications]
   )
@@ -90,7 +102,7 @@ const RecruitmentPipeline = () => {
       job.includes(search.toLowerCase())
 
     const matchesStage =
-      stageFilter === "All" || app.status === stageFilter
+      stageFilter === "All" || normalizeStage(app.status) === stageFilter
 
     return matchesSearch && matchesStage
 
