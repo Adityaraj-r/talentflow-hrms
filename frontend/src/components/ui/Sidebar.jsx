@@ -84,6 +84,7 @@ const Sidebar = ({
 
       recruitment:
         path.startsWith("/staff-requisition") ||
+        path.startsWith("/ceo/recruitment") ||
         path.startsWith("/dashboard/applications") ||
         path.startsWith("/dashboard/recruitment-pipeline") ||
         path.startsWith("/dashboard/job-openings") ||
@@ -456,7 +457,16 @@ const Sidebar = ({
 
           {/* RECRUITMENT ROUTE */}
           {canSee("recruitment") && (
-            <SidebarLink to="/ceo/recruitment" icon={Briefcase} label="View Recruitment" />
+            <>
+              <SidebarLink to="/ceo/recruitment" icon={Briefcase} label="View Recruitment" />
+              <SidebarGroup id="recruitment" icon={Briefcase} label="Strategic Recruitment">
+                <SubLink to="/ceo/recruitment/executive-pipeline" label="Executive Pipeline" />
+                <SubLink to="/ceo/recruitment/strategic-analytics" label="Strategic Analytics" />
+                <SubLink to="/ceo/recruitment/workforce-planning" label="Workforce Planning" />
+                <SubLink to="/ceo/recruitment/executive-approvals" label="Executive Approvals" />
+                <SubLink to="/ceo/recruitment/employer-brand-health" label="Employer Brand Health" />
+              </SidebarGroup>
+            </>
           )}
 
           <SidebarGroup id="appraisal" icon={Award} label="Performance (PMS)">

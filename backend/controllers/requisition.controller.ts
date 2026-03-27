@@ -1,6 +1,32 @@
 import Requisition from "../models/Requisition.model";
 import { Request, Response } from "express";
 
+const parseMaxSalary = (salaryRange?: string): number => {
+  if (!salaryRange) return 0;
+  const numbers = salaryRange
+    .toString()
+    .match(/\d+(?:\.\d+)?/g)
+    ?.map((n) => Number(n))
+    .filter((n) => Number.isFinite(n)) || [];
+  if (numbers.length === 0) return 0;
+  return Math.max(...numbers);
+};
+
+const isExecutivePosition = (position?: string): boolean => {
+  const text = (position || "").toLowerCase();
+  return /(chief|cxo|vp|vice president|director|head)/i.test(text);
+};
+
+const needsCeoFinalApproval = (requisition: any): boolean => {
+  const salaryThreshold = Number(process.env.CEO_REQUISITION_SALARY_THRESHOLD || 250000);
+  const maxSalary = parseMaxSalary(requisition?.salaryRange);
+  const urgency = (requisition?.urgency || "").toString().toLowerCase();
+  return maxSalary >= salaryThreshold || urgency === "high" || isExecutivePosition(requisition?.position);
+};
+
+const normalizeRole = (role?: string) =>
+  (role || "").toString().toUpperCase().replace(/\s+/g, "_");
+
 export const createRequisition = async (req: Request, res: Response) => {
   try {
     const { position, department, experience, salaryRange, reason, urgency } =
@@ -95,21 +121,33 @@ export const approveRequisition = async (
 ) => {
   try {
     const { id } = req.params;
+    const role = normalizeRole((req as any).user?.role);
+    const isCeo = role === "CEO";
 
-    const updated = await Requisition.findByIdAndUpdate(
-      id,
-      {
-        status: "Approved",
-        approvalDate: new Date(),
-      },
-      { new: true, runValidators: true }
-    );
+    const requisition = await Requisition.findById(id);
 
-    if (!updated) {
+    if (!requisition) {
       return res.status(404).json({ message: "Requisition not found" });
     }
 
-    res.json(updated);
+    const requiresCeo = needsCeoFinalApproval(requisition);
+    if (requiresCeo && !isCeo) {
+      return res.status(403).json({
+        message:
+          "Final approval required from CEO for executive/high-value requisitions",
+      });
+    }
+
+    requisition.status = "Approved";
+    requisition.approvalDate = new Date();
+    requisition.approvedBy = (req as any).user?.id;
+    requisition.finalApprovalRequired = requiresCeo;
+    requisition.finalApprovedBy = isCeo ? (req as any).user?.id : undefined;
+    requisition.finalApprovalDate = isCeo ? new Date() : undefined;
+
+    await requisition.save();
+
+    res.json(requisition);
 
   } catch (error: any) {
     res.status(500).json({ message: error.message });

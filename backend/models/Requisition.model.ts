@@ -40,6 +40,18 @@ const requisitionSchema = new mongoose.Schema(
       ref: "User",
     },
 
+    finalApprovalRequired: {
+      type: Boolean,
+      default: false,
+    },
+
+    finalApprovedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
+    finalApprovalDate: Date,
+
     approvalDate: Date,
 
     recommendations: [
