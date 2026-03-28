@@ -5,7 +5,8 @@ import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import { saveOnboardingProgress, getOnboardingDetails, getAllOnboardingEmployees } from '../controllers/onboardingController';
 import dotenv from 'dotenv';
 dotenv.config();
-import { protect, authorize } from '../middleware/auth.middleware';
+import { protect } from '../middleware/auth.middleware';
+import { authorizeByMatrix, MODULE_KEYS } from '../middleware/role.middleware';
 
 const router: Router = express.Router();
 
@@ -18,19 +19,18 @@ cloudinary.config({
 
 // 2. Set up the Cloud Engine instead of local disk
 const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: async (req, file) => {
-    // Extract email prefix for cleaner file names (e.g., 'karan' from 'karan@gmail.com')
-    const emailPrefix = req.body.email ? req.body.email.split('@')[0] : 'unknown';
-    
-    return {
-      folder: 'hrms_onboarding', // This creates a neat folder in your Cloudinary account
-      resource_type: 'auto',     // CRUCIAL: 'auto' allows it to accept both Images AND PDFs
-      allowed_formats: ['jpeg', 'jpg', 'png', 'pdf'],
-      public_id: `${emailPrefix}-${file.fieldname}-${Date.now()}`,
-    };
-  },
-});
+      cloudinary: cloudinary,
+      params: async (req, file) => {
+        const emailPrefix = req.body.email ? req.body.email.split('@')[0].toLowerCase() : 'unknown_candidate';
+        
+        return {
+          folder: `hrms_onboarding/${emailPrefix}`, 
+          resource_type: 'auto',     
+          allowed_formats: ['jpeg', 'jpg', 'png', 'pdf'],
+          public_id: `${emailPrefix}-${file.fieldname}-${Date.now()}`,
+        };
+      },
+    });
 
 const upload = multer({ 
     storage: storage,
@@ -38,7 +38,6 @@ const upload = multer({
 });
 
 router.use(protect);
-router.use(authorize('ADMIN', 'Admin', 'Super Admin'));
 
 router.post(
     '/save', 
@@ -50,10 +49,11 @@ router.post(
         { name: 'passportPhoto', maxCount: 1 },  
         { name: 'relievingLetter', maxCount: 1 }
     ]), 
+    authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'write') as any,
     saveOnboardingProgress
 );
 
-router.get('/list/all', getAllOnboardingEmployees);
-router.get('/:email', getOnboardingDetails);
+router.get('/list/all', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read') as any, getAllOnboardingEmployees);
+router.get('/:email', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read') as any, getOnboardingDetails);
 
 export default router;

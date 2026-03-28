@@ -21,6 +21,43 @@ export const createRequisition = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to create requisition" });
   }
 };
+
+export const addRequisitionRecommendation = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const text = (req.body?.text || "").toString().trim();
+
+    if (!text) {
+      return res.status(400).json({ message: "Recommendation text is required" });
+    }
+
+    const userId = (req as any).user?.id;
+    const role = ((req as any).user?.role || "").toString();
+
+    const updated = await Requisition.findByIdAndUpdate(
+      id,
+      {
+        $push: {
+          recommendations: {
+            text,
+            createdBy: userId,
+            createdByRole: role,
+            createdAt: new Date(),
+          },
+        },
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Requisition not found" });
+    }
+
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to add recommendation" });
+  }
+};
 export const getPendingRequisitions = async (
   req: Request,
   res: Response
@@ -59,8 +96,6 @@ export const approveRequisition = async (
   try {
     const { id } = req.params;
 
-    console.log("Received ID:", id);
-
     const updated = await Requisition.findByIdAndUpdate(
       id,
       {
@@ -71,17 +106,12 @@ export const approveRequisition = async (
     );
 
     if (!updated) {
-      console.log("No document found with this ID");
       return res.status(404).json({ message: "Requisition not found" });
     }
-
-    console.log("Updated Document:", updated);
 
     res.json(updated);
 
   } catch (error: any) {
-    console.error(" REAL ERROR:", error.message);
-    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };

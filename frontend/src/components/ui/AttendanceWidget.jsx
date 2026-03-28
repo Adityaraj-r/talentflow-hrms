@@ -16,7 +16,7 @@ const isSameDay = (d1, d2) => {
 
 const AttendanceWidget = ({ employeeName }) => {
   const [attendanceState, setAttendanceState] = useState("NOT_STARTED"); 
-  const [checkInTime, setCheckInTime] = useState(null);
+  const [clockInTime, setClockInTime] = useState(null);
   
   const [totalBreakMs, setTotalBreakMs] = useState(0);
   const [activeBreakStart, setActiveBreakStart] = useState(null);
@@ -24,6 +24,7 @@ const AttendanceWidget = ({ employeeName }) => {
   const [workDuration, setWorkDuration] = useState("00:00:00");
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(false);
+  const [locationText, setLocationText] = useState("Awaiting location...");
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -36,10 +37,10 @@ const AttendanceWidget = ({ employeeName }) => {
       return;
     }
     
-    const state = record.state || (record.checkOut ? "CHECKED_OUT" : "CHECKED_IN");
+    const state = record.state || (record.clockOut ? "CHECKED_OUT" : "CHECKED_IN");
     setAttendanceState(state);
     
-    if (record.checkIn) setCheckInTime(new Date(record.checkIn));
+    if (record.clockIn) setClockInTime(new Date(record.clockIn));
     
     const pastBreaksMs = (record.totalBreakMinutes || 0) * 60000;
     setTotalBreakMs(pastBreaksMs);
@@ -59,12 +60,16 @@ const AttendanceWidget = ({ employeeName }) => {
       try {
         setLoading(true);
         const res = await attendanceService.getMyAttendance();
-        const records = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.data?.data) ? res.data.data : []);
+        
+        let records = [];
+        if (Array.isArray(res)) records = res;
+        else if (res?.success && Array.isArray(res?.data)) records = res.data;
+        else if (res?.data && Array.isArray(res?.data?.data)) records = res.data.data;
         
         if (records.length > 0) {
           const today = new Date();
           const todayRecord = records.find((record) => 
-            isSameDay(new Date(record.date), today)
+            record.date && isSameDay(new Date(record.date), today)
           );
 
           if (todayRecord) {
@@ -74,7 +79,7 @@ const AttendanceWidget = ({ employeeName }) => {
           }
         }
       } catch (err) {
-        console.error("Failed to sync attendance status:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -94,84 +99,113 @@ const AttendanceWidget = ({ employeeName }) => {
       setWorkDuration(`${h}:${m}:${s}`);
     };
 
-    if (attendanceState === "CHECKED_IN" && checkInTime) {
+    if (attendanceState === "CHECKED_IN" && clockInTime) {
       const updateTimer = () => {
-        const diff = new Date() - checkInTime - totalBreakMs;
+        const diff = new Date() - clockInTime - totalBreakMs;
         formatAndSet(diff);
       };
       updateTimer(); 
       interval = setInterval(updateTimer, 1000);
-    } else if (attendanceState === "ON_BREAK" && checkInTime && activeBreakStart) {
-      const diff = activeBreakStart - checkInTime - totalBreakMs;
+    } else if (attendanceState === "ON_BREAK" && clockInTime && activeBreakStart) {
+      const diff = activeBreakStart - clockInTime - totalBreakMs;
       formatAndSet(diff);
     }
 
     return () => clearInterval(interval);
-  }, [attendanceState, checkInTime, totalBreakMs, activeBreakStart]);
+  }, [attendanceState, clockInTime, totalBreakMs, activeBreakStart]);
 
-  const handleAction = async (actionFn, successMessage) => {
+  const handleAction = async (actionFn, payload = null, successMessage) => {
     try {
       setLoading(true);
-      const res = await actionFn();
-      const updatedRecord = res?.data?.data || res?.data; 
+      const res = payload ? await actionFn(payload) : await actionFn();
+      const updatedRecord = res?.data || res; 
       
       if (updatedRecord) {
         processAttendanceRecord(updatedRecord);
         toast.success(successMessage);
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || "Action failed");
-      console.error(err);
+      toast.error(err.message || "Action failed");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleClockIn = () => {
+    setLoading(true);
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      setLoading(false);
+      return;
+    }
+
+    setLocationText("Fetching GPS location...");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setLocationText(`GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        handleAction(
+          attendanceService.clockIn,
+          { latitude, longitude },
+          "Clocked in successfully!"
+        );
+      },
+      (error) => {
+        setLocationText("Location access denied");
+        toast.error("Location access denied. Please enable GPS to clock in.");
+        setLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
   const renderButtons = () => {
-    if (loading) return <Button disabled className="w-full h-12">Syncing...</Button>;
+    if (loading) return <Button disabled className="w-full h-12">Processing...</Button>;
 
     switch (attendanceState) {
       case "NOT_STARTED":
         return (
           <Button 
-            className="w-full h-12 text-lg bg-blue-600 hover:bg-blue-700" 
-            onClick={() => handleAction(attendanceService.clockIn, "Clocked in successfully!")}
+            className="w-full h-auto min-h-[3rem] py-2 px-4 text-base sm:text-lg bg-blue-600 hover:bg-blue-700 whitespace-normal flex items-center justify-center leading-snug" 
+            onClick={handleClockIn}
           >
-            <LogIn className="mr-2 h-5 w-5" /> Clock In
+            <LogIn className="mr-2 h-5 w-5 shrink-0" /> Clock In
           </Button>
         );
       case "CHECKED_IN":
         return (
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Button 
               variant="outline" 
-              className="flex-1 h-12 text-orange-600 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-900/20" 
-              onClick={() => handleAction(attendanceService.startBreak, "Break started. Timer paused!")}
+              className="flex-1 h-auto min-h-[3rem] py-2 px-3 text-sm sm:text-base text-orange-600 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-900/20 whitespace-normal flex items-center justify-center leading-snug" 
+              onClick={() => handleAction(attendanceService.startBreak, null, "Break started. Timer paused!")}
             >
-              <Coffee className="mr-2 h-4 w-4" /> Start Break
+              <Coffee className="mr-2 h-4 w-4 shrink-0" /> Start Break
             </Button>
             <Button 
               variant="destructive" 
-              className="flex-1 h-12" 
-              onClick={() => handleAction(attendanceService.clockOut, "Clocked out successfully")}
+              className="flex-1 h-auto min-h-[3rem] py-2 px-3 text-sm sm:text-base whitespace-normal flex items-center justify-center leading-snug" 
+              onClick={() => handleAction(attendanceService.clockOut, null, "Clocked out successfully")}
             >
-              <LogOut className="mr-2 h-4 w-4" /> Clock Out
+              <LogOut className="mr-2 h-4 w-4 shrink-0" /> Clock Out
             </Button>
           </div>
         );
       case "ON_BREAK":
         return (
           <Button 
-            className="w-full h-12 text-lg bg-orange-500 hover:bg-orange-600 text-white shadow-lg animate-pulse" 
-            onClick={() => handleAction(attendanceService.endBreak, "Break ended, welcome back!")}
+            className="w-full h-auto min-h-[3rem] py-3 px-4 text-base sm:text-lg bg-orange-500 hover:bg-orange-600 text-white shadow-lg animate-pulse whitespace-normal flex flex-wrap items-center justify-center text-center leading-snug" 
+            onClick={() => handleAction(attendanceService.endBreak, null, "Break ended, welcome back!")}
           >
-            <Play className="mr-2 h-5 w-5" /> End Break & Resume Work
+            <Play className="mr-2 h-5 w-5 shrink-0" /> 
+            <span>End Break & Resume Work</span>
           </Button>
         );
       case "CHECKED_OUT":
       case "AUTO_CLOSED":
         return (
-          <div className="w-full h-12 flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-md font-medium">
+          <div className="w-full min-h-[3rem] py-2 px-4 flex flex-wrap items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-md font-medium text-center leading-snug">
             Shift Completed for Today
           </div>
         );
@@ -192,46 +226,46 @@ const AttendanceWidget = ({ employeeName }) => {
   const badge = getBadgeDetails();
 
   return (
-    <Card className={`shadow-md transition-colors duration-300 border-t-4 ${attendanceState === 'ON_BREAK' ? 'border-t-orange-500' : 'border-t-blue-600'}`}>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Clock className="h-5 w-5 text-blue-600" />
-            Daily Attendance
+    <Card className={`shadow-md transition-colors duration-300 border-t-4 w-full ${attendanceState === 'ON_BREAK' ? 'border-t-orange-500' : 'border-t-blue-600'}`}>
+      <CardHeader className="pb-2 px-4 sm:px-6">
+        <div className="flex flex-wrap gap-2 justify-between items-start sm:items-center">
+          <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2">
+            <Clock className="h-5 w-5 text-blue-600 shrink-0" />
+            <span className="truncate">Daily Attendance</span>
           </CardTitle>
-          <Badge className={badge.color} variant="outline">
+          <Badge className={`${badge.color} whitespace-nowrap shrink-0`} variant="outline">
             {badge.text}
           </Badge>
         </div>
       </CardHeader>
       
-      <CardContent>
-        <div className="text-center py-6 bg-muted/20 rounded-xl mb-6">
-          <h2 className="text-4xl font-bold">
+      <CardContent className="px-4 sm:px-6">
+        <div className="text-center py-4 sm:py-6 bg-muted/20 rounded-xl mb-4 sm:mb-6">
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
             {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 px-2">
             {currentTime.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" })}
           </p>
         </div>
 
         {(attendanceState === "CHECKED_IN" || attendanceState === "ON_BREAK") && (
-          <div className={`flex justify-center items-center gap-2 font-mono text-2xl font-bold py-3 rounded-lg mb-4 transition-all ${
+          <div className={`flex flex-wrap justify-center items-center gap-2 font-mono text-xl sm:text-2xl font-bold py-3 px-2 rounded-lg mb-4 transition-all ${
             attendanceState === "ON_BREAK" 
               ? "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" 
               : "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
           }`}>
-            <Timer className="h-6 w-6" />
-            {workDuration}
-            {attendanceState === "ON_BREAK" && <span className="text-sm ml-2 opacity-70">(Paused)</span>}
+            <Timer className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" />
+            <span>{workDuration}</span>
+            {attendanceState === "ON_BREAK" && <span className="text-xs sm:text-sm ml-1 opacity-70 whitespace-nowrap">(Paused)</span>}
           </div>
         )}
 
         {renderButtons()}
         
-        <div className="mt-4 flex items-center justify-center text-xs text-muted-foreground gap-1">
-          <MapPin className="h-3 w-3" />
-          <span>Location: Detected (IP: 192.168.1.1)</span>
+        <div className="mt-4 flex items-center justify-center text-xs text-muted-foreground gap-1.5 w-full">
+          <MapPin className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate" title={locationText}>Location: {locationText}</span>
         </div>
       </CardContent>
     </Card>

@@ -13,7 +13,10 @@ import {
   Briefcase,
   AlertCircle,
   Users,
-  Timer
+  Timer,
+  Pencil,
+  X,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,11 +34,9 @@ const TimeSelect = ({ value, name, onChange }) => {
   const updateTime = (newH12, newM, newAmpm) => {
     if (!newH12) newH12 = "09";
     if (!newM) newM = "00";
-
     let h24 = parseInt(newH12, 10);
     if (newAmpm === "PM" && h24 !== 12) h24 += 12;
     if (newAmpm === "AM" && h24 === 12) h24 = 0;
-
     const out = `${h24.toString().padStart(2, "0")}:${newM}`;
     onChange({ target: { name, value: out } });
   };
@@ -48,10 +49,11 @@ const TimeSelect = ({ value, name, onChange }) => {
           value={h12}
           onChange={(e) => updateTime(e.target.value, m || "00", ampm)}
           className="bg-transparent hover:bg-muted focus:bg-muted focus:outline-none appearance-none cursor-pointer text-center w-10 py-1 rounded-sm transition-colors font-medium"
-          required
         >
           <option value="" disabled>HH</option>
-          {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map(h => <option key={h} value={h}>{h}</option>)}
+          {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map((h) => (
+            <option key={h} value={h}>{h}</option>
+          ))}
         </select>
 
         <span className="font-bold text-muted-foreground mb-0.5">:</span>
@@ -60,10 +62,11 @@ const TimeSelect = ({ value, name, onChange }) => {
           value={m}
           onChange={(e) => updateTime(h12 || "09", e.target.value, ampm)}
           className="bg-transparent hover:bg-muted focus:bg-muted focus:outline-none appearance-none cursor-pointer text-center w-10 py-1 rounded-sm transition-colors font-medium"
-          required
         >
           <option value="" disabled>MM</option>
-          {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map(min => <option key={min} value={min}>{min}</option>)}
+          {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map((min) => (
+            <option key={min} value={min}>{min}</option>
+          ))}
         </select>
 
         <div className="h-4 w-px bg-border mx-1"></div>
@@ -90,25 +93,23 @@ const ShiftManagement = () => {
     name: "",
     startTime: "",
     endTime: "",
-    lateBuffer: 15
+    graceMinutes: 15,
   });
+
+  const [editingId, setEditingId] = useState(null);
+  const [editData, setEditData] = useState({});
+  const [editLoading, setEditLoading] = useState(false);
 
   const fetchShifts = async () => {
     try {
       setLoading(true);
       const res = await shiftService.getAllShifts();
-
-      if (res?.data?.success && Array.isArray(res.data.data)) {
-        setShifts(res.data.data);
-      } else if (res?.success && Array.isArray(res.data)) {
+      if (res?.success && Array.isArray(res.data)) {
         setShifts(res.data);
-      } else if (Array.isArray(res)) {
-        setShifts(res);
       } else {
         setShifts([]);
       }
     } catch (error) {
-      console.error("Error fetching shifts:", error);
       toast.error("Failed to load shifts");
     } finally {
       setLoading(false);
@@ -127,11 +128,10 @@ const ShiftManagement = () => {
     e.preventDefault();
     try {
       await shiftService.createShift(formData);
-      setFormData({ name: "", startTime: "", endTime: "", lateBuffer: 15 });
+      setFormData({ name: "", startTime: "", endTime: "", graceMinutes: 15 });
       toast.success("Shift created successfully");
       fetchShifts();
     } catch (error) {
-      console.error("Error adding shift:", error);
       toast.error(error.response?.data?.message || "Failed to add shift");
     }
   };
@@ -143,9 +143,55 @@ const ShiftManagement = () => {
         toast.success("Shift deleted");
         fetchShifts();
       } catch (error) {
-        console.error("Delete failed", error);
         toast.error("Failed to delete shift");
       }
+    }
+  };
+
+  const handleEditStart = (shift) => {
+    setEditingId(shift._id);
+    setEditData({
+      name: shift.name,
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+      graceMinutes: shift.graceMinutes,
+    });
+  };
+
+  const handleEditChange = (e) => {
+    setEditData({ ...editData, [e.target.name]: e.target.value });
+  };
+
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditData({});
+  };
+
+  const handleEditSave = async (id) => {
+    if (!editData.name?.trim()) {
+      toast.error("Shift name is required.");
+      return;
+    }
+    if (!editData.startTime || !editData.endTime) {
+      toast.error("Start time and end time are required.");
+      return;
+    }
+    try {
+      setEditLoading(true);
+      await shiftService.updateShift(id, {
+        name: editData.name.trim(),
+        startTime: editData.startTime,
+        endTime: editData.endTime,
+        graceMinutes: Number(editData.graceMinutes),
+      });
+      toast.success("Shift updated successfully");
+      setEditingId(null);
+      setEditData({});
+      fetchShifts();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update shift");
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -153,18 +199,17 @@ const ShiftManagement = () => {
     if (!time24) return "--";
     const [hourString, minute] = time24.split(":");
     let hour = parseInt(hourString, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const ampm = hour >= 12 ? "PM" : "AM";
     hour = hour % 12;
     hour = hour ? hour : 12;
-    const paddedHour = hour.toString().padStart(2, '0');
-    return `${paddedHour}:${minute} ${ampm}`;
+    return `${hour.toString().padStart(2, "0")}:${minute} ${ampm}`;
   };
 
   const getDuration = (start, end) => {
     if (!start || !end) return "--";
     const [sH, sM] = start.split(":").map(Number);
     const [eH, eM] = end.split(":").map(Number);
-    let diff = (eH * 60 + eM) - (sH * 60 + sM);
+    let diff = eH * 60 + eM - (sH * 60 + sM);
     if (diff < 0) diff += 1440;
     const h = Math.floor(diff / 60);
     return `${h} Hours`;
@@ -175,9 +220,10 @@ const ShiftManagement = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Shift Management</h1>
-          <p className="text-muted-foreground">Define working hours and late mark rules for your employees.</p>
+          <p className="text-muted-foreground">
+            Define working hours and late mark rules for your employees.
+          </p>
         </div>
-
         <Button
           onClick={() => setIsAssignModalOpen(true)}
           className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
@@ -187,7 +233,6 @@ const ShiftManagement = () => {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
-
         <div className="lg:col-span-1">
           <Card className="sticky top-6 border-slate-200 dark:border-slate-800">
             <CardHeader>
@@ -199,7 +244,6 @@ const ShiftManagement = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
-
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Shift Name</label>
                   <div className="relative">
@@ -219,32 +263,25 @@ const ShiftManagement = () => {
                 <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Start Time</label>
-                    <TimeSelect
-                      name="startTime"
-                      value={formData.startTime}
-                      onChange={handleChange}
-                    />
+                    <TimeSelect name="startTime" value={formData.startTime} onChange={handleChange} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">End Time</label>
-                    <TimeSelect
-                      name="endTime"
-                      value={formData.endTime}
-                      onChange={handleChange}
-                    />
+                    <TimeSelect name="endTime" value={formData.endTime} onChange={handleChange} />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center justify-between">
-                    Late Buffer (Minutes)
+                    Grace Minutes
                     <AlertCircle className="h-4 w-4 text-muted-foreground" />
                   </label>
                   <input
                     type="number"
-                    name="lateBuffer"
+                    name="graceMinutes"
                     min="0"
-                    value={formData.lateBuffer}
+                    max="120"
+                    value={formData.graceMinutes}
                     onChange={handleChange}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 shadow-sm"
                   />
@@ -254,7 +291,6 @@ const ShiftManagement = () => {
                 <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-2">
                   Create Shift
                 </Button>
-
               </form>
             </CardContent>
           </Card>
@@ -279,47 +315,152 @@ const ShiftManagement = () => {
                 No shifts found. Create one to get started.
               </div>
             ) : (
-              shifts.map((shift) => (
-                <Card key={shift._id} className="border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
-                  <CardHeader className="flex flex-row items-start justify-between pb-2">
-                    <div>
-                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                        {shift.name}
-                        {shift.isActive && <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 text-[10px] px-2 py-0">Active</Badge>}
+              shifts.map((shift) =>
+                editingId === shift._id ? (
+                  <Card
+                    key={shift._id}
+                    className="border-blue-300 dark:border-blue-700 shadow-sm bg-blue-50/30 dark:bg-blue-900/10"
+                  >
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                        <Pencil className="h-4 w-4" /> Editing Shift
                       </CardTitle>
-                      <CardDescription className="mt-1 font-mono text-xs">
-                        {formatTime12Hour(shift.startTime)} - {formatTime12Hour(shift.endTime)}
-                      </CardDescription>
-                    </div>
-                    <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-full text-blue-600 dark:text-blue-400">
-                      <Clock className="h-5 w-5" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-3 mt-2">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary/50 p-2 rounded-md">
-                        <Shield className="h-4 w-4 text-orange-500" />
-                        <span>Buffer: <b className="text-foreground">{shift.lateBuffer}m</b></span>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">Shift Name</label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={editData.name}
+                          onChange={handleEditChange}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        />
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary/50 p-2 rounded-md">
-                        <Timer className="h-4 w-4 text-indigo-500" />
-                        <span>{getDuration(shift.startTime, shift.endTime)}</span>
-                      </div>
-                    </div>
 
-                    <div className="mt-4 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(shift._id)}
-                        className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-8"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">Start Time</label>
+                        <TimeSelect
+                          name="startTime"
+                          value={editData.startTime}
+                          onChange={handleEditChange}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">End Time</label>
+                        <TimeSelect
+                          name="endTime"
+                          value={editData.endTime}
+                          onChange={handleEditChange}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground flex items-center justify-between">
+                          Grace Period (minutes)
+                          <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                            {editData.graceMinutes}m
+                          </span>
+                        </label>
+                        <input
+                          type="range"
+                          name="graceMinutes"
+                          min="0"
+                          max="60"
+                          step="5"
+                          value={editData.graceMinutes}
+                          onChange={handleEditChange}
+                          className="w-full accent-blue-600"
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>0m</span>
+                          <span>30m</span>
+                          <span>60m</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          onClick={() => handleEditSave(shift._id)}
+                          disabled={editLoading}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs"
+                        >
+                          <Check className="h-3.5 w-3.5 mr-1" />
+                          {editLoading ? "Saving..." : "Save"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleEditCancel}
+                          disabled={editLoading}
+                          className="flex-1 h-8 text-xs"
+                        >
+                          <X className="h-3.5 w-3.5 mr-1" /> Cancel
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card
+                    key={shift._id}
+                    className="border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
+                  >
+                    <CardHeader className="flex flex-row items-start justify-between pb-2">
+                      <div>
+                        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                          {shift.name}
+                          {shift.isActive && (
+                            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 text-[10px] px-2 py-0">
+                              Active
+                            </Badge>
+                          )}
+                        </CardTitle>
+                        <CardDescription className="mt-1 font-mono text-xs">
+                          {formatTime12Hour(shift.startTime)} - {formatTime12Hour(shift.endTime)}
+                        </CardDescription>
+                      </div>
+                      <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-full text-blue-600 dark:text-blue-400">
+                        <Clock className="h-5 w-5" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-3 mt-2">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary/50 p-2 rounded-md">
+                          <Shield className="h-4 w-4 text-orange-500" />
+                          <span>
+                            Buffer: <b className="text-foreground">{shift.graceMinutes}m</b>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary/50 p-2 rounded-md">
+                          <Timer className="h-4 w-4 text-indigo-500" />
+                          <span>{getDuration(shift.startTime, shift.endTime)}</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditStart(shift)}
+                          className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 h-8"
+                        >
+                          <Pencil className="h-4 w-4 mr-2" /> Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(shift._id)}
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-8"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" /> Delete
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              )
             )}
           </div>
         </div>
@@ -332,6 +473,6 @@ const ShiftManagement = () => {
       />
     </div>
   );
-}
+};
 
 export default ShiftManagement;

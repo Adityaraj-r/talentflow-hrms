@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils"
 import { useEffect, useState,useRef } from "react"
-import axios from "axios"
+import apiClient from "@/services/apiClient";
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import {
   Bell,
@@ -39,7 +39,7 @@ const Header = ({ toggleSidebar }) => {
   const { theme, toggleTheme } = useTheme()
   const [notifications, setNotifications] = useState([])
 
-  // --- OMNIBAR SEARCH STATE ---
+  //  OMNIBAR SEARCH STATE 
   const [searchQuery, setSearchQuery] = useState('')
   const [results, setResults] = useState({ modules: [], users: [] })
   const [isSearching, setIsSearching] = useState(false)
@@ -89,21 +89,15 @@ const Header = ({ toggleSidebar }) => {
       try {
         const queryLower = searchQuery.toLowerCase();
         
-        // A. Search Static App Modules locally
         const matchedModules = APP_MODULES.filter(mod => 
           mod.title.toLowerCase().includes(queryLower)
         );
 
-        // B. Search Employees via Backend API
-        const token = localStorage.getItem('token')
-        const response = await axios.get(`http://localhost:5001/api/admin/users?search=${searchQuery}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        const response = await apiClient.get(`/admin/users?search=${searchQuery}`)
         
-        // C. Combine results!
         setResults({
-          modules: matchedModules.slice(0, 3), // Show top 3 matching pages
-          users: response.data.data.slice(0, 4) // Show top 4 matching employees
+          modules: matchedModules.slice(0, 3), 
+          users: response.data.slice(0, 4)
         }) 
         setShowDropdown(true)
       } catch (error) {
@@ -148,9 +142,8 @@ const Header = ({ toggleSidebar }) => {
       
       if (firstName) {
         try {
-          const res = await axios.get(`http://localhost:5001/api/transfers/all`)
-          
-          const myTransfers = res.data.filter((t) => t.employeeName && t.employeeName.includes(firstName))
+          const res = await apiClient.get(`/transfers/all`)
+          const myTransfers = res.filter((t) => t.employeeName && t.employeeName.includes(firstName))
           const latest = myTransfers[0]
           
           if (latest && (latest.status === "Approved" || latest.status === "Rejected")) {
@@ -216,7 +209,7 @@ const Header = ({ toggleSidebar }) => {
         <h1 className="text-lg font-bold text-foreground">HRMS System</h1>
       </div>
 
-      {/* --- OMNIBAR SEARCH UI (CONDITIONALLY RENDERED) --- */}
+      {/*  OMNIBAR SEARCH UI (CONDITIONALLY RENDERED) */}
       {canUseSearch && (
         <div className="hidden md:flex flex-1 max-w-md mx-6 relative" ref={searchRef}>
           <div className="relative w-full">

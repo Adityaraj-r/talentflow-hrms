@@ -1,9 +1,18 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthRequest } from '../middleware/auth.middleware'; 
 import Transfer from '../models/Transfer.model';
+import Employee from '../models/Employee.model';
 
-export const createTransferRequest = async (req: Request, res: Response) => {
+// Create Transfer Request
+export const createTransferRequest = async (req: AuthRequest, res: Response) => {
     try {
-        const transferData = new Transfer(req.body);
+        const transferData = new Transfer({
+            ...req.body,
+            initiatedBy: req.user?.id,
+            employeeEmail: req.user?.email,
+            status: 'Pending' 
+        });
+
         const savedTransfer = await transferData.save();
         
         res.status(201).json({
@@ -20,23 +29,52 @@ export const createTransferRequest = async (req: Request, res: Response) => {
     }
 };
 
-export const getAllTransfers = async (req: Request, res: Response) => {
+// Get Transfer Request
+export const getAllTransfers = async (req: AuthRequest, res: Response) => {
     try {
-        const transfers = await Transfer.find().sort({ createdAt: -1 });
+        let query = {};
+        
+        if (req.user?.role !== 'ADMIN' && req.user?.role !== 'HR_MANAGER') {
+            const emp = await Employee.findOne({ email: req.user?.email });
+            
+            query = { 
+                $or: [
+                    { initiatedBy: req.user?.id }, 
+                    { employeeEmail: req.user?.email },
+                    { employeeId: emp?.employeeCode } 
+                ] 
+            };
+        }
+
+        const transfers = await Transfer.find(query).sort({ createdAt: -1 });
         res.status(200).json(transfers);
     } catch (error: any) {
         res.status(500).json({ message: "Error fetching transfers", error: error.message });
     }
 };
 
-export const updateTransferStatus = async (req: Request, res: Response) => {
+// Update Transfer Request
+export const updateTransferStatus = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const { status, adminRemarks } = req.body;
 
     try {
+        const allowedRoles = ['ADMIN', 'Admin', 'Super Admin', 'CEO'];
+        
+        if (!req.user || !allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({ 
+                message: `Access Denied. Current role: ${req.user?.role || 'Undefined'}. Admin approval required.` 
+            });
+        }
+
         const updatedTransfer = await Transfer.findByIdAndUpdate(
             id,
-            { status, adminRemarks },
+            { 
+                status, 
+                adminRemarks,
+                actionedBy: req.user?.id,
+                actionedAt: new Date()
+            },
             { new: true }
         );
 
@@ -54,15 +92,17 @@ export const updateTransferStatus = async (req: Request, res: Response) => {
     }
 };
 
-export const getEmployeeLatestTransfer = async (req: Request, res: Response) => {
+// Get Employee Transfer Request
+export const getEmployeeLatestTransfer = async (req: AuthRequest, res: Response) => {
     try {
-        const { email } = req.params;
-        const latestTransfer = await Transfer.findOne({ 
-            employeeName: req.query.name 
-        }).sort({ createdAt: -1 });
+        const { employeeId } = req.params; 
         
+        const latestTransfer = await Transfer.findOne({ 
+            employeeId: employeeId       
+        }).sort({ createdAt: -1 });
+
         res.status(200).json(latestTransfer);
     } catch (error: any) {
-        res.status(500).json({ message: "Error fetching status", error: error.message });
+        res.status(500).json({ message: "Error fetching latest transfer", error: error.message });
     }
 };

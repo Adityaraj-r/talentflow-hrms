@@ -1,8 +1,8 @@
 "use client"
 
 import { useState,useEffect  } from "react"
-import { useAuth } from "@/contexts/AuthContext"
-import { useRole } from "@/contexts/RoleContext"
+import { useUser } from "@/contexts/UserContext"
+import apiClient from "@/services/apiClient"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -10,13 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { FileText, Check, X, Search } from "lucide-react"
 import { toast } from "sonner"
 
 const StaffRequisition = () => {
-  const { user } = useAuth()
-  const { hasRole } = useRole()
-  const canCreateRequisition = hasRole(["CEO", "Country Manager", "HR Manager", "Department Manager"])
+  const { user } = useUser()
+  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
+  const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
+  const isOperationsManager = role === "OPERATIONS_MANAGER"
+  const canCreateRequisition = user?.can?.("recruitment", "write") && !isOperationsManager
 
   return (
     <div className="space-y-6">
@@ -90,19 +93,13 @@ const RequisitionForm = () => {
 
   setIsSubmitting(true);
   try {
-    await fetch("http://localhost:5001/api/requisitions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        position: formData.position,
-        department: formData.department,
-        experience: formData.jobType,
-        salaryRange: `${formData.minSalary}-${formData.maxSalary}`,
-        reason: formData.reason,
-        urgency: formData.urgency,
-      }),
+    await apiClient.post("/requisitions", {
+      position: formData.position,
+      department: formData.department,
+      experience: formData.jobType,
+      salaryRange: `${formData.minSalary}-${formData.maxSalary}`,
+      reason: formData.reason,
+      urgency: formData.urgency,
     });
 
     toast.success("Requisition submitted successfully");
@@ -303,13 +300,23 @@ const RequisitionForm = () => {
 }
 
 const PendingRequisitions = () => {
+  const { user } = useUser()
+  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
+  const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
+  const isOperationsManager = role === "OPERATIONS_MANAGER"
+  const canWriteRecruitment = user?.can?.("recruitment", "write")
+  const canApproveRecruitment = canWriteRecruitment && !isOperationsManager
+  const canRecommend = canWriteRecruitment && isOperationsManager
   const [pendingRequisitions, setPendingRequisitions] = useState([]);
+  const [selectedReq, setSelectedReq] = useState(null)
+  const [viewOpen, setViewOpen] = useState(false)
+  const [recommendation, setRecommendation] = useState("")
+  const [savingRecommendation, setSavingRecommendation] = useState(false)
 
   const fetchPending = async () => {
     try {
-      const res = await fetch("http://localhost:5001/api/requisitions/pending");
-      const data = await res.json();
-      setPendingRequisitions(data);
+      const data = await apiClient.get("/requisitions/pending");
+      setPendingRequisitions(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
     }
@@ -321,11 +328,7 @@ const PendingRequisitions = () => {
 
   const handleApprove = async (id) => {
     try {
-      await fetch(
-        `http://localhost:5001/api/requisitions/${id}/approve`,
-        { method: "PUT" }
-      );
-
+      await apiClient.put(`/requisitions/${id}/approve`);
       toast.success("Requisition approved successfully");
       fetchPending();
     } catch {
@@ -335,17 +338,32 @@ const PendingRequisitions = () => {
 
   const handleReject = async (id) => {
     try {
-      await fetch(
-        `http://localhost:5001/api/requisitions/${id}/reject`,
-        { method: "PUT" }
-      );
-
+      await apiClient.put(`/requisitions/${id}/reject`);
       toast.success("Requisition rejected successfully");
       fetchPending();
     } catch {
       toast.error("Rejection failed");
     }
   };
+
+  const submitRecommendation = async () => {
+    if (!selectedReq?._id) return
+    const text = recommendation.trim()
+    if (!text) return
+
+    setSavingRecommendation(true)
+    try {
+      const updated = await apiClient.patch(`/requisitions/${selectedReq._id}/recommendations`, { text })
+      setSelectedReq(updated)
+      setRecommendation("")
+      toast.success("Recommendation saved")
+      fetchPending()
+    } catch {
+      toast.error("Failed to save recommendation")
+    } finally {
+      setSavingRecommendation(false)
+    }
+  }
 
   return (
     <Card>
@@ -354,7 +372,9 @@ const PendingRequisitions = () => {
           Pending Requisition Approvals ({pendingRequisitions.length})
         </CardTitle>
         <CardDescription>
-            Review and approve staff requisitions
+            {canWriteRecruitment
+              ? "Review and approve staff requisitions"
+              : "Read-only oversight — approvals are performed by authorized HR roles"}
         </CardDescription>
       </CardHeader>
 
@@ -395,22 +415,36 @@ const PendingRequisitions = () => {
           </div>
 
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white cursor-pointer"
-              onClick={() => handleApprove(req._id)}
-            >
-              Approve
-            </Button>
-
-            <Button
-              size="sm"
-              variant="destructive"
-              className="cursor-pointer"
-              onClick={() => handleReject(req._id)}
-            >
-              Reject
-            </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setSelectedReq(req)
+                  setViewOpen(true)
+                }}
+                className="cursor-pointer"
+              >
+                View
+              </Button>
+            {canApproveRecruitment && (
+              <>
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+                  onClick={() => handleApprove(req._id)}
+                >
+                  Approve
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="cursor-pointer"
+                  onClick={() => handleReject(req._id)}
+                >
+                  Reject
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -418,22 +452,161 @@ const PendingRequisitions = () => {
   )}
 </CardContent>
 
+      <Dialog
+        open={viewOpen}
+        onOpenChange={(open) => {
+          setViewOpen(open)
+          if (!open) setSelectedReq(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-[650px]">
+          <DialogHeader>
+            <DialogTitle>Requisition Details</DialogTitle>
+            <DialogDescription>
+              Review staff requisition information.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedReq ? (
+            <div className="space-y-3 text-sm">
+              <div>
+                <div className="text-xs text-muted-foreground">Position</div>
+                <div className="font-medium">{selectedReq.position}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Department</div>
+                <div className="font-medium">{selectedReq.department}</div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs text-muted-foreground">Urgency</div>
+                  <div className="font-medium">{selectedReq.urgency || "N/A"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Status</div>
+                  <div className="font-medium">{selectedReq.status}</div>
+                </div>
+              </div>
+              {selectedReq.salaryRange && (
+                <div>
+                  <div className="text-xs text-muted-foreground">Salary Range</div>
+                  <div className="font-medium">{selectedReq.salaryRange}</div>
+                </div>
+              )}
+              {selectedReq.experience && (
+                <div>
+                  <div className="text-xs text-muted-foreground">Experience</div>
+                  <div className="font-medium">{selectedReq.experience}</div>
+                </div>
+              )}
+              {selectedReq.reason && (
+                <div>
+                  <div className="text-xs text-muted-foreground">Reason</div>
+                  <div className="font-medium whitespace-pre-wrap">{selectedReq.reason}</div>
+                </div>
+              )}
+              <div className="pt-2 text-xs text-muted-foreground">
+                Created:{" "}
+                {selectedReq.createdAt ? new Date(selectedReq.createdAt).toLocaleString() : "N/A"}
+              </div>
+
+              {Array.isArray(selectedReq.recommendations) && selectedReq.recommendations.length > 0 && (
+                <div className="pt-3 border-t space-y-2">
+                  <div className="text-sm font-medium">Recommendations</div>
+                  <div className="space-y-2">
+                    {selectedReq.recommendations
+                      .slice()
+                      .reverse()
+                      .slice(0, 10)
+                      .map((r, idx) => (
+                        <div key={idx} className="rounded-md border p-2">
+                          <div className="text-xs text-muted-foreground">
+                            {(r.createdByRole || "").toString()}{" "}
+                            {r.createdAt ? `· ${new Date(r.createdAt).toLocaleString()}` : ""}
+                          </div>
+                          <div className="text-sm whitespace-pre-wrap">{r.text}</div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {canRecommend && (
+                <div className="pt-3 border-t space-y-2">
+                  <div className="text-sm font-medium">Add recommendation</div>
+                  <Textarea
+                    rows={3}
+                    value={recommendation}
+                    onChange={(e) => setRecommendation(e.target.value)}
+                    placeholder="Write your operational recommendation"
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      onClick={submitRecommendation}
+                      disabled={savingRecommendation || !recommendation.trim()}
+                    >
+                      {savingRecommendation ? "Saving..." : "Save"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No requisition selected.</div>
+          )}
+        </DialogContent>
+      </Dialog>
+
     </Card>
   );
 };
 
 const RequisitionHistory = () => {
   const [history, setHistory] = useState([]);
+  const [selectedReq, setSelectedReq] = useState(null)
+  const [viewOpen, setViewOpen] = useState(false)
+  const { user } = useUser()
+  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
+  const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
+  const isOperationsManager = role === "OPERATIONS_MANAGER"
+  const canWriteRecruitment = user?.can?.("recruitment", "write")
+  const canRecommend = canWriteRecruitment && isOperationsManager
+  const [recommendation, setRecommendation] = useState("")
+  const [savingRecommendation, setSavingRecommendation] = useState(false)
 
   const fetchHistory = async () => {
-    const res = await fetch("http://localhost:5001/api/requisitions/history");
-    const data = await res.json();
-    setHistory(data);
+    try {
+      const data = await apiClient.get("/requisitions/history");
+      setHistory(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+      setHistory([]);
+    }
   };
 
   useEffect(() => {
     fetchHistory();
   }, []);
+
+  const submitRecommendation = async () => {
+    if (!selectedReq?._id) return
+    const text = recommendation.trim()
+    if (!text) return
+
+    setSavingRecommendation(true)
+    try {
+      const updated = await apiClient.patch(`/requisitions/${selectedReq._id}/recommendations`, { text })
+      setSelectedReq(updated)
+      setRecommendation("")
+      toast.success("Recommendation saved")
+      fetchHistory()
+    } catch {
+      toast.error("Failed to save recommendation")
+    } finally {
+      setSavingRecommendation(false)
+    }
+  }
 
   return (
     <Card>
@@ -449,18 +622,137 @@ const RequisitionHistory = () => {
                 {req.department}
               </p>
             </div>
-            <span
-              className={`px-2 py-1 text-xs rounded ${
-                req.status === "Approved"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-red-100 text-red-700"
-              }`}
-            >
-              {req.status}
-            </span>
+            <div className="flex items-center gap-3">
+              <span
+                className={`px-2 py-1 text-xs rounded ${
+                  req.status === "Approved"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-red-100 text-red-700"
+                }`}
+              >
+                {req.status}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setSelectedReq(req)
+                  setViewOpen(true)
+                }}
+                className="cursor-pointer"
+              >
+                View
+              </Button>
+            </div>
           </div>
         ))}
       </CardContent>
+
+      <Dialog
+        open={viewOpen}
+        onOpenChange={(open) => {
+          setViewOpen(open)
+          if (!open) setSelectedReq(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-[650px]">
+          <DialogHeader>
+            <DialogTitle>Requisition Details</DialogTitle>
+            <DialogDescription>
+              Review staff requisition information.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedReq ? (
+            <div className="space-y-3 text-sm">
+              <div>
+                <div className="text-xs text-muted-foreground">Position</div>
+                <div className="font-medium">{selectedReq.position}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Department</div>
+                <div className="font-medium">{selectedReq.department}</div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs text-muted-foreground">Urgency</div>
+                  <div className="font-medium">{selectedReq.urgency || "N/A"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Status</div>
+                  <div className="font-medium">{selectedReq.status}</div>
+                </div>
+              </div>
+              {selectedReq.salaryRange && (
+                <div>
+                  <div className="text-xs text-muted-foreground">Salary Range</div>
+                  <div className="font-medium">{selectedReq.salaryRange}</div>
+                </div>
+              )}
+              {selectedReq.experience && (
+                <div>
+                  <div className="text-xs text-muted-foreground">Experience</div>
+                  <div className="font-medium">{selectedReq.experience}</div>
+                </div>
+              )}
+              {selectedReq.reason && (
+                <div>
+                  <div className="text-xs text-muted-foreground">Reason</div>
+                  <div className="font-medium whitespace-pre-wrap">{selectedReq.reason}</div>
+                </div>
+              )}
+              <div className="pt-2 text-xs text-muted-foreground">
+                Created:{" "}
+                {selectedReq.createdAt ? new Date(selectedReq.createdAt).toLocaleString() : "N/A"}
+              </div>
+
+              {Array.isArray(selectedReq.recommendations) && selectedReq.recommendations.length > 0 && (
+                <div className="pt-3 border-t space-y-2">
+                  <div className="text-sm font-medium">Recommendations</div>
+                  <div className="space-y-2">
+                    {selectedReq.recommendations
+                      .slice()
+                      .reverse()
+                      .slice(0, 10)
+                      .map((r, idx) => (
+                        <div key={idx} className="rounded-md border p-2">
+                          <div className="text-xs text-muted-foreground">
+                            {(r.createdByRole || "").toString()}{" "}
+                            {r.createdAt ? `· ${new Date(r.createdAt).toLocaleString()}` : ""}
+                          </div>
+                          <div className="text-sm whitespace-pre-wrap">{r.text}</div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {canRecommend && (
+                <div className="pt-3 border-t space-y-2">
+                  <div className="text-sm font-medium">Add recommendation</div>
+                  <Textarea
+                    rows={3}
+                    value={recommendation}
+                    onChange={(e) => setRecommendation(e.target.value)}
+                    placeholder="Write your operational recommendation"
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      onClick={submitRecommendation}
+                      disabled={savingRecommendation || !recommendation.trim()}
+                    >
+                      {savingRecommendation ? "Saving..." : "Save"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No requisition selected.</div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

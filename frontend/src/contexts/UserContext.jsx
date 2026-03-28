@@ -16,41 +16,48 @@ export const UserProvider = ({ children }) => {
         setLoading(false);
         return;
       }
+
       try {
         setLoading(true);
         const res = await apiClient.get("/roles");
-        const roles = res.data ?? res;
-        const roleName =
-          typeof user.role === "string" ? user.role : user.role?.name;
-        const matchedRole = roles.find(
+        
+        // SENIOR FIX: Safely extract the array whether it's in res.roles, res.data, or is a direct array
+        const extractedRoles = res?.roles || res?.data || res;
+        const validRoles = Array.isArray(extractedRoles) ? extractedRoles : [];
+
+        const roleName = typeof user.role === "string" ? user.role : user.role?.name;
+
+        const matchedRole = validRoles.find(
           (r) =>
             r.name?.toLowerCase().replace(/\s+/g, "") ===
             roleName?.toLowerCase().replace(/\s+/g, "")
         );
+
         setRolePermissions(matchedRole?.permissions ?? {});
       } catch (err) {
-        setRolePermissions({});
+        console.error("Failed to load permissions", err);
+        setRolePermissions({}); 
       } finally {
         setLoading(false);
       }
     };
+
     loadPermissions();
-  }, [user?.role, isAuthenticated]); // FIXED: was [user] — caused stale closure on can()
+  }, [user?.role, isAuthenticated]); 
 
   // FIXED: can() is inside useMemo so it always uses the current rolePermissions
   const enrichedUser = useMemo(() => {
     if (!user) return null;
+    const roleName =
+      typeof user.role === "string"
+        ? user.role.toUpperCase()
+        : user.role?.name?.toUpperCase();
     return {
       ...user,
+      permissions: rolePermissions || {},
       can: (module, action = "read") => {
         if (!rolePermissions) return false;
-        // SUPER ADMIN bypasses all checks
-        const roleName =
-          typeof user.role === "string"
-            ? user.role.toUpperCase()
-            : user.role?.name?.toUpperCase();
-        if (roleName === "SUPER ADMIN" || roleName === "SUPER_ADMIN")
-          return true;
+        if (roleName === "SUPER ADMIN" || roleName === "SUPER_ADMIN") return true;
         return rolePermissions?.[module]?.[action] === true;
       },
     };
