@@ -8,6 +8,7 @@ import { TrendingUp, Users, Award, Target, BarChart3, PieChart as PieChartIcon }
 import { Progress } from "@/components/ui/progress";
 import apiClient from "@/services/apiClient";
 import SkeletonCard from "@/components/reports/SkeletonCard";
+import { performanceApi } from "@/services/performanceApi";
 
 const PerformanceAnalytics = () => {
   const [analyticsData, setAnalyticsData] = useState({
@@ -34,17 +35,16 @@ const PerformanceAnalytics = () => {
     });
     return [
       { name: "Outstanding (4.5-5.0)", value: buckets.outstanding, color: "#10b981" },
-      { name: "Exceeds (4.0-4.4)",      value: buckets.exceeds,     color: "#3b82f6" },
-      { name: "Meets (3.0-3.9)",        value: buckets.meets,       color: "#f59e0b" },
-      { name: "Below (2.0-2.9)",        value: buckets.below,       color: "#ef4444" },
-      { name: "Poor (<2.0)",            value: buckets.poor,        color: "#991b1b" }
+      { name: "Exceeds (4.0-4.4)", value: buckets.exceeds, color: "#3b82f6" },
+      { name: "Meets (3.0-3.9)", value: buckets.meets, color: "#f59e0b" },
+      { name: "Below (2.0-2.9)", value: buckets.below, color: "#ef4444" },
+      { name: "Poor (<2.0)", value: buckets.poor, color: "#991b1b" }
     ];
   };
 
   const calculateDepartmentComparison = (reviews) => {
     const deptMap = {};
     reviews.forEach(review => {
-      // FIXED: correct field path after populate
       const dept = review.employeeId?.department || "Unknown";
       const score = review.overallRating || 0;
       if (!deptMap[dept]) deptMap[dept] = { total: 0, count: 0 };
@@ -84,7 +84,6 @@ const PerformanceAnalytics = () => {
   const calculateTopPerformers = (reviews) => {
     const performerMap = {};
     reviews.forEach(review => {
-      // FIXED: correct name field from populated employeeId
       const emp = review.employeeId;
       const name = emp
         ? `${emp.firstName || ""} ${emp.lastName || ""}`.trim()
@@ -104,44 +103,40 @@ const PerformanceAnalytics = () => {
     const loadAnalytics = async () => {
       try {
         setLoading(true);
-
-        // FIXED: apiClient already unwraps response.data
-        // so these calls return { success, data: {...} } directly
-        // stats.data has totalEmployees, avgScore, activeCycles
-        // cycles.data has the array
-        const [statsRes, cyclesRes] = await Promise.all([
-          apiClient.get("/performance/stats"),
-          apiClient.get("/performance/cycles")
+        const [statsRes, cyclesRes, analyticsRes] = await Promise.all([
+          performanceApi.getStats(),
+          apiClient.get("/performance/cycles"),
+          performanceApi.getAnalyticsSummary()
         ]);
 
-        const stats = statsRes?.data ?? statsRes ?? {};
-        const cycles = Array.isArray(cyclesRes)
-          ? cyclesRes
-          : cyclesRes?.data ?? [];
+        const analytics = analyticsRes?.data?.data ?? {};
+        const stats = statsRes?.data?.data ?? {};
+        console.log("STATS RESPONSE:", statsRes);
+        const cycles = cyclesRes?.data?.data ?? [];
+        console.log("CYCLES RESPONSE:", cyclesRes);
 
-        // FIXED: apiClient unwraps so reviewsRes IS the payload { success, data: [...] }
         let reviews = [];
+        let reviewedEmployeesCount = 0; 
         try {
           const reviewsRes = await apiClient.get("/performance/reviews/all");
-          reviews = Array.isArray(reviewsRes)
-            ? reviewsRes
-            : reviewsRes?.data ?? [];
+          const reviews = analyticsRes?.data?.data ?? [];
+          console.log("REVIEWS RESPONSE:", reviews);
+
         } catch {
           reviews = [];
         }
 
-        // totalEmployees comes from backend getStats — no extra /users call needed
         const totalEmployees = stats.totalEmployees || 0;
 
         setAnalyticsData({
           performanceDistribution: calculatePerformanceDistribution(reviews),
-          departmentComparison:    calculateDepartmentComparison(reviews),
-          cycleCompletion:         calculateCycleCompletion(cycles),
-          ratingTrend:             calculateRatingTrend(reviews),
-          topPerformers:           calculateTopPerformers(reviews),
+          departmentComparison: calculateDepartmentComparison(reviews),
+          cycleCompletion: calculateCycleCompletion(cycles),
+          ratingTrend: calculateRatingTrend(reviews),
+          topPerformers: calculateTopPerformers(reviews),
           totalEmployees,
-          overallAvgRating: stats.avgScore || 0,
-          activeCycles:     stats.activeCycles || 0
+          overallAvgRating: analytics.avgScore || stats.avgScore || 0,
+          activeCycles: stats.activeCycles || 0
         });
       } finally {
         setLoading(false);
@@ -154,7 +149,6 @@ const PerformanceAnalytics = () => {
 
   return (
     <div className="space-y-6">
-      {/* Summary Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="border-l-4 border-l-blue-500">
           <CardContent className="p-6">
@@ -196,7 +190,6 @@ const PerformanceAnalytics = () => {
         </Card>
       </div>
 
-      {/* Charts Row 1 */}
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -262,7 +255,6 @@ const PerformanceAnalytics = () => {
         </Card>
       </div>
 
-      {/* Charts Row 2 */}
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -327,7 +319,6 @@ const PerformanceAnalytics = () => {
         </Card>
       </div>
 
-      {/* Top Performers */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

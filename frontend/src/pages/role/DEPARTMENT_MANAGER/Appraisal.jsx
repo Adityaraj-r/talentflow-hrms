@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton" // Added Skeleton import
+import { Skeleton } from "@/components/ui/skeleton" 
 import { FileText, Search, Plus } from "lucide-react"
 import { toast } from "sonner"
 import SubmitReviewModal from "@/components/performance/SubmitReviewModal"
@@ -42,7 +42,6 @@ const AppraisalHistory = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // 1. IMPROVED SKELETON STATE
   const LoadingSkeleton = () => (
     Array(5).fill(0).map((_, i) => (
       <div key={i} className="grid grid-cols-7 p-3 items-center gap-4">
@@ -145,7 +144,6 @@ const AppraisalHistory = () => {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      // 2. UPDATED NAVIGATION TO DEPARTMENT_MANAGER ROLE
                       onClick={() => navigate(`/role/DEPARTMENT_MANAGER/review/${review._id}`)}
                     >
                       <FileText className="h-4 w-4" />
@@ -163,7 +161,6 @@ const AppraisalHistory = () => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSuccess={() => {
-          // Re-fetch logic or local state update could go here
           setIsModalOpen(false)
         }}
       />

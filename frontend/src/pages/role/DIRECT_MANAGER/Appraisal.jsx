@@ -149,7 +149,6 @@ const AppraisalHistory = () => {
     { id: 2, employeeName: "Alice Johnson", employeeId: "EMP002", department: "HR", appraisalPeriod: "2025-01", performanceRating: "Satisfactory", status: "Rejected" },
   ]
 
-  // 1. WIRE SEARCH BAR LOGIC
   const filteredHistory = appraisalHistory.filter(item =>
     item.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.employeeId.toLowerCase().includes(searchQuery.toLowerCase())

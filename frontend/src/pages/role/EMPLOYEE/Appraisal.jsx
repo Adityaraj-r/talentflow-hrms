@@ -139,7 +139,6 @@ const AppraisalHistory = () => {
                     </span>
                   </div>
                   <div className="text-right">
-                    {/* FIXED: employee uses /role/employee/review route */}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -172,7 +171,6 @@ const SelfAssessmentForm = () => {
     const fetchCycles = async () => {
       try {
         setLoadingCycles(true)
-        // FIXED: leading slash + apiClient already unwraps so res IS { success, data:[...] }
         const res = await apiClient.get("/performance/cycles")
         const all = Array.isArray(res) ? res : res?.data ?? []
         setCycles(all.filter((c) => c.status === "active"))
@@ -191,7 +189,6 @@ const SelfAssessmentForm = () => {
     if (selfRating < 1) { toast.error("Please select a self-rating"); return }
     try {
       setSubmitting(true)
-      // FIXED: added leading slash
       await apiClient.post("/performance/self-assessment", {
         cycleId: selectedCycleId,
         selfRating,

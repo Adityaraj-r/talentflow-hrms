@@ -9,11 +9,11 @@ const router = Router();
 router.use(protect as any);
 
 // ─── CYCLES (HRMANAGER only for mutations) ────────────────────────────────────
-router.post('/cycles', authorize('HRMANAGER', 'SUPER ADMIN'), PerformanceController.createCycle);
+router.post('/cycles', authorize('HR_MANAGER', 'SUPER_ADMIN'), PerformanceController.createCycle);
 router.get('/cycles', PerformanceController.getCycles);
 router.get('/cycles/:id', PerformanceController.getCycleById);
-router.put('/cycles/:id', authorize('HRMANAGER', 'SUPER ADMIN'), PerformanceController.updateCycle);
-router.delete('/cycles/:id', authorize('HRMANAGER', 'SUPER ADMIN'), PerformanceController.deleteCycle);
+router.put('/cycles/:id', authorize('HR_MANAGER', 'SUPER_ADMIN'), PerformanceController.updateCycle);
+router.delete('/cycles/:id', authorize('HR_MANAGER', 'SUPER_ADMIN'), PerformanceController.deleteCycle);
 
 // ─── STATS ────────────────────────────────────────────────────────────────────
 router.get('/stats', PerformanceController.getStats);

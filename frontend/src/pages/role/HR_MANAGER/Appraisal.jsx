@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { reviewApi } from "@/services/reviewApi"
-import apiClient from "@/services/apiClient"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -157,11 +156,14 @@ const HRReviewQueue = () => {
   const [loading, setLoading] = useState(true)
   const [submittingId, setSubmittingId] = useState(null)
   const [feedbackMap, setFeedbackMap] = useState({})
+  const [finalizingId, setFinalizingId] = useState(null)
 
   const fetchManagerReviewDone = async () => {
+    console.log("🔥 FUNCTION CALLED")
     try {
       setLoading(true)
-      const res = await reviewApi.getAllReviews({ status: "manager review done" })
+      const res = await reviewApi.getPendingReviews()
+      console.log("API RESPONSE:", res)
       setReviews(Array.isArray(res) ? res : res?.data ?? [])
     } catch {
       toast.error("Failed to fetch HR review queue")
@@ -179,8 +181,7 @@ const HRReviewQueue = () => {
     }
     try {
       setSubmittingId(reviewId)
-      // FIXED: added leading slash
-      await apiClient.patch(`/performance/hr-review/${reviewId}`, {
+      await reviewApi.hrReview(reviewId, {
         adminFeedback: feedbackMap[reviewId],
       })
       toast.success("HR review submitted successfully!")
@@ -189,6 +190,19 @@ const HRReviewQueue = () => {
       toast.error(error?.error || error?.message || "Failed to submit HR review")
     } finally {
       setSubmittingId(null)
+    }
+  }
+
+  const handleFinalize = async (reviewId) => {
+    try {
+      setFinalizingId(reviewId)
+      await reviewApi.finalizeReview(reviewId)
+      toast.success("Review finalized successfully!")
+      fetchManagerReviewDone()
+    } catch (error) {
+      toast.error(error?.error || error?.message || "Finalize failed")
+    } finally {
+      setFinalizingId(null)
     }
   }
 
@@ -234,6 +248,7 @@ const HRReviewQueue = () => {
                     className="h-8 w-8"
                     onClick={() => navigate(`/role/hr_manager/review/${review._id}`)}
                   >
+
                     <FileText className="h-4 w-4" />
                   </Button>
                 </div>
@@ -247,17 +262,29 @@ const HRReviewQueue = () => {
                       setFeedbackMap((prev) => ({ ...prev, [review._id]: e.target.value }))
                     }
                   />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => handleHRReview(review._id)}
-                    disabled={submittingId === review._id}
-                  >
-                    {submittingId === review._id
-                      ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</>
-                      : <><CheckCircle2 className="mr-2 h-4 w-4" /> Submit HR Review</>}
-                  </Button>
+                  {review.status === "manager review done" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => handleHRReview(review._id)}
+                      disabled={submittingId === review._id}
+                    >
+                      Submit HR Review
+                    </Button>
+                  )}
+                  {review.status === "approved" && (
+                    <Button
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={() => handleFinalize(review._id)}
+                      disabled={finalizingId === review._id}
+                    >
+                      {finalizingId === review._id
+                        ? "Finalizing..."
+                        : "Finalize Review"}
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}

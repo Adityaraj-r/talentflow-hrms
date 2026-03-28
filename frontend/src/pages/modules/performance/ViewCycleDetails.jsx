@@ -48,12 +48,8 @@ const ViewCycleDetails = () => {
         reviewApi.getAllReviews({ cycleId: id })
       ]);
 
-      // performanceApi uses .then(r => r.data) — cycleRes may already be unwrapped
-      // safe unwrap handles both { data: cycle } and plain cycle object
       setCycle(cycleRes?.data ?? cycleRes);
 
-      // reviewApi has no unwrap — reviewsRes is { success, data: [...] }
-      // filter to only show reviews for this specific cycle
       const allReviews = reviewsRes?.data ?? [];
       setReviews(
         Array.isArray(allReviews)
@@ -132,7 +128,6 @@ const ViewCycleDetails = () => {
             <p className="text-muted-foreground mb-6">
               The performance cycle you're looking for doesn't exist.
             </p>
-            {/* FIXED: was /role/admin/appraisal */}
             <Button onClick={() => navigate("/role/hr_manager/appraisal/cycles")}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Performance
@@ -147,10 +142,8 @@ const ViewCycleDetails = () => {
     <div className="min-h-screen bg-white dark:bg-gray-950 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
 
-        {/* ─── Header ─────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {/* FIXED: was /role/admin/appraisal */}
             <button
               onClick={() => navigate("/role/hr_manager/appraisal/cycles")}
               className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -187,7 +180,6 @@ const ViewCycleDetails = () => {
           </div>
         </div>
 
-        {/* ─── Stats Cards ─────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
           <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-6">
@@ -234,7 +226,6 @@ const ViewCycleDetails = () => {
           </div>
         </div>
 
-        {/* ─── Status Summary ───────────────────────────────────────────── */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
@@ -265,7 +256,6 @@ const ViewCycleDetails = () => {
           </div>
         </div>
 
-        {/* ─── Description ─────────────────────────────────────────────── */}
         {cycle.description && (
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
@@ -276,7 +266,6 @@ const ViewCycleDetails = () => {
           </div>
         )}
 
-        {/* ─── Reviews Table ────────────────────────────────────────────── */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
           <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
             <div>
@@ -361,7 +350,6 @@ const ViewCycleDetails = () => {
                             Start Review
                           </button>
                         )}
-                        {/* FIXED: was /role/admin/review — now correct path */}
                         {review.status === "completed" && (
                           <button
                             className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm font-medium transition-colors"
@@ -389,7 +377,6 @@ const ViewCycleDetails = () => {
 
       </div>
 
-      {/* ─── Assign Review Modal ─────────────────────────────────────────── */}
       <AssignReviewModal
         isOpen={showAssignModal}
         onClose={() => setShowAssignModal(false)}
@@ -402,7 +389,6 @@ const ViewCycleDetails = () => {
         }}
       />
 
-      {/* ─── Submit Review Modal ─────────────────────────────────────────── */}
       <SubmitReviewModal
         isOpen={showSubmitModal}
         onClose={() => { setShowSubmitModal(false); setSelectedReview(null); }}
