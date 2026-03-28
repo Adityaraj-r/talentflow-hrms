@@ -3,10 +3,14 @@ import { useParams, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import {
   ArrowLeft, Mail, Building, Phone, Calendar,
   User, Shield, CheckCircle2, XCircle, DollarSign,
-  Loader2, Save, TrendingUp, TrendingDown, Hash
+  Loader2, Save, TrendingUp, TrendingDown, Hash,
+  UserMinus, AlertTriangle,
 } from "lucide-react"
 import adminService from "@/services/adminService"
 import apiClient from "@/services/apiClient"
@@ -14,12 +18,9 @@ import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
-
-const HR_ROLES = ["HRMANAGER", "HR_MANAGER", "HROFFICER", "HR_OFFICER",
-                  "PAYROLLOFFICER", "PAYROLL_OFFICER", "ADMIN", "SUPER ADMIN", "SUPERADMIN"]
-
+const HR_ROLES = ["HRMANAGER", "HR_MANAGER", "HROFFICER", "HR_OFFICER", "PAYROLLOFFICER", "PAYROLL_OFFICER", "ADMIN", "SUPER ADMIN", "SUPERADMIN"]
+const INITIATOR_ROLES = ["HR_MANAGER"]
 const TABS = ["Overview", "Salary Structure"]
-
 
 const EmployeeProfileView = () => {
   const { id } = useParams()
@@ -28,36 +29,37 @@ const EmployeeProfileView = () => {
   const [employee, setEmployee] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("Overview")
+  const [showOffboardModal, setShowOffboardModal] = useState(false)
 
   const userRole = (typeof authUser?.role === "string"
     ? authUser.role
     : authUser?.role?.name || ""
   ).toUpperCase().replace(/ /g, "_")
 
-  const isHR = HR_ROLES.includes(userRole) ||
-    HR_ROLES.includes(userRole.replace(/_/g, ""))
+  const isHR = HR_ROLES.includes(userRole) || HR_ROLES.includes(userRole.replace(/_/g, ""))
+  const canInitiateOffboarding = INITIATOR_ROLES.includes(userRole)
+
+  const fetchEmployee = async () => {
+    try {
+      const response = await adminService.getAllEmployees()
+      const users = response.data?.users || response.data || []
+      const found = Array.isArray(users) ? users.find(u => u._id === id) : null
+      setEmployee(found || null)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchEmployee = async () => {
-      try {
-        const response = await adminService.getAllEmployees()
-        const users = response.data?.users || response.data || []
-        const found = Array.isArray(users) ? users.find(u => u._id === id) : null
-        setEmployee(found || null)
-      } catch (err) {
-        console.error("Failed to fetch employee", err)
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchEmployee()
   }, [id])
 
   const getFullName = (emp) => {
     if (!emp) return "—"
     if (emp.name) return emp.name
-    if (emp.firstName || emp.lastName)
-      return `${emp.firstName || ""} ${emp.lastName || ""}`.trim()
+    if (emp.firstName || emp.lastName) return `${emp.firstName || ""} ${emp.lastName || ""}`.trim()
     return "—"
   }
 
@@ -96,15 +98,14 @@ const EmployeeProfileView = () => {
     )
   }
 
-  const fullName  = getFullName(employee)
-  const isActive  = employee.isActive
+  const fullName = getFullName(employee)
+  const isActive = employee.isActive
   const visibleTabs = isHR ? TABS : ["Overview"]
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
 
-        {/* Back Button */}
         <button
           onClick={() => navigate("/employee-center/all-employees")}
           className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm font-medium"
@@ -116,45 +117,51 @@ const EmployeeProfileView = () => {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Employee Profile</h1>
         </div>
 
-        {/* ── Hero Card ─────────────────────────────────────────────────────── */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center text-3xl font-black text-primary border-2 border-primary/20 flex-shrink-0">
-              {getInitial(employee)}
-            </div>
-            <div className="flex-1 min-w-0 space-y-1.5">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{fullName}</h2>
-              <p className="text-gray-500 dark:text-gray-400 text-sm">{employee.email}</p>
-              <div className="flex flex-wrap gap-2 pt-1">
-
-                {/* ── Employee Code Badge ──────────────────────────────────── */}
-                {employee.employeeCode && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wider bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30">
-                    <Hash className="h-3 w-3" />
-                    {employee.employeeCode}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+            <div className="flex items-center gap-5">
+              <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center text-3xl font-black text-primary border-2 border-primary/20 flex-shrink-0">
+                {getInitial(employee)}
+              </div>
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{fullName}</h2>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">{employee.email}</p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {employee.employeeCode && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wider bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30">
+                      <Hash className="h-3 w-3" />
+                      {employee.employeeCode}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                    {employee.role?.replace(/_/g, " ") || "No Role"}
                   </span>
-                )}
-                {/* ─────────────────────────────────────────────────────────── */}
-
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
-                  {employee.role?.replace(/_/g, " ") || "No Role"}
-                </span>
-                <span className={cn(
-                  "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
-                  isActive
-                    ? "bg-green-50 dark:bg-green-500/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/30"
-                    : "bg-orange-50 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-500/30"
-                )}>
-                  <span className={cn("h-1.5 w-1.5 rounded-full", isActive ? "bg-green-500" : "bg-orange-500")} />
-                  {isActive ? "Active" : "Inactive"}
-                </span>
+                  <span className={cn(
+                    "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
+                    isActive
+                      ? "bg-green-50 dark:bg-green-500/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/30"
+                      : "bg-orange-50 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-500/30"
+                  )}>
+                    <span className={cn("h-1.5 w-1.5 rounded-full", isActive ? "bg-green-500" : "bg-orange-500")} />
+                    {isActive ? "Active" : "Inactive"}
+                  </span>
+                </div>
               </div>
             </div>
+
+            {canInitiateOffboarding && isActive && (
+              <Button 
+                variant="destructive" 
+                className="shrink-0 shadow-sm"
+                onClick={() => setShowOffboardModal(true)}
+              >
+                <UserMinus className="h-4 w-4 mr-2" />
+                Request Offboarding
+              </Button>
+            )}
           </div>
         </div>
-        {/* ──────────────────────────────────────────────────────────────────── */}
 
-        {/* Tabs */}
         {visibleTabs.length > 1 && (
           <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
             {visibleTabs.map(tab => (
@@ -174,11 +181,8 @@ const EmployeeProfileView = () => {
           </div>
         )}
 
-        {/* Tab Content */}
         {activeTab === "Overview" && (
           <div className="grid gap-4 md:grid-cols-2">
-
-            {/* Personal Information */}
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
               <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
@@ -186,16 +190,13 @@ const EmployeeProfileView = () => {
                 </h3>
               </div>
               <div className="p-6 space-y-4">
-                <InfoRow icon={User}  label="Full Name"     value={fullName} />
-                <InfoRow icon={Mail}  label="Email Address" value={employee.email} />
-                <InfoRow icon={Phone} label="Phone Number"  value={employee.phoneNumber || employee.mobile} />
-                <InfoRow icon={User}  label="Gender"        value={
-                  employee.gender && employee.gender !== "N/A" ? employee.gender : null
-                } />
+                <InfoRow icon={User} label="Full Name" value={fullName} />
+                <InfoRow icon={Mail} label="Email Address" value={employee.email} />
+                <InfoRow icon={Phone} label="Phone Number" value={employee.phoneNumber || employee.mobile} />
+                <InfoRow icon={User} label="Gender" value={employee.gender && employee.gender !== "N/A" ? employee.gender : null} />
               </div>
             </div>
 
-            {/* Work Information */}
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
               <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
@@ -203,30 +204,23 @@ const EmployeeProfileView = () => {
                 </h3>
               </div>
               <div className="p-6 space-y-4">
-                {/* ── Employee ID row ────────────────────────────────────── */}
                 <InfoRow
                   icon={Hash}
                   label="Employee ID"
                   value={employee.employeeCode || "Not assigned"}
-                  valueClassName={employee.employeeCode
-                    ? "text-blue-600 dark:text-blue-400 font-mono"
-                    : "text-gray-400 italic"}
+                  valueClassName={employee.employeeCode ? "text-blue-600 dark:text-blue-400 font-mono" : "text-gray-400 italic"}
                 />
-                {/* ─────────────────────────────────────────────────────── */}
-                <InfoRow icon={Building}     label="Department"     value={employee.department} />
-                <InfoRow icon={Shield}       label="Access Role"    value={employee.role?.replace(/_/g, " ")} />
+                <InfoRow icon={Building} label="Department" value={employee.department} />
+                <InfoRow icon={Shield} label="Access Role" value={employee.role?.replace(/_/g, " ")} />
                 <InfoRow
                   icon={CheckCircle2}
                   label="Account Status"
                   value={isActive ? "Active" : "Inactive"}
-                  valueClassName={isActive
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-orange-600 dark:text-orange-400"}
+                  valueClassName={isActive ? "text-green-600 dark:text-green-400" : "text-orange-600 dark:text-orange-400"}
                 />
                 <InfoRow icon={Calendar} label="Joined On" value={formatDate(employee.createdAt)} />
               </div>
             </div>
-
           </div>
         )}
 
@@ -235,11 +229,20 @@ const EmployeeProfileView = () => {
         )}
 
       </div>
+
+      <OffboardEmployeeModal 
+        isOpen={showOffboardModal} 
+        onClose={() => setShowOffboardModal(false)} 
+        employee={employee}
+        fullName={fullName}
+        onSuccess={() => {
+          setShowOffboardModal(false)
+          navigate("/employee-center/all-employees")
+        }}
+      />
     </div>
   )
 }
-
-// ── Salary Tab ───────────────────────────────────────────────────────────────
 
 const EMPTY_SALARY = {
   basic: "", hra: "", transport: "", medical: "", otherAllowance: "",
@@ -247,9 +250,9 @@ const EMPTY_SALARY = {
 }
 
 const SalaryTab = ({ userId, employeeName }) => {
-  const [form, setForm]         = useState(EMPTY_SALARY)
-  const [loading, setLoading]   = useState(true)
-  const [saving, setSaving]     = useState(false)
+  const [form, setForm] = useState(EMPTY_SALARY)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [hasExisting, setHasExisting] = useState(false)
 
   useEffect(() => {
@@ -259,14 +262,14 @@ const SalaryTab = ({ userId, employeeName }) => {
         const d = res.data?.data || res.data || res
 
         setForm({
-          basic:          d.basic          || "",
-          hra:            d.hra            || "",
-          transport:      d.transport      || "",
-          medical:        d.medical        || "",
+          basic: d.basic || "",
+          hra: d.hra || "",
+          transport: d.transport || "",
+          medical: d.medical || "",
           otherAllowance: d.otherAllowance || "",
-          pf:             d.pf             || "",
-          tax:            d.tax            || "",
-          insurance:      d.insurance      || "",
+          pf: d.pf || "",
+          tax: d.tax || "",
+          insurance: d.insurance || "",
         })
         setHasExisting(Number(d.basic) > 0)
       } catch (err) {
@@ -300,14 +303,14 @@ const SalaryTab = ({ userId, employeeName }) => {
     setSaving(true)
     try {
       await apiClient.put(`/salary-structure/${userId}`, {
-        basic:          Number(form.basic),
-        hra:            Number(form.hra          || 0),
-        transport:      Number(form.transport    || 0),
-        medical:        Number(form.medical      || 0),
+        basic: Number(form.basic),
+        hra: Number(form.hra || 0),
+        transport: Number(form.transport || 0),
+        medical: Number(form.medical || 0),
         otherAllowance: Number(form.otherAllowance || 0),
-        pf:             Number(form.pf           || 0),
-        tax:            Number(form.tax          || 0),
-        insurance:      Number(form.insurance    || 0),
+        pf: Number(form.pf || 0),
+        tax: Number(form.tax || 0),
+        insurance: Number(form.insurance || 0),
       })
       toast.success(`Salary structure ${hasExisting ? "updated" : "created"} for ${employeeName}`)
       setHasExisting(true)
@@ -326,8 +329,6 @@ const SalaryTab = ({ userId, employeeName }) => {
 
   return (
     <div className="space-y-6">
-
-      {/* Status Banner */}
       {!hasExisting && (
         <div className="rounded-lg border border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-700 px-4 py-3 text-sm text-yellow-800 dark:text-yellow-300">
           ⚠️ No salary structure found for <strong>{employeeName}</strong>. Fill in the details below to create one.
@@ -335,11 +336,7 @@ const SalaryTab = ({ userId, employeeName }) => {
       )}
 
       <div className="grid lg:grid-cols-3 gap-6">
-
-        {/* Left — Form */}
         <div className="lg:col-span-2 space-y-5">
-
-          {/* Earnings */}
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-green-600" />
@@ -348,36 +345,14 @@ const SalaryTab = ({ userId, employeeName }) => {
               </h3>
             </div>
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <SalaryField
-                label="Basic Salary"
-                value={form.basic}
-                onChange={v => set("basic", v)}
-                required
-              />
-              <SalaryField
-                label="HRA (House Rent Allowance)"
-                value={form.hra}
-                onChange={v => set("hra", v)}
-              />
-              <SalaryField
-                label="Transport Allowance"
-                value={form.transport}
-                onChange={v => set("transport", v)}
-              />
-              <SalaryField
-                label="Medical Allowance"
-                value={form.medical}
-                onChange={v => set("medical", v)}
-              />
-              <SalaryField
-                label="Other Allowance"
-                value={form.otherAllowance}
-                onChange={v => set("otherAllowance", v)}
-              />
+              <SalaryField label="Basic Salary" value={form.basic} onChange={v => set("basic", v)} required />
+              <SalaryField label="HRA (House Rent Allowance)" value={form.hra} onChange={v => set("hra", v)} />
+              <SalaryField label="Transport Allowance" value={form.transport} onChange={v => set("transport", v)} />
+              <SalaryField label="Medical Allowance" value={form.medical} onChange={v => set("medical", v)} />
+              <SalaryField label="Other Allowance" value={form.otherAllowance} onChange={v => set("otherAllowance", v)} />
             </div>
           </div>
 
-          {/* Deductions */}
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
               <TrendingDown className="h-4 w-4 text-red-500" />
@@ -386,25 +361,12 @@ const SalaryTab = ({ userId, employeeName }) => {
               </h3>
             </div>
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <SalaryField
-                label="PF (Provident Fund)"
-                value={form.pf}
-                onChange={v => set("pf", v)}
-              />
-              <SalaryField
-                label="Income Tax"
-                value={form.tax}
-                onChange={v => set("tax", v)}
-              />
-              <SalaryField
-                label="Insurance"
-                value={form.insurance}
-                onChange={v => set("insurance", v)}
-              />
+              <SalaryField label="PF (Provident Fund)" value={form.pf} onChange={v => set("pf", v)} />
+              <SalaryField label="Income Tax" value={form.tax} onChange={v => set("tax", v)} />
+              <SalaryField label="Insurance" value={form.insurance} onChange={v => set("insurance", v)} />
             </div>
           </div>
 
-          {/* Save Button */}
           <Button
             onClick={handleSave}
             disabled={saving}
@@ -417,7 +379,6 @@ const SalaryTab = ({ userId, employeeName }) => {
           </Button>
         </div>
 
-        {/* Right — Live Preview */}
         <div className="lg:col-span-1">
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm sticky top-6">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
@@ -427,12 +388,10 @@ const SalaryTab = ({ userId, employeeName }) => {
               </h3>
             </div>
             <div className="p-6 space-y-3">
-
-              {/* Earnings breakdown */}
-              <PreviewRow label="Basic"           value={form.basic}          color="text-gray-900 dark:text-white" />
-              <PreviewRow label="HRA"             value={form.hra}            color="text-gray-700 dark:text-gray-300" />
-              <PreviewRow label="Transport"       value={form.transport}      color="text-gray-700 dark:text-gray-300" />
-              <PreviewRow label="Medical"         value={form.medical}        color="text-gray-700 dark:text-gray-300" />
+              <PreviewRow label="Basic" value={form.basic} color="text-gray-900 dark:text-white" />
+              <PreviewRow label="HRA" value={form.hra} color="text-gray-700 dark:text-gray-300" />
+              <PreviewRow label="Transport" value={form.transport} color="text-gray-700 dark:text-gray-300" />
+              <PreviewRow label="Medical" value={form.medical} color="text-gray-700 dark:text-gray-300" />
               <PreviewRow label="Other Allowance" value={form.otherAllowance} color="text-gray-700 dark:text-gray-300" />
 
               <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
@@ -440,8 +399,8 @@ const SalaryTab = ({ userId, employeeName }) => {
               </div>
 
               <div className="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-3">
-                <PreviewRow label="PF"        value={form.pf}        color="text-red-500" prefix="−" />
-                <PreviewRow label="Tax"       value={form.tax}       color="text-red-500" prefix="−" />
+                <PreviewRow label="PF" value={form.pf} color="text-red-500" prefix="−" />
+                <PreviewRow label="Tax" value={form.tax} color="text-red-500" prefix="−" />
                 <PreviewRow label="Insurance" value={form.insurance} color="text-red-500" prefix="−" />
               </div>
 
@@ -449,24 +408,19 @@ const SalaryTab = ({ userId, employeeName }) => {
                 <PreviewRow label="Total Deductions" value={deductions} color="font-semibold text-red-500" prefix="−" />
               </div>
 
-              {/* Net Pay */}
               <div className="mt-4 p-4 bg-blue-600 rounded-xl text-white text-center">
                 <p className="text-xs uppercase tracking-widest opacity-80">Net Monthly Pay</p>
                 <h2 className="text-3xl font-black mt-1">
                   ₹ {net > 0 ? net.toLocaleString() : "0"}
                 </h2>
               </div>
-
             </div>
           </div>
         </div>
-
       </div>
     </div>
   )
 }
-
-// ── Reusable sub-components ──────────────────────────────────────────────────
 
 const SalaryField = ({ label, value, onChange, required }) => (
   <div className="space-y-1.5">
@@ -509,5 +463,112 @@ const InfoRow = ({ icon: Icon, label, value, valueClassName }) => (
     </div>
   </div>
 )
+
+const OffboardEmployeeModal = ({ isOpen, onClose, employee, fullName, onSuccess }) => {
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({ 
+    type: "", 
+    proposedExitDate: "", 
+    reason: "" 
+  })
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!formData.type || !formData.proposedExitDate || !formData.reason) {
+      toast.error("Please fill in all required fields.")
+      return
+    }
+
+    setLoading(true)
+    try {
+      const payload = {
+        employeeId: employee.employeeCode || employee._id,
+        employeeName: fullName,
+        department: employee.department || "N/A",
+        designation: employee.designation || employee.role || "N/A",
+        type: formData.type,
+        proposedExitDate: formData.proposedExitDate,
+        reason: formData.reason
+      }
+
+      await apiClient.post(`/offboarding/initiate`, payload)
+      toast.success(`Separation pipeline initiated for ${fullName}.`)
+      onSuccess()
+    } catch (error) {
+      toast.error(error?.response?.data?.error || "Failed to initiate separation.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!employee) return null
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md border-red-200 dark:border-red-900">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-500">
+            <AlertTriangle className="h-5 w-5" />
+            Initiate Employee Offboarding
+          </DialogTitle>
+          <DialogDescription>
+            This will push an official offboarding request to the Country Manager and CEO for review. System access will remain active until final approval.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">Separation Type <span className="text-red-500">*</span></Label>
+            <Select 
+              value={formData.type} 
+              onValueChange={(val) => setFormData(prev => ({ ...prev, type: val }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select off-board type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Resignation">Resignation</SelectItem>
+                <SelectItem value="Termination">Termination (For Cause)</SelectItem>
+                <SelectItem value="Layoff">Layoff / Redundancy</SelectItem>
+                <SelectItem value="Retirement">Retirement</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+       <div className="space-y-2">
+            <Label className="text-sm font-semibold">Proposed Last Working Day <span className="text-red-500">*</span></Label>
+            <Input 
+              type="date" 
+              required
+              value={formData.proposedExitDate}
+              onChange={(e) => setFormData({ ...formData, proposedExitDate: e.target.value })}
+              className="w-full relative pr-10 dark:[color-scheme:dark] [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">Justification / Reason <span className="text-red-500">*</span></Label>
+            <Textarea 
+              placeholder="Provide context for the executive team..." 
+              required
+              className="min-h-[100px]"
+              value={formData.reason}
+              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+            />
+          </div>
+
+          <DialogFooter className="pt-4 border-t">
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="destructive" disabled={loading}>
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Submit to Proceed"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export default EmployeeProfileView

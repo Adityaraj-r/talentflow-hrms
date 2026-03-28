@@ -1,16 +1,55 @@
 import express from "express";
-import { getRecentHires } from "../controllers/employee.controller";
-import { getActiveOnboarding } from "../controllers/employee.controller";
-import { getEmployeeById } from "../controllers/employee.controller"
-import { getManageOnboarding } from "../controllers/employee.controller"
+import {
+  getRecentHires,
+  getActiveOnboarding,
+  getEmployeeById,
+  getManageOnboarding,
+  offboardEmployee,
+} from "../controllers/employee.controller";
+import { protect } from "../middleware/auth.middleware";
 
 const router = express.Router();
 
-router.get("/recent-hires", getRecentHires);
-router.get("/active-onboarding", getActiveOnboarding);
-router.get("/manage-onboarding", getManageOnboarding)
+const allowRoles =
+  (...roles: string[]) =>
+  (req: any, res: any, next: any) => {
+    if (roles.includes(req.user?.role)) return next();
+    return res.status(403).json({ success: false, error: "Access denied" });
+  };
 
-router.get("/:id", getEmployeeById)
+router.get(
+  "/recent-hires",
+  protect,
+  allowRoles("ADMIN", "HR_MANAGER", "CEO"),
+  getRecentHires
+);
 
+router.get(
+  "/active-onboarding",
+  protect,
+  allowRoles("ADMIN", "HR_MANAGER", "HR_OFFICER"),
+  getActiveOnboarding
+);
+
+router.get(
+  "/manage-onboarding",
+  protect,
+  allowRoles("ADMIN", "HR_MANAGER", "HR_OFFICER"),
+  getManageOnboarding
+);
+
+router.get(
+  "/:id",
+  protect,
+  allowRoles("ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "EMPLOYEE"),
+  getEmployeeById
+);
+
+router.post(
+  "/:id/offboard",
+  protect,
+  allowRoles("ADMIN","HR_MANAGER"),
+  offboardEmployee
+);
 
 export default router;

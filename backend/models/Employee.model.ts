@@ -15,6 +15,8 @@ export interface IEmployee extends Document {
   maritalStatus?: 'Single' | 'Married' | 'Divorced' | 'Widowed';
   currentAddress?: string;
   role?: string;
+  exitDate?: Date;
+  exitReason?: string;
 
   address?: {
     street: string;
@@ -102,6 +104,8 @@ const EmployeeSchema = new Schema<IEmployee>(
       default: null,
     },
     joiningDate: { type: Date },
+    exitDate: { type: Date, default: null },
+    exitReason: { type: String, default: null },
     department: { type: String },
     designation: { type: String },
     employmentType: { type: String, enum: ['Full-Time', 'Part-Time', 'Contract', 'Intern'] },

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Navigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,10 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, UserCheck, ShieldAlert, Users, RefreshCw, ChevronRight } from "lucide-react"
 import adminService from "@/services/adminService"
 import { ROLES } from "@/constants/roles"
+import { useAuth } from "@/contexts/AuthContext"
 import { cn } from "@/lib/utils"
 
 const AllEmployees = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [employees, setEmployees] = useState([])
   const [filters, setFilters] = useState({ search: '', role: 'all' })
@@ -53,6 +55,11 @@ const AllEmployees = () => {
     roles: new Set(employees.map(e => e.role).filter(Boolean)).size,
   }), [employees])
 
+  if (user?.role === "EMPLOYEE") {
+    const selfId = user?.employeeId || user?._id
+    return <Navigate to={`/employee-center/employee/${selfId}`} replace />
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -61,7 +68,6 @@ const AllEmployees = () => {
           <p className="text-muted-foreground">View and browse all employee profiles in the system.</p>
         </div>
       </div>
-
 
       <div className="grid gap-4 md:grid-cols-4">
         <StatsCard title="Total Staff" value={stats.total} icon={<Users className="h-8 w-8" />} variant="blue" />
@@ -208,6 +214,5 @@ const StatsCard = ({ title, value, icon, variant }) => {
     </div>
   )
 }
-
 
 export default AllEmployees

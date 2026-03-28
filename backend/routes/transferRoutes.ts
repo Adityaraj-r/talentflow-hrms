@@ -1,26 +1,27 @@
 import express from 'express';
-import { 
-    createTransferRequest, 
-    getAllTransfers, 
-    updateTransferStatus ,
+import {
+    createTransferRequest,
+    getAllTransfers,
+    getMyTransfers,
+    updateTransferStatus,
     getEmployeeLatestTransfer
 } from '../controllers/transferController';
-import { protect } from '../middleware/auth.middleware';
+import { protect, authorize } from '../middleware/auth.middleware';
 
 const router = express.Router();
 
-router.use(protect as any); 
+router.use(protect as any);
 
-//  /api/transfers/submit
 router.post('/submit', createTransferRequest);
 
-//  /api/transfers/all
-router.get('/all', getAllTransfers);
+router.post('/request', createTransferRequest);
 
-//  /api/transfers/update/:id
-router.patch('/update/:id', updateTransferStatus);
+router.get('/my-requests', getMyTransfers);
 
-//  /api/transfers/status
+router.get('/all', authorize('ADMIN', 'CEO', 'HR_MANAGER', 'COUNTRY_MANAGER'), getAllTransfers);
+
+router.patch('/update/:id', authorize('ADMIN', 'CEO'), updateTransferStatus);
+
 router.get('/status/:employeeId', getEmployeeLatestTransfer);
 
 export default router;

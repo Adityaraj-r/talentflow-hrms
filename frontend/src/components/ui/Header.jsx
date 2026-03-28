@@ -135,19 +135,24 @@ const Header = ({ toggleSidebar }) => {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [canUseSearch])
 
-  // UPGRADED NOTIFICATION SYSTEM 
+ // UPGRADED NOTIFICATION SYSTEM 
   useEffect(() => {
     const fetchRealTimeNotifications = async () => {
       const firstName = user?.firstName || user?.name?.split(" ")[0] || ""
+      const userRoleStr = (user?.role?.name || user?.role || "").toUpperCase()
       
       if (firstName) {
         try {
-          const res = await apiClient.get(`/transfers/all`)
-          const myTransfers = res.filter((t) => t.employeeName && t.employeeName.includes(firstName))
+          const execRoles = ["ADMIN", "CEO", "HR_MANAGER", "COUNTRY_MANAGER"]
+          const endpoint = execRoles.includes(userRoleStr) ? "/transfers/all" : "/transfers/my-requests"
+          
+          const res = await apiClient.get(endpoint)
+          const transfersArray = Array.isArray(res) ? res : (res?.data || [])
+          
+          const myTransfers = transfersArray.filter((t) => t.employeeName && t.employeeName.includes(firstName))
           const latest = myTransfers[0]
           
           if (latest && (latest.status === "Approved" || latest.status === "Rejected")) {
-            
             const actionDate = new Date(latest.updatedAt || latest.createdAt);
             const formattedDate = actionDate.toLocaleString('en-US', {
               month: 'short', day: 'numeric', year: 'numeric', 
