@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import Employee from '../models/Employee.model';
-import Document from '../models/Document.model'; 
+import Document from '../models/Document.model';
 import User from '../models/User.model';
 
 export const saveOnboardingProgress = async (req: Request, res: Response): Promise<void> => {
@@ -17,26 +17,25 @@ export const saveOnboardingProgress = async (req: Request, res: Response): Promi
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
     if (files) {
       updateData.Documents = updateData.Documents || {};
-      if (files['aadharCard'])     updateData.Documents.aadharCardPath     = files['aadharCard'][0].path;
-      if (files['panCard'])        updateData.Documents.panCardPath        = files['panCard'][0].path;
-      if (files['resume'])         updateData.Documents.resumePath         = files['resume'][0].path;
-      if (files['educationDocs'])  updateData.Documents.educationDocsPath  = files['educationDocs'][0].path;
-      if (files['passportPhoto'])  updateData.Documents.passportPhotoPath  = files['passportPhoto'][0].path;
-      if (files['relievingLetter'])updateData.Documents.relievingLetterPath= files['relievingLetter'][0].path;
+      if (files['aadharCard'])      updateData.Documents.aadharCardPath      = files['aadharCard'][0].path;
+      if (files['panCard'])         updateData.Documents.panCardPath         = files['panCard'][0].path;
+      if (files['resume'])          updateData.Documents.resumePath          = files['resume'][0].path;
+      if (files['educationDocs'])   updateData.Documents.educationDocsPath   = files['educationDocs'][0].path;
+      if (files['passportPhoto'])   updateData.Documents.passportPhotoPath   = files['passportPhoto'][0].path;
+      if (files['relievingLetter']) updateData.Documents.relievingLetterPath = files['relievingLetter'][0].path;
     }
 
-    // STRICT AUTO-INCREMENT ID LOGIC 
     const existingEmployee = await Employee.findOne({ email: email.toLowerCase().trim() });
 
     if (!existingEmployee) {
-      const lastEmployee = await Employee.findOne({ 
-        employeeCode: { $regex: /^EMP-\d+/ } 
+      const lastEmployee = await Employee.findOne({
+        employeeCode: { $regex: /^EMP-\d+/ }
       }).sort({ createdAt: -1 });
-      
-      let newEmployeeCode = "EMP-0001"; 
+
+      let newEmployeeCode = "EMP-0001";
 
       if (lastEmployee && lastEmployee.employeeCode) {
-        const lastIdParts = lastEmployee.employeeCode.split('-'); 
+        const lastIdParts = lastEmployee.employeeCode.split('-');
         if (lastIdParts.length === 2) {
           const lastNumber = parseInt(lastIdParts[1], 10);
           if (!isNaN(lastNumber)) {
@@ -44,7 +43,7 @@ export const saveOnboardingProgress = async (req: Request, res: Response): Promi
           }
         }
       }
-      updateData.employeeCode = newEmployeeCode; 
+      updateData.employeeCode = newEmployeeCode;
     } else {
       delete updateData.employeeCode;
     }
@@ -55,35 +54,32 @@ export const saveOnboardingProgress = async (req: Request, res: Response): Promi
       { new: true, upsert: true, runValidators: true }
     );
 
-    //  BRIDGE TO DIGITAL LOCKER 
     if (files && employee) {
       const targetId = employee.employeeCode || employee._id.toString();
-      
+
       const docNames: any = {
-        'aadharCard': 'Aadhar Card (Front & Back)',
-        'panCard': 'PAN Card',
-        'resume': 'Cancelled Cheque / Bank Proof',
-        'educationDocs': 'Highest Education Certificate',
-        'passportPhoto': 'Passport Photo',
-        'relievingLetter': 'Previous Relieving Letter'
+        aadharCard:      'Aadhar Card (Front & Back)',
+        panCard:         'PAN Card',
+        resume:          'Cancelled Cheque / Bank Proof',
+        educationDocs:   'Highest Education Certificate',
+        passportPhoto:   'Passport Photo',
+        relievingLetter: 'Previous Relieving Letter',
       };
 
       for (const key of Object.keys(files)) {
         const fileArr = files[key];
         if (fileArr && fileArr.length > 0) {
           const file = fileArr[0];
-
-          // Cloudinary Document Migration
           await new Document({
-            employeeId: targetId, 
-            uploadedBy: 'Onboarding System', 
-            fileName: file.originalname || 'Cloud Document',
-            originalName: docNames[key] || file.originalname, 
-            fileType: file.mimetype,
-            fileSize: file.size ? (file.size / (1024 * 1024)).toFixed(2) + ' MB' : 'Cloud File',
-            filePath: file.path, 
-            category: 'Onboarding', 
-            status: 'Pending'
+            employeeId:   targetId,
+            uploadedBy:   'Onboarding System',
+            fileName:     file.originalname || 'Cloud Document',
+            originalName: docNames[key] || file.originalname,
+            fileType:     file.mimetype,
+            fileSize:     file.size ? (file.size / (1024 * 1024)).toFixed(2) + ' MB' : 'Cloud File',
+            filePath:     file.path,
+            category:     'Onboarding',
+            status:       'Pending',
           }).save();
         }
       }
@@ -91,7 +87,6 @@ export const saveOnboardingProgress = async (req: Request, res: Response): Promi
 
     res.status(200).json({ success: true, data: employee });
   } catch (error: any) {
-    console.error('Onboarding Save Error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -105,53 +100,40 @@ export const getOnboardingDetails = async (req: Request, res: Response): Promise
     }
     res.status(200).json({ success: true, data: employee });
   } catch (error: any) {
-    console.error('SERVER CRASH ERROR:', error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
 export const getAllOnboardingEmployees = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { unenrolled } = req.query; 
-    
-    // TRACER 1: Tells us if the endpoint is actually being hit, and what the frontend sent!
-    console.log(`[TRACER] /onboarding/all hit! Unenrolled flag received:`, unenrolled);
+    const { unenrolled } = req.query;
 
-    let dbQuery: any = { 
+    let dbQuery: any = {
       employeeCode: { $regex: /^EMP-\d+/ },
       $or: [
-        { "Documents.aadharCardPath": { $exists: true, $ne: null } },
-        { "Documents.panCardPath": { $exists: true, $ne: null } },
-        { "Documents.resumePath": { $exists: true, $ne: null } },
-        { "Documents.educationDocsPath": { $exists: true, $ne: null } },
-        { "Documents.passportPhotoPath": { $exists: true, $ne: null } },
-        { "Documents.relievingLetterPath": { $exists: true, $ne: null } }
-      ]
+        { "Documents.aadharCardPath":     { $exists: true, $ne: null } },
+        { "Documents.panCardPath":        { $exists: true, $ne: null } },
+        { "Documents.resumePath":         { $exists: true, $ne: null } },
+        { "Documents.educationDocsPath":  { $exists: true, $ne: null } },
+        { "Documents.passportPhotoPath":  { $exists: true, $ne: null } },
+        { "Documents.relievingLetterPath":{ $exists: true, $ne: null } },
+      ],
     };
 
-    // We check for both string 'true' and boolean true just in case Axios parses it differently
     if (unenrolled === 'true') {
-      console.log(`[TRACER] Applying the userId: null filter!`);
-      
-      // SENIOR OPTIMIZATION (Strict Null Check)
-      dbQuery.userId = null; 
-
-      dbQuery["department"] = { $exists: true, $nin: [null, ""] };
+      dbQuery.userId       = null;
+      dbQuery["department"]  = { $exists: true, $nin: [null, ""] };
       dbQuery["designation"] = { $exists: true, $nin: [null, ""] };
       dbQuery["bankDetails"] = { $exists: true, $ne: null };
-      dbQuery["kycDetails"] = { $exists: true, $ne: null };
-    } else {
-      console.log(`[TRACER] WARNING: unenrolled flag was NOT true. Skipping filter!`);
+      dbQuery["kycDetails"]  = { $exists: true, $ne: null };
     }
 
     const employees = await Employee.find(dbQuery)
       .select('firstName lastName employeeCode department gender phoneNumber createdAt onboardingStatus userId')
-      .sort({ createdAt: -1 }); 
+      .sort({ createdAt: -1 });
 
-    console.log(`[TRACER] Returning ${employees.length} candidates to the dropdown.`);
     res.status(200).json(employees);
   } catch (error: any) {
-    console.error("Error fetching onboarding list:", error);
     res.status(500).json({ message: "Error fetching onboarding list" });
-  } 
+  }
 };

@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react"
+import { Navigate } from "react-router-dom"
+import { useAuth } from "@/contexts/AuthContext"
 import apiClient from "@/services/apiClient"
 import { useUser } from "@/contexts/UserContext"
 import { Button } from "@/components/ui/button"
@@ -11,77 +13,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { UserPlus, Upload, CreditCard, Building, FileText, CheckCircle2, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
-function AdminOnboardingReadOnly() {
-  const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
+const ALLOWED_ROLES = ["ADMIN", "HR_MANAGER", "HR_OFFICER"]
 
-  useEffect(() => {
-    apiClient
-      .get("/onboarding/list/all")
-      .then((res) => {
-        const data = res?.data ?? res
-        setRows(Array.isArray(data) ? data : [])
-      })
-      .catch(() => setRows([]))
-      .finally(() => setLoading(false))
-  }, [])
-
-  return (
-    <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Onboarding & KYC</h1>
-        <p className="text-muted-foreground mt-1">
-          Read-only oversight. Operational onboarding is handled by HR roles.
-        </p>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Candidates in pipeline</CardTitle>
-          <CardDescription>From onboarding records with document activity.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-            </p>
-          ) : rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No records found.</p>
-          ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50 text-left">
-                    <th className="p-3">Name</th>
-                    <th className="p-3">Code</th>
-                    <th className="p-3">Department</th>
-                    <th className="p-3">Phone</th>
-                    <th className="p-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r) => (
-                    <tr key={r._id || r.employeeCode} className="border-b last:border-0">
-                      <td className="p-3">{r.firstName} {r.lastName}</td>
-                      <td className="p-3 font-mono text-xs">{r.employeeCode}</td>
-                      <td className="p-3">{r.department || "—"}</td>
-                      <td className="p-3">{r.phoneNumber || "—"}</td>
-                      <td className="p-3">{r.onboardingStatus || "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-const OnboardingForm = () => {
+const Onboarding = () => {
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState("personal")
   const [loading, setLoading] = useState(false)
-  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false)
+
   const [formData, setFormData] = useState({
     firstName: "",
     MiddleName: "",
@@ -110,20 +49,15 @@ const OnboardingForm = () => {
     const fetchProgress = async () => {
       if (formData.email && activeTab !== "personal") {
         try {
-          // const token = localStorage.getItem('token');
           const response = await apiClient.get(`/onboarding/${formData.email}`);
           if (response.success) {
             const fetchedData = { ...response.data };
-
             if (fetchedData.gender) {
-              fetchedData.gender = fetchedData.gender.charAt(0).toUpperCase() +
-                fetchedData.gender.slice(1).toLowerCase();
+              fetchedData.gender = fetchedData.gender.charAt(0).toUpperCase() + fetchedData.gender.slice(1).toLowerCase();
             }
-
             if (fetchedData.dateOfBirth) {
               fetchedData.dateOfBirth = fetchedData.dateOfBirth.split('T')[0];
             }
-
             setFormData(prev => ({ ...prev, ...fetchedData }));
           }
         } catch (error) {
@@ -134,17 +68,10 @@ const OnboardingForm = () => {
     fetchProgress();
   }, [activeTab, formData.email]);
 
-  const handleSubmit = async () => {
-    if (!isTabValid("documents")) {
-      toast.error("Please upload all mandatory documents and confirm the declaration.");
-      return;
-    }
+  if (!ALLOWED_ROLES.includes(user?.role)) {
+    return <Navigate to="/unauthorized" replace />
+  }
 
-    // Call your existing save progress function with 'Completed' status
-    await handleSaveProgress("Completed");
-  };
-
-  // Add this at the beginning of your return statement
   if (activeTab === "Completed") {
     return (
       <Card className="max-w-md mx-auto mt-10 text-center p-10">
@@ -162,10 +89,7 @@ const OnboardingForm = () => {
 
   const handleChange = (field, value, section = null) => {
     if (section) {
-      setFormData(prev => ({
-        ...prev,
-        [section]: { ...prev[section], [field]: value } // Brackets [] added
-      }))
+      setFormData(prev => ({ ...prev, [section]: { ...prev[section], [field]: value } }))
     } else {
       setFormData(prev => ({ ...prev, [field]: value }))
     }
@@ -173,20 +97,9 @@ const OnboardingForm = () => {
 
   const handleFileChange = (field, file) => {
     if (file) {
-      // Check file size (5MB limit to match backend configuration)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("File size should be less than 5MB");
-        return;
-      }
-
-      // Verify allowed types to match backend filter
+      if (file.size > 5 * 1024 * 1024) { toast.error("File size should be less than 5MB"); return; }
       const allowedTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
-      if (!allowedTypes.includes(file.type)) {
-        toast.error("Only PDF, JPG, and PNG files are allowed.");
-        return;
-      }
-
-      // Store the actual file object in the state
+      if (!allowedTypes.includes(file.type)) { toast.error("Only PDF, JPG, and PNG files are allowed."); return; }
       setFormData(prev => ({ ...prev, [field]: file }));
       toast.success(`${file.name} selected!`);
     }
@@ -229,65 +142,31 @@ const OnboardingForm = () => {
       if (missing) return "Please upload all mandatory documents (*).";
       if (!isConfirmed) return "Please confirm the authenticity declaration.";
     }
-    return null; // Null means no errors!
+    return null;
   };
 
-  const isTabValid = (tab) => {
-    return getTabValidationError(tab) === null;
-  };
-  // Function to ensure the date always looks like DD-MM-YYYY for the user
-  const formatDisplayDate = (dateString) => {
-    if (!dateString) return "";
-
-    // Extract just the date part if it's a full ISO string (e.g., 2026-02-01T00:00:00.000Z)
-    const cleanDate = dateString.split('T')[0];
-
-    // If the date is in YYYY-MM-DD (standard DB/Calendar format)
-    if (cleanDate.includes("-") && cleanDate.split("-")[0].length === 4) {
-      const [y, m, d] = cleanDate.split("-");
-      return `${d}-${m}-${y}`;
-    }
-
-    return cleanDate; // Returns DD-MM-YYYY if already in that format
-  };
+  const isTabValid = (tab) => getTabValidationError(tab) === null;
 
   const handleSaveProgress = async (nextTab) => {
     const errorMessage = getTabValidationError(activeTab);
-    if (errorMessage) {
-      toast.error(errorMessage);
-      return;
-    }
-    if (!formData.email) {
-      toast.error("Please enter a Personal Email to save progress.");
-      return;
-    }
+    if (errorMessage) { toast.error(errorMessage); return; }
+    if (!formData.email) { toast.error("Please enter a Personal Email to save progress."); return; }
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const data = new FormData();
-
-      // 1. Append basic fields and onboarding status
       data.append('email', formData.email);
       data.append('onboardingStatus', activeTab.charAt(0).toUpperCase() + activeTab.slice(1));
 
-      // 2. Append text fields (filtering out empty strings)
       Object.keys(formData).forEach(key => {
-        if (
-          typeof formData[key] !== 'object' &&
-          formData[key] !== "" &&
-          key !== 'email' &&
-          key !== 'onboardingStatus'
-        ) {
+        if (typeof formData[key] !== 'object' && formData[key] !== "" && key !== 'email' && key !== 'onboardingStatus') {
           data.append(key, formData[key]);
         }
       });
 
-      // 3. Append Nested Objects
       data.append('bankDetails', JSON.stringify(formData.bankDetails));
       data.append('kycDetails', JSON.stringify(formData.kycDetails));
 
-      // 4. Append Files from the Documents Tab
       if (formData.aadharCard) data.append('aadharCard', formData.aadharCard);
       if (formData.panCard) data.append('panCard', formData.panCard);
       if (formData.resume) data.append('resume', formData.resume);
@@ -295,13 +174,9 @@ const OnboardingForm = () => {
       if (formData.passportPhoto) data.append('passportPhoto', formData.passportPhoto);
       if (formData.relievingLetter) data.append('relievingLetter', formData.relievingLetter);
 
-      const response = await apiClient.post(
-        "/onboarding/save",
-        data,
-        {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        }
-      );
+      const response = await apiClient.post("/onboarding/save", data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       if (response.success) {
         toast.success(`${activeTab.toUpperCase()} details saved!`);
         if (nextTab) setActiveTab(nextTab);
@@ -314,6 +189,14 @@ const OnboardingForm = () => {
     }
   };
 
+  const handleSubmit = async () => {
+    if (!isTabValid("documents")) {
+      toast.error("Please upload all mandatory documents and confirm the declaration.");
+      return;
+    }
+    await handleSaveProgress("Completed");
+  };
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div>
@@ -324,29 +207,11 @@ const OnboardingForm = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-4 lg:w-150">
           <TabsTrigger value="personal">Personal</TabsTrigger>
-          <TabsTrigger
-            value="employment"
-            disabled={!isTabValid("personal")}
-          >
-            Employment
-          </TabsTrigger>
-          <TabsTrigger
-            value="banking"
-            disabled={!isTabValid("personal") || !isTabValid("employment")}
-          >
-            Bank & Statutory
-          </TabsTrigger>
-          <TabsTrigger
-            value="documents"
-            disabled={!isTabValid("personal") || !isTabValid("employment") ||
-              !isTabValid("banking")}
-          >
-            Documents
-          </TabsTrigger>
+          <TabsTrigger value="employment" disabled={!isTabValid("personal")}>Employment</TabsTrigger>
+          <TabsTrigger value="banking" disabled={!isTabValid("personal") || !isTabValid("employment")}>Bank & Statutory</TabsTrigger>
+          <TabsTrigger value="documents" disabled={!isTabValid("personal") || !isTabValid("employment") || !isTabValid("banking")}>Documents</TabsTrigger>
         </TabsList>
 
-
-        {/* PERSONAL TAB */}
         <TabsContent value="personal">
           <Card>
             <CardHeader>
@@ -380,13 +245,8 @@ const OnboardingForm = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Gender *</Label>
-                  <Select
-                    value={formData.gender || ""}
-                    onValueChange={(val) => handleChange("gender", val)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Gender" />
-                    </SelectTrigger>
+                  <Select value={formData.gender || ""} onValueChange={(val) => handleChange("gender", val)}>
+                    <SelectTrigger><SelectValue placeholder="Select Gender" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Male">Male</SelectItem>
                       <SelectItem value="Female">Female</SelectItem>
@@ -397,9 +257,7 @@ const OnboardingForm = () => {
                 <div className="space-y-2">
                   <Label>Blood Group</Label>
                   <Select onValueChange={(val) => handleChange("bloodGroup", val)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Group" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Select Group" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="A+">A+</SelectItem>
                       <SelectItem value="O+">O+</SelectItem>
@@ -421,9 +279,7 @@ const OnboardingForm = () => {
                     value={formData.phoneNumber}
                     onChange={(e) => {
                       const cleaned = e.target.value.replace(/\D/g, "");
-                      if (cleaned.length <= 10) {
-                        handleChange("phoneNumber", cleaned);
-                      }
+                      if (cleaned.length <= 10) handleChange("phoneNumber", cleaned);
                     }}
                     placeholder="7678988776"
                   />
@@ -444,28 +300,17 @@ const OnboardingForm = () => {
           </Card>
         </TabsContent>
 
-        {/* --- Employment, Banking, and Documents Tabs remain same as previous structure --- */}
-        {/* EMPLOYMENT TAB */}
         <TabsContent value="employment">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building className="h-5 w-5" /> Official Details
-              </CardTitle>
-              <CardDescription>
-                Enter official identification and structural details.
-              </CardDescription>
+              <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5" /> Official Details</CardTitle>
+              <CardDescription>Enter official identification and structural details.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Employee ID *</Label>
-                  <Input
-                    disabled
-                    value={formData.employeeCode || ""}
-                    onChange={(e) => handleChange("employeeCode", e.target.value)}
-                    placeholder="EMP-001"
-                  />
+                  <Input disabled value={formData.employeeCode || ""} onChange={(e) => handleChange("employeeCode", e.target.value)} placeholder="EMP-001" />
                 </div>
                 <div className="space-y-2">
                   <Label>Date of Joining *</Label>
@@ -481,28 +326,19 @@ const OnboardingForm = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Designation *</Label>
-                  <Input
-                    value={formData.designation || ""}
-                    onChange={(e) => handleChange("designation", e.target.value)}
-                    placeholder="Software Engineer"
-                  />
+                  <Input value={formData.designation || ""} onChange={(e) => handleChange("designation", e.target.value)} placeholder="Software Engineer" />
                 </div>
                 <div className="space-y-2">
                   <Label>Department *</Label>
-                  <Select
-                    value={formData.department || ""}
-                    onValueChange={(val) => handleChange("department", val)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Department" />
-                    </SelectTrigger>
+                  <Select value={formData.department || ""} onValueChange={(val) => handleChange("department", val)}>
+                    <SelectTrigger><SelectValue placeholder="Select Department" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="IT">IT</SelectItem>
                       <SelectItem value="HR">Human Resources</SelectItem>
                       <SelectItem value="Finance">Finance</SelectItem>
                       <SelectItem value="Sales">Sales</SelectItem>
-                      <SelectItem value="Finance">Operation</SelectItem>
-                      <SelectItem value="Sales">Marketing</SelectItem>
+                      <SelectItem value="Operations">Operation</SelectItem>
+                      <SelectItem value="Marketing">Marketing</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -511,34 +347,21 @@ const OnboardingForm = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Work Location</Label>
-                  <Input
-                    value={formData.workLocation || ""}
-                    onChange={(e) => handleChange("workLocation", e.target.value)}
-                    placeholder="Chh. Sambhajinagar"
-                  />
+                  <Input value={formData.workLocation || ""} onChange={(e) => handleChange("workLocation", e.target.value)} placeholder="Chh. Sambhajinagar" />
                 </div>
                 <div className="space-y-2">
                   <Label>Reporting Manager *</Label>
-                  <Input
-                    value={formData.reportingManager || ""}
-                    onChange={(e) => handleChange("reportingManager", e.target.value)}
-                    placeholder="Manager Name"
-                  />
+                  <Input value={formData.reportingManager || ""} onChange={(e) => handleChange("reportingManager", e.target.value)} placeholder="Manager Name" />
                 </div>
               </div>
 
               <div className="flex justify-between mt-6">
-                <Button variant="outline" onClick={() => setActiveTab("personal")}>
-                  Back to Personal
-                </Button>
+                <Button variant="outline" onClick={() => setActiveTab("personal")}>Back to Personal</Button>
                 <Button
                   disabled={loading}
                   onClick={() => {
-                    if (isTabValid("employment")) {
-                      handleSaveProgress("banking");
-                    } else {
-                      toast.error("Please fill all mandatory official details (*).");
-                    }
+                    if (isTabValid("employment")) { handleSaveProgress("banking"); }
+                    else { toast.error("Please fill all mandatory official details (*)."); }
                   }}
                 >
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Next: Banking
@@ -548,37 +371,23 @@ const OnboardingForm = () => {
           </Card>
         </TabsContent>
 
-        {/* BANKING TAB */}
         <TabsContent value="banking">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" /> Bank & Statutory Details
-              </CardTitle>
-              <CardDescription>
-                Enter bank account information and government ID details (KYC).
-              </CardDescription>
+              <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5" /> Bank & Statutory Details</CardTitle>
+              <CardDescription>Enter bank account information and government ID details (KYC).</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Bank Details Section */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium border-b pb-2">Bank Account Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Account Holder Name *</Label>
-                    <Input
-                      value={formData.bankDetails?.accountHolderName || ""}
-                      onChange={(e) => handleChange("accountHolderName", e.target.value, "bankDetails")}
-                      placeholder="As per bank records"
-                    />
+                    <Input value={formData.bankDetails?.accountHolderName || ""} onChange={(e) => handleChange("accountHolderName", e.target.value, "bankDetails")} placeholder="As per bank records" />
                   </div>
                   <div className="space-y-2">
                     <Label>Bank Name *</Label>
-                    <Input
-                      value={formData.bankDetails?.bankName || ""}
-                      onChange={(e) => handleChange("bankName", e.target.value, "bankDetails")}
-                      placeholder="e.g. HDFC Bank"
-                    />
+                    <Input value={formData.bankDetails?.bankName || ""} onChange={(e) => handleChange("bankName", e.target.value, "bankDetails")} placeholder="e.g. HDFC Bank" />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -588,7 +397,6 @@ const OnboardingForm = () => {
                       value={formData.bankDetails?.accountNumber || ""}
                       placeholder="000012345678"
                       onChange={(e) => {
-                        // Strips alphabets/symbols and limits to 18 digits (standard max for most banks)
                         const value = e.target.value.replace(/\D/g, "").slice(0, 18);
                         handleChange("accountNumber", value, "bankDetails");
                       }}
@@ -596,39 +404,25 @@ const OnboardingForm = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>IFSC Code *</Label>
-                    {/* IFSC Code Field */}
-                    <Input
-                      value={formData.bankDetails?.ifscCode || ""}
-                      placeholder="HDFC0001234"
-                      className="uppercase" // Visual hint
-                      onChange={(e) => handleChange("ifscCode", e.target.value.toUpperCase(), "bankDetails")}
-                    />
+                    <Input value={formData.bankDetails?.ifscCode || ""} placeholder="HDFC0001234" className="uppercase" onChange={(e) => handleChange("ifscCode", e.target.value.toUpperCase(), "bankDetails")} />
                   </div>
                 </div>
               </div>
 
-              {/* Statutory / KYC Section */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium border-b pb-2">Statutory (KYC) Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>PAN Number *</Label>
-                    {/* PAN Number Field */}
-                    <Input
-                      value={formData.kycDetails?.panNumber || ""}
-                      placeholder="ABCDE1234F"
-                      className="uppercase"
-                      onChange={(e) => handleChange("panNumber", e.target.value.toUpperCase(), "kycDetails")}
-                    />
+                    <Input value={formData.kycDetails?.panNumber || ""} placeholder="ABCDE1234F" className="uppercase" onChange={(e) => handleChange("panNumber", e.target.value.toUpperCase(), "kycDetails")} />
                   </div>
                   <div className="space-y-2">
                     <Label>Aadhar Number *</Label>
-                    {/* Aadhar Number Field (Numeric only) */}
                     <Input
                       value={formData.kycDetails?.aadharNumber || ""}
                       placeholder="123456789012"
                       onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, "").slice(0, 12); // Remove non-digits, limit to 12
+                        const value = e.target.value.replace(/\D/g, "").slice(0, 12);
                         handleChange("aadharNumber", value, "kycDetails");
                       }}
                     />
@@ -637,52 +431,30 @@ const OnboardingForm = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>UAN(Universal Account Number)</Label>
-                    <Input
-                      value={formData.kycDetails?.uan || ""}
-                      onChange={(e) => handleChange("uan", e.target.value, "kycDetails")}
-                      placeholder="100XXXXXXXXX"
-                    />
+                    <Input value={formData.kycDetails?.uan || ""} onChange={(e) => handleChange("uan", e.target.value, "kycDetails")} placeholder="100XXXXXXXXX" />
                   </div>
                   <div className="space-y-2">
                     <Label>PF Number *</Label>
-                    <Input
-                      value={formData.kycDetails?.pfNumber || ""}
-                      onChange={(e) => handleChange("pfNumber", e.target.value, "kycDetails")}
-                      placeholder="MH/BAN/0000000/000"
-                    />
+                    <Input value={formData.kycDetails?.pfNumber || ""} onChange={(e) => handleChange("pfNumber", e.target.value, "kycDetails")} placeholder="MH/BAN/0000000/000" />
                   </div>
                 </div>
               </div>
 
-              {/* Corrected Back Button in Bank & Statutory Tab */}
               <div className="flex justify-between mt-6">
-                <Button
-                  variant="outline"
-                  type="button" // Ensure type is 'button' to avoid accidental form submission
-                  onClick={() => setActiveTab("employment")}
-                >
-                  Back to Employment
-                </Button>
-
-                <Button onClick={() => handleSaveProgress("documents")}>
-                  Next: Documents
-                </Button>
+                <Button variant="outline" type="button" onClick={() => setActiveTab("employment")}>Back to Employment</Button>
+                <Button onClick={() => handleSaveProgress("documents")}>Next: Documents</Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* DOCUMENTS TAB */}
         <TabsContent value="documents">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" /> Document Upload
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Document Upload</CardTitle>
               <CardDescription>Upload clear scans of original documents</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* 2-Column Grid matching Image Two */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
                   { id: "aadharCard", label: "Aadhar Card (Front & Back) *" },
@@ -700,15 +472,7 @@ const OnboardingForm = () => {
                     <Upload className="h-8 w-8 text-slate-400" />
                     <span className="font-medium text-sm">{doc.label}</span>
                     <span className="text-xs text-slate-400">Click to upload or drag file</span>
-
-                    <input
-                      type="file"
-                      id={doc.id}
-                      className="hidden"
-                      onChange={(e) => handleFileChange(doc.id, e.target.files[0])}
-                    />
-
-                    {/* Selection indicator */}
+                    <input type="file" id={doc.id} className="hidden" onChange={(e) => handleFileChange(doc.id, e.target.files[0])} />
                     {formData[doc.id] && (
                       <div className="absolute top-2 right-2 flex items-center gap-1 text-green-600 text-xs font-bold bg-white px-2 py-1 rounded-full border">
                         <CheckCircle2 className="h-3 w-3" /> Selected
@@ -719,16 +483,8 @@ const OnboardingForm = () => {
               </div>
 
               <div className="flex items-center space-x-2 py-4">
-                <input
-                  type="checkbox"
-                  id="confirm"
-                  checked={isConfirmed}
-                  onChange={(e) => setIsConfirmed(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 cursor-pointer"
-                />
-                <Label htmlFor="confirm" className="text-sm font-normal cursor-pointer">
-                  I confirm that all provided details and documents are authentic. *
-                </Label>
+                <input type="checkbox" id="confirm" checked={isConfirmed} onChange={(e) => setIsConfirmed(e.target.checked)} className="h-4 w-4 rounded border-gray-300 cursor-pointer" />
+                <Label htmlFor="confirm" className="text-sm font-normal cursor-pointer">I confirm that all provided details and documents are authentic. *</Label>
               </div>
 
               <div className="flex justify-between mt-6">
@@ -748,20 +504,6 @@ const OnboardingForm = () => {
       </Tabs>
     </div>
   )
-}
-
-const Onboarding = () => {
-  const { user, loading: permLoading } = useUser()
-  if (permLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[40vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-  const canWrite = user?.can?.("recruitment", "write")
-  if (!canWrite) return <AdminOnboardingReadOnly />
-  return <OnboardingForm />
 }
 
 export default Onboarding

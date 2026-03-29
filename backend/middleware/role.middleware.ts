@@ -75,13 +75,10 @@ export const authorizeByMatrix = (module: ModuleKey, action: PermissionAction) =
       return;
     }
 
-    // Only SUPER ADMIN bypasses the matrix. ADMIN follows DB permissions (e.g. recruitment read-only).
-    const userRole = (req.user.role?.toString() || '').toUpperCase();
-
-    if (SUPER_ADMIN_ROLES.includes(userRole)) {
     const rawUserRole = req.user.role;
     const normalizedUserRole = normalizeRole(rawUserRole);
 
+    // FIX: Safely bypass the matrix for both ADMIN and SUPER_ADMIN
     if (ADMIN_ROLES.some(role => normalizeRole(role) === normalizedUserRole)) {
       next();
       return;
@@ -116,5 +113,4 @@ export const authorizeByMatrix = (module: ModuleKey, action: PermissionAction) =
       ResponseHandler.serverError(res, 'Permission check failed');
     }
   };
-}
 };

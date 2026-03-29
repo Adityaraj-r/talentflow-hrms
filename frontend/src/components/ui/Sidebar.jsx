@@ -66,7 +66,7 @@ const Sidebar = ({
     setOpenGroups({
       employeeCenter:
         path.startsWith("/employee-center") ||
-        path.startsWith("/dashboard/onboarding") ||
+        path.startsWith("/employee-center/onboarding") ||
         path.startsWith("/employee-transfer") ||
         path.startsWith("/digital-locker"),
 
@@ -236,11 +236,9 @@ const Sidebar = ({
 
           <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
             <SubLink to="/employee-center/all-employees" label="All Employees" />
-            {canSee("recruitment") && (
-              <SubLink to="/dashboard/onboarding" label="Onboarding & KYC (view)" />
-            )}
-            <SubLink to="/employee-transfer" label="Transfers & Promotions" />
-            <SubLink to="/digital-locker" label="Digital Locker (Docs)" />
+            <SubLink to="/employee-center/onboarding" label="Onboarding & KYC" />
+            <SubLink to="/employee-center/employee-transfer" label="Transfers & Promotions" />
+            <SubLink to="/employee-center/digital-locker" label="Digital Locker (Docs)" />
           </SidebarGroup>
 
           {canSee("recruitment") && (
@@ -316,13 +314,19 @@ const Sidebar = ({
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
 
+          <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
+            <SubLink to="/employee-center/all-employees" label="All Employees" />
+            <SubLink to="/employee-center/onboarding" label="Onboarding & KYC" />
+            <SubLink to="/employee-center/employee-transfer" label="Transfers & Promotions" />
+            <SubLink to="/employee-center/digital-locker" label="Digital Locker" />
+          </SidebarGroup>
+
           {canSee("recruitment") && (
             <SidebarGroup id="recruitment" icon={Users} label={getRecruitmentLabel()}>
               <SubLink to="/staff-requisition" label="Staff Requisition" />
               <SubLink to="/dashboard/job-openings" label="Job Openings" />
               <SubLink to="/dashboard/applications" label="Applications" />
               <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
-              <SubLink to="/dashboard/onboarding" label="Onboarding" />
               <SubLink to="/dashboard/offer-management" label="Offer Management" />
               <SubLink to="/dashboard/recruitment-suggestions" label="Admin suggestions inbox" />
             </SidebarGroup>
@@ -381,7 +385,6 @@ const Sidebar = ({
           {canSee("recruitment") && (
             <SidebarGroup id="recruitment" icon={Users} label={getRecruitmentLabel()}>
               <SubLink to="/staff-requisition" label="Staff Requisition" />
-              <SubLink to="/dashboard/onboarding" label="Onboarding" />
             </SidebarGroup>
           )}
           {canSee('attendance') && (
@@ -400,6 +403,13 @@ const Sidebar = ({
               <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
             </SidebarGroup>
           )}
+
+          <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
+            <SubLink to="/employee-center/all-employees" label="All Employees" />
+            <SubLink to="/employee-center/onboarding" label="Onboarding & KYC" />
+            <SubLink to="/employee-center/employee-transfer" label="Transfers & Promotions" />
+            <SubLink to="/employee-center/digital-locker" label="Digital Locker" />
+          </SidebarGroup>
 
           {/* FIXED: HR Officer has no PMS route in App.jsx — removed broken link */}
 
@@ -423,6 +433,12 @@ const Sidebar = ({
           
           {/* CEO MODULES */}
           <SidebarLink to="/ceo/analytics" icon={Users} label="Workforce Analytics" />
+
+           <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
+            <SubLink to="/employee-center/all-employees" label="All Employees" />
+            <SubLink to="/employee-center/employee-transfer" label="Employee Lifecycle" />
+          </SidebarGroup>
+
           <SidebarLink to="/ceo/payroll" icon={CircleDollarSign} label="Payroll & Cost" />
           <SidebarLink to="/ceo/org-structure" icon={Network} label="Org Structure" />
           <SidebarLink to="/ceo/audit" icon={FileBadge} label="Audit Summary" />
@@ -548,7 +564,7 @@ const Sidebar = ({
               <SubLink to="/dashboard/applications" label="Applications" />
               <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
               <SubLink to="/dashboard/offer-management" label="Offer Management" />
-              <SubLink to="/dashboard/onboarding" label="Onboarding" />
+              <SubLink to="/employee-center/onboarding" label="Onboarding & KYC" />
             </SidebarGroup>
           )}
           {canSee("attendance") && <LeaveLink />}
