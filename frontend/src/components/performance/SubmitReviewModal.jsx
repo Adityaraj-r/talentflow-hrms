@@ -18,13 +18,11 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
         rating: c.rating || 1, 
         comments: c.comments || '' 
       })));
-      // Task 6.1: Reset strengths and improvements when the review changes
       setStrengths(review.strengths || '');
       setImprovements(review.areasForImprovement || '');
     }
   }, [review]);
 
-  // Task 6.2: Fix 0/5 flash by checking competencies length
   const overallRating = competencies.length > 0
     ? parseFloat((competencies.reduce((sum, c) => sum + c.rating, 0) / competencies.length).toFixed(2))
     : 0;
@@ -64,7 +62,6 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto">
         
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 z-10">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Submit Review</h2>
@@ -86,16 +83,14 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
 
         <div className="p-6 space-y-6">
 
-          {/* Overall Rating Preview */}
           <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 rounded-xl p-4 flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Overall Rating (auto-calculated)</span>
-            {/* Task 6.2: Conditional render to avoid 0/5 flash */}
+
             <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                 {competencies.length > 0 ? `${overallRating}/5` : '—'}
             </span>
           </div>
 
-          {/* Competency Ratings */}
           <div>
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
               Competency Ratings <span className="text-red-500">*</span>
@@ -109,7 +104,7 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
                       {[1, 2, 3, 4, 5].map(star => (
                         <button 
                           key={star} 
-                          type="button" // Task 6.3: Added explicit type
+                          type="button" 
                           onClick={() => handleRatingChange(index, star)}
                           className={`transition-colors ${star <= comp.rating ? 'text-orange-400' : 'text-gray-300 dark:text-gray-600'}`}
                         >
@@ -130,7 +125,6 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
             </div>
           </div>
 
-          {/* Strengths */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               Strengths <span className="text-red-500">*</span>
@@ -144,7 +138,6 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
             />
           </div>
 
-          {/* Areas for Improvement */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               Areas for Improvement <span className="text-red-500">*</span>
@@ -159,7 +152,6 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex justify-end gap-2 p-6 border-t border-gray-200 dark:border-gray-800">
           <button 
             type="button" 

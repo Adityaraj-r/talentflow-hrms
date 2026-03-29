@@ -21,6 +21,8 @@ import requisitionRoutes from "./routes/requisition.routes";
 import roleRoutes from './routes/role.routes';
 import departmentRoutes from './routes/department.routes';
 import performanceRoutes from './routes/performanceRoutes';
+import goalRoutes from './routes/goalRoutes'
+import pipRoutes from './routes/pipRoutes'
 import transferRoutes from "./routes/transferRoutes";
 import promotionRoutes from "./routes/promotionRoutes";
 import auditRoutes from './routes/audit.routes';
@@ -135,6 +137,8 @@ app.use('/api/executive', executiveRoutes);
 app.use('/api/offboarding', offboardingRoutes);
 
 app.use('/api/performance', performanceRoutes);
+app.use('/api/performance/goals', goalRoutes)
+app.use('/api/performance/pips', pipRoutes)
 app.use('/api/holidays', holidayRoutes);
 app.use('/api/transfers', transferRoutes);
 app.use('/api/promotions', promotionRoutes);

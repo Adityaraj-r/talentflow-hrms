@@ -23,8 +23,8 @@ const ReviewDetailPage = () => {
     try {
       setLoading(true);
       const res = await reviewApi.getReviewById(id);
-      // reviewApi returns full { success, data } object (no .then(r=>r.data) unwrap)
-      const reviewData = res.data ?? res;
+      const reviewData = res?.data?.data ?? res?.data ?? res;
+      console.log("REVIEW DATA:", reviewData);
       if (reviewData) {
         setReview(reviewData);
       } else {
@@ -46,7 +46,6 @@ const ReviewDetailPage = () => {
       setShowApprovePanel(false);
       setFeedback("");
     } catch (error) {
-      // FIXED: apiClient error interceptor returns error data directly, not error.response.data
       toast.error(error?.error || error?.message || "Failed to approve review");
     } finally {
       setApproving(false);
@@ -82,7 +81,6 @@ const ReviewDetailPage = () => {
     <div className="min-h-screen bg-white dark:bg-gray-950 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
 
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -103,7 +101,6 @@ const ReviewDetailPage = () => {
               {review.status?.toUpperCase()}
             </span>
 
-            {/* FIXED: role check uses normalized uppercase comparison */}
             {review.status === "completed" && userRole === "HR_MANAGER" && (
               <button
                 onClick={() => setShowApprovePanel(!showApprovePanel)}
@@ -123,7 +120,6 @@ const ReviewDetailPage = () => {
           </div>
         </div>
 
-        {/* Approve Panel */}
         {showApprovePanel && (
           <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-6 space-y-4">
             <h3 className="font-semibold text-gray-900 dark:text-white">Approve this Review</h3>
@@ -155,7 +151,6 @@ const ReviewDetailPage = () => {
           </div>
         )}
 
-        {/* Info Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
             <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3">Employee</h3>
@@ -181,7 +176,6 @@ const ReviewDetailPage = () => {
           </div>
         </div>
 
-        {/* Overall Rating */}
         <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 rounded-xl p-6 flex items-center justify-between">
           <span className="font-semibold text-gray-700 dark:text-gray-300">Overall Rating</span>
           <div className="flex items-center gap-3">
@@ -203,7 +197,6 @@ const ReviewDetailPage = () => {
           </div>
         </div>
 
-        {/* Competency Ratings */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
           <h3 className="font-bold text-gray-900 dark:text-white mb-4">Competency Ratings</h3>
           <div className="space-y-4">
@@ -240,7 +233,6 @@ const ReviewDetailPage = () => {
           </div>
         </div>
 
-        {/* Manager Comments */}
         {review.managerComments && (
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
             <h3 className="font-bold text-gray-900 dark:text-white mb-2">Manager Comments</h3>
@@ -248,7 +240,6 @@ const ReviewDetailPage = () => {
           </div>
         )}
 
-        {/* Strengths & Improvements */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-6">
             <h3 className="font-bold text-gray-900 dark:text-white mb-2">Strengths</h3>
@@ -260,7 +251,6 @@ const ReviewDetailPage = () => {
           </div>
         </div>
 
-        {/* HR Manager Feedback */}
         {review.status === "approved" && review.adminFeedback && (
           <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-6">
             <h3 className="font-bold text-gray-900 dark:text-white mb-2">HR Manager Feedback</h3>

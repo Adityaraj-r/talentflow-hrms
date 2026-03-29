@@ -13,8 +13,6 @@ export const reviewApi = {
   getEmployeeReviews: (employeeId) =>
     apiClient.get(`/performance/reviews/employee/${employeeId}`),
 
-  // ADDED: getReviewById — fetches a single review by ID
-  // Previously ReviewDetailPage was fetching ALL reviews and filtering — O(n) disaster
   getReviewById: (reviewId) =>
     apiClient.get(`/performance/reviews/${reviewId}`),
 
@@ -24,7 +22,11 @@ export const reviewApi = {
   approveReview: (reviewId, data) =>
     apiClient.put(`/performance/reviews/${reviewId}/approve`, data),
 
-  // REMOVED: getAnalyticsSummary — route does not exist in backend (would 404)
+  hrReview: (id, data) =>
+    apiClient.patch(`/performance/hr-review/${id}`, data),
+
+  finalizeReview: (id) =>
+    apiClient.patch(`/performance/finalize/${id}`),
 };
 
 export default reviewApi;

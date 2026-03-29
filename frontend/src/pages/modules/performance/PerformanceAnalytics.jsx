@@ -6,9 +6,9 @@ import {
 } from "recharts";
 import { TrendingUp, Users, Award, Target, BarChart3, PieChart as PieChartIcon } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { performanceApi } from "@/services/performanceApi";
 import apiClient from "@/services/apiClient";
 import SkeletonCard from "@/components/reports/SkeletonCard";
+import { performanceApi } from "@/services/performanceApi";
 
 const PerformanceAnalytics = () => {
   const [analyticsData, setAnalyticsData] = useState({
@@ -35,10 +35,10 @@ const PerformanceAnalytics = () => {
     });
     return [
       { name: "Outstanding (4.5-5.0)", value: buckets.outstanding, color: "#10b981" },
-      { name: "Exceeds (4.0-4.4)",      value: buckets.exceeds,     color: "#3b82f6" },
-      { name: "Meets (3.0-3.9)",        value: buckets.meets,       color: "#f59e0b" },
-      { name: "Below (2.0-2.9)",        value: buckets.below,       color: "#ef4444" },
-      { name: "Poor (<2.0)",            value: buckets.poor,        color: "#991b1b" }
+      { name: "Exceeds (4.0-4.4)", value: buckets.exceeds, color: "#3b82f6" },
+      { name: "Meets (3.0-3.9)", value: buckets.meets, color: "#f59e0b" },
+      { name: "Below (2.0-2.9)", value: buckets.below, color: "#ef4444" },
+      { name: "Poor (<2.0)", value: buckets.poor, color: "#991b1b" }
     ];
   };
 
@@ -61,7 +61,9 @@ const PerformanceAnalytics = () => {
   const calculateCycleCompletion = (cycles) => {
     return cycles.map(cycle => ({
       cycle: cycle.name,
-      completion: cycle.completionRate || 0
+      completion: cycle.totalReviews > 0
+        ? Math.round((cycle.completedReviews / cycle.totalReviews) * 100)
+        : 0
     }));
   };
 
@@ -82,8 +84,11 @@ const PerformanceAnalytics = () => {
   const calculateTopPerformers = (reviews) => {
     const performerMap = {};
     reviews.forEach(review => {
-      const name = `${review.employeeId?.firstName || ""} ${review.employeeId?.lastName || ""}`.trim() || "Unknown";
-      const dept = review.employeeId?.department || "Unknown";
+      const emp = review.employeeId;
+      const name = emp
+        ? `${emp.firstName || ""} ${emp.lastName || ""}`.trim()
+        : "Unknown";
+      const dept = emp?.department || "Unknown";
       const rating = review.overallRating || 0;
       if (!performerMap[name] || rating > performerMap[name].rating) {
         performerMap[name] = { name, department: dept, rating };
@@ -98,48 +103,40 @@ const PerformanceAnalytics = () => {
     const loadAnalytics = async () => {
       try {
         setLoading(true);
-
-        const [stats, cycles] = await Promise.all([
+        const [statsRes, cyclesRes, analyticsRes] = await Promise.all([
           performanceApi.getStats(),
-          performanceApi.getCycles()
+          apiClient.get("/performance/cycles"),
+          performanceApi.getAnalyticsSummary()
         ]);
 
-        // apiClient interceptor returns response.data directly
-        // backend returns { success: true, data: [...] } so reviewsRes.data is the array
+        const analytics = analyticsRes?.data?.data ?? {};
+        const stats = statsRes?.data?.data ?? {};
+        console.log("STATS RESPONSE:", statsRes);
+        const cycles = cyclesRes?.data?.data ?? [];
+        console.log("CYCLES RESPONSE:", cyclesRes);
+
         let reviews = [];
+        let reviewedEmployeesCount = 0; 
         try {
           const reviewsRes = await apiClient.get("/performance/reviews/all");
-          reviews = reviewsRes.data ?? [];
+          const reviews = analyticsRes?.data?.data ?? [];
+          console.log("REVIEWS RESPONSE:", reviews);
+
         } catch {
           reviews = [];
         }
 
-        // stats.totalEmployees added to backend getStats in Phase 1
-        // if still 0 (old backend), fall back to users fetch
-        let totalEmployees = stats.totalEmployees || 0;
-        if (!totalEmployees) {
-          try {
-            // apiClient returns response.data directly — usersRes IS the payload
-            // backend /users returns { success, data: [...] } so use usersRes.data
-            const usersRes = await apiClient.get("/users");
-            const usersList = usersRes.data ?? usersRes ?? [];
-            totalEmployees = Array.isArray(usersList)
-              ? usersList.filter(u => u.role?.toUpperCase() !== "ADMIN").length
-              : 0;
-          } catch {
-            totalEmployees = 0;
-          }
-        }
+        const totalEmployees = stats.totalEmployees || 0;
 
         setAnalyticsData({
           performanceDistribution: calculatePerformanceDistribution(reviews),
-          departmentComparison:    calculateDepartmentComparison(reviews),
-          cycleCompletion:         calculateCycleCompletion(Array.isArray(cycles) ? cycles : []),
-          ratingTrend:             calculateRatingTrend(reviews),
-          topPerformers:           calculateTopPerformers(reviews),
+          departmentComparison: calculateDepartmentComparison(reviews),
+          cycleCompletion: calculateCycleCompletion(cycles),
+          ratingTrend: calculateRatingTrend(reviews),
+          topPerformers: calculateTopPerformers(reviews),
           totalEmployees,
-          overallAvgRating: stats.avgScore || 0,
-          activeCycles:     stats.activeCycles || 0
+          overallAvgRating: analytics.avgScore || stats.avgScore || 0,
+          activeCycles: stats.activeCycles || 0
         });
       } finally {
         setLoading(false);
@@ -152,7 +149,6 @@ const PerformanceAnalytics = () => {
 
   return (
     <div className="space-y-6">
-      {/* Summary Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="border-l-4 border-l-blue-500">
           <CardContent className="p-6">
@@ -194,7 +190,6 @@ const PerformanceAnalytics = () => {
         </Card>
       </div>
 
-      {/* Charts Row 1 */}
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -260,7 +255,6 @@ const PerformanceAnalytics = () => {
         </Card>
       </div>
 
-      {/* Charts Row 2 */}
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -325,7 +319,6 @@ const PerformanceAnalytics = () => {
         </Card>
       </div>
 
-      {/* Top Performers Table */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
