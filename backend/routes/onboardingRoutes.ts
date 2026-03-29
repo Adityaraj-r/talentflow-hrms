@@ -9,7 +9,7 @@ import {
 } from '../controllers/onboardingController';
 import dotenv from 'dotenv';
 dotenv.config();
-import { protect, authorize } from '../middleware/auth.middleware';
+import { authorize, protect } from '../middleware/auth.middleware';
 
 const router: Router = express.Router();
 

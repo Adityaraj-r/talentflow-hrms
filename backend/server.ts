@@ -34,7 +34,7 @@ import applicationRoutes from "./routes/application.routes";
 import documentRoutes from './routes/document.routes';
 import salaryRoutes from './routes/salary.routes';
 import payrollRoutes from './routes/payroll.routes';
-import taPolicyRoutes from './routes/taPolicy.routes';
+import recruitmentSuggestionRoutes from './routes/recruitmentSuggestion.routes';
 import executiveRoutes from "./routes/executive.routes";
 import offboardingRoutes from "./routes/offboarding.routes";
 
@@ -125,6 +125,7 @@ app.use('/api/requisitions', requisitionRoutes);
 app.use('/api/job-openings', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/recruitment-suggestions', recruitmentSuggestionRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/leaves', leaveRoutes);
@@ -135,7 +136,6 @@ app.use('/api/offboarding', offboardingRoutes);
 
 app.use('/api/performance', performanceRoutes);
 app.use('/api/holidays', holidayRoutes);
-app.use('/api/ta-policies', taPolicyRoutes);
 app.use('/api/transfers', transferRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/documents', documentRoutes);

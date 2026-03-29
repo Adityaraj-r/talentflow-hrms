@@ -1,15 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import Papa from "papaparse";
-import {
-  UploadCloud,
-  FileSpreadsheet,
-  UserCheck,
-  Calendar,
-  AlertCircle,
-  Download,
-  X,
-  ChevronDown
-} from "lucide-react";
+import { UploadCloud, FileSpreadsheet, AlertCircle, Download, X, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -24,7 +15,6 @@ import apiClient from "@/services/apiClient";
 const inputThemeClasses = "bg-white dark:bg-[#131b2c] border-slate-200 dark:border-[#222f43] text-slate-900 dark:text-slate-100 focus:ring-primary placeholder:text-slate-400 dark:placeholder:text-slate-500";
 const cardThemeClasses = "bg-white dark:bg-transparent border-slate-200 dark:border-none shadow-sm dark:shadow-none";
 
-// --- CUSTOM SEARCHABLE DROPDOWN ---
 const SearchableDropdown = ({ value, onChange, options, placeholder, icon: Icon, hideScrollbar }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState(value || "");
@@ -165,8 +155,8 @@ const ManualAttendance = () => {
   const [singleEntry, setSingleEntry] = useState({
     employeeEmail: "",
     date: new Date().toISOString().split("T")[0],
-    checkIn: "",
-    checkOut: "",
+    clockIn: "",
+    clockOut: "",
     breakMinutes: "0",
     status: "",
     notes: ""
@@ -192,7 +182,7 @@ const ManualAttendance = () => {
       await attendanceService.markManualAttendance(singleEntry);
       toast.success("Attendance record successfully added!");
       setSingleEntry({
-        employeeEmail: "", date: new Date().toISOString().split("T")[0], checkIn: "", checkOut: "", breakMinutes: "0", status: "", notes: ""
+        employeeEmail: "", date: new Date().toISOString().split("T")[0], clockIn: "", clockOut: "", breakMinutes: "0", status: "", notes: ""
       });
       setFormKey(prev => prev + 1);
     } catch (error) {
@@ -220,8 +210,8 @@ const ManualAttendance = () => {
             id: index,
             email: row["Employee Email"] || "-",
             date: row["Date"] || "-",
-            checkIn: row["Check In"] || "-",
-            checkOut: row["Check Out"] || "-",
+            clockIn: row["Clock In"] || "-",
+            clockOut: row["Clock Out"] || "-",
             status: row["Status"] || "Unknown",
           }));
           setPreviewData(formattedPreview);
@@ -268,7 +258,7 @@ const ManualAttendance = () => {
   };
 
   const handleDownloadTemplate = () => {
-    const headers = "Employee Email,Date,Check In,Check Out,Status,Break Minutes,Notes\n";
+    const headers = "Employee Email,Date,Clock In,Clock Out,Status,Break Minutes,Notes\n";
     const sampleRow1 = "employee@example.com,2026-03-10,09:00,17:00,Present,0,Regular shift\n";
     const sampleRow2 = "absent.user@example.com,2026-03-10,,,,Absent,0,Sick leave\n";
     const blob = new Blob([headers + sampleRow1 + sampleRow2], { type: 'text/csv;charset=utf-8;' });
@@ -341,13 +331,13 @@ const ManualAttendance = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="checkIn" className="text-sm font-semibold">Check In Time</Label>
-                  <TimeInput name="checkIn" value={singleEntry.checkIn} onChange={handleSingleChange} />
+                  <Label htmlFor="clockIn" className="text-sm font-semibold">Clock In Time</Label>
+                  <TimeInput name="clockIn" value={singleEntry.clockIn} onChange={handleSingleChange} />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="checkOut" className="text-sm font-semibold">Check Out Time</Label>
-                  <TimeInput name="checkOut" value={singleEntry.checkOut} onChange={handleSingleChange} />
+                  <Label htmlFor="clockOut" className="text-sm font-semibold">Clock Out Time</Label>
+                  <TimeInput name="clockOut" value={singleEntry.clockOut} onChange={handleSingleChange} />
                 </div>
 
                 <div className="space-y-2">
@@ -397,7 +387,7 @@ const ManualAttendance = () => {
                   variant="outline"
                   className="bg-transparent dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                   onClick={() => {
-                    setSingleEntry({ employeeEmail: "", date: new Date().toISOString().split("T")[0], checkIn: "", checkOut: "", breakMinutes: "0", status: "", notes: "" });
+                    setSingleEntry({ employeeEmail: "", date: new Date().toISOString().split("T")[0], clockIn: "", clockOut: "", breakMinutes: "0", status: "", notes: "" });
                     setFormKey(prev => prev + 1);
                   }}
                 >
@@ -473,8 +463,8 @@ const ManualAttendance = () => {
                         <TableRow className="dark:border-slate-800">
                           <TableHead>Email</TableHead>
                           <TableHead>Date</TableHead>
-                          <TableHead>Check In</TableHead>
-                          <TableHead>Check Out</TableHead>
+                          <TableHead>Clock In</TableHead>
+                          <TableHead>Clock Out</TableHead>
                           <TableHead>Status</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -483,8 +473,8 @@ const ManualAttendance = () => {
                           <TableRow key={row.id} className="dark:border-slate-800">
                             <TableCell className="font-medium text-sm">{row.email}</TableCell>
                             <TableCell className="text-sm">{row.date}</TableCell>
-                            <TableCell className="text-sm">{row.checkIn}</TableCell>
-                            <TableCell className="text-sm">{row.checkOut}</TableCell>
+                            <TableCell className="text-sm">{row.clockIn}</TableCell>
+                            <TableCell className="text-sm">{row.clockOut}</TableCell>
                             <TableCell>
                               <Badge variant="outline" className={getStatusBadgeClasses(row.status)}>
                                 {row.status}

@@ -48,6 +48,8 @@ import ApplyJob from "./pages/ApplyJob"
 import CandidateApplications from "./pages/modules/recruitment/CandidateApplications"
 import RecruitmentPipeline from "./pages/modules/recruitment/RecruitmentPipeline"
 import ApplicationStatus from "./pages/ApplicationStatus"
+import AdminRecruitmentSuggestions from "./pages/modules/recruitment/AdminRecruitmentSuggestions"
+import RecruitmentSuggestionsInbox from "./pages/modules/recruitment/RecruitmentSuggestionsInbox"
 
 // Payroll Module
 import Payroll from "./pages/modules/payroll/Payroll"
@@ -79,12 +81,14 @@ import TaskBoard from "./pages/role/PROJECT_MANAGER/TaskBoard"
 import SafetyIncidents from "./pages/role/PROJECT_MANAGER/SafetyIncidents"
 import TimesheetApprovals from "./pages/role/PROJECT_MANAGER/TimesheetApprovals"
 
-// Admin Role Pages
+// Attendance Module
 import AttendanceRecords from "./pages/modules/attendance/AttendanceRecords"
-import AdminLeaveManagement from "./pages/role/ADMIN/LeaveManagement"
 import ShiftManagement from "./pages/modules/attendance/ShiftManagement"
 import HolidayManagement from "./pages/modules/attendance/HolidayManagement"
 import ManualAttendance from "./pages/modules/attendance/ManualAttendance"
+import MyAttendance from "./pages/modules/attendance/MyAttendance"
+import LeaveManagement from "./pages/modules/attendance/LeaveApprovals"
+import CorrectionRequests from "./pages/modules/attendance/CorrectionRequests"
 
 // Role-Specific Appraisal Pages
 import HRManagerAppraisal from "./pages/role/HR_MANAGER/Appraisal"
@@ -103,16 +107,16 @@ import DocumentRequestsHROfficer from "./pages/role/HR_OFFICER/DocumentRequests"
 import DocumentRequestsEmployee from "./pages/role/EMPLOYEE/DocumentRequests"
 
 // Role-Specific Leave Management Pages
-import CEOLeaveManagement from "./pages/role/CEO/LeaveManagement"
+import AdminLeaveManagement from "./pages/modules/attendance/LeaveApprovals"
 import WorkforceAnalytics from "./pages/role/CEO/WorkforceAnalytics"
+import CEOLeaveManagement from "./pages/modules/attendance/LeaveApprovals"
 import HRManagerLeaveManagement from "./pages/role/HR_MANAGER/LeaveManagement"
 import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
 
 // Employee Role Pages
-import MyAttendance from "./pages/modules/attendance/MyAttendance"
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 import Profile from "./pages/dashboard/Profile"
-import TAPolicyConfig from "./pages/modules/attendance/TAPolicyConfig"
+import OvertimeApprovals from "./pages/modules/attendance/OvertimeApprovals"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -125,7 +129,6 @@ const queryClient = new QueryClient({
 
 const ADMIN_ROLES = ["ADMIN", "SUPER ADMIN"]
 
-// ProtectedRoute
 const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
   const { user, isAuthenticated, loading } = useAuth()
   const [permLoading, setPermLoading] = useState(false)
@@ -138,7 +141,8 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
   useEffect(() => {
     if (!requiredPermission || !user) return
 
-    if (ADMIN_ROLES.includes(userRoleStr.toUpperCase())) {
+    const upper = userRoleStr.toUpperCase()
+    if (upper === "SUPER ADMIN" || upper === "SUPER_ADMIN") {
       setHasPermission(true)
       return
     }
@@ -344,6 +348,11 @@ function App() {
                         <DashboardLayout><Integrations /></DashboardLayout>
                       </ProtectedRoute>
                     } />
+                     <Route path="/admin/recruitment-suggestions" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                      <DashboardLayout><AdminRecruitmentSuggestions /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
 
                     {/* ── Employee Center — MATRIX ENFORCED ────────────── */}
                     <Route path="/employee-center/all-employees" element={
@@ -351,13 +360,11 @@ function App() {
                         <DashboardLayout><AllEmployees /></DashboardLayout>
                       </ProtectedRoute>
                     } />
-
                     <Route path="/employee-center/employee/:id" element={
                       <ProtectedRoute requiredPermission={{ module: "employees", action: "read" }}>
                         <DashboardLayout><EmployeeProfileView /></DashboardLayout>
                       </ProtectedRoute>
                     } />
-
                     {/* ── Recruitment — MATRIX ENFORCED ────────────────── */}
                     <Route path="/employee-center/onboarding" element={
                       <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER"]}>
@@ -399,6 +406,13 @@ function App() {
                         <DashboardLayout><OfferManagement /></DashboardLayout>
                       </ProtectedRoute>
                     } />
+                    
+                    {/* New Recruitment Route */}
+                    <Route path="/dashboard/recruitment-suggestions" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "SUPER_ADMIN"]}>
+                        <DashboardLayout><RecruitmentSuggestionsInbox /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
                     {/* ── Attendance — MATRIX ENFORCED ─────────────────── */}
                     <Route path="/attendance" element={
@@ -426,9 +440,16 @@ function App() {
                         <DashboardLayout><ManualAttendance /></DashboardLayout>
                       </ProtectedRoute>
                     } />
-                    <Route path="/attendance/policies" element={
-                      <ProtectedRoute allowedRoles={["HR_MANAGER", "ADMIN", "SUPER ADMIN"]}>
-                        <DashboardLayout><TAPolicyConfig /></DashboardLayout>
+                    
+                    {/* New Attendance Routes */}
+                    <Route path="/attendance/correction-requests" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                        <DashboardLayout><CorrectionRequests /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/attendance/overtime-approvals" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                        <DashboardLayout><OvertimeApprovals /></DashboardLayout>
                       </ProtectedRoute>
                     } />
 
@@ -548,6 +569,22 @@ function App() {
                         <DashboardLayout><DocumentRequestsEmployee /></DashboardLayout>
                       </ProtectedRoute>
                     } />
+                  {/* ── Employee Self-Service ────────────────────────── */}
+                  <Route path="/dashboard/employee/attendance" element={
+                    <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER"]}>
+                      <DashboardLayout><MyAttendance /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard/employee/tasks" element={
+                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                      <DashboardLayout><MyTasks /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard/employee/make-transfer" element={
+                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                      <DashboardLayout><TransferPage /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
 
                     {/* ── Leave Management ─────────────────────────────── */}
                     <Route path="/role/ceo/leave-management" element={
@@ -565,24 +602,6 @@ function App() {
                         <DashboardLayout><EmployeeLeaveManagement /></DashboardLayout>
                       </ProtectedRoute>
                     } />
-
-                    {/* ── Employee Self-Service ────────────────────────── */}
-                    <Route path="/dashboard/employee/attendance" element={
-                      <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
-                        <DashboardLayout><MyAttendance /></DashboardLayout>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/dashboard/employee/tasks" element={
-                      <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
-                        <DashboardLayout><MyTasks /></DashboardLayout>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/dashboard/employee/make-transfer" element={
-                      <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
-                        <DashboardLayout><TransferPage /></DashboardLayout>
-                      </ProtectedRoute>
-                    } />
-
                     {/* ── Digital Locker ───────────────────────────────── */}
                     <Route path="/employee-center/digital-locker" element={
                       <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "EMPLOYEE"]}>

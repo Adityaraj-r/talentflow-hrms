@@ -45,36 +45,19 @@ export const UserProvider = ({ children }) => {
     loadPermissions();
   }, [user?.role, isAuthenticated]); 
 
-  const can = (module, action = 'read') => {
-    if (
-      user?.role === 'Super Admin' || 
-      user?.role === 'SUPER ADMIN' || 
-      user?.role === 'ADMIN' || 
-      user?.role === 'Admin'
-    ) return true;
-
-    if (!rolePermissions) return false;
-
-    const modulePerms = rolePermissions[module];
-    if (!modulePerms) return false;
-
-    return modulePerms[action] === true;
-  };
-
   // FIXED: can() is inside useMemo so it always uses the current rolePermissions
   const enrichedUser = useMemo(() => {
     if (!user) return null;
+    const roleName =
+      typeof user.role === "string"
+        ? user.role.toUpperCase()
+        : user.role?.name?.toUpperCase();
     return {
       ...user,
+      permissions: rolePermissions || {},
       can: (module, action = "read") => {
         if (!rolePermissions) return false;
-        // SUPER ADMIN bypasses all checks
-        const roleName =
-          typeof user.role === "string"
-            ? user.role.toUpperCase()
-            : user.role?.name?.toUpperCase();
-        if (roleName === "SUPER ADMIN" || roleName === "SUPER_ADMIN")
-          return true;
+        if (roleName === "SUPER ADMIN" || roleName === "SUPER_ADMIN") return true;
         return rolePermissions?.[module]?.[action] === true;
       },
     };

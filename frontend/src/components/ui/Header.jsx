@@ -135,13 +135,19 @@ const Header = ({ toggleSidebar }) => {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [canUseSearch])
 
- // UPGRADED NOTIFICATION SYSTEM 
+// UPGRADED NOTIFICATION SYSTEM (With Anti-Spam Safety)
+  const isFetchingRef = useRef(false);
+
   useEffect(() => {
     const fetchRealTimeNotifications = async () => {
+      // SAFETY VALVE: If the previous request is still hanging, abort this one!
+      if (isFetchingRef.current) return;
+      
       const firstName = user?.firstName || user?.name?.split(" ")[0] || ""
       const userRoleStr = (user?.role?.name || user?.role || "").toUpperCase()
       
       if (firstName) {
+        isFetchingRef.current = true; // Lock the fetcher
         try {
           const execRoles = ["ADMIN", "CEO", "HR_MANAGER", "COUNTRY_MANAGER"]
           const endpoint = execRoles.includes(userRoleStr) ? "/transfers/all" : "/transfers/my-requests"
@@ -165,18 +171,21 @@ const Header = ({ toggleSidebar }) => {
               const readNotifs = JSON.parse(localStorage.getItem('readNotifications') || '[]');
               const isAlreadyRead = readNotifs.includes(latest._id);
 
-              return [
-                {
+              return [{
                   id: latest._id,
                   message: contextMessage,
                   read: isAlreadyRead, 
                   time: `Actioned on: ${formattedDate}`,
-                },
-              ]
+              }]
             })
           }
         } catch (err) {
-          console.error("Failed to fetch notifications:", err)
+          // If it times out, we catch it silently without breaking the app
+          if (err.message !== "timeout of 10000ms exceeded") {
+             console.error("Failed to fetch notifications:", err)
+          }
+        } finally {
+          isFetchingRef.current = false; // Unlock the fetcher
         }
       }
     }

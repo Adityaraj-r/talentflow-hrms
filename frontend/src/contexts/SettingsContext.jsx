@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import adminService from '@/services/adminService'
+import apiClient from '@/services/apiClient'
 
 const SettingsContext = createContext()
 
@@ -63,13 +63,18 @@ useEffect(() => {
     }
   }, [])
 
-  const fetchSettings = async () => {
+ const fetchSettings = async () => {
     try {
       setLoading(true)
-      const data = await adminService.getSettings()
-      if (data && data.settings) {
-        setSettings(data.settings)
-        localStorage.setItem('systemSettings', JSON.stringify(data.settings))
+      // Hit the new dedicated settings route directly
+      const response = await apiClient.get('/settings/settings')
+      
+      // Safely unbox the data regardless of Axios interceptor setup
+      const settingsData = response.data?.settings || response.settings || response.data || response
+      
+      if (settingsData && Object.keys(settingsData).length > 0) {
+        setSettings(settingsData)
+        localStorage.setItem('systemSettings', JSON.stringify(settingsData))
       }
     } catch (error) {
       if (error?.response?.status === 403) return
@@ -79,14 +84,15 @@ useEffect(() => {
     }
   }
 
-  const updateSettings = async (newSettings) => {
+ const updateSettings = async (newSettings) => {
     try {
       setLoading(true)
-      const data = await adminService.updateSettings(newSettings)
-      if (data && data.settings) {
-        setSettings(data.settings)
-        // Update cache
-        localStorage.setItem('systemSettings', JSON.stringify(data.settings))
+     const response = await apiClient.put('/settings/settings', newSettings)
+      const settingsData = response.data?.settings || response.settings || response.data || response
+      
+      if (settingsData) {
+        setSettings(settingsData)
+        localStorage.setItem('systemSettings', JSON.stringify(settingsData))
       }
       return { success: true }
     } catch (error) {
@@ -96,7 +102,6 @@ useEffect(() => {
       setLoading(false)
     }
   }
-
   return (
     <SettingsContext.Provider value={{ settings, loading, updateSettings, fetchSettings }}>
       {children}

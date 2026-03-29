@@ -19,12 +19,16 @@ const AllEmployees = () => {
   const [employees, setEmployees] = useState([])
   const [filters, setFilters] = useState({ search: '', role: 'all' })
 
-  const fetchEmployees = useCallback(async () => {
+const fetchEmployees = useCallback(async () => {
     setIsLoading(true)
     try {
+      // Use the service which correctly points to /admin/users
       const response = await adminService.getAllEmployees(filters)
-      const userData = response.data?.users || response.data || []
-      const formatted = userData.map(u => ({
+
+      const userData = response.data?.users || response.data || response || []
+      const dataArray = Array.isArray(userData) ? userData : []
+
+      const formatted = dataArray.map(u => ({
         id: u._id,
         firstName: u.firstName || '',
         lastName: u.lastName || '',
