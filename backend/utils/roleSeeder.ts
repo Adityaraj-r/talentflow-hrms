@@ -24,7 +24,7 @@ const enterpriseRoles = [
     permissions: {
       dashboard: { read: true, write: false, delete: false },
       employees: { read: true, write: false, delete: false },
-      recruitment: { read: true, write: true, delete: false }, // Final Approver
+      recruitment: { read: true, write: true, delete: false },
       payroll: { read: true, write: false, delete: false },
       attendance: { read: true, write: false, delete: false },
       settings: { read: false, write: false, delete: false },

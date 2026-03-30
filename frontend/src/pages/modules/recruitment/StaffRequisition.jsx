@@ -374,7 +374,7 @@ const PendingRequisitions = () => {
         <CardDescription>
             {canWriteRecruitment
               ? "Review and approve staff requisitions"
-              : "Read-only oversight — approvals are performed by authorized HR roles"}
+              : "View mode only. Approvals are handled by authorized roles."}
         </CardDescription>
       </CardHeader>
 

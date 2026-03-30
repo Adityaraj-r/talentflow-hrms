@@ -279,7 +279,7 @@ const RecruitmentModule = () => {
                   Executive Candidate Focus
                 </CardTitle>
                 <CardDescription>
-                  Filtered leadership candidate pool with strategic visibility.
+                  Leadership candidate pool in active consideration.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -434,7 +434,7 @@ const RecruitmentModule = () => {
                 <MetricPill label="Employer NPS" value="Planned" />
               </div>
               <p className="text-sm text-muted-foreground">
-                Integration placeholders are production-ready for external sentiment connectors. Once feeds are configured, this section will render real-time brand-attraction trends.
+                External sentiment connectors can be added here to show real-time employer brand trends.
               </p>
             </CardContent>
           </Card>
