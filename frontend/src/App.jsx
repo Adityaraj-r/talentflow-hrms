@@ -109,14 +109,15 @@ import DocumentRequestsEmployee from "./pages/role/EMPLOYEE/DocumentRequests"
 // Role-Specific Leave Management Pages
 import AdminLeaveManagement from "./pages/modules/attendance/LeaveApprovals"
 import WorkforceAnalytics from "./pages/role/CEO/WorkforceAnalytics"
-import CEOLeaveManagement from "./pages/modules/attendance/LeaveApprovals"
+import CEORecruitmentModule from "./pages/role/CEO/RecruitmentModule"
+import CEORecruitmentBriefing from "./pages/role/CEO/RecruitmentBriefing"
 import HRManagerLeaveManagement from "./pages/role/HR_MANAGER/LeaveManagement"
 import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
-
-// Employee Role Pages
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 import Profile from "./pages/dashboard/Profile"
 import OvertimeApprovals from "./pages/modules/attendance/OvertimeApprovals"
+
+const CEOLeaveManagement = AdminLeaveManagement
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -221,10 +222,9 @@ const DashboardRouter = () => {
   const role = userRoleStr.toUpperCase()
 
   if (role === "ADMIN" || role === "SUPER ADMIN") return <Navigate to="/admin/dashboard" replace />
- if (role === "CEO" || role === "COUNTRY_MANAGER") return <Navigate to="/ceo/dashboard" replace />
+  if (role === "CEO" || role === "COUNTRY_MANAGER") return <Navigate to="/ceo/dashboard" replace />
   if (role === "EMPLOYEE") return <Navigate to="/employee/dashboard" replace />
   if (role === "PROJECT_MANAGER") return <Navigate to="/dashboard/project-manager" replace />
-  if (role === "CEO") return <Navigate to="/dashboard" replace />
   if (role === "HR_MANAGER" || role === "HR_OFFICER"
     || role === "DEPARTMENT_MANAGER"
     || role === "DIRECT_MANAGER"
@@ -569,6 +569,58 @@ function App() {
                         <DashboardLayout><DocumentRequestsEmployee /></DashboardLayout>
                       </ProtectedRoute>
                     } />
+
+                    {/* ── Leave Management ─────────────────────────────── */}
+                    <Route path="/role/ceo/leave-management" element={
+                      <ProtectedRoute allowedRoles={["CEO"]}>
+                        <DashboardLayout><CEOLeaveManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ceo/recruitment" element={
+                      <ProtectedRoute allowedRoles={["CEO"]}>
+                        <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ceo/recruitment/briefing" element={
+                      <ProtectedRoute allowedRoles={["CEO"]}>
+                        <DashboardLayout><CEORecruitmentBriefing /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ceo/recruitment/executive-pipeline" element={
+                      <ProtectedRoute allowedRoles={["CEO"]}>
+                        <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ceo/recruitment/strategic-analytics" element={
+                      <ProtectedRoute allowedRoles={["CEO"]}>
+                        <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ceo/recruitment/workforce-planning" element={
+                      <ProtectedRoute allowedRoles={["CEO"]}>
+                        <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ceo/recruitment/executive-approvals" element={
+                      <ProtectedRoute allowedRoles={["CEO"]}>
+                        <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ceo/recruitment/employer-brand-health" element={
+                      <ProtectedRoute allowedRoles={["CEO"]}>
+                        <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/hr_manager/leave-management" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
+                        <DashboardLayout><HRManagerLeaveManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/employee/leave-management" element={
+                      <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                        <DashboardLayout><EmployeeLeaveManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
                   {/* ── Employee Self-Service ────────────────────────── */}
                   <Route path="/dashboard/employee/attendance" element={
                     <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER"]}>
@@ -585,23 +637,6 @@ function App() {
                       <DashboardLayout><TransferPage /></DashboardLayout>
                     </ProtectedRoute>
                   } />
-
-                    {/* ── Leave Management ─────────────────────────────── */}
-                    <Route path="/role/ceo/leave-management" element={
-                      <ProtectedRoute allowedRoles={["CEO"]}>
-                        <DashboardLayout><CEOLeaveManagement /></DashboardLayout>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/role/hr_manager/leave-management" element={
-                      <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
-                        <DashboardLayout><HRManagerLeaveManagement /></DashboardLayout>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/role/employee/leave-management" element={
-                      <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
-                        <DashboardLayout><EmployeeLeaveManagement /></DashboardLayout>
-                      </ProtectedRoute>
-                    } />
                     {/* ── Digital Locker ───────────────────────────────── */}
                     <Route path="/employee-center/digital-locker" element={
                       <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "EMPLOYEE"]}>

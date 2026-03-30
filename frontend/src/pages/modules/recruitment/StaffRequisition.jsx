@@ -1,6 +1,7 @@
 "use client"
 
-import { useState,useEffect  } from "react"
+import { useState, useEffect, useMemo } from "react"
+import { useSearchParams } from "react-router-dom"
 import { useUser } from "@/contexts/UserContext"
 import apiClient from "@/services/apiClient"
 import { Button } from "@/components/ui/button"
@@ -300,6 +301,8 @@ const RequisitionForm = () => {
 }
 
 const PendingRequisitions = () => {
+  const [searchParams] = useSearchParams()
+  const deptFilter = searchParams.get("department")
   const { user } = useUser()
   const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
   const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
@@ -325,6 +328,11 @@ const PendingRequisitions = () => {
   useEffect(() => {
     fetchPending();
   }, []);
+
+  const visiblePending = useMemo(() => {
+    if (!deptFilter) return pendingRequisitions
+    return pendingRequisitions.filter((r) => r.department === deptFilter)
+  }, [pendingRequisitions, deptFilter])
 
   const handleApprove = async (id) => {
     try {
@@ -369,22 +377,23 @@ const PendingRequisitions = () => {
     <Card>
       <CardHeader>
         <CardTitle>
-          Pending Requisition Approvals ({pendingRequisitions.length})
+          Pending Requisition Approvals ({visiblePending.length}
+          {deptFilter ? ` · ${deptFilter}` : ""})
         </CardTitle>
         <CardDescription>
             {canWriteRecruitment
               ? "Review and approve staff requisitions"
-              : "Read-only oversight — approvals are performed by authorized HR roles"}
+              : "View mode only. Approvals are handled by authorized roles."}
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
-          {pendingRequisitions.length === 0 ? (
+          {visiblePending.length === 0 ? (
         <div className="text-center py-10 text-muted-foreground">
           No pending requisitions
         </div>
         ) : (
-          pendingRequisitions.map((req) => (
+          visiblePending.map((req) => (
             <div
               key={req._id}
               className="p-4 border rounded-lg hover:shadow-md transition bg-white dark:bg-gray-900">           
@@ -509,6 +518,25 @@ const PendingRequisitions = () => {
                 Created:{" "}
                 {selectedReq.createdAt ? new Date(selectedReq.createdAt).toLocaleString() : "N/A"}
               </div>
+
+              {Array.isArray(selectedReq.approvalHistory) && selectedReq.approvalHistory.length > 0 && (
+                <div className="pt-3 border-t space-y-2">
+                  <div className="text-sm font-medium">Approval history</div>
+                  <div className="space-y-2">
+                    {selectedReq.approvalHistory
+                      .slice()
+                      .reverse()
+                      .slice(0, 15)
+                      .map((h, idx) => (
+                        <div key={idx} className="rounded-md border p-2 text-xs">
+                          <span className="font-medium capitalize">{h.action}</span>
+                          {h.role ? ` · ${h.role}` : ""}
+                          {h.at ? ` · ${new Date(h.at).toLocaleString()}` : ""}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
 
               {Array.isArray(selectedReq.recommendations) && selectedReq.recommendations.length > 0 && (
                 <div className="pt-3 border-t space-y-2">
@@ -705,6 +733,25 @@ const RequisitionHistory = () => {
                 Created:{" "}
                 {selectedReq.createdAt ? new Date(selectedReq.createdAt).toLocaleString() : "N/A"}
               </div>
+
+              {Array.isArray(selectedReq.approvalHistory) && selectedReq.approvalHistory.length > 0 && (
+                <div className="pt-3 border-t space-y-2">
+                  <div className="text-sm font-medium">Approval history</div>
+                  <div className="space-y-2">
+                    {selectedReq.approvalHistory
+                      .slice()
+                      .reverse()
+                      .slice(0, 15)
+                      .map((h, idx) => (
+                        <div key={idx} className="rounded-md border p-2 text-xs">
+                          <span className="font-medium capitalize">{h.action}</span>
+                          {h.role ? ` · ${h.role}` : ""}
+                          {h.at ? ` · ${new Date(h.at).toLocaleString()}` : ""}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
 
               {Array.isArray(selectedReq.recommendations) && selectedReq.recommendations.length > 0 && (
                 <div className="pt-3 border-t space-y-2">

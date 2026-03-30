@@ -39,6 +39,8 @@ import payrollRoutes from './routes/payroll.routes';
 import recruitmentSuggestionRoutes from './routes/recruitmentSuggestion.routes';
 import executiveRoutes from "./routes/executive.routes";
 import offboardingRoutes from "./routes/offboarding.routes";
+import ceoRoutes from './routes/ceo.routes';
+import offerRoutes from './routes/offer.routes';
 
 dotenv.config();
 
@@ -145,6 +147,8 @@ app.use('/api/promotions', promotionRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/salary-structure', salaryRoutes);
 app.use('/api/payroll', payrollRoutes);
+app.use('/api/ceo', ceoRoutes);
+app.use('/api/offers', offerRoutes);
 
 app.use((req, res) => {
   console.warn(`\x1b[33m[404] Route not found: ${req.method} ${req.path}\x1b[0m`);

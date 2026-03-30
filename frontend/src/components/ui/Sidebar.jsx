@@ -84,6 +84,7 @@ const Sidebar = ({
 
       recruitment:
         path.startsWith("/staff-requisition") ||
+        path.startsWith("/ceo/recruitment") ||
         path.startsWith("/dashboard/applications") ||
         path.startsWith("/dashboard/recruitment-pipeline") ||
         path.startsWith("/dashboard/job-openings") ||
@@ -269,8 +270,6 @@ const Sidebar = ({
             <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
           </SidebarGroup>
 
-          {/* FIXED: Admin has ZERO PMS access per doc — PMS link removed */}
-
           <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
           <SidebarGroup id="administration" icon={Settings} label="Administration">
@@ -296,7 +295,6 @@ const Sidebar = ({
           <LeaveLink />
           <SidebarLink to="/payroll/salary-slip" icon={FileText} label="My Salary Slips" />
 
-          {/* FIXED: path updated to correct PMS employee route */}
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
             <SubLink to="/role/employee/appraisal" label="My Appraisal" />
           </SidebarGroup>
@@ -356,7 +354,6 @@ const Sidebar = ({
             </SidebarGroup>
           )}
 
-          {/* FIXED: Full PMS access for HR Manager with all 3 sublinks */}
           <SidebarGroup id="appraisal" icon={Award} label="Performance (PMS)">
             <SubLink to="/role/hr_manager/appraisal" label="Appraisal Hub" />
             <SubLink to="/role/hr_manager/appraisal/cycles" label="Manage Cycles" />
@@ -411,8 +408,6 @@ const Sidebar = ({
             <SubLink to="/employee-center/digital-locker" label="Digital Locker" />
           </SidebarGroup>
 
-          {/* FIXED: HR Officer has no PMS route in App.jsx — removed broken link */}
-
           <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
             <SubLink to="/role/hr_officer/disciplinary-actions" label="Manage Actions" />
           </SidebarGroup>
@@ -428,10 +423,8 @@ const Sidebar = ({
    if (userRole === ROLES.CEO || userRole === ROLES.COUNTRY_MANAGER) {
       return (
         <>
-          {/* MAIN CEO DASHBOARD ROUTE */}
           <SidebarLink to="/ceo/dashboard" icon={LayoutDashboard} label="Dashboard" />
           
-          {/* CEO MODULES */}
           <SidebarLink to="/ceo/analytics" icon={Users} label="Workforce Analytics" />
 
            <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
@@ -443,7 +436,6 @@ const Sidebar = ({
           <SidebarLink to="/ceo/org-structure" icon={Network} label="Org Structure" />
           <SidebarLink to="/ceo/audit" icon={FileBadge} label="Audit Summary" />
 
-          {/* DROPDOWN FOR ATTENDANCE */}
           {canSee("attendance") && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/ceo/attendance" label="CEO Attendance View" />
@@ -454,9 +446,15 @@ const Sidebar = ({
             </SidebarGroup>
           )}
 
-          {/* RECRUITMENT ROUTE */}
           {canSee("recruitment") && (
-            <SidebarLink to="/ceo/recruitment" icon={Briefcase} label="View Recruitment" />
+            <SidebarGroup id="recruitment" icon={Briefcase} label="View Recruitment">
+              <SubLink to="/ceo/recruitment/briefing" label="CEO Briefing" />
+              <SubLink to="/ceo/recruitment/executive-pipeline" label="Executive Pipeline" />
+              <SubLink to="/ceo/recruitment/strategic-analytics" label="Strategic Analytics" />
+              <SubLink to="/ceo/recruitment/workforce-planning" label="Workforce Planning" />
+              <SubLink to="/ceo/recruitment/executive-approvals" label="Executive Approvals" />
+              <SubLink to="/ceo/recruitment/employer-brand-health" label="Employer Brand Health" />
+            </SidebarGroup>
           )}
 
           <SidebarGroup id="appraisal" icon={Award} label="Performance (PMS)">
@@ -464,7 +462,6 @@ const Sidebar = ({
             <SubLink to="/role/ceo/appraisal" label="Analytics Dashboard" icon={TrendingUp} />
           </SidebarGroup>
 
-          {/* REPORTS */}
           {canSee("reports") && (
             <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
           )}
@@ -488,7 +485,13 @@ const Sidebar = ({
             </SidebarGroup>
           )}
 
-          <SidebarLink to="/role/department_manager/appraisal" icon={Award} label="Appraisal" />
+          <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
+            <SubLink to="/role/department_manager/appraisal" label="Team Appraisals" />
+          </SidebarGroup>
+
+          <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
+            <SubLink to="/role/department_manager/disciplinary-actions" label="Manage Actions" />
+          </SidebarGroup>
         </>
       )
     }
@@ -508,7 +511,13 @@ const Sidebar = ({
             </SidebarGroup>
           )}
 
-          <SidebarLink to="/role/direct_manager/appraisal" icon={Award} label="Appraisal" />
+          <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
+            <SubLink to="/role/direct_manager/appraisal" label="Team Appraisals" />
+          </SidebarGroup>
+
+          <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
+            <SubLink to="/role/direct_manager/disciplinary-actions" label="Manage Actions" />
+          </SidebarGroup>
         </>
       )
     }
