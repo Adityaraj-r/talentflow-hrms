@@ -62,6 +62,15 @@ const requisitionSchema = new mongoose.Schema(
         createdByRole: { type: String },
       },
     ],
+
+    approvalHistory: [
+      {
+        action: { type: String, enum: ["approved", "rejected"], required: true },
+        at: { type: Date, default: Date.now },
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        role: { type: String },
+      },
+    ],
   },
   { timestamps: true }
 );

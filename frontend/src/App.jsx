@@ -110,6 +110,7 @@ import DocumentRequestsEmployee from "./pages/role/EMPLOYEE/DocumentRequests"
 import AdminLeaveManagement from "./pages/modules/attendance/LeaveApprovals"
 import WorkforceAnalytics from "./pages/role/CEO/WorkforceAnalytics"
 import CEORecruitmentModule from "./pages/role/CEO/RecruitmentModule"
+import CEORecruitmentBriefing from "./pages/role/CEO/RecruitmentBriefing"
 import HRManagerLeaveManagement from "./pages/role/HR_MANAGER/LeaveManagement"
 import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
@@ -578,6 +579,11 @@ function App() {
                     <Route path="/ceo/recruitment" element={
                       <ProtectedRoute allowedRoles={["CEO"]}>
                         <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ceo/recruitment/briefing" element={
+                      <ProtectedRoute allowedRoles={["CEO"]}>
+                        <DashboardLayout><CEORecruitmentBriefing /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/ceo/recruitment/executive-pipeline" element={

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import apiClient from "@/services/apiClient";
 import { toast } from "sonner";
 import {
@@ -58,24 +60,16 @@ const RecruitmentModule = () => {
   const [loadingOverview, setLoadingOverview] = useState(true);
   const [loadingApprovals, setLoadingApprovals] = useState(true);
   const [actioningId, setActioningId] = useState("");
+  const [brand, setBrand] = useState(null);
+  const [brandForm, setBrandForm] = useState({
+    glassdoorRating: "",
+    linkedInScore: "",
+    employerNps: "",
+    notes: "",
+  });
+  const [savingBrand, setSavingBrand] = useState(false);
 
   const activeTab = useMemo(() => routeToTab(location.pathname), [location.pathname]);
-  const briefingText = useMemo(() => {
-    if (!overview) return "Loading strategic recruitment briefing...";
-
-    const openReqs = overview?.hiringVelocity?.openRequisitions ?? 0;
-    const ytdReqs = overview?.hiringVelocity?.ytdRequisitions ?? 0;
-    const targetYear = overview?.hiringVelocity?.targetYear ?? 2026;
-    const budgetUtil = overview?.financialHealth?.utilizationPct ?? 0;
-    const budgetActual = overview?.financialHealth?.actual ?? 0;
-    const budgetTarget = overview?.financialHealth?.budgetTarget ?? 0;
-    const executiveApps = overview?.qualityAndDiversity?.executiveApplications ?? 0;
-    const sixMonthHires = overview?.qualityAndDiversity?.sixMonthHires ?? 0;
-    const acceptanceRate = overview?.qualityAndDiversity?.acceptanceRate ?? 0;
-    const pendingExec = overview?.bottlenecks?.pendingExecutiveRequisitions ?? 0;
-
-    return `Hiring velocity remains ${openReqs > 0 ? "active" : "low"} with ${openReqs} open requisitions and ${ytdReqs} requisitions logged in ${targetYear}. Recruitment spend is currently at ${budgetUtil}% utilization (${budgetActual} of ${budgetTarget}), which should be monitored against growth priorities. Executive pipeline health shows ${executiveApps} leadership applications in scope, with ${sixMonthHires} six-month hires and an offer acceptance rate of ${acceptanceRate}%. There are ${pendingExec} executive-critical approvals awaiting final decision, representing the primary bottleneck for high-impact hiring.`;
-  }, [overview]);
 
   const loadOverview = async () => {
     setLoadingOverview(true);
@@ -106,16 +100,60 @@ const RecruitmentModule = () => {
     loadApprovals();
   }, []);
 
-  const handleApproveRequisition = async (item) => {
-    if (!item?._id) return;
-    setActioningId(item._id);
+  const loadEmployerBrand = async () => {
     try {
-      await apiClient.put(`/requisitions/${item._id}/approve`);
-      toast.success("Executive approval completed");
+      const res = await apiClient.get("/ceo/employer-brand");
+      const d = res?.data;
+      setBrand(d);
+      setBrandForm({
+        glassdoorRating: d?.glassdoorRating ?? "",
+        linkedInScore: d?.linkedInScore ?? "",
+        employerNps: d?.employerNps ?? "",
+        notes: d?.notes ?? "",
+      });
+    } catch {
+      toast.error("Could not load employer brand");
+    }
+  };
+
+  useEffect(() => {
+    if (location.pathname.includes("employer-brand-health")) loadEmployerBrand();
+  }, [location.pathname]);
+
+  const saveEmployerBrand = async () => {
+    setSavingBrand(true);
+    try {
+      await apiClient.put("/ceo/employer-brand", {
+        glassdoorRating: brandForm.glassdoorRating === "" ? null : Number(brandForm.glassdoorRating),
+        linkedInScore: brandForm.linkedInScore === "" ? null : Number(brandForm.linkedInScore),
+        employerNps: brandForm.employerNps === "" ? null : Number(brandForm.employerNps),
+        notes: brandForm.notes,
+      });
+      toast.success("Saved");
+      loadEmployerBrand();
+    } catch {
+      toast.error("Save failed");
+    } finally {
+      setSavingBrand(false);
+    }
+  };
+
+  const handleApproveItem = async (item) => {
+    if (!item?._id) return;
+    const key = `${item.type || "REQUISITION"}-${item._id}`;
+    setActioningId(key);
+    try {
+      if (item.type === "OFFER") {
+        await apiClient.put(`/offers/${item._id}/ceo-approve`);
+        toast.success("Offer released");
+      } else {
+        await apiClient.put(`/requisitions/${item._id}/approve`);
+        toast.success("Requisition approved");
+      }
       loadApprovals();
       loadOverview();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Approval failed");
+      toast.error(error?.response?.data?.message || error?.response?.data?.error || "Approval failed");
     } finally {
       setActioningId("");
     }
@@ -232,10 +270,10 @@ const RecruitmentModule = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Dynamic Dashboard Snapshot</CardTitle>
-              <CardDescription>
-                Real-time strategic signals for recruitment velocity, financial health, and talent quality.
-              </CardDescription>
+                <CardTitle>Strategic overview</CardTitle>
+                <CardDescription>
+                  Recruitment velocity, spend against plan, and offer outcomes in one place.
+                </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -370,10 +408,14 @@ const RecruitmentModule = () => {
               </CardHeader>
               <CardContent className="space-y-2">
                 {(overview?.charts?.departmentBottlenecks || []).slice(0, 5).map((d) => (
-                  <div key={d.department} className="flex items-center justify-between text-sm border rounded px-3 py-2">
+                  <Link
+                    key={d.department}
+                    to={`/staff-requisition?department=${encodeURIComponent(d.department)}`}
+                    className="flex items-center justify-between text-sm border rounded px-3 py-2 hover:bg-muted/50 transition-colors"
+                  >
                     <span>{d.department}</span>
                     <span className="font-medium">Pending {d.pending}</span>
-                  </div>
+                  </Link>
                 ))}
               </CardContent>
             </Card>
@@ -394,8 +436,10 @@ const RecruitmentModule = () => {
               ) : approvals.length === 0 ? (
                 <div className="text-sm text-muted-foreground">No pending executive approvals.</div>
               ) : (
-                approvals.map((item) => (
-                  <div key={item._id} className="border rounded-md p-3 flex items-start justify-between gap-4">
+                approvals.map((item) => {
+                  const rowKey = `${item.type || "REQUISITION"}-${item._id}`;
+                  return (
+                  <div key={rowKey} className="border rounded-md p-3 flex items-start justify-between gap-4">
                     <div className="space-y-1">
                       <div className="font-medium">{item.title}</div>
                       <div className="text-sm text-muted-foreground">
@@ -407,13 +451,14 @@ const RecruitmentModule = () => {
                       </div>
                     </div>
                     <Button
-                      onClick={() => handleApproveRequisition(item)}
-                      disabled={actioningId === item._id}
+                      onClick={() => handleApproveItem(item)}
+                      disabled={actioningId === rowKey}
                     >
-                      {actioningId === item._id ? "Approving..." : "Approve"}
+                      {actioningId === rowKey ? "Approving..." : "Approve"}
                     </Button>
                   </div>
-                ))
+                  );
+                })
               )}
             </CardContent>
           </Card>
@@ -424,37 +469,63 @@ const RecruitmentModule = () => {
             <CardHeader>
               <CardTitle>Employer Brand Health</CardTitle>
               <CardDescription>
-                Snapshot of talent-market perception and its impact on leadership hiring outcomes.
+                Record key employer brand metrics for leadership reporting.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <MetricPill label="Glassdoor Sentiment" value="Planned" />
-                <MetricPill label="LinkedIn Brand Pull" value="Planned" />
-                <MetricPill label="Employer NPS" value="Planned" />
+                <div className="space-y-2">
+                  <Label>Glassdoor rating (0–5)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="5"
+                    value={brandForm.glassdoorRating}
+                    onChange={(e) => setBrandForm((f) => ({ ...f, glassdoorRating: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>LinkedIn score (0–100)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={brandForm.linkedInScore}
+                    onChange={(e) => setBrandForm((f) => ({ ...f, linkedInScore: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Employer NPS (−100 to 100)</Label>
+                  <Input
+                    type="number"
+                    min="-100"
+                    max="100"
+                    value={brandForm.employerNps}
+                    onChange={(e) => setBrandForm((f) => ({ ...f, employerNps: e.target.value }))}
+                  />
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground">
-                External sentiment connectors can be added here to show real-time employer brand trends.
-              </p>
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Input
+                  value={brandForm.notes}
+                  onChange={(e) => setBrandForm((f) => ({ ...f, notes: e.target.value }))}
+                  placeholder="Optional context"
+                />
+              </div>
+              {brand?.updatedAt && (
+                <p className="text-xs text-muted-foreground">
+                  Last updated: {new Date(brand.updatedAt).toLocaleString()}
+                </p>
+              )}
+              <Button onClick={saveEmployerBrand} disabled={savingBrand}>
+                {savingBrand ? "Saving..." : "Save"}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      <Card className="border-l-4 border-l-blue-600">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-blue-600" />
-            CEO Briefing
-          </CardTitle>
-          <CardDescription>
-            Auto-generated strategic summary from live recruitment and staffing metrics.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm leading-6 text-muted-foreground">{briefingText}</p>
-        </CardContent>
-      </Card>
     </div>
   );
 };
@@ -473,13 +544,6 @@ const MetricCard = ({ title, subtitle, value, helper, icon: Icon }) => (
       <p className="text-xs text-muted-foreground mt-1">{helper}</p>
     </CardContent>
   </Card>
-);
-
-const MetricPill = ({ label, value }) => (
-  <div className="rounded-md border px-3 py-2">
-    <div className="text-xs text-muted-foreground">{label}</div>
-    <div className="text-sm font-semibold">{value}</div>
-  </div>
 );
 
 export default RecruitmentModule;

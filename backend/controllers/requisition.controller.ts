@@ -27,6 +27,13 @@ const needsCeoFinalApproval = (requisition: any): boolean => {
 const normalizeRole = (role?: string) =>
   (role || "").toString().toUpperCase().replace(/\s+/g, "_");
 
+const normalizeUrgency = (raw?: string): "High" | "Normal" | "Low" => {
+  const u = (raw || "normal").toString().toLowerCase();
+  if (u === "high" || u === "critical") return "High";
+  if (u === "low") return "Low";
+  return "Normal";
+};
+
 export const createRequisition = async (req: Request, res: Response) => {
   try {
     const { position, department, experience, salaryRange, reason, urgency } =
@@ -38,7 +45,7 @@ export const createRequisition = async (req: Request, res: Response) => {
       experience,
       salaryRange,
       reason,
-      urgency,
+      urgency: normalizeUrgency(urgency),
       requestedBy: (req as any).user?.id, 
     });
 
@@ -145,6 +152,14 @@ export const approveRequisition = async (
     requisition.finalApprovedBy = isCeo ? (req as any).user?.id : undefined;
     requisition.finalApprovalDate = isCeo ? new Date() : undefined;
 
+    requisition.approvalHistory = requisition.approvalHistory || [];
+    requisition.approvalHistory.push({
+      action: "approved",
+      at: new Date(),
+      userId: (req as any).user?.id,
+      role: (req as any).user?.role,
+    });
+
     await requisition.save();
 
     res.json(requisition);
@@ -171,6 +186,14 @@ export const rejectRequisition = async (
     requisition.status = "Rejected";
     requisition.approvalDate = new Date();
     requisition.approvedBy = (req as any).user?.id;
+
+    requisition.approvalHistory = requisition.approvalHistory || [];
+    requisition.approvalHistory.push({
+      action: "rejected",
+      at: new Date(),
+      userId: (req as any).user?.id,
+      role: (req as any).user?.role,
+    });
 
     await requisition.save();
 

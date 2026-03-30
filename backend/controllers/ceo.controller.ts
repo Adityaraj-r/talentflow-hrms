@@ -4,6 +4,7 @@ import Transfer from '../models/Transfer.model';
 import Requisition from '../models/Requisition.model';
 import Job from '../models/job.model';
 import Application from '../models/application.model';
+import Offer from '../models/Offer.model';
 
 export class CeoController {
   private static parseMaxSalary(salaryRange?: string): number {
@@ -256,7 +257,7 @@ export class CeoController {
   static async getExecutiveApprovals(req: Request, res: Response) {
     try {
       const requisitions = await Requisition.find({ status: 'Pending' }).sort({ createdAt: -1 }).limit(150);
-      const approvals = requisitions
+      const reqRows = requisitions
         .filter((r: any) => CeoController.requisitionNeedsCeo(r))
         .map((r: any) => ({
           _id: r._id,
@@ -270,7 +271,25 @@ export class CeoController {
           status: r.status,
         }));
 
-      return res.status(200).json({ success: true, data: approvals });
+      const pendingOffers = await Offer.find({ status: 'Pending CEO Approval' })
+        .sort({ createdAt: -1 })
+        .limit(50);
+      const offerRows = pendingOffers.map((o: any) => ({
+        _id: o._id,
+        type: 'OFFER',
+        title: `Offer: ${o.candidateName}`,
+        department: '—',
+        salaryRange: String(o.salary),
+        urgency: 'Normal',
+        reason: o.offerId,
+        createdAt: o.createdAt,
+        status: o.status,
+        offerId: o.offerId,
+        candidateName: o.candidateName,
+        salary: o.salary,
+      }));
+
+      return res.status(200).json({ success: true, data: [...offerRows, ...reqRows] });
     } catch (error: any) {
       console.error('CEO executive approvals error:', error);
       return res.status(500).json({ success: false, error: 'Failed to load executive approvals' });

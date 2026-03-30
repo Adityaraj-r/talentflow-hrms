@@ -450,6 +450,7 @@ const Sidebar = ({
             <>
               <SidebarLink to="/ceo/recruitment" icon={Briefcase} label="View Recruitment" />
               <SidebarGroup id="recruitment" icon={Briefcase} label="Strategic Recruitment">
+                <SubLink to="/ceo/recruitment/briefing" label="CEO Briefing" />
                 <SubLink to="/ceo/recruitment/executive-pipeline" label="Executive Pipeline" />
                 <SubLink to="/ceo/recruitment/strategic-analytics" label="Strategic Analytics" />
                 <SubLink to="/ceo/recruitment/workforce-planning" label="Workforce Planning" />
