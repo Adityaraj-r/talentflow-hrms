@@ -103,12 +103,15 @@ import DocumentRequestsEmployee from "./pages/role/EMPLOYEE/DocumentRequests"
 // Role-Specific Leave Management Pages
 import CEOLeaveManagement from "./pages/modules/attendance/LeaveApprovals"
 import HRManagerLeaveManagement from "./pages/role/HR_MANAGER/LeaveManagement"
-import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/LeaveManagement"
+
 
 // Employee Role Pages
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 import Profile from "./pages/dashboard/Profile"
 import OvertimeApprovals from "./pages/modules/attendance/OvertimeApprovals"
+import ShiftRoster from "./pages/modules/attendance/ShiftRoster"
+import LeavePolicyManagement from "./pages/modules/attendance/LeavePolicyManagement"
+import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/EmployeeLeaveManagement"
 
 const ADMIN_ROLES = ["ADMIN", "SUPER ADMIN"]
 
@@ -395,16 +398,37 @@ function App() {
                       <DashboardLayout><HolidayManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />
+                  
                   <Route path="/attendance/shifts" element={
-                    <ProtectedRoute requiredPermission={{ module: "attendance", action: "write" }}>
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN", "HR_MANAGER"]}>
                       <DashboardLayout><ShiftManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />
+
+                  <Route path="/attendance/roster" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "PROJECT_MANAGER"]}>
+                      <DashboardLayout><ShiftRoster /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+                  
+                  <Route path="/attendance/leave-policies" element={
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN", "SUPER ADMIN", "HR_MANAGER"]}>
+                      <DashboardLayout><LeavePolicyManagement /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
+                  <Route path="/attendance/my-leaves" element={
+                    <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER"]}>
+                      <DashboardLayout><EmployeeLeaveManagement /></DashboardLayout>
+                    </ProtectedRoute>
+                  } />
+
                   <Route path="/attendance/leave-management" element={
                     <ProtectedRoute requiredPermission={{ module: "attendance", action: "write" }}>
                       <DashboardLayout><LeaveManagement /></DashboardLayout>
                     </ProtectedRoute>
                   } />
+
                   <Route path="/attendance/manual" element={
                     <ProtectedRoute requiredPermission={{ module: "attendance", action: "write" }}>
                       <DashboardLayout><ManualAttendance /></DashboardLayout>
@@ -412,13 +436,13 @@ function App() {
                   } />
 
                   <Route path="/attendance/correction-requests" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
                       <DashboardLayout><CorrectionRequests /></DashboardLayout>
                     </ProtectedRoute>
                   } />
 
                   <Route path="/attendance/overtime-approvals" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
                       <DashboardLayout><OvertimeApprovals /></DashboardLayout>
                     </ProtectedRoute>
                   } />
@@ -552,7 +576,7 @@ function App() {
 
                   {/* ── Employee Self-Service ────────────────────────── */}
                   <Route path="/dashboard/employee/attendance" element={
-                    <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER"]}>
+                    <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER"]}>
                       <DashboardLayout><MyAttendance /></DashboardLayout>
                     </ProtectedRoute>
                   } />
