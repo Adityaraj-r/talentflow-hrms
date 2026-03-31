@@ -17,12 +17,15 @@ import { cn } from "@/lib/utils";
 const MONTHS = ["January","February","March","April","May","June",
                 "July","August","September","October","November","December"];
 
-// ── Role helpers ──────────────────────────────────────────────────────────────
+// ── Role helpers (align with backend normalization) ─────────────────────────
 const normalizeRole = (role) => (role || "").toUpperCase().replace(/ /g, "_")
 const isPayrollOfficer = (role) => ["PAYROLL_OFFICER","PAYROLLOFFICER"].includes(normalizeRole(role))
 const isHRManager      = (role) => ["HR_MANAGER","HRMANAGER"].includes(normalizeRole(role))
+const isFinanceManager = (role) => normalizeRole(role) === "FINANCE_MANAGER"
+const isCEO            = (role) => normalizeRole(role) === "CEO"
+const isAdmin          = (role) => ["ADMIN","SUPER_ADMIN","SUPERADMIN"].includes(normalizeRole(role))
 const isHROrPayroll    = (role) =>
-  isPayrollOfficer(role) || isHRManager(role) ||
+  isPayrollOfficer(role) || isHRManager(role) || isFinanceManager(role) ||
   ["HR_OFFICER","HROFFICER"].includes(normalizeRole(role))
 
 
@@ -46,6 +49,8 @@ const PayrollProcessing = () => {
   const [bonus, setBonus]                   = useState(0)
   const [overtime, setOvertime]             = useState(0)
   const [activeTab, setActiveTab]           = useState("run")
+  const [serverPreview, setServerPreview]   = useState(null)
+  const [skipLockCheck, setSkipLockCheck]   = useState(false)
 
   // ── Fetch on mount ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -108,6 +113,32 @@ const PayrollProcessing = () => {
     fetchSalary()
   }, [selectedEmp, employees])
 
+  useEffect(() => {
+    if (!selectedEmp || !month || !year) {
+      setServerPreview(null)
+      return
+    }
+    const t = setTimeout(async () => {
+      try {
+        const res = await payrollService.calculatePayrollPreview({
+          month,
+          year,
+          userId: selectedEmp,
+          adjustments: {
+            bonus: Number(bonus) || 0,
+            overtime: Number(overtime) || 0,
+            useLopOverride: Number(lopDays) > 0,
+            lopDaysOverride: Number(lopDays) || 0,
+          },
+        })
+        setServerPreview(res?.data?.line || null)
+      } catch {
+        setServerPreview(null)
+      }
+    }, 350)
+    return () => clearTimeout(t)
+  }, [selectedEmp, month, year, bonus, overtime, lopDays])
+
   const calculatePreview = () => {
     if (!salaryData) return { gross: 0, net: 0, deductions: 0 }
     const basic      = Number(salaryData.basic)          || 0
@@ -136,12 +167,26 @@ const PayrollProcessing = () => {
     if (!salaryData)  { toast.error("No salary structure found for this employee"); return }
     setProcessing(true)
     try {
-      await payrollService.generatePayroll({ month, year, employeeIds: [selectedEmp] })
+      await payrollService.generatePayroll({
+        month,
+        year,
+        employeeIds: [selectedEmp],
+        adjustments: {
+          [selectedEmp]: {
+            bonus: Number(bonus) || 0,
+            overtime: Number(overtime) || 0,
+            useLopOverride: Number(lopDays) > 0,
+            lopDaysOverride: Number(lopDays) || 0,
+          },
+        },
+        requireAttendancePeriodLocked: !skipLockCheck,
+        skipAttendanceLockCheck: skipLockCheck,
+      })
       toast.success("Payroll generated successfully!")
       setBonus(0); setOvertime(0); setLopDays(0); setSelectedEmp("")
       fetchRecords(); fetchPending()
     } catch (err) {
-      toast.error(err?.response?.data?.error || "Failed to generate payroll")
+      toast.error(err?.error || err?.message || "Failed to generate payroll")
     } finally {
       setProcessing(false)
     }
@@ -153,25 +198,31 @@ const PayrollProcessing = () => {
     setBulkProcessing(true)
     try {
       const employeeIds = pending.map(e => e._id)
-      await payrollService.generatePayroll({ month, year, employeeIds })
+      await payrollService.generatePayroll({
+        month,
+        year,
+        employeeIds,
+        requireAttendancePeriodLocked: !skipLockCheck,
+        skipAttendanceLockCheck: skipLockCheck,
+      })
       toast.success(`Payroll generated for ${pending.length} employees!`)
       fetchRecords(); fetchPending()
       setActiveTab("records")
     } catch (err) {
-      toast.error(err?.response?.data?.error || "Bulk payroll run failed")
+      toast.error(err?.error || err?.message || "Bulk payroll run failed")
     } finally {
       setBulkProcessing(false)
     }
   }
 
   // ── Status update ───────────────────────────────────────────────────────────
-  const handleStatusUpdate = async (id, status) => {
+  const handleStatusUpdate = async (id, status, extra = {}) => {
     try {
-      await payrollService.updatePayrollStatus(id, status)
+      await payrollService.updatePayrollStatus(id, status, extra)
       toast.success(`Payroll ${status === "HR Approved" ? "approved" : "marked as Paid"}`)
       fetchRecords()
     } catch (err) {
-      toast.error(err?.response?.data?.error || "Failed to update status")
+      toast.error(err?.error || err?.message || "Failed to update status")
     }
   }
 
@@ -232,7 +283,7 @@ const PayrollProcessing = () => {
         <div className="rounded-xl border bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30 p-5">
           <p className="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400">Paid This Month</p>
           <p className="text-3xl font-black text-gray-900 dark:text-white mt-1">
-            {records.filter(r => r.status === "Paid").reduce((sum, r) => sum + (r.employees?.length || 0), 0)}
+            {records.filter(r => ["Paid","Disbursed","Locked"].includes(r.status)).reduce((sum, r) => sum + (r.employees?.length || 0), 0)}
           </p>
         </div>
       </div>
@@ -264,6 +315,15 @@ const PayrollProcessing = () => {
         <div className="space-y-4">
 
           {/* Bulk Banner */}
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={skipLockCheck}
+              onChange={e => setSkipLockCheck(e.target.checked)}
+            />
+            Skip attendance lock check (emergency / dev only)
+          </label>
+
           {pending.length > 0 && (
             <div className="flex items-center justify-between rounded-xl border border-orange-200 bg-orange-50 dark:bg-orange-500/10 dark:border-orange-500/30 px-5 py-4">
               <div className="flex items-center gap-3">
@@ -362,19 +422,43 @@ const PayrollProcessing = () => {
                 <CardContent>
                   {salaryData ? (
                     <div className="space-y-3 animate-in fade-in duration-300">
-                      <PreviewRow label="Basic"     value={salaryData.basic} />
-                      <PreviewRow label="HRA"       value={salaryData.hra} />
-                      <PreviewRow label="Transport" value={salaryData.transport} />
-                      <PreviewRow label="Medical"   value={salaryData.medical} />
-                      <PreviewRow label="Bonus+OT"  value={Number(bonus) + Number(overtime)} color="text-green-600" prefix="+" />
-                      <div className="border-t pt-2">
-                        <PreviewRow label="Gross" value={preview.gross} bold />
-                      </div>
-                      <PreviewRow label="Deductions" value={preview.deductions} color="text-red-500" prefix="-" />
-                      <div className="mt-4 p-4 bg-blue-600 rounded-xl text-white text-center">
-                        <p className="text-xs uppercase tracking-widest opacity-80">Net Payable</p>
-                        <h2 className="text-3xl font-black mt-1">₹ {preview.net.toLocaleString()}</h2>
-                      </div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Engine preview (matches run)</p>
+                      {serverPreview ? (
+                        <>
+                          <PreviewRow label="Basic" value={serverPreview.earnings?.basic} />
+                          <PreviewRow label="HRA" value={serverPreview.earnings?.hra} />
+                          <PreviewRow label="Allowances" value={serverPreview.earnings?.allowances} />
+                          <PreviewRow label="Bonus" value={serverPreview.earnings?.bonus} />
+                          <PreviewRow label="OT / reimb. / perf." value={
+                            (serverPreview.earnings?.overtime || 0) +
+                            (serverPreview.earnings?.reimbursement || 0) +
+                            (serverPreview.earnings?.performanceBonus || 0)
+                          } />
+                          <div className="border-t pt-2">
+                            <PreviewRow label="Gross" value={serverPreview.grossPay} bold />
+                          </div>
+                          <PreviewRow label="Total deductions" value={serverPreview.totalDeductions} color="text-red-500" prefix="-" />
+                          <div className="mt-4 p-4 bg-blue-600 rounded-xl text-white text-center">
+                            <p className="text-xs uppercase tracking-widest opacity-80">Net Payable</p>
+                            <h2 className="text-3xl font-black mt-1">₹ {Number(serverPreview.netPay).toLocaleString()}</h2>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <PreviewRow label="Basic"     value={salaryData.basic} />
+                          <PreviewRow label="HRA"       value={salaryData.hra} />
+                          <PreviewRow label="Transport" value={salaryData.transport} />
+                          <PreviewRow label="Medical"   value={salaryData.medical} />
+                          <PreviewRow label="Bonus+OT"  value={Number(bonus) + Number(overtime)} color="text-green-600" prefix="+" />
+                          <div className="border-t pt-2">
+                            <PreviewRow label="Gross (local est.)" value={preview.gross} bold />
+                          </div>
+                          <PreviewRow label="Deductions (local est.)" value={preview.deductions} color="text-red-500" prefix="-" />
+                          <div className="mt-4 p-4 bg-slate-200 dark:bg-slate-800 rounded-xl text-center text-muted-foreground text-sm">
+                            Loading engine preview…
+                          </div>
+                        </>
+                      )}
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-10 text-muted-foreground opacity-50">
@@ -490,6 +574,7 @@ const PayrollProcessing = () => {
                 userRole={userRole}
                 onStatusUpdate={handleStatusUpdate}
                 onDownload={handleDownload}
+                onRefresh={fetchRecords}
               />
             ))
           )}
@@ -500,23 +585,57 @@ const PayrollProcessing = () => {
   )
 }
 
-// ── RecordCard — expandable payroll record ────────────────────────────────────
-const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload }) => {
+// ── RecordCard — expandable payroll record + workflow ─────────────────────────
+const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, onRefresh }) => {
   const [expanded, setExpanded] = useState(false)
+  const [payRef, setPayRef] = useState("")
+  const [confirmTok, setConfirmTok] = useState("")
 
   const statusStyle = {
-    Generated:     "bg-blue-100 text-blue-700 border-blue-200",
-    "HR Approved": "bg-purple-100 text-purple-700 border-purple-200",
-    Paid:          "bg-green-100 text-green-700 border-green-200",
+    Generated:      "bg-blue-100 text-blue-700 border-blue-200",
+    Verified:       "bg-amber-100 text-amber-800 border-amber-200",
+    HR_Approved:    "bg-purple-100 text-purple-700 border-purple-200",
+    CEO_Approved:   "bg-indigo-100 text-indigo-700 border-indigo-200",
+    Disbursed:      "bg-green-100 text-green-700 border-green-200",
+    Locked:         "bg-slate-200 text-slate-800 border-slate-300",
+    "HR Approved":  "bg-purple-100 text-purple-700 border-purple-200",
+    Paid:           "bg-green-100 text-green-700 border-green-200",
+  }
+
+  const runWorkflow = async (action, body = {}, headers = {}) => {
+    try {
+      await payrollService.patchPayrollWorkflow(record._id, { action, ...body }, { headers })
+      toast.success("Payroll updated")
+      onRefresh?.()
+    } catch (e) {
+      toast.error(e?.error || e?.message || "Workflow action failed")
+    }
+  }
+
+  const exportBank = async (e) => {
+    e.stopPropagation()
+    try {
+      const blob = await payrollService.exportPayrollBankCsv(record._id)
+      const url = window.URL.createObjectURL(blob instanceof Blob ? blob : new Blob([blob]))
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `payroll-bank-${record._id}.csv`
+      a.click()
+      window.URL.revokeObjectURL(url)
+      toast.success("Bank CSV downloaded")
+      onRefresh?.()
+    } catch (e) {
+      toast.error(e?.error || e?.message || "Export failed")
+    }
   }
 
   const empCount = record.employees?.length || 0
   const totalNet = record.employees?.reduce((s, e) => s + (e.netPay || 0), 0) || 0
+  const st = record.status
 
   return (
     <Card className="overflow-hidden">
 
-      {/* ── Summary header row ── */}
       <div
         className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-muted/30 transition-colors select-none"
         onClick={() => setExpanded(p => !p)}
@@ -528,47 +647,103 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload })
               ? "bg-blue-100 dark:bg-blue-500/20 text-blue-600"
               : "bg-muted text-muted-foreground"
           )}>
-            {expanded
-              ? <ChevronUp className="w-4 h-4" />
-              : <ChevronDown className="w-4 h-4" />
-            }
+            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </div>
           <div>
             <p className="font-semibold text-sm">{record.month} {record.year}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {empCount} employee{empCount !== 1 ? "s" : ""} · Generated {new Date(record.createdAt).toLocaleDateString("en-IN")}
+              {empCount} employee{empCount !== 1 ? "s" : ""} · {record.runKind === "off_cycle" ? "Off-cycle" : "Regular"}
+              {record.ceoApprovalRequired && (
+                <span className="ml-2 text-orange-600 font-medium">CEO gate</span>
+              )}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          {/* Total payout */}
-          <div className="text-right hidden sm:block">
-            <p className="text-xs text-muted-foreground">Total Net Payout</p>
+        <div className="flex flex-wrap items-center gap-2 justify-end">
+          <div className="text-right hidden sm:block mr-2">
+            <p className="text-xs text-muted-foreground">Total Net</p>
             <p className="text-sm font-bold text-green-600">₹ {totalNet.toLocaleString()}</p>
           </div>
 
-          {/* Status */}
-          <Badge variant="outline" className={statusStyle[record.status] || ""}>
-            {record.status}
+          <Badge variant="outline" className={statusStyle[st] || ""}>
+            {st}
           </Badge>
 
-          {/* Action buttons — stop propagation so click doesn't toggle expand */}
-          <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-            {record.status === "Generated" && isHRManager(userRole) && (
-              <Button size="sm" variant="outline"
-                onClick={() => onStatusUpdate(record._id, "HR Approved")}
-                className="text-purple-600 border-purple-300 hover:bg-purple-50 text-xs"
-              >
-                <CheckCircle className="w-3 h-3 mr-1" /> Approve
+          <div className="flex flex-wrap gap-1" onClick={e => e.stopPropagation()}>
+            {(isFinanceManager(userRole) || isAdmin(userRole)) && st === "Generated" && (
+              <Button size="sm" variant="outline" className="text-xs h-8" onClick={() => runWorkflow("verify")}>
+                Verify
               </Button>
             )}
-            {record.status === "HR Approved" && isPayrollOfficer(userRole) && (
-              <Button size="sm" variant="outline"
-                onClick={() => onStatusUpdate(record._id, "Paid")}
-                className="text-green-600 border-green-300 hover:bg-green-50 text-xs"
+            {(isHRManager(userRole) || isAdmin(userRole)) && st === "Verified" && (
+              <Button size="sm" variant="outline" className="text-xs h-8" onClick={() => runWorkflow("hr_approve")}>
+                HR Approve
+              </Button>
+            )}
+            {(isCEO(userRole) || isAdmin(userRole)) && st === "HR_Approved" && record.ceoApprovalRequired && (
+              <Button size="sm" variant="outline" className="text-xs h-8" onClick={() => runWorkflow("ceo_approve")}>
+                CEO Approve
+              </Button>
+            )}
+            {(isPayrollOfficer(userRole) || isAdmin(userRole)) && st === "CEO_Approved" && (
+              <>
+                <input
+                  className="h-8 w-28 px-2 text-xs border rounded"
+                  placeholder="UTR / ref"
+                  value={payRef}
+                  onChange={e => setPayRef(e.target.value)}
+                />
+                <input
+                  className="h-8 w-28 px-2 text-xs border rounded"
+                  placeholder="2FA token"
+                  value={confirmTok}
+                  onChange={e => setConfirmTok(e.target.value)}
+                />
+                <Button
+                  size="sm"
+                  className="text-xs h-8 bg-green-600"
+                  onClick={() =>
+                    runWorkflow(
+                      "disburse",
+                      { paymentReference: payRef },
+                      confirmTok ? { "x-payroll-disburse-confirmation": confirmTok } : {}
+                    )
+                  }
+                >
+                  Disburse
+                </Button>
+              </>
+            )}
+            {(isFinanceManager(userRole) || isAdmin(userRole)) && (st === "Disbursed" || st === "Paid") && (
+              <Button size="sm" variant="outline" className="text-xs h-8" onClick={() => runWorkflow("lock")}>
+                Lock
+              </Button>
+            )}
+            {(isFinanceManager(userRole) || isPayrollOfficer(userRole) || isAdmin(userRole)) &&
+              ["Verified", "HR_Approved", "CEO_Approved", "Disbursed", "HR Approved", "Generated"].includes(st) && (
+              <Button size="sm" variant="secondary" className="text-xs h-8" onClick={exportBank}>
+                Bank CSV
+              </Button>
+            )}
+            {st === "Generated" && isHRManager(userRole) && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs h-8 text-purple-600"
+                onClick={() => onStatusUpdate(record._id, "HR Approved")}
               >
-                <CheckCircle className="w-3 h-3 mr-1" /> Mark Paid
+                Legacy approve
+              </Button>
+            )}
+            {(st === "HR Approved" || st === "HR_Approved") && isPayrollOfficer(userRole) && !["CEO_Approved", "Disbursed"].includes(st) && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs h-8 text-green-600"
+                onClick={() => onStatusUpdate(record._id, "Paid", { paymentReference: payRef })}
+              >
+                Legacy paid
               </Button>
             )}
           </div>
@@ -624,7 +799,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload })
 
                 {/* Basic */}
                 <div className="col-span-2 text-right text-muted-foreground text-sm">
-                  ₹ {(emp.basic || 0).toLocaleString()}
+                  ₹ {(emp.earnings?.basic ?? emp.basic ?? 0).toLocaleString()}
                 </div>
 
                 {/* Gross */}
@@ -634,7 +809,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload })
 
                 {/* Deductions */}
                 <div className="col-span-2 text-right text-red-500 text-sm">
-                  - ₹ {(emp.deductions || 0).toLocaleString()}
+                  - ₹ {(emp.totalDeductions ?? emp.deductions ?? 0).toLocaleString()}
                 </div>
 
                 {/* Net */}

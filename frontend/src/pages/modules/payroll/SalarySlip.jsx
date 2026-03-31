@@ -14,11 +14,14 @@ const MONTHS = ["January","February","March","April","May","June",
                 "July","August","September","October","November","December"]
 
 const STATUS_COLORS = {
-  Draft:           "bg-gray-100 text-gray-700",
-  Generated:       "bg-blue-100 text-blue-700",
-  "HR Reviewed":   "bg-yellow-100 text-yellow-700",
-  "Admin Approved":"bg-purple-100 text-purple-700",
-  Paid:            "bg-green-100 text-green-700",
+  Generated:     "bg-blue-100 text-blue-700",
+  Verified:      "bg-amber-100 text-amber-800",
+  HR_Approved:   "bg-purple-100 text-purple-700",
+  "HR Approved": "bg-purple-100 text-purple-700",
+  CEO_Approved:  "bg-indigo-100 text-indigo-700",
+  Disbursed:     "bg-green-100 text-green-700",
+  Locked:        "bg-slate-200 text-slate-800",
+  Paid:          "bg-green-100 text-green-700",
 }
 
 const HR_ROLES = ["HRMANAGER", "HROFFICER", "PAYROLLOFFICER", "ADMIN", "SUPERADMIN"]

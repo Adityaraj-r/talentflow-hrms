@@ -128,7 +128,8 @@ const Sidebar = ({
   }
 
   const getPayrollLabel = () => {
-    if ([ROLES.HR_MANAGER, ROLES.HR_OFFICER, ROLES.PAYROLL_OFFICER].includes(userRole)) return "Manage Payroll"
+    if ([ROLES.HR_MANAGER, ROLES.HR_OFFICER, ROLES.PAYROLL_OFFICER, ROLES.FINANCE_MANAGER].includes(userRole))
+      return "Manage Payroll"
     return "Payroll"
   }
 

@@ -109,6 +109,7 @@ import DocumentRequestsEmployee from "./pages/role/EMPLOYEE/DocumentRequests"
 // Role-Specific Leave Management Pages
 import AdminLeaveManagement from "./pages/modules/attendance/LeaveApprovals"
 import WorkforceAnalytics from "./pages/role/CEO/WorkforceAnalytics"
+import PayrollCostDashboard from "./pages/role/CEO/PayrollCostDashboard"
 import CEORecruitmentModule from "./pages/role/CEO/RecruitmentModule"
 import CEORecruitmentBriefing from "./pages/role/CEO/RecruitmentBriefing"
 import HRManagerLeaveManagement from "./pages/role/HR_MANAGER/LeaveManagement"
@@ -654,6 +655,12 @@ function App() {
                     <Route path="/ceo/analytics" element={
                       <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
                         <DashboardLayout><WorkforceAnalytics /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+
+                    <Route path="/ceo/payroll" element={
+                      <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
+                        <DashboardLayout><PayrollCostDashboard /></DashboardLayout>
                       </ProtectedRoute>
                     } />
 

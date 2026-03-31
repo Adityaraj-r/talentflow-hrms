@@ -25,7 +25,7 @@ const enterpriseRoles = [
       dashboard: { read: true, write: false, delete: false },
       employees: { read: true, write: false, delete: false },
       recruitment: { read: true, write: true, delete: false },
-      payroll: { read: true, write: false, delete: false },
+      payroll: { read: true, write: true, delete: false },
       attendance: { read: true, write: false, delete: false },
       settings: { read: false, write: false, delete: false },
       roles: { read: false, write: false, delete: false }
@@ -57,6 +57,19 @@ const enterpriseRoles = [
       roles: { read: false, write: false, delete: false }
     }
   },
+  {
+    name: "FINANCE_MANAGER",
+    isSystemRole: false,
+    permissions: {
+      dashboard: { read: true, write: false, delete: false },
+      employees: { read: true, write: false, delete: false },
+      recruitment: { read: false, write: false, delete: false },
+      attendance: { read: true, write: false, delete: false },
+      payroll: { read: true, write: true, delete: false },
+      settings: { read: false, write: false, delete: false },
+      roles: { read: false, write: false, delete: false }
+    }
+  },
 
   // --- HR DEPARTMENT ---
   {
@@ -80,7 +93,7 @@ const enterpriseRoles = [
       employees: { read: true, write: true, delete: false },
       recruitment: { read: true, write: true, delete: false },
       attendance: { read: true, write: true, delete: false },
-      payroll: { read: false, write: false, delete: false },
+      payroll: { read: true, write: false, delete: false },
       settings: { read: false, write: false, delete: false },
       roles: { read: false, write: false, delete: false }
     }
