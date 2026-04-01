@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Download, Loader2, FileText, Calendar, Building, User } from "lucide-react"
+import { Download, Loader2, FileText, Calendar } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -24,22 +24,30 @@ const STATUS_COLORS = {
   Paid:          "bg-green-100 text-green-700",
 }
 
-const HR_ROLES = ["HRMANAGER", "HROFFICER", "PAYROLLOFFICER", "ADMIN", "SUPERADMIN"]
+function normRole(role) {
+  const r = typeof role === "string" ? role : role?.name
+  return (r || "").toUpperCase().replace(/ /g, "_")
+}
+
+const STAFF_SLIP_ROLES = new Set([
+  "HR_MANAGER", "HR_OFFICER", "PAYROLL_OFFICER", "FINANCE_MANAGER",
+  "ADMIN", "SUPER_ADMIN", "SUPERADMIN", "CEO", "COUNTRY_MANAGER",
+  "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "OPERATIONS_MANAGER", "PROJECT_MANAGER",
+])
 
 const SalarySlip = () => {
   const { user } = useAuth()
-  const userRole = (typeof user?.role === "string" ? user.role : user?.role?.name)?.toUpperCase()
-  const isHR     = HR_ROLES.includes(userRole)
+  const isStaff = STAFF_SLIP_ROLES.has(normRole(user?.role))
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Salary Slips</h1>
         <p className="text-muted-foreground">
-          {isHR ? "View and download employee salary slips." : "View and download your monthly salary slips."}
+          {isStaff ? "View and download employee salary slips." : "View and download your monthly salary slips."}
         </p>
       </div>
-      {isHR ? <HRSlipView /> : <EmployeeSlipView userId={user?._id || user?.id} />}
+      {isStaff ? <HRSlipView /> : <EmployeeSlipView userId={user?._id || user?.id} />}
     </div>
   )
 }
@@ -55,8 +63,8 @@ const HRSlipView = () => {
   const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
-    apiClient.get("/admin/users")
-      .then(res => setEmployees(res.users || res.data || []))
+    apiClient.get("/admin/users", { params: { scope: "payroll" } })
+      .then(res => setEmployees(res.data || res.users || []))
       .catch(() => toast.error("Failed to load employees"))
   }, [])
 
@@ -64,21 +72,29 @@ const HRSlipView = () => {
     if (!selectedUser) { toast.error("Please select an employee"); return }
     setLoading(true)
     setSlip(null)
+    setPayrollId(null)
     try {
-      // Find payroll record for this month/year
       const recordsRes = await payrollService.getPayrollRecords(month, year)
       const records    = recordsRes.data || []
 
-      // Find the record that contains this employee
       const record = records.find(r =>
-        r.employees?.some(e => e.employeeId === selectedUser)
+        r.employees?.some(e => String(e.employeeId) === String(selectedUser))
       )
 
       if (!record)
-        return toast.error(`No payroll found for ${month} ${year}`)
+        return void toast.error(`No payroll found for ${month} ${year}`)
 
-      const empSlip = record.employees.find(e => e.employeeId === selectedUser)
-      setSlip({ ...empSlip, month: record.month, year: record.year, status: record.status })
+      const slipRes = await payrollService.getSalarySlip(record._id, selectedUser)
+      const inner = slipRes.data || slipRes
+      if (!inner?.slip || !inner?.payroll)
+        return void toast.error("Could not load slip for this period")
+
+      setSlip({
+        ...inner.slip,
+        month: inner.payroll.month,
+        year: inner.payroll.year,
+        status: inner.payroll.status,
+      })
       setPayrollId(record._id)
     } catch {
       toast.error("Failed to fetch salary slip")
@@ -111,9 +127,10 @@ const HRSlipView = () => {
     }
   }
 
+  const selectedEmp = employees.find(e => String(e._id) === String(selectedUser))
+
   return (
     <div className="space-y-6">
-      {/* Search Bar */}
       <Card>
         <CardHeader>
           <CardTitle>Find Salary Slip</CardTitle>
@@ -127,7 +144,7 @@ const HRSlipView = () => {
                 <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
                 <SelectContent>
                   {employees.map(e => (
-                    <SelectItem key={e._id} value={e._id}>
+                    <SelectItem key={e._id} value={String(e._id)}>
                       {e.firstName} {e.lastName}
                     </SelectItem>
                   ))}
@@ -165,13 +182,12 @@ const HRSlipView = () => {
         </CardContent>
       </Card>
 
-      {/* Slip Display */}
       {slip && (
         <SlipCard
           slip={slip}
           employeeName={
-            employees.find(e => e._id === selectedUser)
-              ? `${employees.find(e => e._id === selectedUser).firstName} ${employees.find(e => e._id === selectedUser).lastName}`
+            selectedEmp
+              ? `${selectedEmp.firstName} ${selectedEmp.lastName}`
               : "Employee"
           }
           onDownload={handleDownload}
@@ -187,35 +203,61 @@ const EmployeeSlipView = ({ userId }) => {
   const [loading, setLoading]   = useState(true)
   const [activeSlip, setActiveSlip] = useState(null)
   const [downloading, setDownloading] = useState(false)
+  const [openingPayrollId, setOpeningPayrollId] = useState(null)
   const { user } = useAuth()
 
   useEffect(() => {
     const fetchRecords = async () => {
+      if (!userId) {
+        setLoading(false)
+        return
+      }
       try {
-        const res = await payrollService.getPayrollRecords()
-        const all = res.data || []
-        // Filter only records that contain this employee
-        const myRecords = all.filter(r =>
-          r.employees?.some(e => e.employeeId === userId)
-        ).map(r => ({
-          ...r,
-          mySlip: r.employees.find(e => e.employeeId === userId)
-        }))
-        setRecords(myRecords)
+        const res = await payrollService.getEmployeePayrollHistory(userId)
+        const rows = res.data ?? []
+        setRecords(Array.isArray(rows) ? rows : [])
       } catch {
         toast.error("Failed to load your salary slips")
       } finally {
         setLoading(false)
       }
     }
-    if (userId) fetchRecords()
+    void fetchRecords()
   }, [userId])
 
-  const handleDownload = async (payrollId) => {
+  const openSlip = async (row) => {
+    const pid = String(row.payrollId)
+    if (activeSlip?.payrollId === pid) {
+      setActiveSlip(null)
+      return
+    }
+    setOpeningPayrollId(pid)
+    try {
+      const res = await payrollService.getSalarySlip(pid, userId)
+      const inner = res.data || res
+      if (!inner?.slip || !inner?.payroll) {
+        toast.error("Could not load slip details")
+        return
+      }
+      setActiveSlip({
+        ...inner.slip,
+        month: inner.payroll.month,
+        year: inner.payroll.year,
+        status: inner.payroll.status,
+        payrollId: pid,
+      })
+    } catch {
+      toast.error("Could not load slip details")
+    } finally {
+      setOpeningPayrollId(null)
+    }
+  }
+
+  const handleDownload = async (payrollPk) => {
     setDownloading(true)
     try {
       const { blob, filename } = await payrollService.downloadPayslipWithFilename(
-        payrollId,
+        payrollPk,
         userId
       )
       const url = window.URL.createObjectURL(blob)
@@ -242,11 +284,10 @@ const EmployeeSlipView = ({ userId }) => {
 
   return (
     <div className="space-y-6">
-      {/* History Table */}
       <Card>
         <CardHeader>
           <CardTitle>My Salary Slips</CardTitle>
-          <CardDescription>Click View to see the detailed breakdown.</CardDescription>
+          <CardDescription>Slips appear after payroll has been paid or locked.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -266,10 +307,10 @@ const EmployeeSlipView = ({ userId }) => {
                   </TableCell>
                 </TableRow>
               ) : records.map(r => (
-                <TableRow key={r._id}>
+                <TableRow key={String(r.payrollId)}>
                   <TableCell className="font-medium">{r.month} {r.year}</TableCell>
                   <TableCell className="font-bold text-green-600">
-                    ₹ {r.mySlip?.netPay?.toLocaleString()}
+                    ₹ {Number(r.netPay || 0).toLocaleString()}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={STATUS_COLORS[r.status] || ""}>
@@ -280,17 +321,17 @@ const EmployeeSlipView = ({ userId }) => {
                     <div className="flex gap-2">
                       <Button
                         size="sm" variant="outline"
-                        onClick={() => setActiveSlip(
-                          activeSlip?._id === r._id ? null :
-                          { ...r.mySlip, month: r.month, year: r.year, status: r.status, _id: r._id }
-                        )}
+                        onClick={() => void openSlip(r)}
+                        disabled={openingPayrollId !== null && openingPayrollId !== String(r.payrollId)}
                       >
-                        <FileText className="w-3 h-3 mr-1" />
-                        {activeSlip?._id === r._id ? "Hide" : "View"}
+                        {openingPayrollId === String(r.payrollId)
+                          ? <Loader2 className="w-3 h-3 animate-spin" />
+                          : <><FileText className="w-3 h-3 mr-1" />
+                            {activeSlip?.payrollId === String(r.payrollId) ? "Hide" : "View"}</>}
                       </Button>
                       <Button
                         size="sm" variant="outline"
-                        onClick={() => handleDownload(r._id)}
+                        onClick={() => void handleDownload(String(r.payrollId))}
                         disabled={downloading}
                         className="text-blue-600 border-blue-200 hover:bg-blue-50"
                       >
@@ -308,12 +349,11 @@ const EmployeeSlipView = ({ userId }) => {
         </CardContent>
       </Card>
 
-      {/* Expanded Slip */}
       {activeSlip && (
         <SlipCard
           slip={activeSlip}
           employeeName={`${user?.firstName} ${user?.lastName}`}
-          onDownload={() => handleDownload(activeSlip._id)}
+          onDownload={() => void handleDownload(activeSlip.payrollId)}
           downloading={downloading}
         />
       )}
@@ -321,8 +361,25 @@ const EmployeeSlipView = ({ userId }) => {
   )
 }
 
+function slipEarnings(slip) {
+  const e = slip.earnings || {}
+  return {
+    basic: Number(e.basic ?? slip.basic ?? 0),
+    hra: Number(e.hra ?? slip.hra ?? 0),
+    allowances: Number(e.allowances ?? slip.allowances ?? 0),
+    bonus: Number(e.bonus ?? slip.bonus ?? 0),
+    overtime: Number(e.overtime ?? 0),
+    reimbursement: Number(e.reimbursement ?? 0),
+    performanceBonus: Number(e.performanceBonus ?? 0),
+  }
+}
+
 const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
-  const gross = slip.basic + slip.hra + (slip.allowances || 0) + (slip.bonus || 0)
+  const eg = slipEarnings(slip)
+  const gross = Number(slip.grossPay) > 0
+    ? Number(slip.grossPay)
+    : eg.basic + eg.hra + eg.allowances + eg.bonus + eg.overtime + eg.reimbursement + eg.performanceBonus
+  const deductions = Number(slip.totalDeductions ?? slip.deductions ?? 0)
 
   return (
     <Card className="border-2 border-blue-100">
@@ -355,7 +412,6 @@ const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
       </CardHeader>
       <CardContent className="pt-6">
         <div className="grid md:grid-cols-2 gap-8">
-          {/* Earnings */}
           <div>
             <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground mb-3">
               Earnings
@@ -363,32 +419,43 @@ const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Basic Salary</span>
-                <span className="font-medium">₹ {slip.basic?.toLocaleString()}</span>
+                <span className="font-medium">₹ {eg.basic.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>HRA</span>
-                <span className="font-medium">₹ {slip.hra?.toLocaleString()}</span>
+                <span className="font-medium">₹ {eg.hra.toLocaleString()}</span>
               </div>
-              {slip.allowances > 0 && (
+              {eg.allowances > 0 && (
                 <div className="flex justify-between text-sm">
                   <span>Other Allowances</span>
-                  <span className="font-medium">₹ {slip.allowances?.toLocaleString()}</span>
+                  <span className="font-medium">₹ {eg.allowances.toLocaleString()}</span>
                 </div>
               )}
-              {slip.bonus > 0 && (
+              {eg.bonus > 0 && (
                 <div className="flex justify-between text-sm text-green-600">
                   <span>Bonus</span>
-                  <span className="font-medium">₹ {slip.bonus?.toLocaleString()}</span>
+                  <span className="font-medium">₹ {eg.bonus.toLocaleString()}</span>
+                </div>
+              )}
+              {eg.overtime > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>Overtime</span>
+                  <span className="font-medium">₹ {eg.overtime.toLocaleString()}</span>
+                </div>
+              )}
+              {(eg.reimbursement + eg.performanceBonus) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>Reimbursement / performance</span>
+                  <span className="font-medium">₹ {(eg.reimbursement + eg.performanceBonus).toLocaleString()}</span>
                 </div>
               )}
               <div className="border-t pt-2 flex justify-between text-sm font-bold">
                 <span>Gross Salary</span>
-                <span>₹ {gross?.toLocaleString()}</span>
+                <span>₹ {Math.round(gross).toLocaleString()}</span>
               </div>
             </div>
           </div>
 
-          {/* Deductions */}
           <div>
             <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground mb-3">
               Deductions
@@ -396,7 +463,7 @@ const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
             <div className="space-y-2">
               <div className="flex justify-between text-sm text-red-500">
                 <span>Total Deductions</span>
-                <span className="font-medium">- ₹ {slip.deductions?.toLocaleString()}</span>
+                <span className="font-medium">- ₹ {deductions.toLocaleString()}</span>
               </div>
               {slip.lopDays > 0 && (
                 <div className="flex justify-between text-sm text-orange-500">
@@ -408,10 +475,9 @@ const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
           </div>
         </div>
 
-        {/* Net Pay */}
         <div className="mt-6 p-6 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl text-white text-center">
           <p className="text-sm uppercase tracking-widest opacity-80">Net Pay</p>
-          <h2 className="text-4xl font-bold mt-1">₹ {slip.netPay?.toLocaleString()}</h2>
+          <h2 className="text-4xl font-bold mt-1">₹ {Number(slip.netPay || 0).toLocaleString()}</h2>
           <p className="text-sm opacity-70 mt-1">{slip.month} {slip.year}</p>
         </div>
       </CardContent>

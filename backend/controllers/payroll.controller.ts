@@ -17,6 +17,12 @@ import {
   applyAdvanceTicketBalances,
 } from "../services/payrollCalculation.service"
 import { logPayrollAudit } from "../utils/payrollAudit.util"
+import PayrollAuditLog from "../models/payrollAuditLog.model"
+import {
+  isTeamPayrollViewerRole,
+  getPayrollTeamUserIdStrings,
+  filterPayrollLeanDocForTeam,
+} from "../utils/payrollTeamScope.util"
 
 const norm = (r: string) => r.toUpperCase().replace(/[\s_]/g, "")
 
@@ -25,6 +31,23 @@ const isHRManager = (role: string) => norm(role) === "HRMANAGER"
 const isFinanceManager = (role: string) => norm(role) === "FINANCEMANAGER"
 const isCEO = (role: string) => norm(role) === "CEO"
 const isAdmin = (role: string) => ["ADMIN", "SUPERADMIN"].includes(norm(role))
+
+const canProcessPayroll = (role: string) =>
+  isPayrollOfficer(role) || isFinanceManager(role) || isAdmin(role)
+
+function assertAdminDualControl(
+  payroll: { generatedBy?: string },
+  req: AuthRequest,
+  action: string
+): string | null {
+  const dual = new Set(["verify", "hr_approve", "ceo_approve", "disburse", "lock"])
+  if (!dual.has(action) || !isAdmin(req.user?.role || "")) return null
+  const gen = String(payroll.generatedBy || "").trim().toLowerCase()
+  const em = String(req.user?.email || "").trim().toLowerCase()
+  if (gen && em && gen === em)
+    return "Dual control: the same account cannot generate and approve or disburse this payroll run"
+  return null
+}
 
 export const getPayrollSettings = async (req: AuthRequest, res: Response) => {
   try {
@@ -81,6 +104,9 @@ export const calculatePayrollPreview = async (req: AuthRequest, res: Response) =
     if (!month || !year || !userId)
       return res.status(400).json({ success: false, error: "month, year, userId required" })
 
+    if (!canProcessPayroll(req.user?.role || ""))
+      return res.status(403).json({ success: false, error: "Not allowed to run payroll calculations" })
+
     const user = await User.findById(userId).select("employeeId")
     if (!user?.employeeId)
       return res.status(400).json({ success: false, error: "User not linked to employee" })
@@ -113,8 +139,11 @@ function recalcTotals(payroll: InstanceType<typeof Payroll>, settings: Awaited<R
 export const generatePayroll = async (req: AuthRequest, res: Response) => {
   try {
     const userRole = req.user?.role || ""
-    if (!isPayrollOfficer(userRole) && !isAdmin(userRole))
-      return res.status(403).json({ success: false, error: "Only Payroll Officers or Admins can generate payroll" })
+    if (!canProcessPayroll(userRole))
+      return res.status(403).json({
+        success: false,
+        error: "Only Finance, Payroll Officers, or Admins can generate payroll",
+      })
 
     const {
       month,
@@ -302,14 +331,26 @@ export const getPendingPayroll = async (req: AuthRequest, res: Response) => {
     const processed = new Set(existing?.employees.map(e => e.employeeId.toString()) || [])
 
     const pendingIds = eligible.filter(id => !processed.has(id.toString()))
-    const pendingUsers = await User.find({ _id: { $in: pendingIds } })
+    let pendingUsers = await User.find({ _id: { $in: pendingIds } })
       .select("firstName lastName email department role employeeCode")
       .lean()
+
+    if (req.user && isTeamPayrollViewerRole(req.user.role)) {
+      const allowed = await getPayrollTeamUserIdStrings({
+        id: req.user.id,
+        role: req.user.role,
+        email: req.user.email,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        department: req.user.department,
+      })
+      pendingUsers = pendingUsers.filter(u => allowed.has(String(u._id)))
+    }
 
     res.json({
       success: true,
       data: {
-        total: pendingIds.length,
+        total: pendingUsers.length,
         pending: pendingUsers,
         ineligibleSample: ineligible.slice(0, 50),
         ineligibleCount: ineligible.length,
@@ -331,8 +372,82 @@ export const getPayrollRecords = async (req: AuthRequest, res: Response) => {
     if (year) filter.year = Number(year)
     if (runKind) filter.runKind = runKind
 
-    const records = await Payroll.find(filter).sort({ createdAt: -1 }).lean()
+    let records = await Payroll.find(filter).sort({ createdAt: -1 }).lean()
+
+    if (req.user && isTeamPayrollViewerRole(req.user.role)) {
+      const allowed = await getPayrollTeamUserIdStrings({
+        id: req.user.id,
+        role: req.user.role,
+        email: req.user.email,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        department: req.user.department,
+      })
+      const filtered: typeof records = []
+      for (const doc of records) {
+        const next = filterPayrollLeanDocForTeam(doc as never, allowed)
+        if (next) filtered.push(next as (typeof records)[0])
+      }
+      records = filtered
+    }
+
     res.json({ success: true, data: records })
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message })
+  }
+}
+
+export const getPayrollAuditLogs = async (req: AuthRequest, res: Response) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 100, 500)
+    const skip = Math.max(0, Number(req.query.skip) || 0)
+    const logs = await PayrollAuditLog.find({})
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean()
+    res.json({ success: true, data: logs })
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message })
+  }
+}
+
+export const getPayrollComplianceSummary = async (req: AuthRequest, res: Response) => {
+  try {
+    const month =
+      (req.query.month as string) || new Date().toLocaleString("default", { month: "long" })
+    const year = Number(req.query.year) || new Date().getFullYear()
+    const runs = await Payroll.find({
+      month,
+      year,
+      $or: [{ runKind: "regular" }, { runKind: { $exists: false } }],
+    }).lean()
+
+    let pf = 0
+    let esi = 0
+    let tds = 0
+    let pt = 0
+    let headcount = 0
+    for (const r of runs) {
+      for (const e of r.employees || []) {
+        headcount += 1
+        pf += Number((e as { deductions?: { pf?: number } }).deductions?.pf) || 0
+        esi += Number((e as { deductions?: { esi?: number } }).deductions?.esi) || 0
+        tds += Number((e as { deductions?: { tds?: number } }).deductions?.tds) || 0
+        pt += Number((e as { deductions?: { pt?: number } }).deductions?.pt) || 0
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        month,
+        year,
+        runs: runs.length,
+        employeeLines: headcount,
+        totals: { pf, esi, tds, pt, statutory: pf + esi + tds + pt },
+      },
+    })
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message })
   }
@@ -341,7 +456,17 @@ export const getPayrollRecords = async (req: AuthRequest, res: Response) => {
 export const getPayrollAnalyticsSummary = async (req: AuthRequest, res: Response) => {
   try {
     const r = norm(req.user?.role || "")
-    if (!["CEO", "HRMANAGER", "FINANCEMANAGER", "ADMIN", "SUPERADMIN", "PAYROLLOFFICER"].includes(r))
+    if (
+      ![
+        "CEO",
+        "HRMANAGER",
+        "FINANCEMANAGER",
+        "ADMIN",
+        "SUPERADMIN",
+        "PAYROLLOFFICER",
+        "COUNTRYMANAGER",
+      ].includes(r)
+    )
       return res.status(403).json({ success: false, error: "Insufficient role for payroll analytics" })
 
     const year = Number(req.query.year) || new Date().getFullYear()
@@ -366,8 +491,14 @@ export const patchPayrollWorkflow = async (req: AuthRequest, res: Response) => {
   try {
     const { action, paymentReference, paymentMethod } = req.body
     const role = req.user?.role || ""
+    if (!action || typeof action !== "string")
+      return res.status(400).json({ success: false, error: "action required" })
+
     const payroll = await Payroll.findById(req.params.id)
     if (!payroll) return res.status(404).json({ success: false, error: "Payroll not found" })
+
+    const dualErr = assertAdminDualControl(payroll, req, action)
+    if (dualErr) return res.status(403).json({ success: false, error: dualErr })
 
     const before = { status: payroll.status, totalNet: payroll.totalNet }
 
@@ -406,8 +537,11 @@ export const patchPayrollWorkflow = async (req: AuthRequest, res: Response) => {
         break
       }
       case "disburse": {
-        if (!isPayrollOfficer(role) && !isAdmin(role))
-          return res.status(403).json({ success: false, error: "Payroll Officer or Admin only" })
+        if (!isPayrollOfficer(role) && !isFinanceManager(role) && !isAdmin(role))
+          return res.status(403).json({
+            success: false,
+            error: "Finance Manager, Payroll Officer, or Admin only",
+          })
         if (payroll.status !== "CEO_Approved")
           return res.status(400).json({ success: false, error: "Must be CEO_Approved before disbursement" })
         const secret = process.env.PAYROLL_DISBURSE_SECRET
@@ -457,7 +591,6 @@ export const patchPayrollWorkflow = async (req: AuthRequest, res: Response) => {
   }
 }
 
-/** Legacy PATCH /:id/status — bridges old UI to the new workflow */
 export const updatePayrollStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { status, paymentReference } = req.body
@@ -584,6 +717,19 @@ export const getSalarySlip = async (req: AuthRequest, res: Response) => {
     const emp = payroll.employees.find(e => e.employeeId === employeeId)
     if (!emp) return res.status(404).json({ success: false, error: "Employee not in this payroll" })
 
+    if (req.user && !empNorm && isTeamPayrollViewerRole(req.user.role)) {
+      const allowed = await getPayrollTeamUserIdStrings({
+        id: req.user.id,
+        role: req.user.role,
+        email: req.user.email,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        department: req.user.department,
+      })
+      if (!allowed.has(String(employeeId)))
+        return res.status(403).json({ success: false, error: "Outside your team scope" })
+    }
+
     res.json({
       success: true,
       data: {
@@ -619,6 +765,20 @@ export const downloadPayslip = async (req: AuthRequest, res: Response) => {
 
     const emp = payroll.employees.find(e => e.employeeId === employeeId)
     if (!emp) return res.status(404).json({ success: false, error: "Employee not found in payroll" })
+
+    const isEmp = userRole.replace(/ /g, "_") === "EMPLOYEE"
+    if (req.user && !isEmp && isTeamPayrollViewerRole(req.user.role)) {
+      const allowed = await getPayrollTeamUserIdStrings({
+        id: req.user.id,
+        role: req.user.role,
+        email: req.user.email,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        department: req.user.department,
+      })
+      if (!allowed.has(String(employeeId)))
+        return res.status(403).json({ success: false, error: "Outside your team scope" })
+    }
 
     const settingsDoc = await Settings.findOne().lean()
     const paySettings = await getOrCreatePayrollSettings()
@@ -685,6 +845,19 @@ export const getEmployeePayrollHistory = async (req: AuthRequest, res: Response)
 
     if (userRole.replace(/ /g, "_") === "EMPLOYEE" && requesterId !== userId)
       return res.status(403).json({ success: false, error: "Access denied" })
+
+    if (req.user && isTeamPayrollViewerRole(req.user.role) && requesterId !== userId) {
+      const allowed = await getPayrollTeamUserIdStrings({
+        id: req.user.id,
+        role: req.user.role,
+        email: req.user.email,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        department: req.user.department,
+      })
+      if (!allowed.has(String(userId)))
+        return res.status(403).json({ success: false, error: "Access denied" })
+    }
 
     const records = await Payroll.find({
       "employees.employeeId": userId,

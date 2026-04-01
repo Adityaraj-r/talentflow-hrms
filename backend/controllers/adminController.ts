@@ -10,6 +10,7 @@ import Transfer from '../models/Transfer.model';
 import Requisition from '../models/Requisition.model';
 import Leave from '../models/leave.model';
 import Employee from '../models/Employee.model';
+import { isTeamPayrollViewerRole, getPayrollTeamUserIdStrings } from '../utils/payrollTeamScope.util';
 
 const Activity = require('../models/Activity').default || require('../models/Activity');
 const SystemAlert = require('../models/SystemAlert').default || require('../models/SystemAlert');
@@ -20,6 +21,8 @@ interface AuthRequest extends Request {
     role: string;
     email: string;
     firstName?: string;
+    lastName?: string;
+    department?: string;
   };
 }
 
@@ -345,7 +348,20 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
     }
 
     if (scope === 'payroll') {
-      const users = await User.find(query)
+      let payrollQuery: typeof query = { ...query }
+      if (req.user && isTeamPayrollViewerRole(req.user.role)) {
+        const allowed = await getPayrollTeamUserIdStrings({
+          id: req.user.id,
+          role: req.user.role,
+          email: req.user.email,
+          firstName: req.user.firstName,
+          lastName: req.user.lastName,
+          department: req.user.department,
+        })
+        const ids = [...allowed].map(id => new mongoose.Types.ObjectId(id))
+        payrollQuery._id = { $in: ids }
+      }
+      const users = await User.find(payrollQuery)
         .select('_id firstName lastName email department role employeeId employeeCode')
         .sort({ createdAt: -1 })
         .lean();

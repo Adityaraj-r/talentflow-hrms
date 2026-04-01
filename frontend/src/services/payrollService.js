@@ -27,6 +27,12 @@ export const exportPayrollBankCsv = (id) =>
 export const getPayrollAnalytics = (year) =>
   apiClient.get("/payroll/analytics/summary", { params: { year } });
 
+export const getPayrollAuditLogs = (params = {}) =>
+  apiClient.get("/payroll/audit-logs", { params });
+
+export const getPayrollComplianceSummary = (month, year) =>
+  apiClient.get("/payroll/compliance/summary", { params: { month, year } });
+
 export const getSalarySlip = (payrollId, employeeId) =>
   apiClient.get(`/payroll/${payrollId}/slip/${employeeId}`);
 
@@ -35,7 +41,6 @@ export const downloadPayslip = (payrollId, employeeId) =>
     responseType: "blob",
   });
 
-/** Blob download with server-provided filename (e.g. `{employeeCode}.pdf`). */
 export async function downloadPayslipWithFilename(payrollId, employeeId) {
   const token = localStorage.getItem("token") || localStorage.getItem("idToken");
   const res = await axios.get(

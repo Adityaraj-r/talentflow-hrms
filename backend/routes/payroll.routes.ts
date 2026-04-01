@@ -2,6 +2,12 @@ import express from "express"
 import { protect } from "../middleware/auth.middleware"
 import { authorize, authorizeByMatrix, MODULE_KEYS } from "../middleware/role.middleware"
 import {
+  authorizePayrollWorkflowActor,
+  authorizePayrollBankExport,
+  authorizePayrollAuditRead,
+  authorizePayrollComplianceRead,
+} from "../middleware/payrollAccess.middleware"
+import {
   generatePayroll,
   getPayrollRecords,
   updatePayrollStatus,
@@ -22,6 +28,8 @@ import {
   calculatePayrollPreview,
   exportPayrollBankCsv,
   getPayrollAnalyticsSummary,
+  getPayrollAuditLogs,
+  getPayrollComplianceSummary,
 } from "../controllers/payroll.controller"
 
 const router = express.Router()
@@ -63,6 +71,12 @@ const slipRoles = [
   "PAYROLLOFFICER",
   "PAYROLL_OFFICER",
   "FINANCE_MANAGER",
+  "CEO",
+  "COUNTRY_MANAGER",
+  "DEPARTMENT_MANAGER",
+  "DIRECT_MANAGER",
+  "OPERATIONS_MANAGER",
+  "PROJECT_MANAGER",
   "ADMIN",
   "SUPER_ADMIN",
   "SUPER ADMIN",
@@ -74,6 +88,8 @@ router.put("/settings", payrollWrite, updatePayrollSettings)
 router.post("/calculate-preview", payrollWrite, calculatePayrollPreview)
 router.post("/generate", payrollWrite, generatePayroll)
 router.get("/analytics/summary", payrollRead, getPayrollAnalyticsSummary)
+router.get("/audit-logs", payrollRead, authorizePayrollAuditRead, getPayrollAuditLogs)
+router.get("/compliance/summary", payrollRead, authorizePayrollComplianceRead, getPayrollComplianceSummary)
 
 router.get("/", payrollRead, getPayrollRecords)
 router.get("/pending", payrollRead, getPendingPayroll)
@@ -97,6 +113,12 @@ router.get(
     "PAYROLLOFFICER",
     "PAYROLL_OFFICER",
     "FINANCE_MANAGER",
+    "CEO",
+    "COUNTRY_MANAGER",
+    "DEPARTMENT_MANAGER",
+    "DIRECT_MANAGER",
+    "OPERATIONS_MANAGER",
+    "PROJECT_MANAGER",
     "ADMIN",
     "SUPER_ADMIN",
     "SUPER ADMIN",
@@ -105,10 +127,9 @@ router.get(
   getEmployeePayrollHistory
 )
 
-// Matrix write required; controller enforces per-action roles (Finance, HR, CEO, etc.)
-router.patch("/:id/workflow", payrollWrite, patchPayrollWorkflow)
-router.patch("/:id/status", payrollWrite, updatePayrollStatus)
-router.get("/:id/export/bank", payrollWrite, exportPayrollBankCsv)
+router.patch("/:id/workflow", authorizePayrollWorkflowActor, patchPayrollWorkflow)
+router.patch("/:id/status", authorizePayrollWorkflowActor, updatePayrollStatus)
+router.get("/:id/export/bank", authorizePayrollBankExport, exportPayrollBankCsv)
 
 router.get("/:payrollId/slip/:employeeId", authorize(...slipRoles), getSalarySlip)
 router.get("/:payrollId/download/:employeeId", authorize(...slipRoles), downloadPayslip)

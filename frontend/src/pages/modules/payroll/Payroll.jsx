@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Calculator, Users, Loader2, Download, RefreshCw,
-  CheckCircle, Zap, AlertCircle, UserX, ChevronDown, ChevronUp
+  CheckCircle, Zap, AlertCircle, UserX, ChevronDown, ChevronUp,
+  ClipboardList, ShieldCheck,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,9 +23,33 @@ const isHRManager      = (role) => ["HR_MANAGER","HRMANAGER"].includes(normalize
 const isFinanceManager = (role) => normalizeRole(role) === "FINANCE_MANAGER"
 const isCEO            = (role) => normalizeRole(role) === "CEO"
 const isAdmin          = (role) => ["ADMIN","SUPER_ADMIN","SUPERADMIN"].includes(normalizeRole(role))
+const isCountryManager = (role) => normalizeRole(role) === "COUNTRY_MANAGER"
+const isTeamPayrollViewer = (role) =>
+  ["DEPARTMENT_MANAGER","DIRECT_MANAGER","OPERATIONS_MANAGER","PROJECT_MANAGER"].includes(normalizeRole(role))
 const isHROrPayroll    = (role) =>
   isPayrollOfficer(role) || isHRManager(role) || isFinanceManager(role) ||
   ["HR_OFFICER","HROFFICER"].includes(normalizeRole(role))
+const canProcessPayroll = (role) =>
+  isPayrollOfficer(role) || isFinanceManager(role) || isAdmin(role)
+const canViewPayrollLists = (role) =>
+  isHROrPayroll(role) || isAdmin(role) || isCEO(role) || isCountryManager(role) || isTeamPayrollViewer(role)
+const canViewPayrollAudit = (role) => {
+  const n = normalizeRole(role)
+  return isAdmin(role) || n === "CEO" || n === "FINANCE_MANAGER" || n === "HR_MANAGER" || n === "HRMANAGER"
+}
+const canViewCompliance = (role) => {
+  const n = normalizeRole(role)
+  return (
+    isAdmin(role) ||
+    n === "CEO" ||
+    n === "COUNTRY_MANAGER" ||
+    n === "FINANCE_MANAGER" ||
+    n === "HR_MANAGER" ||
+    n === "HRMANAGER" ||
+    n === "PAYROLL_OFFICER" ||
+    n === "PAYROLLOFFICER"
+  )
+}
 
 const PayrollProcessing = () => {
   const { user: authUser } = useAuth()
@@ -46,8 +71,45 @@ const PayrollProcessing = () => {
   const [activeTab, setActiveTab]           = useState("run")
   const [serverPreview, setServerPreview]   = useState(null)
   const [skipLockCheck, setSkipLockCheck]   = useState(false)
+  const [auditLogs, setAuditLogs]           = useState([])
+  const [auditLoading, setAuditLoading]    = useState(false)
+  const [compliance, setCompliance]        = useState(null)
+  const [complianceLoading, setComplianceLoading] = useState(false)
 
   const employeesLoadedRef = useRef(false)
+  const payrollTabInitRef = useRef(false)
+
+  useEffect(() => {
+    if (!authUser?.role || payrollTabInitRef.current) return
+    payrollTabInitRef.current = true
+    if (!canProcessPayroll(authUser.role)) setActiveTab("records")
+  }, [authUser?.role])
+
+  useEffect(() => {
+    if (activeTab !== "audit" || !canViewPayrollAudit(userRole)) return
+    let cancelled = false
+    setAuditLoading(true)
+    payrollService.getPayrollAuditLogs({ limit: 150 })
+      .then(res => {
+        if (!cancelled) setAuditLogs(res.data || [])
+      })
+      .catch(() => { if (!cancelled) toast.error("Failed to load audit log") })
+      .finally(() => { if (!cancelled) setAuditLoading(false) })
+    return () => { cancelled = true }
+  }, [activeTab, userRole])
+
+  useEffect(() => {
+    if (activeTab !== "compliance" || !canViewCompliance(userRole)) return
+    let cancelled = false
+    setComplianceLoading(true)
+    payrollService.getPayrollComplianceSummary(month, year)
+      .then(res => {
+        if (!cancelled) setCompliance(res.data || null)
+      })
+      .catch(() => { if (!cancelled) toast.error("Failed to load compliance summary") })
+      .finally(() => { if (!cancelled) setComplianceLoading(false) })
+    return () => { cancelled = true }
+  }, [activeTab, userRole, month, year])
 
   const refreshPayrollTables = useCallback(async () => {
     try {
@@ -57,7 +119,7 @@ const PayrollProcessing = () => {
       ])
       setRecords(recRes.data || [])
       setPending(pendRes.data?.pending || [])
-    } catch { /* silent */ }
+    } catch {}
   }, [month, year])
 
   useEffect(() => {
@@ -253,11 +315,14 @@ const PayrollProcessing = () => {
   return (
     <div className="space-y-6">
 
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Payroll</h1>
-          <p className="text-muted-foreground">Manage and process monthly employee payroll.</p>
+          <p className="text-muted-foreground">
+            {isTeamPayrollViewer(userRole)
+              ? "Team payroll visibility (department / reporting scope)."
+              : "Manage and process monthly employee payroll."}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <select
@@ -295,9 +360,11 @@ const PayrollProcessing = () => {
 
       <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
         {[
-          { key: "run",     label: "Run Payroll",               show: isPayrollOfficer(userRole) },
-          { key: "pending", label: `Pending (${pending.length})`, show: isHROrPayroll(userRole) },
-          { key: "records", label: "Records",                   show: isHROrPayroll(userRole) },
+          { key: "run",         label: "Run Payroll",               show: canProcessPayroll(userRole) },
+          { key: "pending",     label: `Pending (${pending.length})`, show: canViewPayrollLists(userRole) },
+          { key: "records",     label: "Records",                     show: canViewPayrollLists(userRole) },
+          { key: "compliance",  label: "Compliance (PF / ESI / TDS)", show: canViewCompliance(userRole) },
+          { key: "audit",       label: "Audit log",                   show: canViewPayrollAudit(userRole) },
         ].filter(t => t.show).map(tab => (
           <button
             key={tab.key}
@@ -314,10 +381,9 @@ const PayrollProcessing = () => {
         ))}
       </div>
 
-      {activeTab === "run" && isPayrollOfficer(userRole) && (
+      {activeTab === "run" && canProcessPayroll(userRole) && (
         <div className="space-y-4">
 
-          {/* Bulk Banner */}
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <input
               type="checkbox"
@@ -353,7 +419,6 @@ const PayrollProcessing = () => {
             </div>
           )}
 
-          {/* Single Employee Form */}
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <Card>
@@ -414,7 +479,6 @@ const PayrollProcessing = () => {
               </Card>
             </div>
 
-            {/* Live Preview */}
             <div className="lg:col-span-1">
               <Card className="bg-slate-50 dark:bg-slate-900 border-dashed h-full">
                 <CardHeader>
@@ -485,7 +549,7 @@ const PayrollProcessing = () => {
                 Employees with salary structure but no payroll processed for {month} {year}
               </CardDescription>
             </div>
-            {isPayrollOfficer(userRole) && pending.length > 0 && (
+            {canProcessPayroll(userRole) && pending.length > 0 && (
               <Button
                 onClick={handleBulkRun}
                 disabled={bulkProcessing}
@@ -580,6 +644,89 @@ const PayrollProcessing = () => {
             ))
           )}
         </div>
+      )}
+
+      {activeTab === "compliance" && canViewCompliance(userRole) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5" />
+              Statutory summary ({month} {year})
+            </CardTitle>
+            <CardDescription>
+              Aggregated PF, ESI, TDS, and professional tax from payroll lines for the selected period.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {complianceLoading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : compliance?.totals ? (
+              <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                <p>Runs: <span className="font-semibold">{compliance.runs}</span></p>
+                <p>Employee lines: <span className="font-semibold">{compliance.employeeLines}</span></p>
+                <p>PF: <span className="font-medium">₹ {Number(compliance.totals.pf || 0).toLocaleString()}</span></p>
+                <p>ESI: <span className="font-medium">₹ {Number(compliance.totals.esi || 0).toLocaleString()}</span></p>
+                <p>TDS: <span className="font-medium">₹ {Number(compliance.totals.tds || 0).toLocaleString()}</span></p>
+                <p>PT: <span className="font-medium">₹ {Number(compliance.totals.pt || 0).toLocaleString()}</span></p>
+                <p className="sm:col-span-2 pt-2 border-t font-semibold">
+                  Total statutory: ₹ {Number(compliance.totals.statutory || 0).toLocaleString()}
+                </p>
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">No compliance data for this period.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === "audit" && canViewPayrollAudit(userRole) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5" />
+              Payroll audit trail
+            </CardTitle>
+            <CardDescription>Payroll runs, workflow steps, settings changes, and bank exports.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {auditLoading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>When</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Actor</TableHead>
+                    <TableHead>Entity</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {auditLogs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-muted-foreground text-center py-8">
+                        No audit entries yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : auditLogs.map(row => (
+                    <TableRow key={row._id}>
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {row.createdAt ? new Date(row.createdAt).toLocaleString() : "—"}
+                      </TableCell>
+                      <TableCell className="text-xs font-mono">{row.action}</TableCell>
+                      <TableCell className="text-xs">{row.actorEmail || row.actorUserId || "—"}</TableCell>
+                      <TableCell className="text-xs">{row.entityType} / {String(row.entityId || "").slice(0, 12)}…</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       )}
 
     </div>
@@ -686,7 +833,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
                 CEO Approve
               </Button>
             )}
-            {(isPayrollOfficer(userRole) || isAdmin(userRole)) && st === "CEO_Approved" && (
+            {(isPayrollOfficer(userRole) || isFinanceManager(userRole) || isAdmin(userRole)) && st === "CEO_Approved" && (
               <>
                 <input
                   className="h-8 w-28 px-2 text-xs border rounded"
@@ -753,7 +900,6 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
       {expanded && (
         <div className="border-t animate-in fade-in slide-in-from-top-1 duration-200">
 
-          {/* Column headers */}
           <div className="grid grid-cols-12 gap-2 px-5 py-2.5 bg-muted/40 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
             <div className="col-span-4">Employee</div>
             <div className="col-span-2 text-right">Basic</div>
@@ -763,9 +909,8 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
             <div className="col-span-1 text-right">Slip</div>
           </div>
 
-          {/* Employee rows */}
           {record.employees?.map((emp, idx) => {
-            const userInfo = employees.find(e => e._id === emp.employeeId)
+            const userInfo = employees.find(e => String(e._id) === String(emp.employeeId))
             const name     = userInfo
               ? `${userInfo.firstName} ${userInfo.lastName}`
               : "Unknown"
@@ -781,7 +926,6 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
                     : "bg-muted/10"
                 )}
               >
-                {/* Name */}
                 <div className="col-span-4 flex items-center gap-3">
                   <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-600 flex-shrink-0">
                     {initial}
@@ -796,27 +940,22 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
                   </div>
                 </div>
 
-                {/* Basic */}
                 <div className="col-span-2 text-right text-muted-foreground text-sm">
                   ₹ {(emp.earnings?.basic ?? emp.basic ?? 0).toLocaleString()}
                 </div>
 
-                {/* Gross */}
                 <div className="col-span-2 text-right font-medium text-sm">
                   ₹ {(emp.grossPay || 0).toLocaleString()}
                 </div>
 
-                {/* Deductions */}
                 <div className="col-span-2 text-right text-red-500 text-sm">
                   - ₹ {(emp.totalDeductions ?? emp.deductions ?? 0).toLocaleString()}
                 </div>
 
-                {/* Net */}
                 <div className="col-span-1 text-right font-bold text-green-600 text-sm">
                   ₹ {(emp.netPay || 0).toLocaleString()}
                 </div>
 
-                {/* Download */}
                 <div className="col-span-1 flex justify-end">
                   <Button
                     size="sm" variant="ghost"
@@ -831,7 +970,6 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
             )
           })}
 
-          {/* Footer total */}
           <div className="grid grid-cols-12 gap-2 px-5 py-3 bg-muted/30 text-sm font-bold border-t">
             <div className="col-span-4 text-muted-foreground">
               {empCount} employee{empCount !== 1 ? "s" : ""} total
