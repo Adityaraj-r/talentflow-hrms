@@ -107,9 +107,9 @@ router.get(
   getEmployeePayrollHistory
 )
 
-// Workflow steps enforce roles inside controller (CEO only has read in matrix)
-router.patch("/:id/workflow", patchPayrollWorkflow)
-router.patch("/:id/status", updatePayrollStatus)
+// Matrix write required; controller enforces per-action roles (Finance, HR, CEO, etc.)
+router.patch("/:id/workflow", payrollWrite, patchPayrollWorkflow)
+router.patch("/:id/status", payrollWrite, updatePayrollStatus)
 router.get("/:id/export/bank", payrollWrite, exportPayrollBankCsv)
 
 router.get("/:payrollId/slip/:employeeId", authorize(...slipRoles), getSalarySlip)

@@ -18,7 +18,11 @@ const RoleBasedRoute = ({ children, allowedRoles, requiredPermission }) => {
 
 
     const upper = userRoleStr.toUpperCase();
-    if (upper === 'SUPER ADMIN' || upper === 'SUPER_ADMIN') {
+    if (
+      upper === 'SUPER ADMIN' ||
+      upper === 'SUPER_ADMIN' ||
+      upper === 'ADMIN'
+    ) {
       setHasPermission(true);
       return;
     }
@@ -65,7 +69,12 @@ const RoleBasedRoute = ({ children, allowedRoles, requiredPermission }) => {
     const normalized = allowedRoles.map(r => r.toUpperCase());
 
     if (!normalized.includes(userRole)) {
-      if (userRole === 'SUPER ADMIN' && normalized.includes('ADMIN')) return children;
+      if (
+        (userRole === 'SUPER ADMIN' || userRole === 'SUPER_ADMIN') &&
+        normalized.includes('ADMIN')
+      ) {
+        return children;
+      }
       return <Navigate to="/unauthorized" replace />;
     }
   }

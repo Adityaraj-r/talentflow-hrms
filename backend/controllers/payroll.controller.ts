@@ -272,14 +272,29 @@ export const getPendingPayroll = async (req: AuthRequest, res: Response) => {
       employeeId: { $ne: null },
       isDeleted: { $ne: true },
       isActive: true,
-    }).select("_id employeeId")
+    })
+      .select("_id employeeId")
+      .lean()
+
+    const empObjectIds = users
+      .map(u => u.employeeId)
+      .filter((id): id is mongoose.Types.ObjectId => id != null)
+
+    const employeesWithSalary = await Employee.find({
+      _id: { $in: empObjectIds },
+      "salary.basic": { $gt: 0 },
+    })
+      .select("_id")
+      .lean()
+
+    const salaryOk = new Set(employeesWithSalary.map(e => e._id.toString()))
 
     const eligible: mongoose.Types.ObjectId[] = []
     const ineligible: { userId: string; reason: string }[] = []
 
     for (const u of users) {
-      const emp = await Employee.findById(u.employeeId).select("salary.basic")
-      if (emp?.salary?.basic) eligible.push(u._id as mongoose.Types.ObjectId)
+      const eid = u.employeeId?.toString()
+      if (eid && salaryOk.has(eid)) eligible.push(u._id as mongoose.Types.ObjectId)
       else ineligible.push({ userId: u._id.toString(), reason: "No salary.basic on Employee" })
     }
 
@@ -288,12 +303,15 @@ export const getPendingPayroll = async (req: AuthRequest, res: Response) => {
       year,
       $or: [{ runKind: "regular" }, { runKind: { $exists: false } }],
     })
+      .select("employees.employeeId")
+      .lean()
+
     const processed = new Set(existing?.employees.map(e => e.employeeId.toString()) || [])
 
     const pendingIds = eligible.filter(id => !processed.has(id.toString()))
-    const pendingUsers = await User.find({ _id: { $in: pendingIds } }).select(
-      "firstName lastName email department role employeeCode"
-    )
+    const pendingUsers = await User.find({ _id: { $in: pendingIds } })
+      .select("firstName lastName email department role employeeCode")
+      .lean()
 
     res.json({
       success: true,
@@ -322,7 +340,7 @@ export const getPayrollRecords = async (req: AuthRequest, res: Response) => {
     if (year) filter.year = Number(year)
     if (runKind) filter.runKind = runKind
 
-    const records = await Payroll.find(filter).sort({ createdAt: -1 })
+    const records = await Payroll.find(filter).sort({ createdAt: -1 }).lean()
     res.json({ success: true, data: records })
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message })

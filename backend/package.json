@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "migrate:employees": "ts-node-dev --transpile-only scripts/migrateEmployees.ts",
-    "check:payroll": "ts-node --transpile-only scripts/payroll-module-check.ts"
+    "check:payroll": "ts-node --transpile-only scripts/payroll-module-check.ts",
+    "seed:payroll-sample": "ts-node --transpile-only scripts/runSeedPayrollSample.ts"
   },
   "keywords": [
     "hrms",

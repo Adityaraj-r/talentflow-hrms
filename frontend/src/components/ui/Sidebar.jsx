@@ -327,7 +327,6 @@ const Sidebar = ({
               <SubLink to="/dashboard/applications" label="Applications" />
               <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
               <SubLink to="/dashboard/offer-management" label="Offer Management" />
-              <SubLink to="/dashboard/recruitment-suggestions" label="Admin suggestions inbox" />
             </SidebarGroup>
           )}
 
@@ -344,7 +343,7 @@ const Sidebar = ({
           )}
 
           {canSee("employees") && (
-            <SidebarLink to="/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
+            <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
           )}
 
           {canSee("payroll") && (
@@ -523,6 +522,28 @@ const Sidebar = ({
       )
     }
 
+    // ── FINANCE MANAGER ────────────────────────────────────────────
+    if (userRole === ROLES.FINANCE_MANAGER) {
+      return (
+        <>
+          <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          {canSee("attendance") && (
+            <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+              <SubLink to="/attendance" label="Attendance Records" />
+            </SidebarGroup>
+          )}
+          {canSee("payroll") && (
+            <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
+              <SubLink to="/payroll" label="Payroll Processing" />
+              <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
+              <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
+              <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
+            </SidebarGroup>
+          )}
+        </>
+      )
+    }
+
     // ── PAYROLL OFFICER ──────────────────────────────────────────────
     if (userRole === ROLES.PAYROLL_OFFICER) {
       return (
@@ -579,7 +600,7 @@ const Sidebar = ({
           )}
           {canSee("attendance") && <LeaveLink />}
           {canSee("employees") && (
-            <SidebarLink to="/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
+            <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
           )}
         </>
       )

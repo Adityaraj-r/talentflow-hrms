@@ -135,9 +135,14 @@ async function optionalMongoAndAttendance() {
     return
   }
   try {
-    await mongoose.connection.db.admin().command({ ping: 1 })
+    const db = mongoose.connection.db
+    if (!db) {
+      warn("MongoDB db handle not available after connect — skipped collection checks")
+      return
+    }
+    await db.admin().command({ ping: 1 })
     ok("Ping successful")
-    const cols = await mongoose.connection.db.listCollections({ name: "payrolls" }).toArray()
+    const cols = await db.listCollections({ name: "payrolls" }).toArray()
     assert(cols.length >= 0, "Listed payrolls collection (may be empty before first run)")
     await runAttendanceLockCheckConnected()
   } catch (e: any) {

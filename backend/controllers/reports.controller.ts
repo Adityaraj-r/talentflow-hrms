@@ -493,7 +493,7 @@
 import { Request, Response } from "express";
 import Employee from "../models/Employee.model";
 import Attendance from "../models/Attendance.model";
-import Leave from "../models/Leave.model";
+import Leave from "../models/leave.model";
 
 /* =========================================================
    HELPER: Build Employee Filter

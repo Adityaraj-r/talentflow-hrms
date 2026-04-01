@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Calculator, Users, Loader2, Download, RefreshCw,
   CheckCircle, Zap, AlertCircle, UserX, ChevronDown, ChevronUp
@@ -52,49 +52,63 @@ const PayrollProcessing = () => {
   const [serverPreview, setServerPreview]   = useState(null)
   const [skipLockCheck, setSkipLockCheck]   = useState(false)
 
-  // ── Fetch on mount ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    fetchEmployees()
-    fetchRecords()
-    fetchPending()
-  }, [])
+  const employeesLoadedRef = useRef(false)
 
-  useEffect(() => {
-    fetchRecords()
-    fetchPending()
+  const refreshPayrollTables = useCallback(async () => {
+    try {
+      const [recRes, pendRes] = await Promise.all([
+        payrollService.getPayrollRecords(month, year),
+        payrollService.getPendingPayroll(month, year),
+      ])
+      setRecords(recRes.data || [])
+      setPending(pendRes.data?.pending || [])
+    } catch { /* silent */ }
   }, [month, year])
 
-  const fetchEmployees = async () => {
-    try {
-      const res = await apiClient.get("/admin/users")
-      setEmployees(res.users || res.data || [])
-    } catch {
-      toast.error("Failed to load employees")
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      setLoading(true)
+      try {
+        const tasks = [
+          payrollService.getPayrollRecords(month, year),
+          payrollService.getPendingPayroll(month, year),
+        ]
+        if (!employeesLoadedRef.current) {
+          tasks.unshift(
+            apiClient.get("/admin/users", { params: { scope: "payroll" } })
+          )
+        }
+        const out = await Promise.all(tasks)
+        if (cancelled) return
+        let i = 0
+        if (!employeesLoadedRef.current) {
+          const empRes = out[i++]
+          setEmployees(empRes.users || empRes.data || [])
+          employeesLoadedRef.current = true
+        }
+        setRecords(out[i].data || [])
+        setPending(out[i + 1].data?.pending || [])
+      } catch {
+        if (!cancelled) toast.error("Failed to load payroll data")
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
-  }
-
-  const fetchRecords = async () => {
-    try {
-      const res = await payrollService.getPayrollRecords(month, year)
-      setRecords(res.data || [])
-    } catch { /* silent */ }
-  }
-
-  const fetchPending = async () => {
-    try {
-      const res = await payrollService.getPendingPayroll(month, year)
-      setPending(res.data?.pending || [])
-    } catch { /* silent */ }
-  }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [month, year])
 
   // ── Salary preview ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!selectedEmp) { setSalaryData(null); return }
     const fetchSalary = async () => {
       try {
-        const empUser = employees.find(e => e._id === selectedEmp)
+        const empUser = employees.find(
+          e => String(e._id) === String(selectedEmp)
+        )
         if (!empUser?.employeeId) { setSalaryData(null); return }
         const res = await apiClient.get(`/employees/${empUser.employeeId}`)
         const emp = res.data || res
@@ -184,7 +198,7 @@ const PayrollProcessing = () => {
       })
       toast.success("Payroll generated successfully!")
       setBonus(0); setOvertime(0); setLopDays(0); setSelectedEmp("")
-      fetchRecords(); fetchPending()
+      await refreshPayrollTables()
     } catch (err) {
       toast.error(err?.error || err?.message || "Failed to generate payroll")
     } finally {
@@ -206,7 +220,7 @@ const PayrollProcessing = () => {
         skipAttendanceLockCheck: skipLockCheck,
       })
       toast.success(`Payroll generated for ${pending.length} employees!`)
-      fetchRecords(); fetchPending()
+      await refreshPayrollTables()
       setActiveTab("records")
     } catch (err) {
       toast.error(err?.error || err?.message || "Bulk payroll run failed")
@@ -220,7 +234,7 @@ const PayrollProcessing = () => {
     try {
       await payrollService.updatePayrollStatus(id, status, extra)
       toast.success(`Payroll ${status === "HR Approved" ? "approved" : "marked as Paid"}`)
-      fetchRecords()
+      await refreshPayrollTables()
     } catch (err) {
       toast.error(err?.error || err?.message || "Failed to update status")
     }
@@ -553,7 +567,7 @@ const PayrollProcessing = () => {
               <h2 className="text-lg font-semibold">Payroll Records</h2>
               <p className="text-sm text-muted-foreground">{month} {year}</p>
             </div>
-            <Button variant="outline" size="sm" onClick={fetchRecords}>
+            <Button variant="outline" size="sm" onClick={() => void refreshPayrollTables()}>
               <RefreshCw className="w-4 h-4 mr-2" /> Refresh
             </Button>
           </div>
@@ -574,7 +588,7 @@ const PayrollProcessing = () => {
                 userRole={userRole}
                 onStatusUpdate={handleStatusUpdate}
                 onDownload={handleDownload}
-                onRefresh={fetchRecords}
+                onRefresh={() => void refreshPayrollTables()}
               />
             ))
           )}

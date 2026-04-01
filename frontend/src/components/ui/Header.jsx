@@ -51,7 +51,7 @@ const Header = ({ toggleSidebar }) => {
     { id: 'mod-1', title: 'Admin Dashboard', path: '/admin/dashboard', icon: Layout },
     { id: 'mod-2', title: 'User Management (All Employees)', path: '/dashboard/users', icon: Users },
     { id: 'mod-3', title: 'Onboarding & KYC', path: '/onboarding', icon: UserPlus },
-    { id: 'mod-4', title: 'Transfers & Promotions', path: '/employee-transfer', icon: Repeat },
+    { id: 'mod-4', title: 'Transfers & Promotions', path: '/employee-center/employee-transfer', icon: Repeat },
     { id: 'mod-5', title: 'Digital Locker (Docs)', path: '/digital-locker', icon: Folder },
     { id: 'mod-6', title: 'Staff Requisition', path: '/staff-requisition', icon: FileText },
     { id: 'mod-7', title: 'System Settings', path: '/settings', icon: Settings },

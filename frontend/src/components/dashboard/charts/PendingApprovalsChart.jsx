@@ -14,7 +14,7 @@ export const PendingApprovalsChart = ({ data }) => {
         navigate('/digital-locker');
         break;
       case 'Transfers':
-        navigate('/employee-transfer');
+        navigate('/employee-center/employee-transfer');
         break;
       case 'Requisitions':
         navigate('/staff-requisition');

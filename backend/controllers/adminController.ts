@@ -8,7 +8,7 @@ import { createLog } from './audit.controller';
 import Document from '../models/Document.model';
 import Transfer from '../models/Transfer.model';
 import Requisition from '../models/Requisition.model';
-import Leave from '../models/Leave.model';
+import Leave from '../models/leave.model';
 import Employee from '../models/Employee.model';
 
 const Activity = require('../models/Activity').default || require('../models/Activity');
@@ -333,7 +333,7 @@ export const getDepartmentStats = async (req: AuthRequest, res: Response): Promi
 
 export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { role, search } = req.query;
+    const { role, search, scope } = req.query;
     const query: any = { isDeleted: { $ne: true } };
 
     if (role && role !== 'all') query.role = role;
@@ -345,7 +345,16 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
       ];
     }
 
-    const users = await User.find(query).select('-password').sort({ createdAt: -1 });
+    if (scope === 'payroll') {
+      const users = await User.find(query)
+        .select('_id firstName lastName email department role employeeId employeeCode')
+        .sort({ createdAt: -1 })
+        .lean();
+      res.status(200).json({ success: true, data: users });
+      return;
+    }
+
+    const users = await User.find(query).select('-password').sort({ createdAt: -1 }).lean();
     res.status(200).json({ success: true, data: users });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch users' });

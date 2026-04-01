@@ -41,7 +41,6 @@ import Integrations from "./pages/modules/administration/Integrations"
 import Onboarding from "./pages/modules/recruitment/Onboarding"
 import StaffRequisition from "./pages/modules/recruitment/StaffRequisition"
 import Careers from "./pages/Careers"
-import CreateRequisition from "./pages/modules/recruitment/CreateRequisition"
 import OfferManagement from "./pages/modules/recruitment/OfferManagement"
 import JobOpenings from "./pages/modules/recruitment/JobOpenings"
 import ApplyJob from "./pages/ApplyJob"
@@ -144,7 +143,11 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
     if (!requiredPermission || !user) return
 
     const upper = userRoleStr.toUpperCase()
-    if (upper === "SUPER ADMIN" || upper === "SUPER_ADMIN") {
+    if (
+      upper === "SUPER ADMIN" ||
+      upper === "SUPER_ADMIN" ||
+      upper === "ADMIN"
+    ) {
       setHasPermission(true)
       return
     }
@@ -194,7 +197,12 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
     const normalized = allowedRoles.map(r => r.toUpperCase())
 
     if (!normalized.includes(userRole)) {
-      if (userRole === "SUPER ADMIN" && normalized.includes("ADMIN")) return children
+      if (
+        (userRole === "SUPER ADMIN" || userRole === "SUPER_ADMIN") &&
+        normalized.includes("ADMIN")
+      ) {
+        return children
+      }
       return <Navigate to="/unauthorized" replace />
     }
   }
@@ -229,7 +237,9 @@ const DashboardRouter = () => {
   if (role === "HR_MANAGER" || role === "HR_OFFICER"
     || role === "DEPARTMENT_MANAGER"
     || role === "DIRECT_MANAGER"
-    || role === "OPERATIONS_MANAGER") return <Navigate to="/dashboard" replace />
+    || role === "OPERATIONS_MANAGER"
+    || role === "FINANCE_MANAGER"
+    || role === "PAYROLL_OFFICER") return <Navigate to="/dashboard" replace />
 
   return <Navigate to="/dashboard" replace />
 }
@@ -258,6 +268,11 @@ function App() {
                     <Route path="/careers" element={<Careers />} />
                     <Route path="/apply/:id" element={<ApplyJob />} />
                     <Route path="/application-status" element={<ApplicationStatus />} />
+
+                    <Route
+                      path="/employee-transfer"
+                      element={<Navigate to="/employee-center/employee-transfer" replace />}
+                    />
 
                     {/* ── Profile (any authenticated user) ─────────────── */}
                     <Route path="/profile" element={

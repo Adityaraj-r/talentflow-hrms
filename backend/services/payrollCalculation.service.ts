@@ -1,6 +1,6 @@
 import mongoose from "mongoose"
 import Attendance from "../models/Attendance.model"
-import Leave from "../models/Leave.model"
+import Leave from "../models/leave.model"
 import Ticket from "../models/ticket.model"
 import Employee from "../models/Employee.model"
 import { PerformanceReviewModel, ReviewStatus } from "../models/PerformanceReview"
