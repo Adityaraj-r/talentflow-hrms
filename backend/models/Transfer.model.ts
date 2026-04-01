@@ -15,6 +15,12 @@ export interface ITransfer extends Document {
     status: 'Pending' | 'Approved' | 'Rejected';
     adminRemarks?: string;
     requestDate: Date;
+    auditLog: Array<{
+        action: string;
+        by: string;
+        remarks?: string;
+        timestamp: Date;
+    }>;
 }
 
 const TransferSchema: Schema = new Schema({
@@ -35,7 +41,15 @@ const TransferSchema: Schema = new Schema({
         default: 'Pending' 
     },
     adminRemarks: { type: String, default: "" },
-    requestDate: { type: Date, default: Date.now }
+    requestDate: { type: Date, default: Date.now },
+    auditLog: [{
+        action: { type: String, required: true },
+        by: { type: String, required: true },
+        remarks: { type: String },
+        timestamp: { type: Date, default: Date.now }
+    }]
 }, { timestamps: true });
+
+TransferSchema.index({ createdAt: -1 });
 
 export default mongoose.model<ITransfer>('Transfer', TransferSchema);

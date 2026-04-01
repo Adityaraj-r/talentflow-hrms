@@ -19,14 +19,13 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     employeeId: "",
-    reviewerId: "", // FIXED: was missing — caused every review to be assigned to logged-in user
+    reviewerId: "", 
     competencies: DEFAULT_COMPETENCIES.map((c) => ({ name: c.name })),
   });
   const [newCompetency, setNewCompetency] = useState("");
 
   useEffect(() => {
     if (!isOpen) return;
-    // FIXED: validate cycleId before fetching
     if (!cycleId) {
       toast.error("Invalid cycle — please close and reopen.");
       return;
@@ -37,7 +36,6 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
   const loadFormData = async () => {
     try {
       setLoadingData(true);
-      // Fetch active employees
       const empRes = await apiClient.get("/users", {
         params: { role: "EMPLOYEE", isActive: true, limit: 100 },
       });
@@ -48,7 +46,6 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
           : empData?.users ?? empData?.data ?? []
       );
 
-      // Fetch managers (DIRECT_MANAGER + DEPARTMENT_MANAGER)
       const [dmRes, deptRes] = await Promise.all([
         apiClient.get("/users", {
           params: { role: "DIRECT_MANAGER", isActive: true, limit: 100 },
@@ -65,7 +62,6 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
       const deptList = Array.isArray(deptData)
         ? deptData
         : deptData?.users ?? deptData?.data ?? [];
-      // Merge and deduplicate
       const merged = [...dmList, ...deptList];
       const unique = merged.filter(
         (m, i, arr) => arr.findIndex((x) => x._id === m._id) === i
@@ -113,7 +109,7 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
       await reviewApi.assignReview({
         cycleId,
         employeeId: form.employeeId,
-        reviewerId: form.reviewerId, // FIXED: send reviewer from form, not auto-set from backend
+        reviewerId: form.reviewerId, 
         competencies: form.competencies,
       });
       toast.success("Review assigned successfully!");
@@ -146,7 +142,6 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-gray-700 max-h-[90vh] flex flex-col">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Assign Review</h2>
@@ -165,7 +160,6 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
           </button>
         </div>
 
-        {/* Body */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="p-6 space-y-5 overflow-y-auto flex-1">
             {loadingData ? (
@@ -175,7 +169,6 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
               </div>
             ) : (
               <>
-                {/* Employee Select */}
                 <div className="space-y-1.5">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Employee <span className="text-red-500">*</span>
@@ -199,7 +192,6 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
                   </select>
                 </div>
 
-                {/* Reviewer Select — ADDED */}
                 <div className="space-y-1.5">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Reviewer (Manager) <span className="text-red-500">*</span>
@@ -223,7 +215,6 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
                   </select>
                 </div>
 
-                {/* Competencies */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Competencies <span className="text-red-500">*</span>
@@ -267,7 +258,6 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
             )}
           </div>
 
-          {/* Footer */}
           <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"

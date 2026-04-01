@@ -40,7 +40,37 @@ const requisitionSchema = new mongoose.Schema(
       ref: "User",
     },
 
+    finalApprovalRequired: {
+      type: Boolean,
+      default: false,
+    },
+
+    finalApprovedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
+    finalApprovalDate: Date,
+
     approvalDate: Date,
+
+    recommendations: [
+      {
+        text: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now },
+        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        createdByRole: { type: String },
+      },
+    ],
+
+    approvalHistory: [
+      {
+        action: { type: String, enum: ["approved", "rejected"], required: true },
+        at: { type: Date, default: Date.now },
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        role: { type: String },
+      },
+    ],
   },
   { timestamps: true }
 );

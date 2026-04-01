@@ -1,13 +1,23 @@
 import { useEffect, useState } from "react"
-import axios from "axios"
+import apiClient from "@/services/apiClient"
+import { useUser } from "@/contexts/UserContext"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Plus } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { toast } from "sonner"
 
 const JobOpenings = () => {
+  const { user } = useUser()
+  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
+  const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
+  const isOperationsManager = role === "OPERATIONS_MANAGER"
+  const canWrite = user?.can?.("recruitment", "write") && !isOperationsManager
   const [jobs, setJobs] = useState([])
   const [showForm, setShowForm] = useState(false)
+  const [selectedJob, setSelectedJob] = useState(null)
+  const [viewOpen, setViewOpen] = useState(false)
 
   const [formData, setFormData] = useState({
     jobTitle: "",
@@ -19,12 +29,11 @@ const JobOpenings = () => {
 
   const fetchJobs = async () => {
     try {
-      const res = await axios.get(
-        "http://localhost:5001/api/job-openings"
-      )
-      setJobs(res.data)
+      const data = await apiClient.get("/job-openings")
+      setJobs(Array.isArray(data) ? data : [])
     } catch (error) {
-      console.log(error)
+      toast.error(error?.response?.data?.error || "Failed to load job openings")
+      setJobs([])
     }
   }
 
@@ -63,10 +72,7 @@ const handleSubmit = async (e) => {
       status: "Draft"
     }
 
-    await axios.post(
-      "http://localhost:5001/api/job-openings",
-      payload
-    )
+    await apiClient.post("/job-openings", payload)
 
     setShowForm(false)
 
@@ -81,28 +87,24 @@ const handleSubmit = async (e) => {
     fetchJobs()
 
   } catch (error) {
-    console.log("Error:", error.response?.data)
+    toast.error(error?.response?.data?.error || "Failed to create job")
   }
 }
   const publishJob = async (id) => {
     try {
-      await axios.put(
-        `http://localhost:5001/api/job-openings/${id}/publish`
-      )
+      await apiClient.put(`/job-openings/${id}/publish`)
       fetchJobs()
     } catch (error) {
-      console.log(error)
+      toast.error(error?.response?.data?.error || "Failed to publish job")
     }
   }
 
   const closeJob = async (id) => {
     try {
-      await axios.put(
-        `http://localhost:5001/api/job-openings/${id}/close`
-      )
+      await apiClient.put(`/job-openings/${id}/close`)
       fetchJobs()
     } catch (error) {
-      console.log(error)
+      toast.error(error?.response?.data?.error || "Failed to close job")
     }
   }
 
@@ -119,10 +121,12 @@ const handleSubmit = async (e) => {
           Job Openings
         </h1>
 
-        <Button onClick={() => setShowForm(true)}>
-          <Plus size={16} className="mr-2" />
-          Create Job
-        </Button>
+        {canWrite && (
+          <Button onClick={() => setShowForm(true)}>
+            <Plus size={16} className="mr-2" />
+            Create Job
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -147,7 +151,7 @@ const handleSubmit = async (e) => {
         </CardContent></Card>
       </div>
 
-      {showForm && (
+      {canWrite && showForm && (
         <Card>
           <CardContent className="p-6 space-y-4">
             <h2 className="text-lg font-semibold">
@@ -236,13 +240,24 @@ const handleSubmit = async (e) => {
               <div className="flex gap-3 items-center">
                 <Badge>{job.status}</Badge>
 
-                {job.status === "Draft" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedJob(job)
+                    setViewOpen(true)
+                  }}
+                >
+                  View
+                </Button>
+
+                {canWrite && job.status === "Draft" && (
                   <Button size="sm" onClick={() => publishJob(job._id)}>
                     Publish
                   </Button>
                 )}
 
-                {job.status === "Published" && (
+                {canWrite && job.status === "Published" && (
                   <Button
                     size="sm"
                     variant="destructive"
@@ -256,6 +271,53 @@ const handleSubmit = async (e) => {
           </Card>
         ))}
       </div>
+
+      <Dialog
+        open={viewOpen}
+        onOpenChange={(open) => {
+          setViewOpen(open)
+          if (!open) setSelectedJob(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between gap-3">
+              <span className="truncate">{selectedJob?.jobTitle || "Job"}</span>
+              <span className="text-xs px-3 py-1 rounded-full border">
+                {selectedJob?.status || ""}
+              </span>
+            </DialogTitle>
+            <DialogDescription>Job opening details.</DialogDescription>
+          </DialogHeader>
+
+          {selectedJob ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="rounded-lg border p-3">
+                  <div className="text-xs text-muted-foreground">Department</div>
+                  <div className="font-medium">{selectedJob.department || "N/A"}</div>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <div className="text-xs text-muted-foreground">Employment Type</div>
+                  <div className="font-medium">{selectedJob.employmentType || "N/A"}</div>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <div className="text-xs text-muted-foreground">Positions</div>
+                  <div className="font-medium">{selectedJob.positions ?? "N/A"}</div>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <div className="text-xs text-muted-foreground">Deadline</div>
+                  <div className="font-medium">
+                    {selectedJob.deadline ? new Date(selectedJob.deadline).toLocaleDateString() : "N/A"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No job selected.</div>
+          )}
+        </DialogContent>
+      </Dialog>
 
     </div>
   )

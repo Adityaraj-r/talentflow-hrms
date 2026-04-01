@@ -9,6 +9,9 @@ import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import { getMyPermissions, can } from "./services/permissionService"
 
+// Tanstack ReactQuery
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+
 // Auth Pages
 import Login from "./pages/auth/Login"
 import Signup from "./pages/auth/Signup"
@@ -45,6 +48,8 @@ import ApplyJob from "./pages/ApplyJob"
 import CandidateApplications from "./pages/modules/recruitment/CandidateApplications"
 import RecruitmentPipeline from "./pages/modules/recruitment/RecruitmentPipeline"
 import ApplicationStatus from "./pages/ApplicationStatus"
+import AdminRecruitmentSuggestions from "./pages/modules/recruitment/AdminRecruitmentSuggestions"
+import RecruitmentSuggestionsInbox from "./pages/modules/recruitment/RecruitmentSuggestionsInbox"
 
 // Payroll Module
 import Payroll from "./pages/modules/payroll/Payroll"
@@ -52,9 +57,10 @@ import Tickets from "./pages/modules/payroll/Tickets"
 import Indemnity from "./pages/modules/payroll/Indemnity"
 import SalarySlip from "./pages/modules/payroll/SalarySlip"
 
-// Transfer Module
+// Transfer and Promotion Module
 import EmployeeTransfer from "./pages/modules/transfer/EmployeeTransfer"
 import TransferPage from "./pages/modules/transfer/TransferPage"
+import EmployeePromotion from "./pages/modules/transfer/EmployeePromotion"
 
 // Performance Module
 import AdminPerformance from "./pages/modules/performance/AdminPerformance"
@@ -78,11 +84,14 @@ import TimesheetApprovals from "./pages/role/PROJECT_MANAGER/TimesheetApprovals"
 // Attendance Module
 import AttendanceRecords from "./pages/modules/attendance/AttendanceRecords"
 import ShiftManagement from "./pages/modules/attendance/ShiftManagement"
+import ShiftRoster from "./pages/modules/attendance/ShiftRoster"
 import HolidayManagement from "./pages/modules/attendance/HolidayManagement"
 import ManualAttendance from "./pages/modules/attendance/ManualAttendance"
 import MyAttendance from "./pages/modules/attendance/MyAttendance"
 import LeaveManagement from "./pages/modules/attendance/LeaveApprovals"
 import CorrectionRequests from "./pages/modules/attendance/CorrectionRequests"
+import OvertimeApprovals from "./pages/modules/attendance/OvertimeApprovals"
+import LeavePolicyManagement from "./pages/modules/attendance/LeavePolicyManagement"
 
 // Role-Specific Appraisal Pages
 import HRManagerAppraisal from "./pages/role/HR_MANAGER/Appraisal"
@@ -101,17 +110,28 @@ import DocumentRequestsHROfficer from "./pages/role/HR_OFFICER/DocumentRequests"
 import DocumentRequestsEmployee from "./pages/role/EMPLOYEE/DocumentRequests"
 
 // Role-Specific Leave Management Pages
-import CEOLeaveManagement from "./pages/modules/attendance/LeaveApprovals"
 import HRManagerLeaveManagement from "./pages/role/HR_MANAGER/LeaveManagement"
 
+// CEO-Specific Pages
+import WorkforceAnalytics from "./pages/role/CEO/WorkforceAnalytics"
+import CEORecruitmentModule from "./pages/role/CEO/RecruitmentModule"
+import CEORecruitmentBriefing from "./pages/role/CEO/RecruitmentBriefing"
 
 // Employee Role Pages
+import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/EmployeeLeaveManagement"
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 import Profile from "./pages/dashboard/Profile"
-import OvertimeApprovals from "./pages/modules/attendance/OvertimeApprovals"
-import ShiftRoster from "./pages/modules/attendance/ShiftRoster"
-import LeavePolicyManagement from "./pages/modules/attendance/LeavePolicyManagement"
-import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/EmployeeLeaveManagement"
+
+const CEOLeaveManagement = LeaveManagement
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+})
 
 const ADMIN_ROLES = ["ADMIN", "SUPER ADMIN"]
 
@@ -127,7 +147,8 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
   useEffect(() => {
     if (!requiredPermission || !user) return
 
-    if (ADMIN_ROLES.includes(userRoleStr.toUpperCase())) {
+    const upper = userRoleStr.toUpperCase()
+    if (upper === "SUPER ADMIN" || upper === "SUPER_ADMIN") {
       setHasPermission(true)
       return
     }
@@ -206,416 +227,471 @@ const DashboardRouter = () => {
   const role = userRoleStr.toUpperCase()
 
   if (role === "ADMIN" || role === "SUPER ADMIN") return <Navigate to="/admin/dashboard" replace />
-  if (role === "CEO") return <Navigate to="/ceo/dashboard" replace />
+  if (role === "CEO" || role === "COUNTRY_MANAGER") return <Navigate to="/ceo/dashboard" replace />
   if (role === "EMPLOYEE") return <Navigate to="/employee/dashboard" replace />
   if (role === "PROJECT_MANAGER") return <Navigate to="/dashboard/project-manager" replace />
-  if (role === "CEO") return <Navigate to="/dashboard" replace />
-  if (role === "HR_MANAGER" || role === "HR_OFFICER"
-    || role === "DEPARTMENT_MANAGER"
-    || role === "DIRECT_MANAGER"
-    || role === "OPERATIONS_MANAGER") return <Navigate to="/dashboard" replace />
+  if (
+    role === "HR_MANAGER" ||
+    role === "HR_OFFICER" ||
+    role === "DEPARTMENT_MANAGER" ||
+    role === "DIRECT_MANAGER" ||
+    role === "OPERATIONS_MANAGER"
+  ) return <Navigate to="/dashboard" replace />
 
   return <Navigate to="/dashboard" replace />
 }
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <SettingsProvider>
-          <RoleProvider>
-            <UserProvider>
-              <Router>
-                <Toaster position="top-right" richColors />
-                <Routes>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <SettingsProvider>
+            <RoleProvider>
+              <UserProvider>
+                <Router>
+                  <Toaster position="top-right" richColors />
+                  <Routes>
 
-                  {/* ── Auth ─────────────────────────────────────────── */}
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<Signup />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/otp-verification" element={<OtpVerification />} />
-                  <Route path="/unauthorized" element={<Unauthorized />} />
-                  <Route path="/dashboard-redirect" element={<DashboardRouter />} />
+                    {/* ── Auth ─────────────────────────────────────────── */}
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Signup />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/otp-verification" element={<OtpVerification />} />
+                    <Route path="/unauthorized" element={<Unauthorized />} />
+                    <Route path="/dashboard-redirect" element={<DashboardRouter />} />
 
-                  {/* ── Public Recruitment ───────────────────────────── */}
-                  <Route path="/careers" element={<Careers />} />
-                  <Route path="/apply/:id" element={<ApplyJob />} />
-                  <Route path="/application-status" element={<ApplicationStatus />} />
+                    {/* ── Public Recruitment ───────────────────────────── */}
+                    <Route path="/careers" element={<Careers />} />
+                    <Route path="/apply/:id" element={<ApplyJob />} />
+                    <Route path="/application-status" element={<ApplicationStatus />} />
 
-                  {/* ── Profile (any authenticated user) ─────────────── */}
-                  <Route path="/profile" element={
-                    <ProtectedRoute>
-                      <DashboardLayout><Profile /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Profile (any authenticated user) ─────────────── */}
+                    <Route path="/profile" element={
+                      <ProtectedRoute>
+                        <DashboardLayout><Profile /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  {/* ── Dashboards ───────────────────────────────────── */}
-                  <Route path="/admin/dashboard" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><AdminDashboard /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Dashboards ───────────────────────────────────── */}
+                    <Route path="/admin/dashboard" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                        <DashboardLayout><AdminDashboard /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/ceo/dashboard" element={
-                    <ProtectedRoute allowedRoles={["CEO"]}>
-                      <DashboardLayout>
-                        <ExecutiveDashboard />
-                      </DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/ceo/dashboard" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                        <DashboardLayout><ExecutiveDashboard /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/employee/dashboard" element={
-                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
-                      <DashboardLayout>
-                        <EmployeeDashboard stats={{ leaveRequests: 3, documentsRequested: 2 }} isLoading={false} />
-                      </DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/employee/dashboard" element={
+                      <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                        <DashboardLayout>
+                          <EmployeeDashboard stats={{ leaveRequests: 3, documentsRequested: 2 }} isLoading={false} />
+                        </DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/dashboard" element={
-                    <ProtectedRoute>
-                      <DashboardLayout><Dashboard /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/dashboard" element={
+                      <ProtectedRoute>
+                        <DashboardLayout><Dashboard /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/dashboard/project-manager" element={
-                    <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
-                      <DashboardLayout><ProjectManagerDashboard /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    <Route path="/dashboard/project-manager" element={
+                      <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
+                        <DashboardLayout><ProjectManagerDashboard /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  {/* ── Project Manager ──────────────────────────────── */}
-                  <Route path="/dashboard/pm/tasks" element={
-                    <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
-                      <DashboardLayout><TaskBoard /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/dashboard/pm/safety" element={
-                    <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
-                      <DashboardLayout><SafetyIncidents /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/dashboard/pm/timesheets" element={
-                    <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
-                      <DashboardLayout><TimesheetApprovals /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Project Manager ──────────────────────────────── */}
+                    <Route path="/dashboard/pm/tasks" element={
+                      <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
+                        <DashboardLayout><TaskBoard /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/pm/safety" element={
+                      <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
+                        <DashboardLayout><SafetyIncidents /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/pm/timesheets" element={
+                      <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
+                        <DashboardLayout><TimesheetApprovals /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  {/* ── Administration — MATRIX ENFORCED ─────────────── */}
-                  <Route path="/dashboard/users" element={
-                    <ProtectedRoute requiredPermission={{ module: "employees", action: "read" }}>
-                      <DashboardLayout><UserManagement /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/settings" element={
-                    <ProtectedRoute requiredPermission={{ module: "settings", action: "read" }}>
-                      <DashboardLayout><SystemSettings /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/admin/roles" element={
-                    <ProtectedRoute requiredPermission={{ module: "roles", action: "read" }}>
-                      <DashboardLayout><RoleManagement /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/admin/company-structure" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><CompanyStructure /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/admin/audit-logs" element={
-                    <ProtectedRoute requiredPermission={{ module: "roles", action: "read" }}>
-                      <DashboardLayout><AuditLogs /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/admin/integrations" element={
-                    <ProtectedRoute requiredPermission={{ module: "settings", action: "read" }}>
-                      <DashboardLayout><Integrations /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Administration — MATRIX ENFORCED ─────────────── */}
+                    <Route path="/dashboard/users" element={
+                      <ProtectedRoute requiredPermission={{ module: "employees", action: "read" }}>
+                        <DashboardLayout><UserManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/settings" element={
+                      <ProtectedRoute requiredPermission={{ module: "settings", action: "read" }}>
+                        <DashboardLayout><SystemSettings /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/roles" element={
+                      <ProtectedRoute requiredPermission={{ module: "roles", action: "read" }}>
+                        <DashboardLayout><RoleManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/company-structure" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                        <DashboardLayout><CompanyStructure /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/audit-logs" element={
+                      <ProtectedRoute requiredPermission={{ module: "roles", action: "read" }}>
+                        <DashboardLayout><AuditLogs /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/integrations" element={
+                      <ProtectedRoute requiredPermission={{ module: "settings", action: "read" }}>
+                        <DashboardLayout><Integrations /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/recruitment-suggestions" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                        <DashboardLayout><AdminRecruitmentSuggestions /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  {/* ── Employee Center — MATRIX ENFORCED ────────────── */}
-                  <Route path="/employee-center/all-employees" element={
-                    <ProtectedRoute requiredPermission={{ module: "employees", action: "read" }}>
-                      <DashboardLayout><AllEmployees /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/employee-center/employee/:id" element={
-                    <ProtectedRoute requiredPermission={{ module: "employees", action: "read" }}>
-                      <DashboardLayout><EmployeeProfileView /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Employee Center ───────────────────────────────── */}
+                    <Route path="/employee-center/all-employees" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER"]}>
+                        <DashboardLayout><AllEmployees /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/employee-center/employee/:id" element={
+                      <ProtectedRoute requiredPermission={{ module: "employees", action: "read" }}>
+                        <DashboardLayout><EmployeeProfileView /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/employee-center/digital-locker" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "EMPLOYEE"]}>
+                        <DashboardLayout><DigitalLocker /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/employee-center/employee-transfer" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER", "ADMIN", "SUPER ADMIN", "EMPLOYEE"]}>
+                        <DashboardLayout><EmployeeTransfer /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/employee-center/promotions" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                        <DashboardLayout><EmployeePromotion /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  {/* ── Recruitment — MATRIX ENFORCED ────────────────── */}
-                  <Route path="/dashboard/onboarding" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER"]}>
-                      <DashboardLayout><Onboarding /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/staff-requisition" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
-                      <DashboardLayout><StaffRequisition /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/dashboard/applications" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
-                      <DashboardLayout><CandidateApplications /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/dashboard/recruitment-pipeline" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
-                      <DashboardLayout><RecruitmentPipeline /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/dashboard/job-openings" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
-                      <DashboardLayout><JobOpenings /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/dashboard/offer-management" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
-                      <DashboardLayout><OfferManagement /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/dashboard/generate-offer" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
-                      <DashboardLayout><OfferManagement /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/dashboard/offer/:offerId" element={
-                    <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
-                      <DashboardLayout><OfferManagement /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Recruitment — MATRIX ENFORCED ────────────────── */}
+                    <Route path="/employee-center/onboarding" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER"]}>
+                        <DashboardLayout><Onboarding /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    {/* Keep old onboarding path for sidebar compatibility */}
+                    <Route path="/dashboard/onboarding" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER"]}>
+                        <DashboardLayout><Onboarding /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff-requisition" element={
+                      <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
+                        <DashboardLayout><StaffRequisition /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/applications" element={
+                      <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
+                        <DashboardLayout><CandidateApplications /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/recruitment-pipeline" element={
+                      <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
+                        <DashboardLayout><RecruitmentPipeline /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/job-openings" element={
+                      <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
+                        <DashboardLayout><JobOpenings /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/offer-management" element={
+                      <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
+                        <DashboardLayout><OfferManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/generate-offer" element={
+                      <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
+                        <DashboardLayout><OfferManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/offer/:offerId" element={
+                      <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
+                        <DashboardLayout><OfferManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/recruitment-suggestions" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                        <DashboardLayout><RecruitmentSuggestionsInbox /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  {/* ── Attendance — MATRIX ENFORCED ─────────────────── */}
-                  <Route path="/attendance" element={
-                    <ProtectedRoute requiredPermission={{ module: "attendance", action: "read" }}>
-                      <DashboardLayout><AttendanceRecords /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/attendance/holidays" element={
-                    <ProtectedRoute requiredPermission={{ module: "attendance", action: "read" }}>
-                      <DashboardLayout><HolidayManagement /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  
-                  <Route path="/attendance/shifts" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN", "HR_MANAGER"]}>
-                      <DashboardLayout><ShiftManagement /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Attendance — MATRIX ENFORCED ─────────────────── */}
+                    <Route path="/attendance" element={
+                      <ProtectedRoute requiredPermission={{ module: "attendance", action: "read" }}>
+                        <DashboardLayout><AttendanceRecords /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/attendance/holidays" element={
+                      <ProtectedRoute requiredPermission={{ module: "attendance", action: "read" }}>
+                        <DashboardLayout><HolidayManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/attendance/shifts" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER"]}>
+                        <DashboardLayout><ShiftManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/attendance/roster" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "PROJECT_MANAGER"]}>
+                        <DashboardLayout><ShiftRoster /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/attendance/leave-policies" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER"]}>
+                        <DashboardLayout><LeavePolicyManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/attendance/my-leaves" element={
+                      <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER"]}>
+                        <DashboardLayout><EmployeeLeaveManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/attendance/leave-management" element={
+                      <ProtectedRoute requiredPermission={{ module: "attendance", action: "write" }}>
+                        <DashboardLayout><LeaveManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/attendance/manual" element={
+                      <ProtectedRoute requiredPermission={{ module: "attendance", action: "write" }}>
+                        <DashboardLayout><ManualAttendance /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/attendance/correction-requests" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                        <DashboardLayout><CorrectionRequests /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/attendance/overtime-approvals" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                        <DashboardLayout><OvertimeApprovals /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/attendance/roster" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "PROJECT_MANAGER"]}>
-                      <DashboardLayout><ShiftRoster /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  
-                  <Route path="/attendance/leave-policies" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN", "SUPER ADMIN", "HR_MANAGER"]}>
-                      <DashboardLayout><LeavePolicyManagement /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Payroll — MATRIX ENFORCED ────────────────────── */}
+                    <Route path="/payroll" element={
+                      <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
+                        <DashboardLayout><Payroll /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tickets" element={
+                      <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
+                        <DashboardLayout><Tickets /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/indemnity" element={
+                      <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
+                        <DashboardLayout><Indemnity /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/payroll/salary-slip" element={
+                      <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
+                        <DashboardLayout><SalarySlip /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/attendance/my-leaves" element={
-                    <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER"]}>
-                      <DashboardLayout><EmployeeLeaveManagement /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Transfers ────────────────────────────────────── */}
+                    <Route path="/employee-transfer" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER", "ADMIN", "SUPER ADMIN"]}>
+                        <DashboardLayout><EmployeeTransfer /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/attendance/leave-management" element={
-                    <ProtectedRoute requiredPermission={{ module: "attendance", action: "write" }}>
-                      <DashboardLayout><LeaveManagement /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Performance (PMS) ────────────────────────────── */}
+                    <Route path="/role/hr_manager/appraisal/cycles" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
+                        <DashboardLayout><AdminPerformance /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/hr_manager/appraisal/view/:id" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                        <DashboardLayout><ViewCycleDetails /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/hr_manager/review/:id" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                        <DashboardLayout><ReviewDetailPage /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/hr_manager/appraisal" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
+                        <DashboardLayout><HRManagerAppraisal /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/ceo/appraisal" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                        <DashboardLayout><PerformanceAnalytics /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/department_manager/appraisal" element={
+                      <ProtectedRoute allowedRoles={["DEPARTMENT_MANAGER"]}>
+                        <DashboardLayout><DepartmentManagerAppraisal /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/direct_manager/appraisal" element={
+                      <ProtectedRoute allowedRoles={["DIRECT_MANAGER"]}>
+                        <DashboardLayout><DirectManagerAppraisal /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/employee/appraisal" element={
+                      <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                        <DashboardLayout><EmployeeAppraisal /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/attendance/manual" element={
-                    <ProtectedRoute requiredPermission={{ module: "attendance", action: "write" }}>
-                      <DashboardLayout><ManualAttendance /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Disciplinary Actions ─────────────────────────── */}
+                    <Route path="/role/hr_manager/disciplinary-actions" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
+                        <DashboardLayout><HRManagerDisciplinaryActions /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/department_manager/disciplinary-actions" element={
+                      <ProtectedRoute allowedRoles={["DEPARTMENT_MANAGER"]}>
+                        <DashboardLayout><DepartmentManagerDisciplinaryActions /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/direct_manager/disciplinary-actions" element={
+                      <ProtectedRoute allowedRoles={["DIRECT_MANAGER"]}>
+                        <DashboardLayout><DirectManagerDisciplinaryActions /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/attendance/correction-requests" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
-                      <DashboardLayout><CorrectionRequests /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Document Requests ────────────────────────────── */}
+                    <Route path="/role/hr_manager/document-requests" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
+                        <DashboardLayout><DocumentRequestsHRManager /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/hr_officer/document-requests" element={
+                      <ProtectedRoute allowedRoles={["HR_OFFICER"]}>
+                        <DashboardLayout><DocumentRequestsHROfficer /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/employee/document-requests" element={
+                      <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                        <DashboardLayout><DocumentRequestsEmployee /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  <Route path="/attendance/overtime-approvals" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
-                      <DashboardLayout><OvertimeApprovals /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Leave Management ─────────────────────────────── */}
+                    <Route path="/role/ceo/leave-management" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                        <DashboardLayout><CEOLeaveManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/hr_manager/leave-management" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
+                        <DashboardLayout><HRManagerLeaveManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/employee/leave-management" element={
+                      <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                        <DashboardLayout><EmployeeLeaveManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  {/* ── Payroll — MATRIX ENFORCED ────────────────────── */}
-                  <Route path="/payroll" element={
-                    <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
-                      <DashboardLayout><Payroll /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/tickets" element={
-                    <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
-                      <DashboardLayout><Tickets /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/indemnity" element={
-                    <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
-                      <DashboardLayout><Indemnity /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/payroll/salary-slip" element={
-                    <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
-                      <DashboardLayout><SalarySlip /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Employee Self-Service ────────────────────────── */}
+                    <Route path="/dashboard/employee/attendance" element={
+                      <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER"]}>
+                        <DashboardLayout><MyAttendance /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/employee/tasks" element={
+                      <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                        <DashboardLayout><MyTasks /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/employee/make-transfer" element={
+                      <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                        <DashboardLayout><TransferPage /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  {/* ── Transfers ────────────────────────────────────── */}
-                  <Route path="/employee-transfer" element={
-                    <ProtectedRoute allowedRoles={["HR_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER", "ADMIN", "SUPER ADMIN"]}>
-                      <DashboardLayout><EmployeeTransfer /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── CEO-Specific Routes ───────────────────────────── */}
+                    <Route path="/ceo/analytics" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                        <DashboardLayout><WorkforceAnalytics /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ceo/recruitment" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                        <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ceo/recruitment/briefing" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                        <DashboardLayout><CEORecruitmentBriefing /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ceo/recruitment/executive-pipeline" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                        <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ceo/recruitment/strategic-analytics" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                        <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ceo/recruitment/workforce-planning" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                        <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ceo/recruitment/executive-approvals" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                        <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ceo/recruitment/employer-brand-health" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                        <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  {/* ── Performance (PMS) ────────────────────────────── */}
-                  {/* Cycle management — HR_MANAGER only */}
-                  <Route path="/role/hr_manager/appraisal/cycles" element={
-                    <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
-                      <DashboardLayout><AdminPerformance /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  {/* Cycle detail — HR_MANAGER + Managers */}
-                  <Route path="/role/hr_manager/appraisal/view/:id" element={
-                    <ProtectedRoute allowedRoles={["HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
-                      <DashboardLayout><ViewCycleDetails /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  {/* Review detail — HR_MANAGER + Managers */}
-                  <Route path="/role/hr_manager/review/:id" element={
-                    <ProtectedRoute allowedRoles={["HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
-                      <DashboardLayout><ReviewDetailPage /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  {/* HR Manager appraisal hub */}
-                  <Route path="/role/hr_manager/appraisal" element={
-                    <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
-                      <DashboardLayout><HRManagerAppraisal /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  {/* CEO read-only analytics */}
-                  <Route path="/role/ceo/appraisal" element={
-                    <ProtectedRoute allowedRoles={["CEO"]}>
-                      <DashboardLayout><PerformanceAnalytics /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/role/department_manager/appraisal" element={
-                    <ProtectedRoute allowedRoles={["DEPARTMENT_MANAGER"]}>
-                      <DashboardLayout><DepartmentManagerAppraisal /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/role/direct_manager/appraisal" element={
-                    <ProtectedRoute allowedRoles={["DIRECT_MANAGER"]}>
-                      <DashboardLayout><DirectManagerAppraisal /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/role/employee/appraisal" element={
-                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
-                      <DashboardLayout><EmployeeAppraisal /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Reports — MATRIX ENFORCED ────────────────────── */}
+                    <Route path="/reports" element={
+                      <ProtectedRoute requiredPermission={{ module: "dashboard", action: "read" }}>
+                        <DashboardLayout><ReportsPage /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
 
-                  {/* ── Disciplinary Actions ─────────────────────────── */}
-                  <Route path="/role/hr_manager/disciplinary-actions" element={
-                    <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
-                      <DashboardLayout><HRManagerDisciplinaryActions /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/role/department_manager/disciplinary-actions" element={
-                    <ProtectedRoute allowedRoles={["DEPARTMENT_MANAGER"]}>
-                      <DashboardLayout><DepartmentManagerDisciplinaryActions /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/role/direct_manager/disciplinary-actions" element={
-                    <ProtectedRoute allowedRoles={["DIRECT_MANAGER"]}>
-                      <DashboardLayout><DirectManagerDisciplinaryActions /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
+                    {/* ── Redirects ────────────────────────────────────── */}
+                    <Route path="/" element={<Navigate to="/dashboard-redirect" />} />
+                    <Route path="*" element={<Navigate to="/dashboard-redirect" />} />
 
-                  {/* ── Document Requests ────────────────────────────── */}
-                  <Route path="/role/hr_manager/document-requests" element={
-                    <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
-                      <DashboardLayout><DocumentRequestsHRManager /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/role/hr_officer/document-requests" element={
-                    <ProtectedRoute allowedRoles={["HR_OFFICER"]}>
-                      <DashboardLayout><DocumentRequestsHROfficer /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/role/employee/document-requests" element={
-                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
-                      <DashboardLayout><DocumentRequestsEmployee /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  {/* ── Leave Management ─────────────────────────────── */}
-                  <Route path="/role/ceo/leave-management" element={
-                    <ProtectedRoute allowedRoles={["CEO"]}>
-                      <DashboardLayout><CEOLeaveManagement /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/role/hr_manager/leave-management" element={
-                    <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
-                      <DashboardLayout><HRManagerLeaveManagement /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/role/employee/leave-management" element={
-                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
-                      <DashboardLayout><EmployeeLeaveManagement /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  {/* ── Employee Self-Service ────────────────────────── */}
-                  <Route path="/dashboard/employee/attendance" element={
-                    <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER"]}>
-                      <DashboardLayout><MyAttendance /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/dashboard/employee/tasks" element={
-                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
-                      <DashboardLayout><MyTasks /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/dashboard/employee/make-transfer" element={
-                    <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
-                      <DashboardLayout><TransferPage /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  {/* ── Digital Locker ───────────────────────────────── */}
-                  <Route path="/digital-locker" element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "HR_MANAGER", "EMPLOYEE"]}>
-                      <DashboardLayout><DigitalLocker /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  {/* ── Reports — MATRIX ENFORCED ────────────────────── */}
-                  <Route path="/reports" element={
-                    <ProtectedRoute requiredPermission={{ module: "dashboard", action: "read" }}>
-                      <DashboardLayout><ReportsPage /></DashboardLayout>
-                    </ProtectedRoute>
-                  } />
-
-                  {/* ── Redirects ────────────────────────────────────── */}
-                  <Route path="/" element={<Navigate to="/dashboard-redirect" />} />
-                  <Route path="*" element={<Navigate to="/dashboard-redirect" />} />
-
-                </Routes>
-              </Router>
-            </UserProvider>
-          </RoleProvider>
-        </SettingsProvider>
-      </AuthProvider>
-    </ThemeProvider>
+                  </Routes>
+                </Router>
+              </UserProvider>
+            </RoleProvider>
+          </SettingsProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   )
 }
 

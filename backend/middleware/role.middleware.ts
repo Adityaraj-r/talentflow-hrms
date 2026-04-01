@@ -37,6 +37,10 @@ export type PermissionAction = 'read' | 'write' | 'delete';
 // FIXED: normalize SUPER ADMIN - previously 'Super Admin' title-case
 const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'];
 
+// FIXED: normalize SUPER ADMIN — previously 'Super Admin' title-case
+// would never match DB value 'SUPER ADMIN'
+const SUPER_ADMIN_ROLES = ['SUPER ADMIN', 'SUPER_ADMIN'];
+
 const normalizeRole = (str: string | undefined): string => {
   if (!str) return '';
   // Strips spaces and underscores, ensures uppercase
@@ -74,6 +78,7 @@ export const authorizeByMatrix = (module: ModuleKey, action: PermissionAction) =
     const rawUserRole = req.user.role;
     const normalizedUserRole = normalizeRole(rawUserRole);
 
+    // FIX: Safely bypass the matrix for both ADMIN and SUPER_ADMIN
     if (ADMIN_ROLES.some(role => normalizeRole(role) === normalizedUserRole)) {
       next();
       return;

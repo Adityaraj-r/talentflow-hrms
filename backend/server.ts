@@ -21,7 +21,10 @@ import requisitionRoutes from "./routes/requisition.routes";
 import roleRoutes from './routes/role.routes';
 import departmentRoutes from './routes/department.routes';
 import performanceRoutes from './routes/performanceRoutes';
+import goalRoutes from './routes/goalRoutes'
+import pipRoutes from './routes/pipRoutes'
 import transferRoutes from "./routes/transferRoutes";
+import promotionRoutes from "./routes/promotionRoutes";
 import auditRoutes from './routes/audit.routes';
 import googleRoutes from './routes/google.routes';
 import candidateRoutes from "./routes/candidate.routes";
@@ -33,6 +36,11 @@ import applicationRoutes from "./routes/application.routes";
 import documentRoutes from './routes/document.routes';
 import salaryRoutes from './routes/salary.routes';
 import payrollRoutes from './routes/payroll.routes';
+import recruitmentSuggestionRoutes from './routes/recruitmentSuggestion.routes';
+import executiveRoutes from "./routes/executive.routes";
+import offboardingRoutes from "./routes/offboarding.routes";
+import ceoRoutes from './routes/ceo.routes';
+import offerRoutes from './routes/offer.routes';
 
 dotenv.config();
 
@@ -121,18 +129,26 @@ app.use('/api/requisitions', requisitionRoutes);
 app.use('/api/job-openings', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/recruitment-suggestions', recruitmentSuggestionRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/shifts', shiftRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/executive', executiveRoutes);
+app.use('/api/offboarding', offboardingRoutes);
 
 app.use('/api/performance', performanceRoutes);
+app.use('/api/performance/goals', goalRoutes)
+app.use('/api/performance/pips', pipRoutes)
 app.use('/api/holidays', holidayRoutes);
 app.use('/api/transfers', transferRoutes);
+app.use('/api/promotions', promotionRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/salary-structure', salaryRoutes);
 app.use('/api/payroll', payrollRoutes);
+app.use('/api/ceo', ceoRoutes);
+app.use('/api/offers', offerRoutes);
 
 app.use((req, res) => {
   console.warn(`\x1b[33m[404] Route not found: ${req.method} ${req.path}\x1b[0m`);

@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react';
 import { getMyPermissions, can } from '@/services/permissionService';
 import { Loader2 } from 'lucide-react';
 
-const ADMIN_ROLES = ['ADMIN', 'SUPER ADMIN'];
-
 const RoleBasedRoute = ({ children, allowedRoles, requiredPermission }) => {
   const { user, isAuthenticated, loading } = useAuth();
   const [permLoading, setPermLoading] = useState(false);
@@ -19,7 +17,8 @@ const RoleBasedRoute = ({ children, allowedRoles, requiredPermission }) => {
     if (!requiredPermission || !user) return;
 
 
-    if (ADMIN_ROLES.includes(userRoleStr.toUpperCase())) {
+    const upper = userRoleStr.toUpperCase();
+    if (upper === 'SUPER ADMIN' || upper === 'SUPER_ADMIN') {
       setHasPermission(true);
       return;
     }

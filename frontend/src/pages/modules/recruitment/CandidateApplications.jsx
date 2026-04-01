@@ -1,19 +1,47 @@
-import { useEffect, useState } from "react"
-import axios from "axios"
+import { useEffect, useMemo, useState } from "react"
+import apiClient from "@/services/apiClient"
+import { useUser } from "@/contexts/UserContext"
 import { Users, UserCheck, UserX, FileText } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { toast } from "sonner"
 
 const CandidateApplications = () => {
+  const { user } = useUser()
+  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
+  const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
+  const isOperationsManager = role === "OPERATIONS_MANAGER"
+  const canWrite = user?.can?.("recruitment", "write") && !isOperationsManager
 
   const [applications,setApplications] = useState([])
   const [search,setSearch] = useState("")
+  const [selectedApplication, setSelectedApplication] = useState(null)
+  const [viewOpen, setViewOpen] = useState(false)
+
+  const uploadBaseUrl = useMemo(
+    () =>
+      (import.meta.env.VITE_API_URL || "http://localhost:5001/api").replace(
+        /\/api\/?$/,
+        ""
+      ),
+    []
+  )
 
   const fetchApplications = async () => {
 
-    const res = await axios.get(
-      "http://localhost:5001/api/applications"
-    )
-
-    setApplications(res.data)
+    try {
+      const data = await apiClient.get("/applications")
+      setApplications(Array.isArray(data) ? data : [])
+    } catch (e) {
+      toast.error(e?.response?.data?.error || "Failed to load applications")
+      setApplications([])
+    }
 
   }
 
@@ -25,15 +53,12 @@ const CandidateApplications = () => {
 
     try{
 
-      await axios.put(
-        `http://localhost:5001/api/applications/${id}/status`,
-        { status: "Shortlisted" }
-      )
+      await apiClient.put(`/applications/${id}/status`, { status: "Shortlisted" })
 
       fetchApplications()
 
     }catch(err){
-      console.error(err)
+      toast.error(err?.response?.data?.error || "Failed to shortlist")
     }
 
   }
@@ -42,21 +67,24 @@ const CandidateApplications = () => {
 
     try{
 
-      await axios.put(
-        `http://localhost:5001/api/applications/${id}/status`,
-        { status: "Rejected" }
-      )
+      await apiClient.put(`/applications/${id}/status`, { status: "Rejected" })
 
       fetchApplications()
 
     }catch(err){
-      console.error(err)
+      toast.error(err?.response?.data?.error || "Failed to reject")
     }
 
   }
 
-  const filteredApplications = applications.filter(app =>
-    app.name.toLowerCase().includes(search.toLowerCase())
+  const filteredApplications = useMemo(
+    () =>
+      applications.filter((app) =>
+        (app.name || "")
+          .toLowerCase()
+          .includes(search.toLowerCase())
+      ),
+    [applications, search]
   )
 
   const getStatusStyle = (status) => {
@@ -73,21 +101,20 @@ const CandidateApplications = () => {
     return ""
   }
 
-  /* ======================
-      STATS CALCULATION
-  ====================== */
+  const stats = useMemo(() => {
+    const total = applications.length
+    const shortlisted = applications.filter(a => a.status === "Shortlisted").length
+    const rejected = applications.filter(a => a.status === "Rejected").length
+    const applied = applications.filter(a => a.status === "Applied").length
+    return { total, shortlisted, rejected, applied }
+  }, [applications])
 
-  const total = applications.length
-  const shortlisted = applications.filter(a=>a.status==="Shortlisted").length
-  const rejected = applications.filter(a=>a.status==="Rejected").length
-  const applied = applications.filter(a=>a.status==="Applied").length
+  const { total, shortlisted, rejected, applied } = stats
 
 
   return (
 
     <div className="p-8">
-
-      {/* HEADER */}
 
       <div className="flex justify-between items-center mb-10">
 
@@ -106,13 +133,7 @@ const CandidateApplications = () => {
       </div>
 
 
-      {/* ======================
-            STATS CARDS
-      ====================== */}
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-
-        {/* Total */}
 
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6 flex justify-between items-center">
 
@@ -133,8 +154,6 @@ const CandidateApplications = () => {
         </div>
 
 
-        {/* Applied */}
-
         <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-6 flex justify-between items-center">
 
           <div>
@@ -154,8 +173,6 @@ const CandidateApplications = () => {
         </div>
 
 
-        {/* Shortlisted */}
-
         <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-2xl p-6 flex justify-between items-center">
 
           <div>
@@ -174,8 +191,6 @@ const CandidateApplications = () => {
 
         </div>
 
-
-        {/* Rejected */}
 
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-6 flex justify-between items-center">
 
@@ -198,8 +213,6 @@ const CandidateApplications = () => {
       </div>
 
 
-      {/* SEARCH */}
-
       <input
         type="text"
         placeholder="Search candidate..."
@@ -214,9 +227,6 @@ const CandidateApplications = () => {
         focus:outline-none focus:ring-2 focus:ring-blue-500
         "
       />
-
-
-      {/* CANDIDATE LIST */}
 
       <div className="space-y-6">
 
@@ -263,38 +273,37 @@ const CandidateApplications = () => {
             </div>
 
 
-            {/* ACTION BUTTONS */}
-
             <div className="mt-5 flex gap-3 flex-wrap">
 
-              {app.resume && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSelectedApplication(app)
+                  setViewOpen(true)
+                }}
+              >
+                View
+              </Button>
 
-                <a
-                  href={`http://localhost:5001/uploads/${app.resume}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm"
-                >
-                  View Resume
-                </a>
-
+              {canWrite && (
+                <>
+                  <Button
+                    onClick={()=>handleShortlist(app._id)}
+                    disabled={app.status !== "Applied"}
+                    className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-40"
+                  >
+                    Shortlist
+                  </Button>
+                  <Button
+                    onClick={()=>handleReject(app._id)}
+                    disabled={app.status !== "Applied"}
+                    variant="destructive"
+                    className="disabled:opacity-40"
+                  >
+                    Reject
+                  </Button>
+                </>
               )}
-
-              <button
-                onClick={()=>handleShortlist(app._id)}
-                disabled={app.status !== "Applied"}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-40"
-              >
-                Shortlist
-              </button>
-
-              <button
-                onClick={()=>handleReject(app._id)}
-                disabled={app.status !== "Applied"}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-40"
-              >
-                Reject
-              </button>
 
             </div>
 
@@ -303,6 +312,73 @@ const CandidateApplications = () => {
         ))}
 
       </div>
+
+      <Dialog
+        open={viewOpen}
+        onOpenChange={(open) => {
+          setViewOpen(open)
+          if (!open) setSelectedApplication(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between gap-3">
+              <span className="truncate">
+                {selectedApplication?.name || "Candidate"}
+              </span>
+              <span className="text-xs px-3 py-1 rounded-full border">
+                {selectedApplication?.status || ""}
+              </span>
+            </DialogTitle>
+            <DialogDescription>
+              Candidate details and resume (if available).
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedApplication ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="rounded-lg border p-3">
+                  <div className="text-xs text-muted-foreground">Email</div>
+                  <div className="font-medium break-words">{selectedApplication.email}</div>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <div className="text-xs text-muted-foreground">Position</div>
+                  <div className="font-medium">
+                    {selectedApplication.jobId?.jobTitle || "N/A"}
+                  </div>
+                </div>
+              </div>
+
+              {selectedApplication.resume ? (
+                <div className="rounded-lg border p-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-xs text-muted-foreground">Resume</div>
+                    <div className="text-sm truncate" title={selectedApplication.resume}>
+                      {selectedApplication.resume}
+                    </div>
+                  </div>
+                  <a
+                    href={`${uploadBaseUrl}/uploads/${selectedApplication.resume}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                      Open Resume
+                    </Button>
+                  </a>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  No resume uploaded for this application.
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No candidate selected.</div>
+          )}
+        </DialogContent>
+      </Dialog>
 
     </div>
 
