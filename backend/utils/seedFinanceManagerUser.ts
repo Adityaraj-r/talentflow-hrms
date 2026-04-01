@@ -28,5 +28,5 @@ export const seedFinanceManagerUser = async (): Promise<void> => {
     isActive: true,
   });
 
-  console.log(`✅ Seeded Finance Manager user: ${email}`);
+  console.log(`Seeded Finance Manager user: ${email}`);
 };

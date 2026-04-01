@@ -69,7 +69,6 @@ const slipRoles = [
   "EMPLOYEE",
 ] as const
 
-// ── Settings & engine ───────────────────────────────────────────────────────
 router.get("/settings", payrollRead, getPayrollSettings)
 router.put("/settings", payrollWrite, updatePayrollSettings)
 router.post("/calculate-preview", payrollWrite, calculatePayrollPreview)
@@ -79,7 +78,6 @@ router.get("/analytics/summary", payrollRead, getPayrollAnalyticsSummary)
 router.get("/", payrollRead, getPayrollRecords)
 router.get("/pending", payrollRead, getPendingPayroll)
 
-// ── Tickets & indemnity (before /:id dynamic segments) ─────────────────────
 router.get("/tickets", authorize(...ticketRoles), getTickets)
 router.post("/tickets", authorize(...ticketRoles), createTicket)
 router.patch("/tickets/:id/status", authorize(...ticketApproveRoles), updateTicketStatus)

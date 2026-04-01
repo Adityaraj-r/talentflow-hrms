@@ -9,7 +9,6 @@ import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import { getMyPermissions, can } from "./services/permissionService"
 
-// Tanstack ReactQuery Import
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 // Auth Pages
@@ -256,7 +255,6 @@ function App() {
                   <Toaster position="top-right" richColors />
                   <Routes>
 
-                    {/* ── Auth ─────────────────────────────────────────── */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -264,7 +262,6 @@ function App() {
                     <Route path="/unauthorized" element={<Unauthorized />} />
                     <Route path="/dashboard-redirect" element={<DashboardRouter />} />
 
-                    {/* ── Public Recruitment ───────────────────────────── */}
                     <Route path="/careers" element={<Careers />} />
                     <Route path="/apply/:id" element={<ApplyJob />} />
                     <Route path="/application-status" element={<ApplicationStatus />} />
@@ -274,14 +271,12 @@ function App() {
                       element={<Navigate to="/employee-center/employee-transfer" replace />}
                     />
 
-                    {/* ── Profile (any authenticated user) ─────────────── */}
                     <Route path="/profile" element={
                       <ProtectedRoute>
                         <DashboardLayout><Profile /></DashboardLayout>
                       </ProtectedRoute>
                     } />
 
-                    {/* ── Dashboards ───────────────────────────────────── */}
                     <Route path="/admin/dashboard" element={
                       <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
                         <DashboardLayout><AdminDashboard /></DashboardLayout>
@@ -316,7 +311,6 @@ function App() {
                       </ProtectedRoute>
                     } />
 
-                    {/* ── Project Manager ──────────────────────────────── */}
                     <Route path="/dashboard/pm/tasks" element={
                       <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
                         <DashboardLayout><TaskBoard /></DashboardLayout>
@@ -333,7 +327,6 @@ function App() {
                       </ProtectedRoute>
                     } />
 
-                    {/* ── Administration — MATRIX ENFORCED ─────────────── */}
                     <Route path="/dashboard/users" element={
                       <ProtectedRoute requiredPermission={{ module: "employees", action: "read" }}>
                         <DashboardLayout><UserManagement /></DashboardLayout>
@@ -370,7 +363,6 @@ function App() {
                     </ProtectedRoute>
                   } />
 
-                    {/* ── Employee Center — MATRIX ENFORCED ────────────── */}
                     <Route path="/employee-center/all-employees" element={
                       <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER"]}>
                         <DashboardLayout><AllEmployees /></DashboardLayout>
@@ -381,7 +373,7 @@ function App() {
                         <DashboardLayout><EmployeeProfileView /></DashboardLayout>
                       </ProtectedRoute>
                     } />
-                    {/* ── Recruitment — MATRIX ENFORCED ────────────────── */}
+
                     <Route path="/employee-center/onboarding" element={
                       <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER"]}>
                         <DashboardLayout><Onboarding /></DashboardLayout>
@@ -430,7 +422,6 @@ function App() {
                       </ProtectedRoute>
                     } />
 
-                    {/* ── Attendance — MATRIX ENFORCED ─────────────────── */}
                     <Route path="/attendance" element={
                       <ProtectedRoute requiredPermission={{ module: "attendance", action: "read" }}>
                         <DashboardLayout><AttendanceRecords /></DashboardLayout>
@@ -469,7 +460,6 @@ function App() {
                       </ProtectedRoute>
                     } />
 
-                    {/* ── Payroll — MATRIX ENFORCED ────────────────────── */}
                     <Route path="/payroll" element={
                       <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
                         <DashboardLayout><Payroll /></DashboardLayout>
@@ -491,7 +481,6 @@ function App() {
                       </ProtectedRoute>
                     } />
 
-                    {/* ── Transfers ────────────────────────────────────── */}
                     <Route path="/employee-center/employee-transfer" element={
                       <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER", "ADMIN", "SUPER ADMIN", "EMPLOYEE"]}>
                         <DashboardLayout><EmployeeTransfer /></DashboardLayout>
@@ -505,7 +494,6 @@ function App() {
                       </ProtectedRoute>
                     } />
 
-                    {/* ── Performance (PMS) ────────────────────────────── */}
                     {/* Cycle management — HR_MANAGER only */}
                     <Route path="/role/hr_manager/appraisal/cycles" element={
                       <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
@@ -552,7 +540,6 @@ function App() {
                       </ProtectedRoute>
                     } />
 
-                    {/* ── Disciplinary Actions ─────────────────────────── */}
                     <Route path="/role/hr_manager/disciplinary-actions" element={
                       <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
                         <DashboardLayout><HRManagerDisciplinaryActions /></DashboardLayout>
@@ -569,7 +556,6 @@ function App() {
                       </ProtectedRoute>
                     } />
 
-                    {/* ── Document Requests ────────────────────────────── */}
                     <Route path="/role/hr_manager/document-requests" element={
                       <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
                         <DashboardLayout><DocumentRequestsHRManager /></DashboardLayout>
@@ -586,7 +572,6 @@ function App() {
                       </ProtectedRoute>
                     } />
 
-                    {/* ── Leave Management ─────────────────────────────── */}
                     <Route path="/role/ceo/leave-management" element={
                       <ProtectedRoute allowedRoles={["CEO"]}>
                         <DashboardLayout><CEOLeaveManagement /></DashboardLayout>
@@ -637,7 +622,7 @@ function App() {
                         <DashboardLayout><EmployeeLeaveManagement /></DashboardLayout>
                       </ProtectedRoute>
                     } />
-                  {/* ── Employee Self-Service ────────────────────────── */}
+
                   <Route path="/dashboard/employee/attendance" element={
                     <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER"]}>
                       <DashboardLayout><MyAttendance /></DashboardLayout>
@@ -653,14 +638,13 @@ function App() {
                       <DashboardLayout><TransferPage /></DashboardLayout>
                     </ProtectedRoute>
                   } />
-                    {/* ── Digital Locker ───────────────────────────────── */}
+
                     <Route path="/employee-center/digital-locker" element={
                       <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "EMPLOYEE"]}>
                         <DashboardLayout><DigitalLocker /></DashboardLayout>
                       </ProtectedRoute>
                     } />
 
-                    {/* ── Reports — MATRIX ENFORCED ────────────────────── */}
                     <Route path="/reports" element={
                       <ProtectedRoute requiredPermission={{ module: "dashboard", action: "read" }}>
                         <DashboardLayout><ReportsPage /></DashboardLayout>
@@ -679,7 +663,6 @@ function App() {
                       </ProtectedRoute>
                     } />
 
-                    {/* ── Redirects ────────────────────────────────────── */}
                     <Route path="/" element={<Navigate to="/dashboard-redirect" />} />
                     <Route path="*" element={<Navigate to="/dashboard-redirect" />} />
 

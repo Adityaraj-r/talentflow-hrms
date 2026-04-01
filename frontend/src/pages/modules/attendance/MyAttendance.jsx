@@ -99,7 +99,6 @@ const statusConfig = {
   },
 };
 
-/* ── StatsCard — exact copy from AttendanceRecords.jsx ──────────────── */
 const StatsCard = ({ title, value, icon, variant }) => {
   const styles = {
     blue: {
@@ -249,7 +248,6 @@ const MyAttendance = () => {
   return (
     <div className="space-y-6 max-w-full">
 
-      {/* ── Page Header ─────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -279,7 +277,6 @@ const MyAttendance = () => {
         </div>
       </div>
 
-      {/* ── Top Stats Row ────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <StatsCard
           title="Working Days"
@@ -313,7 +310,6 @@ const MyAttendance = () => {
         />
       </div>
 
-      {/* ── Main Grid ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
         {/* Left Column */}

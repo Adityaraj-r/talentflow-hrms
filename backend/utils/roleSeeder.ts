@@ -181,7 +181,7 @@ export const seedRoles = async () => {
         console.log(`🌱 Creating missing role: ${roleDef.name}`);
         await Role.create(roleDef);
       } else {
-        console.log(`ℹ️ Role already exists (skipping): ${roleDef.name}`);
+        console.log(`Role already exists (skipping): ${roleDef.name}`);
         if (roleDef.name === 'ADMIN') {
           await Role.updateOne(
             { name: 'ADMIN' },
@@ -196,9 +196,9 @@ export const seedRoles = async () => {
       }
     }
     
-    console.log('✅ Role Seeder Check Complete.');
+    console.log('Role seeder check complete.');
   } catch (error) {
-    console.error('❌ Role seeding failed:', error);
+    console.error('Role seeding failed:', error);
   }
   
 };

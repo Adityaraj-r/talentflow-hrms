@@ -61,7 +61,6 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    // FIXED: use apiClient instead of hardcoded fetch
     // apiClient returns response.data → { success, token, data: { user } }
     const res = await apiClient.post('/auth/login', { email, password });
 

@@ -13,11 +13,9 @@ import apiClient from "@/services/apiClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
-
 const MONTHS = ["January","February","March","April","May","June",
                 "July","August","September","October","November","December"];
 
-// ── Role helpers (align with backend normalization) ─────────────────────────
 const normalizeRole = (role) => (role || "").toUpperCase().replace(/ /g, "_")
 const isPayrollOfficer = (role) => ["PAYROLL_OFFICER","PAYROLLOFFICER"].includes(normalizeRole(role))
 const isHRManager      = (role) => ["HR_MANAGER","HRMANAGER"].includes(normalizeRole(role))
@@ -27,9 +25,6 @@ const isAdmin          = (role) => ["ADMIN","SUPER_ADMIN","SUPERADMIN"].includes
 const isHROrPayroll    = (role) =>
   isPayrollOfficer(role) || isHRManager(role) || isFinanceManager(role) ||
   ["HR_OFFICER","HROFFICER"].includes(normalizeRole(role))
-
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 const PayrollProcessing = () => {
   const { user: authUser } = useAuth()
@@ -101,7 +96,6 @@ const PayrollProcessing = () => {
     }
   }, [month, year])
 
-  // ── Salary preview ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!selectedEmp) { setSalaryData(null); return }
     const fetchSalary = async () => {
@@ -175,7 +169,6 @@ const PayrollProcessing = () => {
 
   const preview = calculatePreview()
 
-  // ── Single generate ─────────────────────────────────────────────────────────
   const handleGenerate = async () => {
     if (!selectedEmp) { toast.error("Please select an employee"); return }
     if (!salaryData)  { toast.error("No salary structure found for this employee"); return }
@@ -206,7 +199,6 @@ const PayrollProcessing = () => {
     }
   }
 
-  // ── Bulk run ────────────────────────────────────────────────────────────────
   const handleBulkRun = async () => {
     if (pending.length === 0) { toast.error("No pending employees for this month"); return }
     setBulkProcessing(true)
@@ -229,7 +221,6 @@ const PayrollProcessing = () => {
     }
   }
 
-  // ── Status update ───────────────────────────────────────────────────────────
   const handleStatusUpdate = async (id, status, extra = {}) => {
     try {
       await payrollService.updatePayrollStatus(id, status, extra)
@@ -240,14 +231,16 @@ const PayrollProcessing = () => {
     }
   }
 
-  // ── Download payslip ────────────────────────────────────────────────────────
   const handleDownload = async (payrollId, employeeId) => {
     try {
-      const blob = await payrollService.downloadPayslip(payrollId, employeeId)
-      const url  = window.URL.createObjectURL(blob)
+      const { blob, filename } = await payrollService.downloadPayslipWithFilename(
+        payrollId,
+        employeeId
+      )
+      const url = window.URL.createObjectURL(blob)
       const link = document.createElement("a")
-      link.href  = url
-      link.setAttribute("download", `payslip-${employeeId}-${month}-${year}.pdf`)
+      link.href = url
+      link.setAttribute("download", filename)
       document.body.appendChild(link)
       link.click()
       link.remove()
@@ -257,7 +250,6 @@ const PayrollProcessing = () => {
     }
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
 
@@ -284,7 +276,6 @@ const PayrollProcessing = () => {
         </div>
       </div>
 
-      {/* ── Stats ──────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-4">
         <div className="rounded-xl border bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 p-5">
           <p className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Total Records</p>
@@ -302,7 +293,6 @@ const PayrollProcessing = () => {
         </div>
       </div>
 
-      {/* ── Tabs ───────────────────────────────────────────────────────────── */}
       <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
         {[
           { key: "run",     label: "Run Payroll",               show: isPayrollOfficer(userRole) },
@@ -324,7 +314,6 @@ const PayrollProcessing = () => {
         ))}
       </div>
 
-      {/* ── Tab: Run Payroll ───────────────────────────────────────────────── */}
       {activeTab === "run" && isPayrollOfficer(userRole) && (
         <div className="space-y-4">
 
@@ -487,7 +476,6 @@ const PayrollProcessing = () => {
         </div>
       )}
 
-      {/* ── Tab: Pending ───────────────────────────────────────────────────── */}
       {activeTab === "pending" && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -559,7 +547,6 @@ const PayrollProcessing = () => {
         </Card>
       )}
 
-      {/* ── Tab: Records ───────────────────────────────────────────────────── */}
       {activeTab === "records" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -599,7 +586,6 @@ const PayrollProcessing = () => {
   )
 }
 
-// ── RecordCard — expandable payroll record + workflow ─────────────────────────
 const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, onRefresh }) => {
   const [expanded, setExpanded] = useState(false)
   const [payRef, setPayRef] = useState("")
@@ -764,7 +750,6 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
         </div>
       </div>
 
-      {/* ── Expanded employee breakdown ── */}
       {expanded && (
         <div className="border-t animate-in fade-in slide-in-from-top-1 duration-200">
 
@@ -865,7 +850,6 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
   )
 }
 
-// ── PreviewRow ────────────────────────────────────────────────────────────────
 const PreviewRow = ({ label, value, color, prefix = "", bold = false }) => (
   <div className="flex justify-between items-center text-sm">
     <span className="text-muted-foreground">{label}</span>

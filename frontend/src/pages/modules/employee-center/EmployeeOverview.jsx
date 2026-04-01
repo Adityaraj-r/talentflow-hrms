@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter, Download, TrendingUp, TrendingDown, Minus, Award, Users } from "lucide-react";
-import apiClient from "@/services/apiClient";  // ✅ FIXED IMPORT
+import apiClient from "@/services/apiClient";
 
 const EmployeeOverview = () => {
   const [employeeData, setEmployeeData] = useState([]);
@@ -19,7 +19,7 @@ const EmployeeOverview = () => {
     const fetchEmployees = async () => {
       try {
         setLoading(true);
-        const response = await apiClient.get('/users');  // ✅ FIXED URL (no /api prefix)
+        const response = await apiClient.get('/users');
         const users = response.data.filter(user => user.role !== 'admin');
         setEmployeeData(users.map(user => ({
           id: user._id,

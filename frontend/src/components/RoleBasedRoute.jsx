@@ -16,7 +16,6 @@ const RoleBasedRoute = ({ children, allowedRoles, requiredPermission }) => {
   useEffect(() => {
     if (!requiredPermission || !user) return;
 
-
     const upper = userRoleStr.toUpperCase();
     if (
       upper === 'SUPER ADMIN' ||

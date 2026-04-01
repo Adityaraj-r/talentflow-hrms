@@ -1,4 +1,7 @@
+import axios from "axios";
 import apiClient from "./apiClient";
+
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
 export const getPayrollRecords = (month, year) =>
   apiClient.get("/payroll", { params: { month, year } });
@@ -31,6 +34,50 @@ export const downloadPayslip = (payrollId, employeeId) =>
   apiClient.get(`/payroll/${payrollId}/download/${employeeId}`, {
     responseType: "blob",
   });
+
+/** Blob download with server-provided filename (e.g. `{employeeCode}.pdf`). */
+export async function downloadPayslipWithFilename(payrollId, employeeId) {
+  const token = localStorage.getItem("token") || localStorage.getItem("idToken");
+  const res = await axios.get(
+    `${API_BASE}/payroll/${payrollId}/download/${employeeId}`,
+    {
+      responseType: "blob",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    }
+  );
+  if (res.status === 401) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("idToken");
+    localStorage.removeItem("userRole");
+    window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
+  if (res.status >= 400) {
+    let msg = "Download failed";
+    try {
+      const t = await res.data.text();
+      const j = JSON.parse(t);
+      msg = j.error || j.message || msg;
+    } catch {
+      msg = `HTTP ${res.status}`;
+    }
+    throw new Error(msg);
+  }
+  const cd = res.headers["content-disposition"] || "";
+  let filename = "payslip.pdf";
+  const mStar = cd.match(/filename\*=UTF-8''([^;\s]+)/i);
+  const mQuoted = cd.match(/filename="([^"]+)"/i);
+  if (mStar?.[1]) {
+    try {
+      filename = decodeURIComponent(mStar[1]);
+    } catch {
+      filename = mStar[1];
+    }
+  } else if (mQuoted?.[1]) {
+    filename = mQuoted[1];
+  }
+  return { blob: res.data, filename };
+}
 
 export const getPendingPayroll = (month, year) =>
   apiClient.get("/payroll/pending", { params: { month, year } });

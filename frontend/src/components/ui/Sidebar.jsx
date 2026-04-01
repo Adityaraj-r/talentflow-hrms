@@ -230,7 +230,6 @@ const Sidebar = ({
   const renderSidebarContent = () => {
     if (!userRole) return null
 
-    // ── ADMIN ────────────────────────────────────────────────────────
     if (userRole === "ADMIN" || userRole === "SUPER ADMIN") {
       return (
         <>
@@ -285,7 +284,6 @@ const Sidebar = ({
       )
     }
 
-    // ── EMPLOYEE ─────────────────────────────────────────────────────
     if (userRole === "EMPLOYEE") {
       return (
         <>
@@ -307,7 +305,6 @@ const Sidebar = ({
       )
     }
 
-    // ── HR MANAGER ───────────────────────────────────────────────────
     if (userRole === ROLES.HR_MANAGER) {
       return (
         <>
@@ -373,7 +370,6 @@ const Sidebar = ({
       )
     }
 
-    // ── HR OFFICER ───────────────────────────────────────────────────
     if (userRole === ROLES.HR_OFFICER) {
       return (
         <>
@@ -419,7 +415,6 @@ const Sidebar = ({
       )
     }
 
-    // ── CEO / COUNTRY MANAGER ────────────────────────────────────────
    if (userRole === ROLES.CEO || userRole === ROLES.COUNTRY_MANAGER) {
       return (
         <>
@@ -469,7 +464,6 @@ const Sidebar = ({
       );
     }
 
-    // ── DEPARTMENT MANAGER ───────────────────────────────────────────
     if (userRole === ROLES.DEPARTMENT_MANAGER) {
       return (
         <>
@@ -496,7 +490,6 @@ const Sidebar = ({
       )
     }
 
-    // ── DIRECT MANAGER ───────────────────────────────────────────────
     if (userRole === ROLES.DIRECT_MANAGER) {
       return (
         <>
@@ -522,7 +515,6 @@ const Sidebar = ({
       )
     }
 
-    // ── FINANCE MANAGER ────────────────────────────────────────────
     if (userRole === ROLES.FINANCE_MANAGER) {
       return (
         <>
@@ -544,7 +536,6 @@ const Sidebar = ({
       )
     }
 
-    // ── PAYROLL OFFICER ──────────────────────────────────────────────
     if (userRole === ROLES.PAYROLL_OFFICER) {
       return (
         <>
@@ -566,7 +557,6 @@ const Sidebar = ({
       )
     }
 
-    // ── PROJECT MANAGER ──────────────────────────────────────────────
     if (userRole === ROLES.PROJECT_MANAGER) {
       return (
         <>
@@ -583,7 +573,6 @@ const Sidebar = ({
       )
     }
 
-    // ── OPERATIONS MANAGER ───────────────────────────────────────────
     if (userRole === ROLES.OPERATIONS_MANAGER) {
       return (
         <>

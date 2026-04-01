@@ -39,7 +39,6 @@ const Header = ({ toggleSidebar }) => {
   const { theme, toggleTheme } = useTheme()
   const [notifications, setNotifications] = useState([])
 
-  //  OMNIBAR SEARCH STATE 
   const [searchQuery, setSearchQuery] = useState('')
   const [results, setResults] = useState({ modules: [], users: [] })
   const [isSearching, setIsSearching] = useState(false)
@@ -76,7 +75,6 @@ const Header = ({ toggleSidebar }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // HYBRID SEARCH API CALL
   useEffect(() => {
     if (!searchQuery.trim()) {
       setResults({ modules: [], users: [] })
@@ -122,7 +120,6 @@ const Header = ({ toggleSidebar }) => {
   const canUseSearch = ALLOWED_SEARCH_ROLES.includes(userRole);
 
   useEffect(() => {
-    // SECURITY: If the user doesn't have permission, do not attach the event listener!
     if (!canUseSearch) return; 
 
     const handleKeyDown = (e) => {
@@ -135,19 +132,17 @@ const Header = ({ toggleSidebar }) => {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [canUseSearch])
 
-// UPGRADED NOTIFICATION SYSTEM (With Anti-Spam Safety)
   const isFetchingRef = useRef(false);
 
   useEffect(() => {
     const fetchRealTimeNotifications = async () => {
-      // SAFETY VALVE: If the previous request is still hanging, abort this one!
       if (isFetchingRef.current) return;
       
       const firstName = user?.firstName || user?.name?.split(" ")[0] || ""
       const userRoleStr = (user?.role?.name || user?.role || "").toUpperCase()
       
       if (firstName) {
-        isFetchingRef.current = true; // Lock the fetcher
+        isFetchingRef.current = true;
         try {
           const execRoles = ["ADMIN", "CEO", "HR_MANAGER", "COUNTRY_MANAGER"]
           const endpoint = execRoles.includes(userRoleStr) ? "/transfers/all" : "/transfers/my-requests"
@@ -180,12 +175,11 @@ const Header = ({ toggleSidebar }) => {
             })
           }
         } catch (err) {
-          // If it times out, we catch it silently without breaking the app
           if (err.message !== "timeout of 10000ms exceeded") {
              console.error("Failed to fetch notifications:", err)
           }
         } finally {
-          isFetchingRef.current = false; // Unlock the fetcher
+          isFetchingRef.current = false;
         }
       }
     }
@@ -223,7 +217,6 @@ const Header = ({ toggleSidebar }) => {
         <h1 className="text-lg font-bold text-foreground">HRMS System</h1>
       </div>
 
-      {/*  OMNIBAR SEARCH UI (CONDITIONALLY RENDERED) */}
       {canUseSearch && (
         <div className="hidden md:flex flex-1 max-w-md mx-6 relative" ref={searchRef}>
           <div className="relative w-full">

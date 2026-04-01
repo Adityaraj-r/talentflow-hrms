@@ -17,7 +17,6 @@ export const getLast12Months = () => {
   return months;
 };
 
-
 export const getMonthsBetween = (startDate, endDate) => {
   if (!startDate || !endDate) return [];
 

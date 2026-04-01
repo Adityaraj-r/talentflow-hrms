@@ -154,9 +154,7 @@ async function optionalMongoAndAttendance() {
 
 function printManualChecklist() {
   console.log(`
-────────────────────────────────────────────────────────────
 Manual QA (with API + UI running)
-────────────────────────────────────────────────────────────
 Auth: obtain JWT for each role (Payroll Officer, Finance Manager, HR Manager, CEO, Employee).
 
 API (base /api/payroll, Bearer token):
@@ -177,7 +175,6 @@ UI:
 
 Env:
   PAYROLL_DISBURSE_SECRET — if set, disburse needs header x-payroll-disburse-confirmation
-────────────────────────────────────────────────────────────
 `)
 }
 

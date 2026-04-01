@@ -42,9 +42,9 @@ export const sendWelcomeEmail = async (
         };
 
         await transporter.sendMail(mailOptions);
-        console.log(`✅ Welcome email sent successfully to ${personalEmail}`);
+        console.log(`Welcome email sent to ${personalEmail}`);
     } catch (error) {
-        console.error('❌ Error sending welcome email:', error);
+        console.error('Error sending welcome email:', error);
 
     }
 };

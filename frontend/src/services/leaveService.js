@@ -15,7 +15,6 @@ const leaveService = {
   },
 
   updateLeaveStatus: async (id, status, rejectionReason = "") => {
-    // FIXED: Swapped adminComment to rejectionReason to perfectly match the backend model
     return await apiClient.patch(`/leaves/${id}/status`, { status, rejectionReason });
   }
 };

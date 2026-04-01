@@ -117,7 +117,6 @@ export const bulkUploadUsers = async (req: AuthRequest, res: Response): Promise<
       if (processedUsers.length > 0) {
         const insertedUsers = await User.insertMany(processedUsers, { session });
 
-        // ── Create Employee doc + link employeeId for each user ──────────
         for (const insertedUser of insertedUsers) {
           const empCount = await Employee.countDocuments().session(session);
           const employeeCode = `EMP-${String(empCount + 1).padStart(4, '0')}`;
@@ -151,7 +150,7 @@ export const bulkUploadUsers = async (req: AuthRequest, res: Response): Promise<
             { session }
           );
         }
-        // ─────────────────────────────────────────────────────────────────
+
       }
 
       await createLog(
@@ -376,13 +375,11 @@ export const toggleUserStatus = async (req: AuthRequest, res: Response): Promise
     user.isActive = !user.isActive;
     await user.save();
 
-    // ── Sync Employee status ─────────────────────────────────────────────
     if (user.employeeId) {
       await Employee.findByIdAndUpdate(user.employeeId, {
         status: user.isActive ? 'Active' : 'Inactive',
       });
     }
-    // ────────────────────────────────────────────────────────────────────
 
     const action = user.isActive ? 'Activate User' : 'Deactivate User';
     await createLog(

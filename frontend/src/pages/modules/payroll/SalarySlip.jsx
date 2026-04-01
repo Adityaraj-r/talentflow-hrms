@@ -44,7 +44,6 @@ const SalarySlip = () => {
   )
 }
 
-// ─── HR VIEW — search any employee's slip ───────────────────────────────────
 const HRSlipView = () => {
   const [employees, setEmployees]   = useState([])
   const [selectedUser, setSelectedUser] = useState("")
@@ -92,14 +91,18 @@ const HRSlipView = () => {
     if (!payrollId || !selectedUser) return
     setDownloading(true)
     try {
-      const res = await payrollService.downloadPayslip(payrollId, selectedUser)
-      const url = window.URL.createObjectURL(new Blob([res.data]))
-      const a   = document.createElement("a")
-      a.href    = url
-      a.setAttribute("download", `payslip-${selectedUser}-${month}-${year}.pdf`)
+      const { blob, filename } = await payrollService.downloadPayslipWithFilename(
+        payrollId,
+        selectedUser
+      )
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.setAttribute("download", filename)
       document.body.appendChild(a)
       a.click()
       a.remove()
+      window.URL.revokeObjectURL(url)
       toast.success("Payslip downloaded")
     } catch {
       toast.error("Failed to download payslip")
@@ -179,7 +182,6 @@ const HRSlipView = () => {
   )
 }
 
-// ─── EMPLOYEE VIEW — own slips only ─────────────────────────────────────────
 const EmployeeSlipView = ({ userId }) => {
   const [records, setRecords]   = useState([])
   const [loading, setLoading]   = useState(true)
@@ -212,15 +214,18 @@ const EmployeeSlipView = ({ userId }) => {
   const handleDownload = async (payrollId) => {
     setDownloading(true)
     try {
-      const res = await payrollService.downloadPayslip(payrollId, userId)
-      const url = window.URL.createObjectURL(new Blob([res.data]))
-      const a   = document.createElement("a")
-      a.href    = url
-      const record = records.find(r => r._id === payrollId)
-      a.setAttribute("download", `payslip-${record?.month}-${record?.year}.pdf`)
+      const { blob, filename } = await payrollService.downloadPayslipWithFilename(
+        payrollId,
+        userId
+      )
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.setAttribute("download", filename)
       document.body.appendChild(a)
       a.click()
       a.remove()
+      window.URL.revokeObjectURL(url)
       toast.success("Payslip downloaded")
     } catch {
       toast.error("Failed to download payslip")
@@ -316,7 +321,6 @@ const EmployeeSlipView = ({ userId }) => {
   )
 }
 
-// ─── SHARED SLIP CARD ────────────────────────────────────────────────────────
 const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
   const gross = slip.basic + slip.hra + (slip.allowances || 0) + (slip.bonus || 0)
 

@@ -120,8 +120,6 @@ export const getRequisitionHistory = async (
   }
 };
 
-
-
 export const approveRequisition = async (
   req: Request,
   res: Response
@@ -168,7 +166,6 @@ export const approveRequisition = async (
     res.status(500).json({ message: error.message });
   }
 };
-
 
 export const rejectRequisition = async (
   req: Request,

@@ -79,7 +79,7 @@ export async function seedPayrollSampleData(): Promise<void> {
   }
 
   if (!lines.length) {
-    console.log('ℹ️ Payroll sample seed skipped — no eligible employees with salary.basic.');
+    console.log('Payroll sample seed skipped: no eligible employees with salary.basic.');
     return;
   }
 
@@ -89,9 +89,9 @@ export async function seedPayrollSampleData(): Promise<void> {
     runKind: 'regular',
     employees: lines,
     status: 'Verified',
-    generatedBy: 'system-sample-seed',
+    generatedBy: 'system',
     generatedAt: new Date(),
-    verifiedBy: 'system-sample-seed',
+    verifiedBy: 'system',
     verifiedAt: new Date(),
     totalGross: 0,
     totalNet: 0,
@@ -101,7 +101,5 @@ export async function seedPayrollSampleData(): Promise<void> {
   recalcTotals(payroll, settings);
   await payroll.save();
 
-  console.log(
-    `✅ Seeded sample payroll for ${month} ${year} (${lines.length} employees) — finance dashboard`
-  );
+  console.log(`Seeded sample payroll for ${month} ${year} (${lines.length} employees).`);
 }

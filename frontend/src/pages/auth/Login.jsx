@@ -135,7 +135,6 @@ const Login = () => {
         )}
       </button>
 
-
       {/* Content Wrapper */}
       <div className="flex h-full">
         
@@ -155,7 +154,6 @@ const Login = () => {
               </div>
             </div>
 
-
             {/* Hero Content */}
             <div className="space-y-6 mb-8">
               <div>
@@ -169,7 +167,6 @@ const Login = () => {
                   Streamline HR operations with our all-in-one platform designed for modern enterprises.
                 </p>
               </div>
-
 
               {/* Feature Highlights */}
               <div className="grid grid-cols-2 gap-3 mt-6">
@@ -202,7 +199,6 @@ const Login = () => {
                 ))}
               </div>
 
-
             {/* Stats Footer */}
           <div className="relative z-8 grid grid-cols-4 gap-6 pt-4 border-t border-white/30 dark:border-white/10">
             {stats.map((stat, index) => (
@@ -215,7 +211,6 @@ const Login = () => {
             </div>
           </div>
         </div>
-
 
         {/* Right Side - Login Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-8 relative overflow-hidden">
@@ -236,7 +231,6 @@ const Login = () => {
                 </div>
               </div>
 
-
               {/* Form Header */}
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
@@ -246,7 +240,6 @@ const Login = () => {
                   Sign in to access your dashboard and manage your workforce
                 </p>
               </div>
-
 
               {/* Login Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -279,7 +272,6 @@ const Login = () => {
                   </div>
                 </div>
 
-
                 {/* Password Field */}
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
@@ -311,7 +303,6 @@ const Login = () => {
                     <div className="absolute inset-0 rounded-lg bg-linear-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"></div>
                   </div>
                 </div>
-
 
                 {/* Remember & Forgot */}
                 <div className="flex items-center justify-between text-sm pt-1">

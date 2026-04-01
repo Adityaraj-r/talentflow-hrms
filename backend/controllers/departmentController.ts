@@ -33,7 +33,6 @@ export const getAllDepartments = async (req: Request, res: Response) => {
   }
 };
 
-
 export const getDepartmentById = async (req: Request, res: Response) => {
   try {
     const department = await Department.findById(req.params.id)
@@ -66,7 +65,6 @@ export const updateDepartment = async (req: Request, res: Response) => {
   }
 };
 
-
 export const deleteDepartment = async (req: Request, res: Response) => {
   try {
     const department = await Department.findById(req.params.id);
@@ -82,7 +80,6 @@ export const deleteDepartment = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
-
 
 export const addEmployeeToDepartment = async (req: Request, res: Response) => {
   try {
@@ -111,7 +108,6 @@ export const addEmployeeToDepartment = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
-
 
 export const removeEmployeeFromDepartment = async (req: Request, res: Response) => {
   try {

@@ -6,7 +6,6 @@ const router = express.Router();
 
 router.get('/company-info', getCompanyInfo);
 
-
 router.use(protect as any);
 
 router.get('/settings', getSettings);

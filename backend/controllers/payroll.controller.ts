@@ -7,7 +7,8 @@ import Ticket from "../models/ticket.model"
 import Indemnity from "../models/indemnity.model"
 import User from "../models/User.model"
 import Employee from "../models/Employee.model"
-import { generatePayslip } from "../utils/payslip.generator"
+import Settings from "../models/Settings.model"
+import { generatePayslip, computePayslipYearToDate } from "../utils/payslip.generator"
 import { getOrCreatePayrollSettings } from "../models/payrollCompanySettings.model"
 import {
   computeEmployeePayrollLine,
@@ -24,8 +25,6 @@ const isHRManager = (role: string) => norm(role) === "HRMANAGER"
 const isFinanceManager = (role: string) => norm(role) === "FINANCEMANAGER"
 const isCEO = (role: string) => norm(role) === "CEO"
 const isAdmin = (role: string) => ["ADMIN", "SUPERADMIN"].includes(norm(role))
-
-// ─── SETTINGS ────────────────────────────────────────────────────────────────
 
 export const getPayrollSettings = async (req: AuthRequest, res: Response) => {
   try {
@@ -76,8 +75,6 @@ export const updatePayrollSettings = async (req: AuthRequest, res: Response) => 
   }
 }
 
-// ─── PREVIEW (no persist) ────────────────────────────────────────────────────
-
 export const calculatePayrollPreview = async (req: AuthRequest, res: Response) => {
   try {
     const { month, year, userId, adjustments } = req.body
@@ -112,8 +109,6 @@ function recalcTotals(payroll: InstanceType<typeof Payroll>, settings: Awaited<R
   payroll.totalNet = payroll.employees.reduce((s, e) => s + e.netPay, 0)
   payroll.ceoApprovalRequired = payroll.totalNet > (settings.ceoApprovalThresholdTotalNet || 0)
 }
-
-// ─── GENERATE ────────────────────────────────────────────────────────────────
 
 export const generatePayroll = async (req: AuthRequest, res: Response) => {
   try {
@@ -261,8 +256,6 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
   }
 }
 
-// ─── PENDING (eligible only) ────────────────────────────────────────────────
-
 export const getPendingPayroll = async (req: AuthRequest, res: Response) => {
   try {
     const month = (req.query.month as string) || new Date().toLocaleString("default", { month: "long" })
@@ -327,8 +320,6 @@ export const getPendingPayroll = async (req: AuthRequest, res: Response) => {
   }
 }
 
-// ─── RECORDS & ANALYTICS ─────────────────────────────────────────────────────
-
 export const getPayrollRecords = async (req: AuthRequest, res: Response) => {
   try {
     if (norm(req.user?.role || "") === "EMPLOYEE")
@@ -370,8 +361,6 @@ export const getPayrollAnalyticsSummary = async (req: AuthRequest, res: Response
     res.status(500).json({ success: false, error: err.message })
   }
 }
-
-// ─── WORKFLOW ────────────────────────────────────────────────────────────────
 
 export const patchPayrollWorkflow = async (req: AuthRequest, res: Response) => {
   try {
@@ -514,8 +503,6 @@ export const updatePayrollStatus = async (req: AuthRequest, res: Response) => {
   }
 }
 
-// ─── BANK CSV ────────────────────────────────────────────────────────────────
-
 export const exportPayrollBankCsv = async (req: AuthRequest, res: Response) => {
   try {
     const payroll = await Payroll.findById(req.params.id)
@@ -562,10 +549,21 @@ export const exportPayrollBankCsv = async (req: AuthRequest, res: Response) => {
   }
 }
 
-// ─── SLIPS ───────────────────────────────────────────────────────────────────
-
 const slipVisible = (status: string) =>
   EMPLOYEE_SLIP_VISIBLE_STATUSES.includes(status as PayrollRunStatus)
+
+function formatEmployeeAddress(emp: Record<string, unknown> | null | undefined): string {
+  if (!emp?.address || typeof emp.address !== "object") return ""
+  const a = emp.address as Record<string, string | undefined>
+  return [a.street, a.city, a.state, a.postalCode, a.country].filter(Boolean).join(", ")
+}
+
+function payslipCurrencySymbol(settingsCur?: string, empCur?: string): string {
+  const c = String(empCur || settingsCur || "INR").toUpperCase()
+  if (c === "USD") return "$"
+  if (c === "EUR") return "€"
+  return "₹"
+}
 
 export const getSalarySlip = async (req: AuthRequest, res: Response) => {
   try {
@@ -600,7 +598,13 @@ export const getSalarySlip = async (req: AuthRequest, res: Response) => {
 
 export const downloadPayslip = async (req: AuthRequest, res: Response) => {
   try {
-    const { payrollId, employeeId } = req.params
+    const rawPid = req.params.payrollId
+    const rawEid = req.params.employeeId
+    const payrollId = typeof rawPid === "string" ? rawPid : rawPid?.[0]
+    const employeeId = typeof rawEid === "string" ? rawEid : rawEid?.[0]
+    if (!payrollId || !employeeId)
+      return res.status(400).json({ success: false, error: "Invalid payroll or employee id" })
+
     const userRole = req.user?.role?.toUpperCase() || ""
     const userId = req.user?.id
 
@@ -616,7 +620,58 @@ export const downloadPayslip = async (req: AuthRequest, res: Response) => {
     const emp = payroll.employees.find(e => e.employeeId === employeeId)
     if (!emp) return res.status(404).json({ success: false, error: "Employee not found in payroll" })
 
-    generatePayslip(res, payroll, emp as any)
+    const settingsDoc = await Settings.findOne().lean()
+    const paySettings = await getOrCreatePayrollSettings()
+    const user = await User.findById(employeeId).lean()
+    const employee = user?.employeeId
+      ? await Employee.findById(user.employeeId).lean()
+      : null
+
+    const period = getPeriodBounds(payroll.month, payroll.year)
+    const ytd = await computePayslipYearToDate(payroll.year, payroll.month, employeeId)
+
+    const employerName =
+      (settingsDoc as { companyName?: string } | null)?.companyName ||
+      process.env.PAYSLIP_COMPANY_NAME ||
+      "Company"
+    const employerAddress =
+      (settingsDoc as { address?: string } | null)?.address ||
+      process.env.PAYSLIP_COMPANY_ADDRESS ||
+      ""
+
+    const employeeName = user
+      ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Employee"
+      : "Employee"
+    const codeStr = employee?.employeeCode || employeeId
+    const fileBase =
+      String(codeStr)
+        .replace(/[^\w.-]/g, "_")
+        .replace(/^\.+|\.+$/g, "") || "payslip"
+
+    generatePayslip(res, {
+      payroll: {
+        month: payroll.month,
+        year: payroll.year,
+        disbursedAt: payroll.disbursedAt,
+        generatedAt: payroll.generatedAt,
+      },
+      slip: emp as any,
+      period,
+      employerName,
+      employerAddress,
+      employeeName,
+      employeeCode: String(codeStr),
+      position: employee?.designation || employee?.role || "—",
+      employeeAddress: formatEmployeeAddress(employee) || "—",
+      paymentMethod: employee?.bankDetails?.accountNumber ? "Bank Transfer" : "—",
+      currencySymbol: payslipCurrencySymbol(
+        (settingsDoc as { currency?: string } | null)?.currency,
+        employee?.salary?.currency
+      ),
+      defaultMonthWorkingHours: paySettings.defaultMonthWorkingHours || 240,
+      ytd,
+      fileBaseName: fileBase,
+    })
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message })
   }
@@ -655,8 +710,6 @@ export const getEmployeePayrollHistory = async (req: AuthRequest, res: Response)
     res.status(500).json({ success: false, error: err.message })
   }
 }
-
-// ─── TICKETS ─────────────────────────────────────────────────────────────────
 
 export const getTickets = async (req: AuthRequest, res: Response) => {
   try {
@@ -730,8 +783,6 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ success: false, error: err.message })
   }
 }
-
-// ─── INDEMNITY (unchanged logic) ─────────────────────────────────────────────
 
 export const calculateIndemnity = async (req: AuthRequest, res: Response) => {
   try {

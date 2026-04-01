@@ -17,7 +17,6 @@ const LeaveApprovals = () => {
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // FIXED: Unified state variable name
   const [statusFilter, setStatusFilter] = useState("Pending");
   const [rejectingId, setRejectingId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
