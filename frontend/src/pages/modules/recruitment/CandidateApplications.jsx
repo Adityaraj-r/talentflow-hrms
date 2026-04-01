@@ -111,7 +111,6 @@ const CandidateApplications = () => {
 
   const { total, shortlisted, rejected, applied } = stats
 
-
   return (
 
     <div className="p-8">
@@ -131,7 +130,6 @@ const CandidateApplications = () => {
         </div>
 
       </div>
-
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
 
@@ -153,7 +151,6 @@ const CandidateApplications = () => {
 
         </div>
 
-
         <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-6 flex justify-between items-center">
 
           <div>
@@ -172,7 +169,6 @@ const CandidateApplications = () => {
 
         </div>
 
-
         <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-2xl p-6 flex justify-between items-center">
 
           <div>
@@ -190,7 +186,6 @@ const CandidateApplications = () => {
           <UserCheck className="text-purple-600"/>
 
         </div>
-
 
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-6 flex justify-between items-center">
 
@@ -211,7 +206,6 @@ const CandidateApplications = () => {
         </div>
 
       </div>
-
 
       <input
         type="text"
@@ -271,7 +265,6 @@ const CandidateApplications = () => {
               </span>
 
             </div>
-
 
             <div className="mt-5 flex gap-3 flex-wrap">
 

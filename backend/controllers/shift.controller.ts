@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Shift from "../models/Shift.model";
+import Shift from "../models/shift.model";
 import User from "../models/User.model";
 
 export const createShift = async (req: Request, res: Response) => {

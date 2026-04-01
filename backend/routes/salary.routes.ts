@@ -13,7 +13,6 @@ const HR_ROLES = [
   "ADMIN", "SUPER_ADMIN", "SUPER ADMIN", "SUPERADMIN"
 ]
 
-// ── Resilient employee resolver — handles null + broken links ─────────────────
 const resolveEmployee = async (user: any, selectFields = "salary employeeCode") => {
   let employee = null
 
@@ -26,16 +25,13 @@ const resolveEmployee = async (user: any, selectFields = "salary employeeCode") 
     employee = await Employee.findOne({ email: user.email }).select(selectFields)
     if (employee) {
       await User.findByIdAndUpdate(user._id, { employeeId: employee._id })
-      console.log(`[salary.routes] Auto-healed employeeId link for ${user.email}`)
+      console.log(`[salary.routes] Updated employeeId for ${user.email}`)
     }
   }
 
   return employee
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
-
-// ── GET /:userId — HR views any employee's salary ────────────────────────────
 router.get("/:userId", authorize(...HR_ROLES), async (req, res) => {
   try {
     const user = await User.findById(req.params.userId)
@@ -68,8 +64,6 @@ router.get("/:userId", authorize(...HR_ROLES), async (req, res) => {
   }
 })
 
-
-// ── GET /:userId/self — Employee views own salary ─────────────────────────────
 router.get("/:userId/self", authorize("EMPLOYEE", ...HR_ROLES), async (req, res) => {
   try {
     const requestingUser = (req as any).user
@@ -119,8 +113,6 @@ router.get("/:userId/self", authorize("EMPLOYEE", ...HR_ROLES), async (req, res)
   }
 })
 
-
-// ── PUT /:userId — HR creates/updates salary structure ────────────────────────
 router.put("/:userId", authorize(...HR_ROLES), async (req, res) => {
   try {
     const user = await User.findById(req.params.userId)
@@ -145,7 +137,7 @@ router.put("/:userId", authorize(...HR_ROLES), async (req, res) => {
       employee = await Employee.findOne({ email: user.email })
       if (employee) {
         await User.findByIdAndUpdate(user._id, { employeeId: employee._id })
-        console.log(`[salary.routes] Auto-healed employeeId link for ${user.email}`)
+        console.log(`[salary.routes] Updated employeeId for ${user.email}`)
       }
     }
 
@@ -176,6 +168,5 @@ router.put("/:userId", authorize(...HR_ROLES), async (req, res) => {
     res.status(500).json({ success: false, error: err.message })
   }
 })
-
 
 export default router

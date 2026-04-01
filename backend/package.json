@@ -7,7 +7,9 @@
     "dev": "ts-node-dev --respawn --transpile-only server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "migrate:employees": "ts-node-dev --transpile-only scripts/migrateEmployees.ts"
+    "migrate:employees": "ts-node-dev --transpile-only scripts/migrateEmployees.ts",
+    "check:payroll": "ts-node --transpile-only scripts/payroll-module-check.ts",
+    "seed:payroll-sample": "ts-node --transpile-only scripts/runSeedPayrollSample.ts"
   },
   "keywords": [
     "hrms",
@@ -46,6 +48,7 @@
     "@types/nodemailer": "^7.0.11",
     "@types/pdfkit": "^0.17.5",
     "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.2"
   }

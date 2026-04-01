@@ -122,7 +122,6 @@
 //   }
 // };
 
-
 // /* =========================================================
 //    WORKFORCE TREND
 // ========================================================= */
@@ -187,7 +186,6 @@
 //     res.status(500).json({ success: false, message: "Server error" });
 //   }
 // };
-
 
 // /* =========================================================
 //    ATTENDANCE TREND
@@ -270,7 +268,6 @@
 //   }
 // };
 
-
 // /* =========================================================
 //    DEPARTMENT DISTRIBUTION
 // ========================================================= */
@@ -303,7 +300,6 @@
 //   }
 // };
 
-
 // /* =========================================================
 //    LEAVE BREAKDOWN
 // ========================================================= */
@@ -334,7 +330,6 @@
 //     res.status(500).json({ success: false, message: "Server error" });
 //   }
 // };
-
 
 // /* =========================================================
 //    EMPLOYEE PERFORMANCE TABLE
@@ -406,7 +401,6 @@
 //     });
 //   }
 // };
-
 
 // export const getDepartmentWorkingHours = async (
 //   req: Request,
@@ -493,7 +487,7 @@
 import { Request, Response } from "express";
 import Employee from "../models/Employee.model";
 import Attendance from "../models/Attendance.model";
-import Leave from "../models/Leave.model";
+import Leave from "../models/leave.model";
 
 /* =========================================================
    HELPER: Build Employee Filter

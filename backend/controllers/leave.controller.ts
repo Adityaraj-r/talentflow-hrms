@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import Leave from "../models/Leave.model";
+import Leave from "../models/leave.model";
 
 export const applyLeave = async (req: Request, res: Response) => {
   try {

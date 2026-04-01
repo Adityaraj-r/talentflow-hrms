@@ -36,7 +36,6 @@ export const EC_PERMISSIONS = {
   },
 };
 
-
 export const hasECAccess = (role, submodule, action) => {
   const mod = EC_PERMISSIONS[submodule];
   if (!mod) return false;

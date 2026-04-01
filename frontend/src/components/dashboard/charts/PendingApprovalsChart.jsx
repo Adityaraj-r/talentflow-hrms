@@ -14,7 +14,7 @@ export const PendingApprovalsChart = ({ data }) => {
         navigate('/digital-locker');
         break;
       case 'Transfers':
-        navigate('/employee-transfer');
+        navigate('/employee-center/employee-transfer');
         break;
       case 'Requisitions':
         navigate('/staff-requisition');
@@ -51,8 +51,7 @@ export const PendingApprovalsChart = ({ data }) => {
               contentStyle={{ borderRadius: '8px', border: 'none', backgroundColor: '#1e293b', color: '#fff' }}
               itemStyle={{ color: '#fff', fontWeight: 'bold' }}
             />
-            
-            {/* 2. Add the onClick handler and style it so the cursor turns into a pointer */}
+
             <Bar 
               dataKey="count" 
               radius={[0, 4, 4, 0]} 

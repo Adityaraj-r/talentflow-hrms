@@ -1,5 +1,5 @@
 import express from "express"
-import { applyJob, getApplications, updateApplicationStatus, getApplicationStatus } from "../controllers/application.controller"
+import { applyJob, getApplications, updateApplicationStatus, getPublicApplicationStatus } from "../controllers/application.controller"
 import upload from "../middleware/upload"
 import { protect } from "../middleware/auth.middleware"
 import { authorizeByMatrix, MODULE_KEYS } from "../middleware/role.middleware"
@@ -12,7 +12,7 @@ router.post(
   applyJob
 )
 
-router.get("/status/:email", getApplicationStatus)
+router.get("/public-status/:id", getPublicApplicationStatus)
 
 router.use(protect as any)
 

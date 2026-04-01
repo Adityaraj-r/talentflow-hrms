@@ -20,7 +20,6 @@ const Careers = () => {
 
   },[dark])
 
-
   const fetchJobs = async () => {
 
     try{
@@ -40,7 +39,6 @@ const Careers = () => {
   useEffect(()=>{
     fetchJobs()
   },[])
-
 
   return(
     
@@ -68,7 +66,6 @@ const Careers = () => {
 
           </div>
 
-
           {/* Dark Mode Toggle */}
 
           <button
@@ -79,8 +76,6 @@ const Careers = () => {
           </button>
 
         </div>
-
-
 
         {/* LARGE JOB BOARD CARD */}
 
@@ -138,7 +133,6 @@ const Careers = () => {
                 </div>
 
               </div>
-
 
               {/* Apply Button */}
 

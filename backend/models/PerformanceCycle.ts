@@ -46,7 +46,6 @@ const PerformanceCycleSchema = new Schema<IPerformanceCycle>(
     endDate: {
       type: Date,
       required: [true, 'End date is required']
-      // ✅ REMOVED: Date validation - now handled in controller for better update support
     },
     status: {
       type: String,

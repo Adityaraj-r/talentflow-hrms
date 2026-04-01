@@ -27,7 +27,7 @@ const Sidebar = ({
 
   const [openGroups, setOpenGroups] = useState({
     employeeCenter: false, recruitment: false, timeAttendance: false,
-    payroll: false, administration: false,
+    payroll: false, payrollOperations: true, administration: false,
     appraisal: false, disciplinaryActions: false, documentRequests: false,
   })
 
@@ -39,7 +39,7 @@ const Sidebar = ({
     if (isCollapsed) {
       setOpenGroups({
         employeeCenter: false, recruitment: false, timeAttendance: false,
-        payroll: false, administration: false, appraisal: false,
+        payroll: false, payrollOperations: false, administration: false, appraisal: false,
         disciplinaryActions: false, documentRequests: false,
       })
     }
@@ -55,15 +55,21 @@ const Sidebar = ({
       path === "/employee/dashboard"
 
     if (isDashboardPath) {
-      setOpenGroups({
-        employeeCenter: false, recruitment: false, timeAttendance: false,
-        payroll: false, administration: false, appraisal: false,
-        disciplinaryActions: false, documentRequests: false,
-      })
+      setOpenGroups((prev) => ({
+        employeeCenter: false,
+        recruitment: false,
+        timeAttendance: false,
+        payroll: prev.payroll,
+        payrollOperations: prev.payrollOperations,
+        administration: false,
+        appraisal: false,
+        disciplinaryActions: false,
+        documentRequests: false,
+      }))
       return
     }
 
-    setOpenGroups({
+    setOpenGroups((prev) => ({
       employeeCenter:
         path.startsWith("/employee-center") ||
         path.startsWith("/employee-center/onboarding") ||
@@ -72,10 +78,8 @@ const Sidebar = ({
 
       timeAttendance: path.startsWith("/attendance") || path.includes("/employee/attendance"),
 
-      payroll:
-        path.startsWith("/payroll") ||
-        path.startsWith("/tickets") ||
-        path.startsWith("/indemnity"),
+      payroll: prev.payroll,
+      payrollOperations: prev.payrollOperations,
 
       administration:
         path.startsWith("/settings") ||
@@ -94,7 +98,7 @@ const Sidebar = ({
       documentRequests: path.includes("document-requests"),
       disciplinaryActions: path.includes("disciplinary-actions"),
       appraisal: path.includes("/appraisal") || path.includes("/role/hr_manager/review"),
-    })
+    }))
   }, [location.pathname, isCollapsed])
 
   const canSee = (moduleKey) => {
@@ -128,7 +132,8 @@ const Sidebar = ({
   }
 
   const getPayrollLabel = () => {
-    if ([ROLES.HR_MANAGER, ROLES.HR_OFFICER, ROLES.PAYROLL_OFFICER].includes(userRole)) return "Manage Payroll"
+    if ([ROLES.HR_MANAGER, ROLES.HR_OFFICER, ROLES.PAYROLL_OFFICER, ROLES.FINANCE_MANAGER].includes(userRole))
+      return "Manage Payroll"
     return "Payroll"
   }
 
@@ -159,10 +164,16 @@ const Sidebar = ({
     </Link>
   )
 
-  const SidebarGroup = ({ id, icon: Icon, label, children }) => {
-    const isActive = children && Array.isArray(children)
-      ? children.some(child => child?.props?.to === location.pathname)
-      : children?.props?.to === location.pathname
+  const pathMatchesPrefix = (path, prefix) =>
+    path === prefix || path.startsWith(`${prefix}/`)
+
+  const SidebarGroup = ({ id, icon: Icon, label, children, activePathPrefixes }) => {
+    const path = location.pathname
+    const isActive = activePathPrefixes?.length
+      ? activePathPrefixes.some((p) => pathMatchesPrefix(path, p))
+      : children && Array.isArray(children)
+        ? children.some((child) => child?.props?.to === path)
+        : children?.props?.to === path
 
     return (
       <div className="space-y-1">
@@ -196,6 +207,33 @@ const Sidebar = ({
     )
   }
 
+  const SidebarNestedGroup = ({ id, label, children, isNestedActive }) => {
+    const path = location.pathname
+    const rowActive = typeof isNestedActive === "function" ? isNestedActive(path) : false
+    return (
+      <li className="list-none">
+        <button
+          type="button"
+          onClick={() => toggleGroup(id)}
+          className={cn(
+            "flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+            rowActive
+              ? "bg-primary/10 text-primary font-medium"
+              : "text-muted-foreground hover:bg-accent hover:text-foreground"
+          )}
+        >
+          <span className="flex-1 truncate text-left">{label}</span>
+          {openGroups[id]
+            ? <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+            : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
+        </button>
+        {openGroups[id] && (
+          <ul className="ml-1 mt-0.5 space-y-1 border-l border-border pl-2">{children}</ul>
+        )}
+      </li>
+    )
+  }
+
   const SubLink = ({ to, label, icon: Icon }) => (
     <li>
       <Link
@@ -213,14 +251,67 @@ const Sidebar = ({
     </li>
   )
 
-  const PayrollGroup = () => canSee("payroll") ? (
-    <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
-      <SubLink to="/payroll" label="Payroll Processing" />
-      <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
-      <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
-      <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
-    </SidebarGroup>
-  ) : null
+  const payrollOpsNestedActiveFull = (p) =>
+    p === "/payroll" || p.startsWith("/tickets") || p.startsWith("/indemnity")
+
+  const payrollOpsNestedActiveTeam = (p) => p === "/payroll"
+
+  const payrollOpsNestedActiveExec = (p) => p.startsWith("/payroll")
+
+  const FullPayrollSidebarGroup = ({ label }) =>
+    canSee("payroll") ? (
+      <SidebarGroup
+        id="payroll"
+        icon={DollarSign}
+        label={label}
+        activePathPrefixes={["/payroll", "/tickets", "/indemnity"]}
+      >
+        <SidebarNestedGroup
+          id="payrollOperations"
+          label="Payroll operations"
+          isNestedActive={payrollOpsNestedActiveFull}
+        >
+          <SubLink to="/payroll" label="Payroll Processing" />
+          <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
+          <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
+        </SidebarNestedGroup>
+        <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
+      </SidebarGroup>
+    ) : null
+
+  const HRPayrollSidebarGroup = () =>
+    canSee("payroll") ? (
+      <SidebarGroup
+        id="payroll"
+        icon={DollarSign}
+        label={getPayrollLabel()}
+        activePathPrefixes={["/payroll", "/tickets", "/indemnity"]}
+      >
+        <SidebarNestedGroup
+          id="payrollOperations"
+          label="Payroll operations"
+          isNestedActive={payrollOpsNestedActiveFull}
+        >
+          <SubLink to="/payroll" label="Payroll Processing" />
+          <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
+          <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
+        </SidebarNestedGroup>
+      </SidebarGroup>
+    ) : null
+
+  const TeamPayrollSidebar = () =>
+    canSee("payroll") ? (
+      <SidebarGroup id="payroll" icon={DollarSign} label="Payroll (team)" activePathPrefixes={["/payroll"]}>
+        <SidebarNestedGroup
+          id="payrollOperations"
+          label="Payroll operations"
+          isNestedActive={payrollOpsNestedActiveTeam}
+        >
+          <SubLink to="/payroll" label="Payroll Processing" />
+        </SidebarNestedGroup>
+        <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
+      </SidebarGroup>
+    ) : null
 
   const LeaveLink = () => canSee("attendance")
     ? <SidebarLink to={getLeaveManagementPath()} icon={Calendar} label="Leave Management" />
@@ -229,7 +320,6 @@ const Sidebar = ({
   const renderSidebarContent = () => {
     if (!userRole) return null
 
-    // ── ADMIN ────────────────────────────────────────────────────────
     if (userRole === "ADMIN" || userRole === "SUPER ADMIN") {
       return (
         <>
@@ -263,12 +353,7 @@ const Sidebar = ({
             <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" />
           </SidebarGroup>
 
-          <SidebarGroup id="payroll" icon={DollarSign} label="Payroll & Compliance">
-            <SubLink to="/payroll" label="Payroll Processing" />
-            <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
-            <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
-            <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
-          </SidebarGroup>
+          <FullPayrollSidebarGroup label="Payroll & Compliance" />
 
           <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
@@ -284,7 +369,6 @@ const Sidebar = ({
       )
     }
 
-    // ── EMPLOYEE ─────────────────────────────────────────────────────
     if (userRole === "EMPLOYEE") {
       return (
         <>
@@ -306,7 +390,6 @@ const Sidebar = ({
       )
     }
 
-    // ── HR MANAGER ───────────────────────────────────────────────────
     if (userRole === ROLES.HR_MANAGER) {
       return (
         <>
@@ -326,7 +409,6 @@ const Sidebar = ({
               <SubLink to="/dashboard/applications" label="Applications" />
               <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
               <SubLink to="/dashboard/offer-management" label="Offer Management" />
-              <SubLink to="/dashboard/recruitment-suggestions" label="Admin suggestions inbox" />
             </SidebarGroup>
           )}
 
@@ -343,16 +425,10 @@ const Sidebar = ({
           )}
 
           {canSee("employees") && (
-            <SidebarLink to="/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
+            <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
           )}
 
-          {canSee("payroll") && (
-            <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
-              <SubLink to="/payroll" label="Payroll Processing" />
-              <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
-              <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
-            </SidebarGroup>
-          )}
+          <HRPayrollSidebarGroup />
 
           <SidebarGroup id="appraisal" icon={Award} label="Performance (PMS)">
             <SubLink to="/role/hr_manager/appraisal" label="Appraisal Hub" />
@@ -373,7 +449,6 @@ const Sidebar = ({
       )
     }
 
-    // ── HR OFFICER ───────────────────────────────────────────────────
     if (userRole === ROLES.HR_OFFICER) {
       return (
         <>
@@ -393,13 +468,7 @@ const Sidebar = ({
             </SidebarGroup>
           )}
 
-          {canSee('payroll') && (
-            <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
-              <SubLink to="/payroll" label="Payroll Processing" />
-              <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
-              <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
-            </SidebarGroup>
-          )}
+          <HRPayrollSidebarGroup />
 
           <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
             <SubLink to="/employee-center/all-employees" label="All Employees" />
@@ -419,7 +488,6 @@ const Sidebar = ({
       )
     }
 
-    // ── CEO / COUNTRY MANAGER ────────────────────────────────────────
    if (userRole === ROLES.CEO || userRole === ROLES.COUNTRY_MANAGER) {
       return (
         <>
@@ -432,7 +500,29 @@ const Sidebar = ({
             <SubLink to="/employee-center/employee-transfer" label="Employee Lifecycle" />
           </SidebarGroup>
 
-          <SidebarLink to="/ceo/payroll" icon={CircleDollarSign} label="Payroll & Cost" />
+          {(userRole === ROLES.CEO || userRole === ROLES.COUNTRY_MANAGER) && (
+            <SidebarGroup
+              id="payroll"
+              icon={DollarSign}
+              label="Payroll"
+              activePathPrefixes={["/ceo/payroll", "/payroll"]}
+            >
+              <SubLink to="/ceo/payroll" label="Payroll & Cost" icon={CircleDollarSign} />
+              {canSee("payroll") && (
+                <SidebarNestedGroup
+                  id="payrollOperations"
+                  label="Payroll operations"
+                  isNestedActive={payrollOpsNestedActiveExec}
+                >
+                  <SubLink
+                    to="/payroll"
+                    label={userRole === ROLES.CEO ? "Processing & approvals" : "Payroll overview"}
+                  />
+                  <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
+                </SidebarNestedGroup>
+              )}
+            </SidebarGroup>
+          )}
           <SidebarLink to="/ceo/org-structure" icon={Network} label="Org Structure" />
           <SidebarLink to="/ceo/audit" icon={FileBadge} label="Audit Summary" />
 
@@ -469,7 +559,6 @@ const Sidebar = ({
       );
     }
 
-    // ── DEPARTMENT MANAGER ───────────────────────────────────────────
     if (userRole === ROLES.DEPARTMENT_MANAGER) {
       return (
         <>
@@ -492,11 +581,12 @@ const Sidebar = ({
           <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
             <SubLink to="/role/department_manager/disciplinary-actions" label="Manage Actions" />
           </SidebarGroup>
+
+          <TeamPayrollSidebar />
         </>
       )
     }
 
-    // ── DIRECT MANAGER ───────────────────────────────────────────────
     if (userRole === ROLES.DIRECT_MANAGER) {
       return (
         <>
@@ -518,11 +608,26 @@ const Sidebar = ({
           <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
             <SubLink to="/role/direct_manager/disciplinary-actions" label="Manage Actions" />
           </SidebarGroup>
+
+          <TeamPayrollSidebar />
         </>
       )
     }
 
-    // ── PAYROLL OFFICER ──────────────────────────────────────────────
+    if (userRole === ROLES.FINANCE_MANAGER) {
+      return (
+        <>
+          <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          {canSee("attendance") && (
+            <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+              <SubLink to="/attendance" label="Attendance Records" />
+            </SidebarGroup>
+          )}
+          <FullPayrollSidebarGroup label={getPayrollLabel()} />
+        </>
+      )
+    }
+
     if (userRole === ROLES.PAYROLL_OFFICER) {
       return (
         <>
@@ -532,19 +637,11 @@ const Sidebar = ({
               <SubLink to="/attendance" label="Attendance Records" />
             </SidebarGroup>
           )}
-          {canSee('payroll') && (
-            <SidebarGroup id="payroll" icon={DollarSign} label={getPayrollLabel()}>
-              <SubLink to="/payroll" label="Payroll Processing" />
-              <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
-              <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
-              <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
-            </SidebarGroup>
-          )}
+          <FullPayrollSidebarGroup label={getPayrollLabel()} />
         </>
       )
     }
 
-    // ── PROJECT MANAGER ──────────────────────────────────────────────
     if (userRole === ROLES.PROJECT_MANAGER) {
       return (
         <>
@@ -557,11 +654,11 @@ const Sidebar = ({
               <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
             </SidebarGroup>
           )}
+          <TeamPayrollSidebar />
         </>
       )
     }
 
-    // ── OPERATIONS MANAGER ───────────────────────────────────────────
     if (userRole === ROLES.OPERATIONS_MANAGER) {
       return (
         <>
@@ -578,8 +675,9 @@ const Sidebar = ({
           )}
           {canSee("attendance") && <LeaveLink />}
           {canSee("employees") && (
-            <SidebarLink to="/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
+            <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
           )}
+          <TeamPayrollSidebar />
         </>
       )
     }

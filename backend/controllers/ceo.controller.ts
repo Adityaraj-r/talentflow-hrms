@@ -49,7 +49,6 @@ export class CeoController {
         Transfer.countDocuments({ status: 'Pending' }),
       ]);
 
-
       const totalEverEmployed = totalActiveEmployees + totalInactiveEmployees;
       const turnoverRate = totalEverEmployed > 0
         ? ((totalInactiveEmployees / totalEverEmployed) * 100).toFixed(1) : 0;

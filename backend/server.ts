@@ -31,6 +31,8 @@ import candidateRoutes from "./routes/candidate.routes";
 import departmentSyncRoutes from "./routes/departmentSync.routes";
 import jobRoutes from "./routes/job.routes";
 import { seedRoles } from './utils/roleSeeder';
+import { seedFinanceManagerUser } from './utils/seedFinanceManagerUser';
+import { seedPayrollSampleData } from './utils/seedPayrollSample';
 import reportsRoutes from "./routes/reports.routes";
 import applicationRoutes from "./routes/application.routes";
 import documentRoutes from './routes/document.routes';
@@ -41,6 +43,7 @@ import executiveRoutes from "./routes/executive.routes";
 import offboardingRoutes from "./routes/offboarding.routes";
 import ceoRoutes from './routes/ceo.routes';
 import offerRoutes from './routes/offer.routes';
+import User from './models/User.model';
 
 dotenv.config();
 
@@ -169,11 +172,18 @@ const startServer = async () => {
     if (!MONGODB_URI) throw new Error('MONGODB_URI is undefined');
 
     await mongoose.connect(MONGODB_URI);
+    await User.syncIndexes();
     await seedRoles();
+    await seedFinanceManagerUser();
 
     app.listen(PORT, () => {
       console.log(`\x1b[36m🚀 Server listening on port ${PORT}\x1b[0m`);
       console.log(`\x1b[36m📡 Morgan request logger active\x1b[0m`);
+      setImmediate(() => {
+        seedPayrollSampleData().catch((e: Error) =>
+          console.warn('[seedPayrollSample]', e.message)
+        );
+      });
     });
   } catch (error: any) {
     console.error('\x1b[31mFailed to start server:\x1b[0m', error.message);
