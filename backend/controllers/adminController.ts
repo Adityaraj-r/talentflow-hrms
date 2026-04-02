@@ -8,7 +8,7 @@ import { createLog } from './audit.controller';
 import Document from '../models/Document.model';
 import Transfer from '../models/Transfer.model';
 import Requisition from '../models/Requisition.model';
-import Leave from '../models/leave.model';
+import Leave from '../models/Leave.model';
 import Employee from '../models/Employee.model';
 import { isTeamPayrollViewerRole, getPayrollTeamUserIdStrings } from '../utils/payrollTeamScope.util';
 

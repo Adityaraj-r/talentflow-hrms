@@ -18,7 +18,7 @@ router.post('/request', createTransferRequest);
 
 router.get('/my-requests', getMyTransfers);
 
-router.get('/all', authorize('ADMIN', 'CEO', 'HR_MANAGER', 'COUNTRY_MANAGER'), getAllTransfers);
+router.get('/all', authorize('ADMIN', 'CEO', 'HR_MANAGER', 'COUNTRY_MANAGER' , 'HR_OFFICER'), getAllTransfers);
 
 router.patch('/update/:id', authorize('ADMIN', 'CEO'), updateTransferStatus);
 

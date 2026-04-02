@@ -16,12 +16,15 @@ const EmployeeTransfer = () => {
   const { user } = useAuth()
   const userRole = user?.role?.toUpperCase() || ""
 
-  const canViewPromotions = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"].includes(userRole)
-  const canViewOffboarding = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER"].includes(userRole)
+  const canViewPromotions = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "HR_OFFICER"].includes(userRole)
+  const canViewOffboarding = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER", "HR_OFFICER"].includes(userRole)
+  const canViewAdminTransfers = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "HR_OFFICER", "OPERATIONS_MANAGER"].includes(userRole)
 
-  if (userRole === "EMPLOYEE" || !canViewPromotions) {
+  if (userRole === "EMPLOYEE" || !canViewAdminTransfers) {
     return <EmployeeTransferView user={user} />
   }
+
+  const visibleTabsCount = 1 + (canViewPromotions ? 1 : 0) + (canViewOffboarding ? 1 : 0)
 
   return (
     <div className="space-y-6">
@@ -31,21 +34,21 @@ const EmployeeTransfer = () => {
       </div>
 
       <Tabs defaultValue="transfers" className="w-full">
-        <TabsList className={cn("grid w-full max-w-3xl", canViewOffboarding ? "grid-cols-3" : "grid-cols-2")}>
+        <TabsList className={cn("grid w-full max-w-3xl", `grid-cols-${visibleTabsCount}`)}>
           <TabsTrigger value="transfers">Employee Transfers</TabsTrigger>
-          <TabsTrigger value="promotions">Promotions</TabsTrigger>
-          {canViewOffboarding && (
-            <TabsTrigger value="offboarding">Offboarding Requests</TabsTrigger>
-          )}
+          {canViewPromotions && <TabsTrigger value="promotions">Promotions</TabsTrigger>}
+          {canViewOffboarding && <TabsTrigger value="offboarding">Offboarding Requests</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="transfers" className="mt-4">
           <AdminTransferView user={user} />
         </TabsContent>
 
-        <TabsContent value="promotions" className="mt-4">
-          <EmployeePromotion />
-        </TabsContent>
+        {canViewPromotions && (
+          <TabsContent value="promotions" className="mt-4">
+            <EmployeePromotion />
+          </TabsContent>
+        )}
 
         {canViewOffboarding && (
           <TabsContent value="offboarding" className="mt-4">
@@ -56,10 +59,10 @@ const EmployeeTransfer = () => {
     </div>
   )
 }
-
 const AdminTransferView = ({ user }) => {
   const userRole = user?.role?.toUpperCase() || ""
-  const canAction = ["ADMIN", "CEO"].includes(userRole)
+  
+  const canAction = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER", "DEPARTMENT_MANAGER"].includes(userRole)
   const isCEO = userRole === "CEO"
   const queryClient = useQueryClient()
 
@@ -115,10 +118,16 @@ const AdminTransferView = ({ user }) => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList>
-          <TabsTrigger value="pending">Pending Approvals</TabsTrigger>
-          <TabsTrigger value="history">Transfer History</TabsTrigger>
-        </TabsList>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <TabsList>
+            <TabsTrigger value="pending">Pending Approvals</TabsTrigger>
+            <TabsTrigger value="history">Transfer History</TabsTrigger>
+          </TabsList>
+          
+          <Button variant="outline" size="sm" onClick={() => toast.success("Compiling Approved Transfers for Export...")}>
+            <FileText className="h-4 w-4 mr-2" /> Export Pipeline
+          </Button>
+        </div>
 
         <TabsContent value="pending" className="mt-4">
           <TransferTable
