@@ -1,100 +1,115 @@
 import { useState, useEffect } from "react";
-import { X, Search, User, Check } from "lucide-react";
+import { Search, Check, Briefcase, Users, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"; // Ensure you have dialog components or use a basic div overlay
-import apiClient from "@/services/apiClient"; // To fetch users
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import apiClient from "@/services/apiClient";
 import shiftService from "@/services/shiftService";
+import { cn } from "@/lib/utils";
 
-const AssignShiftModal = ({ isOpen, onClose, shifts = [] }) => {
+const AssignShiftModal = ({ isOpen, onClose, shifts = [], onSuccess }) => {
   const [employees, setEmployees] = useState([]);
+  const [fetchingData, setFetchingData] = useState(false);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedShift, setSelectedShift] = useState("");
   const [selectedEmployees, setSelectedEmployees] = useState([]);
 
-  // Fetch Employees on Open
   useEffect(() => {
     if (isOpen) {
       const fetchEmployees = async () => {
         try {
-          // ⚠️ CHECK THIS URL: Update to your actual user/employee endpoint
-          const res = await apiClient.get("/users"); 
-          setEmployees(res.data.data || res.data || []);
+          setFetchingData(true);
+          const res = await apiClient.get("/users");
+          setEmployees(res.data?.data || res.data || []);
         } catch (error) {
-          console.error("Failed to load employees", error);
+          toast.error("Failed to load employees");
+        } finally {
+          setFetchingData(false);
         }
       };
       fetchEmployees();
       setSelectedEmployees([]);
       setSelectedShift("");
+      setSearch("");
     }
   }, [isOpen]);
 
-  // Handle Checkbox Toggle
+  const filteredEmployees = employees.filter(
+    (e) =>
+      e.firstName?.toLowerCase().includes(search.toLowerCase()) ||
+      e.lastName?.toLowerCase().includes(search.toLowerCase()) ||
+      e.email?.toLowerCase().includes(search.toLowerCase()) ||
+      e.department?.toLowerCase().includes(search.toLowerCase())
+  );
+
   const toggleEmployee = (id) => {
     setSelectedEmployees((prev) =>
       prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]
     );
   };
 
-  // Handle Select All
   const toggleAll = () => {
-    if (selectedEmployees.length === filteredEmployees.length) {
+    if (selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0) {
       setSelectedEmployees([]);
     } else {
       setSelectedEmployees(filteredEmployees.map((e) => e._id));
     }
   };
 
-  // Filter Search
-  const filteredEmployees = employees.filter(
-    (e) =>
-      e.firstName.toLowerCase().includes(search.toLowerCase()) ||
-      e.lastName.toLowerCase().includes(search.toLowerCase()) ||
-      e.email.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // Submit Assignment
   const handleSubmit = async () => {
-    if (!selectedShift || selectedEmployees.length === 0) return;
-    
+    if (!selectedShift) {
+      toast.error("Please select a shift configuration.");
+      return;
+    }
+    if (selectedEmployees.length === 0) {
+      toast.error("Please select at least one employee.");
+      return;
+    }
+
     try {
       setLoading(true);
       await shiftService.assignShift(selectedShift, selectedEmployees);
-      alert("Shift assigned successfully!");
+      toast.success("Shift assigned successfully to selected employees.");
+      if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
-      console.error("Assignment failed", error);
-      alert("Failed to assign shift");
+      toast.error(error.response?.data?.message || "Failed to assign shift.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
-        
-        {/* Header */}
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Assign Shift to Employees</h2>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-2xl h-[85vh] p-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <Briefcase className="w-5 h-5 text-blue-600" />
+            Assign Shift to Employees
+          </DialogTitle>
+          <DialogDescription>
+            Select a shift template and map it to the relevant employees.
+          </DialogDescription>
+        </DialogHeader>
 
-        {/* Body */}
-        <div className="p-6 flex-1 overflow-hidden flex flex-col gap-6">
-          
-          {/* 1. Select Shift */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Select Shift Configuration</label>
+        <div className="flex-1 overflow-hidden flex flex-col p-6 gap-5">
+          <div className="space-y-2 shrink-0">
+            <label className="text-sm font-semibold text-slate-900 dark:text-slate-200">
+              1. Select Shift Configuration <span className="text-red-500">*</span>
+            </label>
             <select
               value={selectedShift}
               onChange={(e) => setSelectedShift(e.target.value)}
-              className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="">-- Choose a Shift --</option>
               {shifts.map((shift) => (
@@ -105,78 +120,136 @@ const AssignShiftModal = ({ isOpen, onClose, shifts = [] }) => {
             </select>
           </div>
 
-          {/* 2. Select Employees */}
-          <div className="flex-1 flex flex-col min-h-0 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-            {/* Search Bar */}
-            <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2 bg-slate-50 dark:bg-slate-900">
-              <Search className="w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search employees..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="bg-transparent border-none outline-none text-sm w-full text-slate-900 dark:text-white placeholder:text-slate-400"
-              />
+          <div className="flex-1 flex flex-col min-h-0 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden bg-white dark:bg-slate-950">
+            <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shrink-0">
+              <label className="text-sm font-semibold text-slate-900 dark:text-slate-200 flex items-center gap-2">
+                <Users className="w-4 h-4 text-slate-500" />
+                2. Select Employees
+              </label>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search by name, email, or dept..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-9 pl-8 text-sm bg-background"
+                />
+              </div>
             </div>
 
-            {/* List */}
-            <div className="overflow-y-auto p-2 space-y-1">
-              {/* Select All Row */}
-              <div 
-                onClick={toggleAll}
-                className="flex items-center gap-3 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer font-medium text-sm text-blue-600 dark:text-blue-400"
-              >
-                <div className={`w-4 h-4 rounded border flex items-center justify-center ${selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0 ? "bg-blue-600 border-blue-600" : "border-slate-400"}`}>
-                  {selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0 && <Check className="w-3 h-3 text-white" />}
+            <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+              {fetchingData ? (
+                <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+                  <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                  <span className="text-sm">Loading employee directory...</span>
                 </div>
-                Select All ({filteredEmployees.length})
-              </div>
+              ) : (
+                <div className="space-y-1">
+                  {filteredEmployees.length > 0 && (
+                    <div
+                      onClick={toggleAll}
+                      className="flex items-center gap-3 p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md cursor-pointer transition-colors"
+                    >
+                      <div
+                        className={cn(
+                          "w-4 h-4 rounded border flex items-center justify-center transition-all",
+                          selectedEmployees.length === filteredEmployees.length
+                            ? "bg-blue-600 border-blue-600"
+                            : "border-slate-300 dark:border-slate-600"
+                        )}
+                      >
+                        {selectedEmployees.length === filteredEmployees.length && (
+                          <Check className="w-3 h-3 text-white" />
+                        )}
+                      </div>
+                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                        Select All ({filteredEmployees.length})
+                      </span>
+                    </div>
+                  )}
 
-              {filteredEmployees.map((emp) => (
-                <div
-                  key={emp._id}
-                  onClick={() => toggleEmployee(emp._id)}
-                  className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-colors ${selectedEmployees.includes(emp._id) ? "bg-blue-50 dark:bg-blue-900/20" : "hover:bg-slate-100 dark:hover:bg-slate-800"}`}
-                >
-                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${selectedEmployees.includes(emp._id) ? "bg-blue-600 border-blue-600" : "border-slate-300 dark:border-slate-600"}`}>
-                    {selectedEmployees.includes(emp._id) && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
-                      {emp.firstName?.[0]}{emp.lastName?.[0]}
+                  {filteredEmployees.map((emp) => {
+                    const isSelected = selectedEmployees.includes(emp._id);
+                    return (
+                      <div
+                        key={emp._id}
+                        onClick={() => toggleEmployee(emp._id)}
+                        className={cn(
+                          "flex items-center gap-3 p-2.5 rounded-md cursor-pointer transition-all",
+                          isSelected
+                            ? "bg-blue-50 dark:bg-blue-900/20"
+                            : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "w-4 h-4 rounded border flex items-center justify-center transition-all",
+                            isSelected
+                              ? "bg-blue-600 border-blue-600"
+                              : "border-slate-300 dark:border-slate-600"
+                          )}
+                        >
+                          {isSelected && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-600 dark:text-slate-300 shrink-0">
+                            {emp.firstName?.[0]}
+                            {emp.lastName?.[0]}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                              {emp.firstName} {emp.lastName}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {emp.email}
+                            </p>
+                          </div>
+                          <div className="hidden sm:block text-xs text-slate-500 dark:text-slate-400 truncate max-w-[120px] text-right">
+                            {emp.department || "No Department"}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {filteredEmployees.length === 0 && !fetchingData && (
+                    <div className="text-center py-8 text-sm text-muted-foreground">
+                      No employees match your search.
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">{emp.firstName} {emp.lastName}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{emp.email}</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
-              ))}
-              
-              {filteredEmployees.length === 0 && (
-                <p className="text-center text-sm text-slate-400 py-4">No employees found.</p>
               )}
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
-          <p className="text-sm text-slate-500">{selectedEmployees.length} employees selected</p>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button 
-              onClick={handleSubmit} 
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+        <DialogFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex sm:justify-between items-center gap-4 shrink-0">
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            {selectedEmployees.length} employee{selectedEmployees.length !== 1 ? "s" : ""} selected
+          </p>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={onClose} disabled={loading}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              className="bg-blue-600 hover:bg-blue-700 text-white min-w-[140px]"
               disabled={loading || selectedEmployees.length === 0 || !selectedShift}
             >
-              {loading ? "Saving..." : "Confirm Assignment"}
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Assigning...
+                </>
+              ) : (
+                "Confirm Assignment"
+              )}
             </Button>
           </div>
-        </div>
-
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
