@@ -52,7 +52,20 @@ const enterpriseRoles = [
       employees: { read: true, write: false, delete: false },
       recruitment: { read: true, write: true, delete: false },
       attendance: { read: true, write: true, delete: false },
-      payroll: { read: false, write: false, delete: false },
+      payroll: { read: true, write: false, delete: false },
+      settings: { read: false, write: false, delete: false },
+      roles: { read: false, write: false, delete: false }
+    }
+  },
+  {
+    name: "FINANCE_MANAGER",
+    isSystemRole: false,
+    permissions: {
+      dashboard: { read: true, write: false, delete: false },
+      employees: { read: true, write: false, delete: false },
+      recruitment: { read: false, write: false, delete: false },
+      attendance: { read: true, write: false, delete: false },
+      payroll: { read: true, write: true, delete: false },
       settings: { read: false, write: false, delete: false },
       roles: { read: false, write: false, delete: false }
     }
@@ -80,7 +93,7 @@ const enterpriseRoles = [
       employees: { read: true, write: true, delete: false },
       recruitment: { read: true, write: true, delete: false },
       attendance: { read: true, write: true, delete: false },
-      payroll: { read: false, write: false, delete: false },
+      payroll: { read: true, write: false, delete: false },
       settings: { read: false, write: false, delete: false },
       roles: { read: false, write: false, delete: false }
     }
@@ -108,7 +121,7 @@ const enterpriseRoles = [
       employees: { read: true, write: false, delete: false }, // Team view
       recruitment: { read: true, write: false, delete: false }, // View candidates
       attendance: { read: true, write: true, delete: false }, // Approve timesheets
-      payroll: { read: false, write: false, delete: false },
+      payroll: { read: true, write: false, delete: false },
       settings: { read: false, write: false, delete: false },
       roles: { read: false, write: false, delete: false }
     }
@@ -121,7 +134,7 @@ const enterpriseRoles = [
       employees: { read: true, write: false, delete: false },
       recruitment: { read: true, write: true, delete: false }, // Staff Requisition
       attendance: { read: true, write: true, delete: false },
-      payroll: { read: false, write: false, delete: false },
+      payroll: { read: true, write: false, delete: false },
       settings: { read: false, write: false, delete: false },
       roles: { read: false, write: false, delete: false }
     }
@@ -134,7 +147,7 @@ const enterpriseRoles = [
       employees: { read: true, write: false, delete: false },
       recruitment: { read: false, write: false, delete: false },
       attendance: { read: true, write: true, delete: false },
-      payroll: { read: false, write: false, delete: false },
+      payroll: { read: true, write: false, delete: false },
       settings: { read: false, write: false, delete: false },
       roles: { read: false, write: false, delete: false }
     }
@@ -168,7 +181,7 @@ export const seedRoles = async () => {
         console.log(`🌱 Creating missing role: ${roleDef.name}`);
         await Role.create(roleDef);
       } else {
-        console.log(`ℹ️ Role already exists (skipping): ${roleDef.name}`);
+        console.log(`Role already exists (skipping): ${roleDef.name}`);
         if (roleDef.name === 'ADMIN') {
           await Role.updateOne(
             { name: 'ADMIN' },
@@ -182,10 +195,18 @@ export const seedRoles = async () => {
         }
       }
     }
-    
-    console.log('✅ Role Seeder Check Complete.');
+
+    for (const roleDef of enterpriseRoles) {
+      const p = (roleDef.permissions as { payroll?: { read: boolean; write: boolean; delete: boolean } }).payroll;
+      if (p) {
+        await Role.updateOne({ name: roleDef.name }, { $set: { "permissions.payroll": p } });
+      }
+    }
+    console.log("Payroll permissions synced on system roles.");
+
+    console.log('Role seeder check complete.');
   } catch (error) {
-    console.error('❌ Role seeding failed:', error);
+    console.error('Role seeding failed:', error);
   }
-  
+
 };

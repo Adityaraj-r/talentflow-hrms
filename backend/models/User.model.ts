@@ -52,6 +52,7 @@ const UserSchema = new Schema<IUser>(
         'PAYROLL_OFFICER',
         'PROJECT_MANAGER',
         'OPERATIONS_MANAGER',
+        'FINANCE_MANAGER',
         'ADMIN',
         'EMPLOYEE',
       ],
@@ -84,11 +85,8 @@ const UserSchema = new Schema<IUser>(
       ref: 'Employee',
       default: null,
     },
-   employeeCode: {
+    employeeCode: {
       type: String,
-      default: null,
-      unique: true,
-      sparse: true,
       trim: true,
     },
     currentShift: {
@@ -114,6 +112,17 @@ const UserSchema = new Schema<IUser>(
     },
   },
   { timestamps: true }
+);
+
+// Unique only when a non-empty code is set — avoids E11000 when many users omit employeeCode (null was indexed with sparse+unique).
+UserSchema.index(
+  { employeeCode: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      employeeCode: { $exists: true, $type: 'string', $gt: '' },
+    },
+  }
 );
 
 UserSchema.methods.comparePassword = async function (

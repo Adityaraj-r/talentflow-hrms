@@ -6,8 +6,6 @@ import { PerformanceReviewModel, ReviewStatus } from '../models/PerformanceRevie
 
 export class PerformanceController {
 
-  // ─── CYCLES ───────────────────────────────────────────────────────────────
-
   static async createCycle(req: AuthRequest, res: Response) {
     try {
       const { name, description, startDate, endDate } = req.body;
@@ -65,8 +63,6 @@ export class PerformanceController {
     }
   }
 
-  // ─── STATS ────────────────────────────────────────────────────────────────
-
   static async getStats(req: AuthRequest, res: Response) {
     try {
       const totalCycles = await PerformanceCycleModel.countDocuments();
@@ -81,7 +77,6 @@ export class PerformanceController {
         reviews.length > 0
           ? reviews.reduce((sum, r) => sum + (r.overallRating || 0), 0) / reviews.length
           : 0;
-      // FIXED: totalEmployees added so PerformanceAnalytics doesn't need a separate users fetch
       const UserModel = (await import('../models/User.model')).default;
       const totalEmployees = await UserModel.countDocuments({ role: 'EMPLOYEE', isActive: true });
       const allCycles = await PerformanceCycleModel.find();
@@ -101,8 +96,6 @@ export class PerformanceController {
       res.status(500).json({ success: false, error: 'Failed to fetch stats', details: error.message });
     }
   }
-
-  // ─── REVIEWS ──────────────────────────────────────────────────────────────
 
   static async assignReview(req: AuthRequest, res: Response) {
     try {
@@ -124,7 +117,7 @@ export class PerformanceController {
       const competencyRatings = competencies.map((c: any) => ({ name: c.name, rating: 1, comments: '' }));
       const review = await PerformanceReviewModel.create({
         cycleId, employeeId,
-        reviewerId, // FIXED: from body, not req.user.id
+        reviewerId,
         competencies: competencyRatings,
         overallRating: 0,
         status: ReviewStatus.PENDING,
@@ -264,7 +257,6 @@ export class PerformanceController {
       const { feedback } = req.body;
       const userId = req.user?.id;
       const userRole = req.user?.role?.toUpperCase();
-      // FIXED: HRMANAGER approves, not ADMIN
       if (userRole !== 'HRMANAGER' && userRole !== 'SUPER ADMIN')
         return res.status(403).json({ success: false, error: 'Only HR Managers can approve reviews' });
       const review = await PerformanceReviewModel.findById(id);
@@ -289,8 +281,6 @@ export class PerformanceController {
       res.status(500).json({ success: false, error: 'Failed to approve review', details: error.message });
     }
   }
-
-  // ─── PHASE 5 NEW ENDPOINTS ────────────────────────────────────────────────
 
   // POST /api/performance/self-assessment  (EMPLOYEE only)
   static async submitSelfAssessment(req: AuthRequest, res: Response) {

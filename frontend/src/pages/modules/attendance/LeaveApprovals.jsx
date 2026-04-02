@@ -113,6 +113,7 @@ const LeaveApprovals = () => {
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  
   const [statusFilter, setStatusFilter] = useState("Pending");
   const [searchTerm, setSearchTerm] = useState("");
 

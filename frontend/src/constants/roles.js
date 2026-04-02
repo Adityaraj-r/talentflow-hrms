@@ -9,6 +9,7 @@ export const ROLES = {
   PAYROLL_OFFICER: "PAYROLL_OFFICER",
   PROJECT_MANAGER: "PROJECT_MANAGER",
   OPERATIONS_MANAGER: "OPERATIONS_MANAGER",
+  FINANCE_MANAGER: "FINANCE_MANAGER",
   ADMIN: "ADMIN",
   EMPLOYEE: "EMPLOYEE",
 };
@@ -208,6 +209,24 @@ export const PERMISSIONS = {
       payrollProcessing: false,
       ticketsAndAdvances: false,
       indemnityCalculation: false,
+    },
+    appraisal: false,
+    disciplinaryActions: false,
+    documentRequests: false,
+  },
+  [ROLES.FINANCE_MANAGER]: {
+    dashboard: true,
+    recruitment: {
+      recruitmentProcess: false,
+      staffRequisition: false,
+      onboarding: false,
+    },
+    leaveManagement: false,
+    employeeTransfer: false,
+    payroll: {
+      payrollProcessing: true,
+      ticketsAndAdvances: true,
+      indemnityCalculation: true,
     },
     appraisal: false,
     disciplinaryActions: false,

@@ -22,7 +22,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
       const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
 
-      const user = await User.findById(decoded.id).select('firstName lastName email role isActive');
+      const user = await User.findById(decoded.id).select('firstName lastName email role isActive department');
 
       if (!user) {
         return res.status(401).json({ success: false, error: 'User not found' });

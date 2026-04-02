@@ -21,7 +21,6 @@ export const UserProvider = ({ children }) => {
         setLoading(true);
         const res = await apiClient.get("/roles");
         
-        // SENIOR FIX: Safely extract the array whether it's in res.roles, res.data, or is a direct array
         const extractedRoles = res?.roles || res?.data || res;
         const validRoles = Array.isArray(extractedRoles) ? extractedRoles : [];
 
@@ -45,7 +44,6 @@ export const UserProvider = ({ children }) => {
     loadPermissions();
   }, [user?.role, isAuthenticated]); 
 
-  // FIXED: can() is inside useMemo so it always uses the current rolePermissions
   const enrichedUser = useMemo(() => {
     if (!user) return null;
     const roleName =

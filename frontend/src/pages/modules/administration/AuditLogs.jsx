@@ -310,7 +310,6 @@ const AuditLogs = () => {
   )
 }
 
-
 const StatsSummary = ({ title, value, icon, description, variant }) => {
   const styles = {
     blue: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",

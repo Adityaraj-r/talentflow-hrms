@@ -19,7 +19,6 @@ import adminService from "@/services/adminService"
 import { ROLES } from "@/constants/roles"
 import { cn } from "@/lib/utils"
 
-
 // const [formData, setFormData] = useState({
 //     firstName: '', lastName: '', email: '', password: '',
 //     role: '', department: '', phoneNumber: '', gender: '', employeeCode: ''
@@ -111,8 +110,6 @@ const UserManagement = () => {
   }, [filters])
 
   useEffect(() => { fetchUsers() }, [fetchUsers])
-
-  // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleInputChange = (e) => {
     const { id, value } = e.target
@@ -282,7 +279,6 @@ const UserManagement = () => {
     inactive: users.filter(u => u.status === 'Inactive').length
   }), [users])
 
-  // ── Salary Section (reusable inside forms) ───────────────────────────────────
   const SalarySection = () => (
     <div className="space-y-3 border rounded-lg p-4 bg-muted/20">
       <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
@@ -361,7 +357,6 @@ const UserManagement = () => {
     </div>
   )
 
-  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -371,7 +366,6 @@ const UserManagement = () => {
         </div>
         <div className="flex gap-2">
 
-          {/* ── Bulk Upload Dialog ─────────────────────────────────────────── */}
           <Dialog open={isBulkOpen} onOpenChange={setIsBulkOpen}>
             <DialogTrigger asChild>
               <Button variant="outline"><Upload className="mr-2 h-4 w-4" /> Bulk Upload</Button>
@@ -406,7 +400,6 @@ const UserManagement = () => {
             </DialogContent>
           </Dialog>
 
-          {/* ── Create User Dialog ─────────────────────────────────────────── */}
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="mr-2 h-4 w-4" /> Add Employee</Button>
@@ -523,7 +516,6 @@ const UserManagement = () => {
             </DialogContent>
           </Dialog>
 
-          {/* ── Edit User Dialog ───────────────────────────────────────────── */}
           <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
             <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
@@ -610,7 +602,6 @@ const UserManagement = () => {
             </DialogContent>
           </Dialog>
 
-          {/* ── Delete Confirmation Dialog ─────────────────────────────────── */}
           <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
             <DialogContent className="sm:max-w-[420px]">
               <DialogHeader>
@@ -647,7 +638,6 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {/* ── Stats ─────────────────────────────────────────────────────────────── */}
       <div className="grid gap-4 md:grid-cols-4">
         <StatsCard title="Total Staff" value={stats.total} icon={<Users className="h-8 w-8" />} variant="blue" />
         <StatsCard title="Active" value={stats.active} icon={<UserCheck className="h-8 w-8" />} variant="green" />
@@ -655,7 +645,6 @@ const UserManagement = () => {
         <StatsCard title="Security Flags" value="0" icon={<ShieldAlert className="h-8 w-8" />} variant="red" />
       </div>
 
-      {/* ── Table ─────────────────────────────────────────────────────────────── */}
       <Card>
         <div className="p-4 border-b flex flex-col md:flex-row gap-4 items-center justify-between bg-muted/20">
           <div className="flex gap-2 w-full md:w-auto">
@@ -775,7 +764,6 @@ const UserManagement = () => {
   )
 }
 
-// ── StatsCard ─────────────────────────────────────────────────────────────────
 const StatsCard = ({ title, value, icon, variant }) => {
   const styles = {
     blue: { card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30", icon: "text-blue-600 dark:text-blue-400", label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },

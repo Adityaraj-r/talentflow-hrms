@@ -49,7 +49,6 @@ const AdminPerformance = () => {
       performanceApi.getCycles()
     ]);
 
-    // FIXED: unwrap .data since performanceApi no longer does .then(r => r.data)
     const stats  = statsResponse?.data  ?? statsResponse  ?? {};
     const cycles = cyclesResponse?.data ?? cyclesResponse ?? [];
 
@@ -67,9 +66,6 @@ const AdminPerformance = () => {
     setLoading(false);
   }
 };
-
-
-
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -257,7 +253,6 @@ const AdminPerformance = () => {
             </div>
           </div>
 
-
           <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 backdrop-blur-sm rounded-xl p-6 transition-all duration-200 hover:scale-105">
             <div className="flex items-center justify-between">
               <div>
@@ -268,7 +263,6 @@ const AdminPerformance = () => {
             </div>
           </div>
 
-
           <div className="bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 backdrop-blur-sm rounded-xl p-6 transition-all duration-200 hover:scale-105">
             <div className="flex items-center justify-between">
               <div>
@@ -278,7 +272,6 @@ const AdminPerformance = () => {
               <FileText className="w-8 h-8 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
-
 
           <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 backdrop-blur-sm rounded-xl p-6 transition-all duration-200 hover:scale-105">
             <div className="flex items-center justify-between">
@@ -292,7 +285,6 @@ const AdminPerformance = () => {
             </div>
           </div>
         </div>
-
 
         <div className="flex gap-4 mb-6 border-b border-gray-200 dark:border-gray-800">
           <button
@@ -326,7 +318,6 @@ const AdminPerformance = () => {
             Employee Overview
           </button>
         </div>
-
 
         {activeTab === "cycles" ? (
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
@@ -505,7 +496,6 @@ const AdminPerformance = () => {
             </div>
           </div>
         )}
-
 
         {showEditModal && (
           <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">

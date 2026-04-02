@@ -1,4 +1,5 @@
 import { Request, Response } from "express"
+import mongoose from "mongoose"
 import Application from "../models/application.model"
 
 export const applyJob = async (req: Request, res: Response) => {
@@ -74,23 +75,40 @@ export const updateApplicationStatus = async (req: Request, res: Response) => {
   }
 
 }
-export const getApplicationStatus = async (req: Request, res: Response) => {
-
+/** Public lookup: requires matching email query so addresses cannot be enumerated alone. */
+export const getPublicApplicationStatus = async (req: Request, res: Response) => {
   try {
+    const rawId = req.params.id
+    const idParam = typeof rawId === "string" ? rawId : Array.isArray(rawId) ? rawId[0] : ""
+    const emailQ = typeof req.query.email === "string" ? req.query.email.trim().toLowerCase() : ""
 
-    const email = req.params.email
+    if (!emailQ || !idParam || !mongoose.Types.ObjectId.isValid(idParam)) {
+      res.status(400).json({
+        success: false,
+        message: "Valid application ID and email query are required",
+      })
+      return
+    }
 
-    const applications = await Application.find({ email }).populate("jobId")
+    const application = await Application.findById(idParam).populate("jobId")
+    if (!application) {
+      res.status(404).json({ success: false, message: "Application not found" })
+      return
+    }
 
-    res.json(applications)
+    const appEmail = String((application as any).email || "")
+      .trim()
+      .toLowerCase()
+    if (appEmail !== emailQ) {
+      res.status(404).json({ success: false, message: "Application not found" })
+      return
+    }
 
-  } catch (error:any) {
-
+    res.json([application])
+  } catch (error: any) {
     res.status(500).json({
-      success:false,
-      message:error.message
+      success: false,
+      message: error.message,
     })
-
   }
-
 }

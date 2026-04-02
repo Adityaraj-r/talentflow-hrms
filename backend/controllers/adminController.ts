@@ -8,8 +8,9 @@ import { createLog } from './audit.controller';
 import Document from '../models/Document.model';
 import Transfer from '../models/Transfer.model';
 import Requisition from '../models/Requisition.model';
-import Leave from '../models/Leave.model';
+import Leave from '../models/leave.model';
 import Employee from '../models/Employee.model';
+import { isTeamPayrollViewerRole, getPayrollTeamUserIdStrings } from '../utils/payrollTeamScope.util';
 
 const Activity = require('../models/Activity').default || require('../models/Activity');
 const SystemAlert = require('../models/SystemAlert').default || require('../models/SystemAlert');
@@ -20,6 +21,8 @@ interface AuthRequest extends Request {
     role: string;
     email: string;
     firstName?: string;
+    lastName?: string;
+    department?: string;
   };
 }
 
@@ -117,7 +120,6 @@ export const bulkUploadUsers = async (req: AuthRequest, res: Response): Promise<
       if (processedUsers.length > 0) {
         const insertedUsers = await User.insertMany(processedUsers, { session });
 
-        // ── Create Employee doc + link employeeId for each user ──────────
         for (const insertedUser of insertedUsers) {
           const empCount = await Employee.countDocuments().session(session);
           const employeeCode = `EMP-${String(empCount + 1).padStart(4, '0')}`;
@@ -151,7 +153,7 @@ export const bulkUploadUsers = async (req: AuthRequest, res: Response): Promise<
             { session }
           );
         }
-        // ─────────────────────────────────────────────────────────────────
+
       }
 
       await createLog(
@@ -333,7 +335,7 @@ export const getDepartmentStats = async (req: AuthRequest, res: Response): Promi
 
 export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { role, search } = req.query;
+    const { role, search, scope } = req.query;
     const query: any = { isDeleted: { $ne: true } };
 
     if (role && role !== 'all') query.role = role;
@@ -345,7 +347,29 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
       ];
     }
 
-    const users = await User.find(query).select('-password').sort({ createdAt: -1 });
+    if (scope === 'payroll') {
+      let payrollQuery: typeof query = { ...query }
+      if (req.user && isTeamPayrollViewerRole(req.user.role)) {
+        const allowed = await getPayrollTeamUserIdStrings({
+          id: req.user.id,
+          role: req.user.role,
+          email: req.user.email,
+          firstName: req.user.firstName,
+          lastName: req.user.lastName,
+          department: req.user.department,
+        })
+        const ids = [...allowed].map(id => new mongoose.Types.ObjectId(id))
+        payrollQuery._id = { $in: ids }
+      }
+      const users = await User.find(payrollQuery)
+        .select('_id firstName lastName email department role employeeId employeeCode')
+        .sort({ createdAt: -1 })
+        .lean();
+      res.status(200).json({ success: true, data: users });
+      return;
+    }
+
+    const users = await User.find(query).select('-password').sort({ createdAt: -1 }).lean();
     res.status(200).json({ success: true, data: users });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch users' });
@@ -367,13 +391,11 @@ export const toggleUserStatus = async (req: AuthRequest, res: Response): Promise
     user.isActive = !user.isActive;
     await user.save();
 
-    // ── Sync Employee status ─────────────────────────────────────────────
     if (user.employeeId) {
       await Employee.findByIdAndUpdate(user.employeeId, {
         status: user.isActive ? 'Active' : 'Inactive',
       });
     }
-    // ────────────────────────────────────────────────────────────────────
 
     const action = user.isActive ? 'Activate User' : 'Deactivate User';
     await createLog(

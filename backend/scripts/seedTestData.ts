@@ -11,12 +11,12 @@ const seedData = async () => {
     console.log('🌱 Starting to seed test data...');
 
     await mongoose.connect(process.env.MONGODB_URI || '');
-    console.log('✅ Connected to MongoDB');
+    console.log('Connected to MongoDB');
 
     const adminUser = await User.findOne({ email: 'admin@hrms.com' });
 
     if (!adminUser) {
-      console.log('❌ Admin user not found. Please login first.');
+      console.log('Admin user not found. Please login first.');
       process.exit(1);
     }
 
@@ -66,7 +66,7 @@ const seedData = async () => {
 
     await Activity.deleteMany({});
     await Activity.insertMany(activities);
-    console.log(`✅ Created ${activities.length} activities`);
+    console.log(`Created ${activities.length} activities`);
 
     // Create sample system alerts
     console.log('\n🚨 Creating sample system alerts...');
@@ -98,7 +98,7 @@ const seedData = async () => {
 
     await SystemAlert.deleteMany({});
     await SystemAlert.insertMany(alerts);
-    console.log(`✅ Created ${alerts.length} system alerts`);
+    console.log(`Created ${alerts.length} system alerts`);
 
     // Create sample Indian users
     console.log('\n👥 Creating sample users...');
@@ -220,11 +220,11 @@ const seedData = async () => {
     console.log(`   - Activities: ${activities.length}`);
     console.log(`   - System Alerts: ${alerts.length}`);
     console.log(`   - Sample Users: ${sampleUsers.length}`);
-    console.log('\n✅ Refresh your admin dashboard to see the data!');
+    console.log('\nRefresh your admin dashboard to see the data.');
 
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error seeding data:', error);
+    console.error('Error seeding data:', error);
     process.exit(1);
   }
 };
