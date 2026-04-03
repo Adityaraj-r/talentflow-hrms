@@ -12,7 +12,7 @@ router.use(protect as any);
 
 router.post('/nominate', authorize( 'HR_MANAGER', ), nominateForPromotion);
 
-router.get('/all', authorize('ADMIN', 'CEO', 'COUNTRY_MANAGER', 'HR_MANAGER'), getAllPromotions);
+router.get('/all', authorize('ADMIN', 'CEO', 'COUNTRY_MANAGER', 'HR_MANAGER' , 'HR_OFFICER'), getAllPromotions);
 
 router.patch('/update/:id', authorize('ADMIN', 'CEO', 'COUNTRY_MANAGER'), updatePromotionStatus);
 

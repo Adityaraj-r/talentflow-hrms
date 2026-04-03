@@ -18,7 +18,7 @@ const EmployeePromotion = () => {
   
   // STRICT RBAC
   const canNominate = userRole === "HR_MANAGER"
-  const canViewBoard = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER"].includes(userRole)
+  const canViewBoard = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER" , "HR_OFFICER"].includes(userRole)
 
   if (!canViewBoard && !canNominate) {
     return (
