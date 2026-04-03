@@ -166,16 +166,53 @@ export type PerUserAdjustments = {
   lopDaysOverride?: number
 }
 
-export async function assertAttendancePeriodLocked(startStr: string, endStr: string): Promise<void> {
+export type AttendanceLockStatus = {
+  total: number
+  locked: number
+  unlocked: number
+  /** Up to 12 calendar dates (YYYY-MM-DD) that still have at least one unlocked row */
+  sampleUnlockedDates: string[]
+}
+
+/** Counts locked vs total attendance rows in range; used for payroll gating and error detail. */
+export async function getAttendanceLockStatus(
+  startStr: string,
+  endStr: string
+): Promise<AttendanceLockStatus> {
   const total = await Attendance.countDocuments({ date: { $gte: startStr, $lte: endStr } })
-  if (total === 0) return
   const locked = await Attendance.countDocuments({
     date: { $gte: startStr, $lte: endStr },
     isLocked: true,
   })
-  if (locked !== total) {
+  const unlocked = total - locked
+  const sampleDocs = await Attendance.find({
+    date: { $gte: startStr, $lte: endStr },
+    $or: [{ isLocked: false }, { isLocked: { $exists: false } }],
+  })
+    .select("date")
+    .sort({ date: 1 })
+    .limit(40)
+    .lean()
+  const seen = new Set<string>()
+  const sampleUnlockedDates: string[] = []
+  for (const d of sampleDocs) {
+    const day = String((d as { date?: string }).date || "")
+    if (day && !seen.has(day)) {
+      seen.add(day)
+      sampleUnlockedDates.push(day)
+      if (sampleUnlockedDates.length >= 12) break
+    }
+  }
+  return { total, locked, unlocked, sampleUnlockedDates }
+}
+
+export async function assertAttendancePeriodLocked(startStr: string, endStr: string): Promise<void> {
+  const s = await getAttendanceLockStatus(startStr, endStr)
+  if (s.total === 0) return
+  if (s.locked !== s.total) {
+    const samples = s.sampleUnlockedDates.slice(0, 5).join(", ") || "—"
     throw new Error(
-      "PAYROLL_LOCK: All attendance rows in the pay period must be locked before payroll processing."
+      `PAYROLL_LOCK: ${s.unlocked} of ${s.total} attendance rows are not locked (${s.locked} locked). Lock all attendance for ${startStr} through ${endStr} before payroll. Sample dates with unlocked rows: ${samples}.`
     )
   }
 }
