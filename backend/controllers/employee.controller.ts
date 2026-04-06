@@ -71,6 +71,33 @@ export const getEmployeeById = async (req: Request, res: Response) => {
   }
 };
 
+export const getMyDocuments = async (req: Request, res: Response) => {
+  try {
+    const requestingUser = (req as any).user;
+    
+    const userId = requestingUser._id || requestingUser.id;
+    
+    if (!userId) {
+      return res.status(400).json({ message: "Invalid user token." });
+    }
+
+    const employee = await Employee.findOne({ userId: userId });
+
+    if (!employee) {
+      return res.status(404).json({ message: "Employee profile not found for this account." });
+    }
+
+    const data = employee.toObject() as Record<string, any>;
+    
+    const documents = data.Documents || {};
+
+    res.status(200).json(documents);
+  } catch (err) {
+    console.error("Error fetching my documents:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 export const offboardEmployee = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { exitDate, exitReason } = req.body;

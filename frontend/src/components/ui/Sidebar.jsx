@@ -388,6 +388,7 @@ const Sidebar = ({
           </SidebarGroup>
 
           <SidebarGroup id="documentRequests" icon={FileCheck} label="Documents">
+            <SubLink to="/role/employee/my-documents" label="View my Documents" />
             <SubLink to="/role/employee/document-requests" label="Request Document" />
           </SidebarGroup>
         </>
