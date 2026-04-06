@@ -121,6 +121,9 @@ import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/EmployeeLeaveManageme
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 import Profile from "./pages/dashboard/Profile"
 
+// Document Module
+import MyDocuments from "./pages/modules/documents/MyDocuments"
+
 const CEOLeaveManagement = LeaveManagement
 
 const queryClient = new QueryClient({
@@ -635,6 +638,12 @@ function App() {
                     <Route path="/dashboard/employee/make-transfer" element={
                       <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
                         <DashboardLayout><TransferPage /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+
+                    <Route path="/role/employee/my-documents" element={
+                      <ProtectedRoute allowedRoles={["EMPLOYEE", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "COUNTRY_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "FINANCE_MANAGER", "PAYROLL_OFFICER", "PROJECT_MANAGER", "OPERATIONS_MANAGER"]}>
+                        <DashboardLayout><MyDocuments /></DashboardLayout>
                       </ProtectedRoute>
                     } />
 

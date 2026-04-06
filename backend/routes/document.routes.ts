@@ -9,6 +9,7 @@ import {
   getDocumentsByEmployee,
   deleteDocument,
   updateDocumentStatus,
+  getMyUploadedDocuments
 } from '../controllers/document.controller';
 
 const router = express.Router();
@@ -41,6 +42,13 @@ router.post(
   allowRoles('ADMIN', 'HR_MANAGER', 'HR_OFFICER', 'EMPLOYEE'),
   upload.single('file'),
   uploadDocument
+);
+
+router.get(
+  '/my-documents',
+  protect,
+  allowRoles('ADMIN', 'HR_MANAGER', 'HR_OFFICER', 'CEO', 'COUNTRY_MANAGER', 'DEPARTMENT_MANAGER', 'DIRECT_MANAGER', 'FINANCE_MANAGER', 'PAYROLL_OFFICER', 'PROJECT_MANAGER', 'OPERATIONS_MANAGER', 'EMPLOYEE'),
+  getMyUploadedDocuments
 );
 
 router.get(
