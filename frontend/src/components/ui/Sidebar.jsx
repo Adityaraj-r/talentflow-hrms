@@ -90,6 +90,7 @@ const Sidebar = ({
         path.startsWith("/staff-requisition") ||
         path.startsWith("/ceo/recruitment") ||
         path.startsWith("/dashboard/applications") ||
+        path.startsWith("/dashboard/interview-scheduling") ||
         path.startsWith("/dashboard/recruitment-pipeline") ||
         path.startsWith("/dashboard/job-openings") ||
         path.startsWith("/dashboard/offer-management") ||
@@ -408,6 +409,7 @@ const Sidebar = ({
               <SubLink to="/staff-requisition" label="Staff Requisition" />
               <SubLink to="/dashboard/job-openings" label="Job Openings" />
               <SubLink to="/dashboard/applications" label="Applications" />
+              <SubLink to="/dashboard/interview-scheduling" label="Interview Scheduling" />
               <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
               <SubLink to="/dashboard/offer-management" label="Offer Management" />
             </SidebarGroup>
@@ -458,6 +460,7 @@ const Sidebar = ({
           {canSee("recruitment") && (
             <SidebarGroup id="recruitment" icon={Users} label={getRecruitmentLabel()}>
               <SubLink to="/staff-requisition" label="Staff Requisition" />
+              <SubLink to="/dashboard/interview-scheduling" label="Interview Scheduling" />
             </SidebarGroup>
           )}
           {canSee('attendance') && (

@@ -45,6 +45,7 @@ import JobOpenings from "./pages/modules/recruitment/JobOpenings"
 import ApplyJob from "./pages/ApplyJob"
 import CandidateApplications from "./pages/modules/recruitment/CandidateApplications"
 import RecruitmentPipeline from "./pages/modules/recruitment/RecruitmentPipeline"
+import InterviewScheduling from "./pages/modules/recruitment/InterviewScheduling"
 import ApplicationStatus from "./pages/ApplicationStatus"
 import AdminRecruitmentSuggestions from "./pages/modules/recruitment/AdminRecruitmentSuggestions"
 import RecruitmentSuggestionsInbox from "./pages/modules/recruitment/RecruitmentSuggestionsInbox"
@@ -418,6 +419,11 @@ function App() {
                     <Route path="/dashboard/recruitment-pipeline" element={
                       <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
                         <DashboardLayout><RecruitmentPipeline /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/interview-scheduling" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER"]}>
+                        <DashboardLayout><InterviewScheduling /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/job-openings" element={

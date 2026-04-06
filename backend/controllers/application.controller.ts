@@ -1,6 +1,7 @@
 import { Request, Response } from "express"
 import mongoose from "mongoose"
 import Application from "../models/application.model"
+import { getHrSenderEmail, sendInterviewScheduleEmail } from "../utils/sendEmail"
 
 export const applyJob = async (req: Request, res: Response) => {
 
@@ -109,6 +110,91 @@ export const getPublicApplicationStatus = async (req: Request, res: Response) =>
     res.status(500).json({
       success: false,
       message: error.message,
+    })
+  }
+}
+
+export const scheduleInterviewAndSendMail = async (req: Request, res: Response) => {
+  try {
+    const {
+      interviewDate,
+      startTime,
+      endTime,
+      mode,
+      location = "",
+      meetingLink = "",
+      interviewers = [],
+      instructions = [],
+    } = req.body
+
+    if (!interviewDate || !startTime || !endTime || !mode) {
+      res.status(400).json({ success: false, message: "interviewDate, startTime, endTime and mode are required" })
+      return
+    }
+    if (mode !== "Online" && mode !== "InPerson") {
+      res.status(400).json({ success: false, message: "mode must be Online or InPerson" })
+      return
+    }
+
+    const application = await Application.findById(req.params.id).populate("jobId")
+    if (!application) {
+      res.status(404).json({ success: false, message: "Application not found" })
+      return
+    }
+
+    const user = (req as any).user || {}
+    const hrName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || "HR Team"
+    const configuredSenderEmail = await getHrSenderEmail()
+    const hrEmail = user.email || configuredSenderEmail || ""
+    const hrPhone = user.phoneNumber || ""
+
+    const jobTitle = (application as any)?.jobId?.jobTitle || "Position"
+    const department = (application as any)?.jobId?.department || "General"
+
+    const payload = {
+      candidateName: (application as any).name || "",
+      jobTitle,
+      department,
+      interviewDate: String(interviewDate),
+      startTime: String(startTime),
+      endTime: String(endTime),
+      mode,
+      location: String(location),
+      meetingLink: String(meetingLink),
+      interviewers: Array.isArray(interviewers) ? interviewers : [],
+      instructions: Array.isArray(instructions)
+        ? instructions.map((x: any) => String(x)).filter(Boolean)
+        : [],
+      hrContact: {
+        name: hrName,
+        email: hrEmail,
+        phone: hrPhone,
+      },
+    } as const
+
+    const mailResult = await sendInterviewScheduleEmail((application as any).email, payload as any)
+
+    const appDoc: any = application
+    if (appDoc.status !== "Interview") {
+      appDoc.status = "Interview"
+      await appDoc.save()
+    }
+
+    res.status(200).json({
+      success: true,
+      message: mailResult?.sent
+        ? "Interview scheduled and email sent"
+        : "Interview scheduled, but email could not be sent",
+      data: {
+        ...payload,
+        emailDelivery: mailResult?.sent ? "sent" : "failed",
+        emailReason: mailResult?.reason || null,
+      },
+    })
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error?.message || "Failed to schedule interview and send email",
     })
   }
 }
