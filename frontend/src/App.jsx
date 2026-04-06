@@ -121,6 +121,10 @@ import CEORecruitmentBriefing from "./pages/role/CEO/RecruitmentBriefing"
 import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/EmployeeLeaveManagement"
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 import Profile from "./pages/dashboard/Profile"
+import AttendanceAnalytics from "./pages/modules/attendance/AttendanceAnalytics"
+
+// Document Module
+import MyDocuments from "./pages/modules/documents/MyDocuments"
 
 const CEOLeaveManagement = LeaveManagement
 
@@ -452,6 +456,14 @@ function App() {
                       </ProtectedRoute>
                     } />
 
+                    {/* ── Attendance — MATRIX ENFORCED ─────────────────── */}
+
+                    <Route path="/attendance/analytics" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "CEO", "COUNTRY_MANAGER"]}>
+                        <DashboardLayout><AttendanceAnalytics /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    
                     <Route path="/attendance" element={
                       <ProtectedRoute requiredPermission={{ module: "attendance", action: "read" }}>
                         <DashboardLayout><AttendanceRecords /></DashboardLayout>
@@ -478,7 +490,7 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="/attendance/my-leaves" element={
-                      <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER", "FINANCE_MANAGER", "HR_MANAGER", "HR_OFFICER", "PAYROLL_OFFICER"]}>
                         <DashboardLayout><EmployeeLeaveManagement /></DashboardLayout>
                       </ProtectedRoute>
                     } />
@@ -498,10 +510,11 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="/attendance/overtime-approvals" element={
-                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "FINANCE_MANAGER"]}>
                         <DashboardLayout><OvertimeApprovals /></DashboardLayout>
                       </ProtectedRoute>
                     } />
+                    
 
                     <Route path="/payroll" element={
                       <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
@@ -613,7 +626,7 @@ function App() {
 
                     <Route path="/role/ceo/leave-management" element={
                       <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
-                        <DashboardLayout><CEOLeaveManagement /></DashboardLayout>
+                        <DashboardLayout><LeaveManagement /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/role/hr_manager/leave-management" element={
@@ -629,7 +642,7 @@ function App() {
 
                     {/* ── Employee Self-Service ────────────────────────── */}
                     <Route path="/dashboard/employee/attendance" element={
-                      <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER", "FINANCE_MANAGER", "HR_MANAGER", "HR_OFFICER", "PAYROLL_OFFICER"]}>
                         <DashboardLayout><MyAttendance /></DashboardLayout>
                       </ProtectedRoute>
                     } />
@@ -641,6 +654,12 @@ function App() {
                     <Route path="/dashboard/employee/make-transfer" element={
                       <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
                         <DashboardLayout><TransferPage /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+
+                    <Route path="/role/employee/my-documents" element={
+                      <ProtectedRoute allowedRoles={["EMPLOYEE", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "COUNTRY_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "FINANCE_MANAGER", "PAYROLL_OFFICER", "PROJECT_MANAGER", "OPERATIONS_MANAGER"]}>
+                        <DashboardLayout><MyDocuments /></DashboardLayout>
                       </ProtectedRoute>
                     } />
 

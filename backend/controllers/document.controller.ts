@@ -77,6 +77,36 @@ export const uploadDocument = async (req: Request, res: Response): Promise<void>
   }
 };
 
+export const getMyUploadedDocuments = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const requestingUser = (req as any).user;
+    
+    // 1. The Guaranteed Key: Every authenticated user has an _id or id
+    const userId = requestingUser._id || requestingUser.id;
+
+    if (!userId) {
+      res.status(400).json({ message: "Invalid user token." });
+      return;
+    }
+
+    // 2. Direct lookup: Find the Employee document that belongs to this User ID
+    const employee = await Employee.findOne({ userId: userId });
+
+    if (!employee || !employee.employeeCode) {
+      res.status(404).json({ message: "Employee profile or code not found for this account." });
+      return;
+    }
+
+    // 3. Fetch documents using the true employeeCode (e.g., EMP-0011)
+    const docs = await Document.find({ employeeId: employee.employeeCode }).sort({ uploadDate: -1 });
+    
+    res.status(200).json(docs);
+  } catch (error) {
+    console.error("Error fetching documents:", error);
+    res.status(500).json({ message: "Error fetching documents", error });
+  }
+};
+
 export const getDocumentsByEmployee = async (req: Request, res: Response): Promise<void> => {
   try {
     const requestingUser = (req as any).user;

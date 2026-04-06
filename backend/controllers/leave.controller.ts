@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import Leave from "../models/leave.model";
+import Leave from "../models/Leave.model";
 import LeavePolicy from "../models/LeavePolicy.model";
 import LeaveBalance from "../models/LeaveBalance.model";
 import User from "../models/User.model";

@@ -40,13 +40,15 @@ router.get(
   "/all",
   authorize(
     "ADMIN",
+    "SUPER_ADMIN",
     "CEO",
+    "COUNTRY_MANAGER", 
+    "FINANCE_MANAGER",  
     "HR_MANAGER",
     "HR_OFFICER",
     "DEPARTMENT_MANAGER",
     "DIRECT_MANAGER",
-    "PAYROLL_OFFICER",
-    "SUPER_ADMIN"
+    "PAYROLL_OFFICER"
   ),
   getAllAttendance
 );
@@ -128,7 +130,8 @@ router.get(
     "SUPER_ADMIN",
     "HR_MANAGER",
     "DEPARTMENT_MANAGER",
-    "DIRECT_MANAGER"
+    "DIRECT_MANAGER",
+    "FINANCE_MANAGER"  
   ),
   getOvertimePending
 );
