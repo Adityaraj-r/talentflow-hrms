@@ -131,8 +131,11 @@ export const scheduleInterviewAndSendMail = async (req: Request, res: Response) 
       res.status(400).json({ success: false, message: "interviewDate, startTime, endTime and mode are required" })
       return
     }
-    if (mode !== "Online" && mode !== "InPerson") {
-      res.status(400).json({ success: false, message: "mode must be Online or InPerson" })
+    const normalizedMode =
+      String(mode).toLowerCase() === "inperson" ? "Offline" : String(mode)
+
+    if (normalizedMode !== "Online" && normalizedMode !== "Offline") {
+      res.status(400).json({ success: false, message: "mode must be Online or Offline" })
       return
     }
 
@@ -158,7 +161,7 @@ export const scheduleInterviewAndSendMail = async (req: Request, res: Response) 
       interviewDate: String(interviewDate),
       startTime: String(startTime),
       endTime: String(endTime),
-      mode,
+      mode: normalizedMode as "Online" | "Offline",
       location: String(location),
       meetingLink: String(meetingLink),
       interviewers: Array.isArray(interviewers) ? interviewers : [],

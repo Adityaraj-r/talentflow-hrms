@@ -225,7 +225,7 @@ type InterviewMailPayload = {
     interviewDate: string;
     startTime: string;
     endTime: string;
-    mode: "Online" | "InPerson";
+    mode: "Online" | "Offline";
     location: string;
     meetingLink: string;
     interviewers: Interviewer[];
@@ -248,42 +248,61 @@ export const sendInterviewScheduleEmail = async (
             reason: 'SMTP is not configured. Configure HR SMTP in System Settings.'
         };
     }
-    const prettyJson = JSON.stringify(payload, null, 2);
-
     const interviewersHtml = payload.interviewers
-        .map((i) => `<li>${i.name} (${i.designation})</li>`)
+        .map((i) => `<li style="margin: 0 0 6px 0;">${i.name} - ${i.designation}</li>`)
         .join("");
     const instructionsHtml = payload.instructions
-        .map((i) => `<li>${i}</li>`)
+        .map((i) => `<li style="margin: 0 0 6px 0;">${i}</li>`)
         .join("");
 
+    const venueText = payload.mode === "Online" ? "Google Meet" : (payload.location || "Shared by HR team");
+    const modeBadgeBg = payload.mode === "Online" ? "#dbeafe" : "#dcfce7";
+    const modeBadgeColor = payload.mode === "Online" ? "#1d4ed8" : "#166534";
+
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 680px; margin: 0 auto;">
-        <h2>Interview Schedule</h2>
-        <p>Dear ${payload.candidateName},</p>
-        <p>Your interview has been scheduled. Please find the details below.</p>
-        <table style="border-collapse: collapse; width: 100%; margin-top: 12px;">
-          <tr><td style="padding:6px 0;"><strong>Job Title</strong></td><td>${payload.jobTitle}</td></tr>
-          <tr><td style="padding:6px 0;"><strong>Department</strong></td><td>${payload.department}</td></tr>
-          <tr><td style="padding:6px 0;"><strong>Date</strong></td><td>${payload.interviewDate}</td></tr>
-          <tr><td style="padding:6px 0;"><strong>Time</strong></td><td>${payload.startTime} - ${payload.endTime}</td></tr>
-          <tr><td style="padding:6px 0;"><strong>Mode</strong></td><td>${payload.mode}</td></tr>
-          <tr><td style="padding:6px 0;"><strong>Location</strong></td><td>${payload.location || "-"}</td></tr>
-          <tr><td style="padding:6px 0;"><strong>Meeting Link</strong></td><td>${payload.meetingLink ? `<a href="${payload.meetingLink}">${payload.meetingLink}</a>` : "-"}</td></tr>
-        </table>
-        <h3 style="margin-top: 18px;">Interviewers</h3>
-        <ul>${interviewersHtml || "<li>-</li>"}</ul>
-        <h3 style="margin-top: 18px;">Instructions</h3>
-        <ul>${instructionsHtml || "<li>-</li>"}</ul>
-        <h3 style="margin-top: 18px;">HR Contact</h3>
-        <p>
-          ${payload.hrContact.name}<br/>
-          ${payload.hrContact.email}<br/>
-          ${payload.hrContact.phone || "-"}
-        </p>
-        <hr/>
-        <p style="font-size: 12px; color: #555;">Structured payload:</p>
-        <pre style="background:#f6f8fa; padding:12px; border-radius:6px; font-size:12px;">${prettyJson}</pre>
+      <div style="font-family: Arial, sans-serif; max-width: 680px; margin: 0 auto; color:#0f172a; border:1px solid #e2e8f0; border-radius:14px; overflow:hidden;">
+        <div style="background: linear-gradient(135deg, #2563eb, #0ea5e9); padding: 24px;">
+          <h2 style="margin:0; color:white; font-size:22px;">Interview Invitation</h2>
+          <p style="margin:8px 0 0; color:#e0f2fe; font-size:14px;">${payload.jobTitle} - ${payload.department}</p>
+        </div>
+        <div style="padding: 24px;">
+          <p style="margin: 0 0 14px 0;">Hi ${payload.candidateName},</p>
+          <p style="margin: 0 0 16px 0; line-height:1.6;">
+            We are delighted to invite you to the next step of our hiring process. Your interview has been confirmed with the details below.
+          </p>
+
+          <div style="display:inline-block; background:${modeBadgeBg}; color:${modeBadgeColor}; padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700; margin-bottom:14px;">
+            ${payload.mode} Interview
+          </div>
+
+          <table style="border-collapse: collapse; width: 100%; margin-top: 4px; background:#f8fafc; border-radius:8px;">
+            <tr><td style="padding:10px 12px; width:170px;"><strong>Date</strong></td><td style="padding:10px 12px;">${payload.interviewDate}</td></tr>
+            <tr><td style="padding:10px 12px;"><strong>Time</strong></td><td style="padding:10px 12px;">${payload.startTime} - ${payload.endTime}</td></tr>
+            <tr><td style="padding:10px 12px;"><strong>Venue</strong></td><td style="padding:10px 12px;">${venueText}</td></tr>
+            <tr><td style="padding:10px 12px;"><strong>Location</strong></td><td style="padding:10px 12px;">${payload.location || "-"}</td></tr>
+            <tr><td style="padding:10px 12px;"><strong>Meeting Link</strong></td><td style="padding:10px 12px;">${payload.meetingLink ? `<a href="${payload.meetingLink}" style="color:#2563eb;">Join Interview</a>` : "-"}</td></tr>
+          </table>
+
+          <h3 style="margin: 20px 0 10px 0; font-size:16px;">Interview Panel</h3>
+          <ul style="padding-left:18px; margin: 0;">${interviewersHtml || "<li>Will be shared shortly</li>"}</ul>
+
+          <h3 style="margin: 18px 0 10px 0; font-size:16px;">Preparation Tips</h3>
+          <ul style="padding-left:18px; margin: 0;">${instructionsHtml || "<li>Please keep a valid ID and resume copy ready</li>"}</ul>
+
+          <div style="margin-top:20px; padding:12px 14px; border:1px dashed #cbd5e1; border-radius:8px; background:#f8fafc;">
+            <p style="margin: 0 0 6px 0; font-size:13px; color:#475569;"><strong>Need help?</strong> Reach out to:</p>
+            <p style="margin: 0; font-size:14px; line-height:1.5;">
+              ${payload.hrContact.name}<br/>
+              ${payload.hrContact.email}<br/>
+              ${payload.hrContact.phone || "-"}
+            </p>
+          </div>
+
+          <p style="margin: 18px 0 0 0; line-height:1.6;">
+            We look forward to speaking with you and learning more about your experience.
+          </p>
+          <p style="margin: 12px 0 0 0;">Best regards,<br/><strong>HR Team</strong></p>
+        </div>
       </div>
     `;
 
@@ -295,13 +314,6 @@ export const sendInterviewScheduleEmail = async (
             to: candidateEmail,
             subject: `Interview Scheduled: ${payload.jobTitle}`,
             html,
-            attachments: [
-                {
-                    filename: "interview-schedule.json",
-                    content: prettyJson,
-                    contentType: "application/json",
-                },
-            ],
         });
         return { sent: true };
     } catch (error: any) {

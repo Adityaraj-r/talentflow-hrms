@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react"
 import apiClient from "@/services/apiClient"
-import googleMeetService from "@/services/googleMeetService"
 import { useUser } from "@/contexts/UserContext"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,7 +9,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Search, Calendar, Loader2, Video } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Search, Calendar, Loader2, Video, Clock3, MapPin } from "lucide-react"
+import { format, isValid, parse } from "date-fns"
 import { toast } from "sonner"
 
 const InterviewScheduling = () => {
@@ -21,18 +23,24 @@ const InterviewScheduling = () => {
   const [selected, setSelected] = useState(null)
   const [open, setOpen] = useState(false)
   const [sending, setSending] = useState(false)
-  const [meetingLoading, setMeetingLoading] = useState(false)
   const [form, setForm] = useState({
     interviewDate: "",
-    startTime: "",
-    endTime: "",
-    mode: "Online",
+    startHour: "",
+    startMinute: "",
+    startPeriod: "AM",
+    endHour: "",
+    endMinute: "",
+    endPeriod: "AM",
+    mode: "",
     location: "",
     meetingLink: "",
     instructionsText: "",
     interviewerName: "",
     interviewerDesignation: "",
+    officeAddress: "",
+    customAddress: "",
   })
+  const todayDate = format(new Date(), "yyyy-MM-dd")
 
   const fetchApplications = async () => {
     try {
@@ -57,51 +65,126 @@ const InterviewScheduling = () => {
       })
   }, [applications, search])
 
+  const hourOptions = useMemo(() => Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")), [])
+  const minuteOptions = useMemo(() => ["00", "15", "30", "45"], [])
+
   const setField = (k, v) => setForm((p) => ({ ...p, [k]: v }))
 
-  const generateMeet = async () => {
-    if (!selected?.email || !form.interviewDate || !form.startTime || !form.endTime) {
-      toast.error("Set date/time and select candidate first")
-      return
-    }
-    setMeetingLoading(true)
+  const getComposedTime = (prefix) => {
+    const hour = form[`${prefix}Hour`]
+    const minute = form[`${prefix}Minute`]
+    const period = form[`${prefix}Period`]
+    if (!hour || !minute || !period) return ""
+    return `${hour}:${minute} ${period}`
+  }
+
+  const parseTimeTo24Hour = (timeValue) => {
+    if (!timeValue) return null
+    const raw = String(timeValue).trim()
+    const parsed24 = parse(raw, "HH:mm", new Date())
+    if (isValid(parsed24)) return format(parsed24, "HH:mm")
+    const parsed12 = parse(raw, "hh:mm a", new Date())
+    if (isValid(parsed12)) return format(parsed12, "HH:mm")
+    return null
+  }
+
+  const toDateTimeISO = (dateValue, timeValue) => {
+    const normalizedTime = parseTimeTo24Hour(timeValue)
+    if (!dateValue || !normalizedTime) return null
+    const [hours, minutes] = normalizedTime.split(":")
+    const d = parse(String(dateValue), "yyyy-MM-dd", new Date())
+    d.setHours(Number(hours), Number(minutes), 0, 0)
+    return isValid(d) ? d.toISOString() : null
+  }
+
+  const validateTimeRange = () => {
+    const start = parseTimeTo24Hour(getComposedTime("start"))
+    const end = parseTimeTo24Hour(getComposedTime("end"))
+    if (!start || !end) return false
+    return start < end
+  }
+
+  const isValidGoogleMeetLink = (link) => {
     try {
-      const startDateTime = new Date(`${form.interviewDate}T${form.startTime}:00`).toISOString()
-      const endDateTime = new Date(`${form.interviewDate}T${form.endTime}:00`).toISOString()
-      const res = await googleMeetService.createMeeting({
-        summary: `Interview: ${selected?.jobId?.jobTitle || "Candidate"} - ${selected.name}`,
-        description: "Interview session",
-        startDateTime,
-        endDateTime,
-        attendees: [selected.email],
-      })
-      const link = res?.meetLink || res?.data?.meetLink
-      if (!link) {
-        toast.error("Could not generate meeting link")
-        return
-      }
-      setField("meetingLink", link)
-      setField("mode", "Online")
-      toast.success("Meeting link generated")
-    } catch (e) {
-      toast.error(e?.message || "Failed to generate meeting link")
-    } finally {
-      setMeetingLoading(false)
+      const url = new URL(String(link).trim())
+      return url.hostname === "meet.google.com" && /^\/[a-z]{3}-[a-z]{4}-[a-z]{3}$/i.test(url.pathname)
+    } catch {
+      return false
     }
   }
 
+  const openGoogleMeetScheduler = () => {
+    if (form.mode !== "Online") {
+      toast.error("Scheduler is only available for Online mode")
+      return
+    }
+    if (!form.interviewDate) {
+      toast.error("Please select an interview date")
+      return
+    }
+    const startTime = getComposedTime("start")
+    const endTime = getComposedTime("end")
+    if (!startTime || !endTime) {
+      toast.error("Please select start and end time")
+      return
+    }
+    if (!validateTimeRange()) {
+      toast.error("End time must be after start time")
+      return
+    }
+    const startDateTime = toDateTimeISO(form.interviewDate, startTime)
+    const endDateTime = toDateTimeISO(form.interviewDate, endTime)
+    if (!startDateTime || !endDateTime) {
+      toast.error("Invalid date/time. Please select values again.")
+      return
+    }
+    const toCalendarDate = (isoValue) => format(new Date(isoValue), "yyyyMMdd'T'HHmmss'Z'")
+    const title = encodeURIComponent(`Interview: ${selected?.name || "Candidate"}`)
+    const details = encodeURIComponent("Please enable Google Meet while scheduling and share the generated link in HRMS.")
+    const dates = `${toCalendarDate(startDateTime)}/${toCalendarDate(endDateTime)}`
+    const attendee = selected?.email ? `&add=${encodeURIComponent(selected.email)}` : ""
+    const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}${attendee}`
+    window.open(calendarUrl, "_blank", "noopener,noreferrer")
+    toast.info("Google Calendar opened. Create the event with Meet, then paste the link below.")
+  }
+
   const submitSchedule = async () => {
-    if (!selected?._id) return
-    if (!form.interviewDate || !form.startTime || !form.endTime || !form.mode) {
-      toast.error("Date, time and mode are required")
+    if (!selected?._id) {
+      toast.error("Please select a candidate")
+      return
+    }
+    if (!form.mode) {
+      toast.error("Please select interview mode")
+      return
+    }
+    const startTime = getComposedTime("start")
+    const endTime = getComposedTime("end")
+    if (!form.interviewDate || !startTime || !endTime) {
+      toast.error("Date and time are required")
+      return
+    }
+    if (!validateTimeRange()) {
+      toast.error("End time must be after start time")
+      return
+    }
+    if (form.mode === "Online" && !form.meetingLink.trim()) {
+      toast.error("Generate or add a meeting link for online interviews")
+      return
+    }
+    if (form.mode === "Online" && !isValidGoogleMeetLink(form.meetingLink)) {
+      toast.error("Please enter a valid Google Meet link (https://meet.google.com/xxx-xxxx-xxx)")
+      return
+    }
+    if (form.mode === "Offline" && !form.location.trim()) {
+      toast.error("Please provide interview address for offline mode")
       return
     }
     setSending(true)
     try {
       await apiClient.post(`/applications/${selected._id}/schedule-interview`, {
         interviewDate: form.interviewDate,
-        startTime: form.startTime,
-        endTime: form.endTime,
+        startTime,
+        endTime,
         mode: form.mode,
         location: form.location,
         meetingLink: form.meetingLink,
@@ -118,14 +201,20 @@ const InterviewScheduling = () => {
       setSelected(null)
       setForm({
         interviewDate: "",
-        startTime: "",
-        endTime: "",
-        mode: "Online",
+        startHour: "",
+        startMinute: "",
+        startPeriod: "AM",
+        endHour: "",
+        endMinute: "",
+        endPeriod: "AM",
+        mode: "",
         location: "",
         meetingLink: "",
         instructionsText: "",
         interviewerName: "",
         interviewerDesignation: "",
+        officeAddress: "",
+        customAddress: "",
       })
       fetchApplications()
     } catch (e) {
@@ -175,6 +264,23 @@ const InterviewScheduling = () => {
                     disabled={!canWrite}
                     onClick={() => {
                       setSelected(c)
+                      setForm({
+                        interviewDate: "",
+                        startHour: "",
+                        startMinute: "",
+                        startPeriod: "AM",
+                        endHour: "",
+                        endMinute: "",
+                        endPeriod: "AM",
+                        mode: "",
+                        location: "",
+                        meetingLink: "",
+                        instructionsText: "",
+                        interviewerName: "",
+                        interviewerDesignation: "",
+                        officeAddress: "",
+                        customAddress: "",
+                      })
                       setOpen(true)
                     }}
                   >
@@ -199,37 +305,142 @@ const InterviewScheduling = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <Label>Date</Label>
-                <Input type="date" value={form.interviewDate} onChange={(e) => setField("interviewDate", e.target.value)} />
+                <Input
+                  type="date"
+                  min={todayDate}
+                  value={form.interviewDate}
+                  onChange={(e) => setField("interviewDate", e.target.value)}
+                />
               </div>
               <div>
                 <Label>Mode</Label>
-                <Input value={form.mode} onChange={(e) => setField("mode", e.target.value)} placeholder="Online or InPerson" />
+                <Select
+                  value={form.mode}
+                  onValueChange={(value) => {
+                    setField("mode", value)
+                    if (value !== "Online") setField("meetingLink", "")
+                    if (value === "Online") setField("location", "")
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select interview mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Online">Online</SelectItem>
+                    <SelectItem value="Offline">Offline</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>Start time</Label>
-                <Input type="time" value={form.startTime} onChange={(e) => setField("startTime", e.target.value)} />
+                <div className="rounded-md border px-3 py-2 animate-in fade-in-50 slide-in-from-bottom-1 duration-200">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                    <Clock3 className="h-3.5 w-3.5" />
+                    Select Hour / Min / AM-PM
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Select value={form.startHour} onValueChange={(value) => setField("startHour", value)}>
+                      <SelectTrigger className="w-full"><SelectValue placeholder="HH" /></SelectTrigger>
+                      <SelectContent>{hourOptions.map((h) => <SelectItem key={`sh-${h}`} value={h}>{h}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={form.startMinute} onValueChange={(value) => setField("startMinute", value)}>
+                      <SelectTrigger className="w-full"><SelectValue placeholder="MM" /></SelectTrigger>
+                      <SelectContent>{minuteOptions.map((m) => <SelectItem key={`sm-${m}`} value={m}>{m}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={form.startPeriod} onValueChange={(value) => setField("startPeriod", value)}>
+                      <SelectTrigger className="w-full"><SelectValue placeholder="AM/PM" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AM">AM</SelectItem>
+                        <SelectItem value="PM">PM</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
               <div>
                 <Label>End time</Label>
-                <Input type="time" value={form.endTime} onChange={(e) => setField("endTime", e.target.value)} />
+                <div className="rounded-md border px-3 py-2 animate-in fade-in-50 slide-in-from-bottom-1 duration-200">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                    <Clock3 className="h-3.5 w-3.5" />
+                    Select Hour / Min / AM-PM
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Select value={form.endHour} onValueChange={(value) => setField("endHour", value)}>
+                      <SelectTrigger className="w-full"><SelectValue placeholder="HH" /></SelectTrigger>
+                      <SelectContent>{hourOptions.map((h) => <SelectItem key={`eh-${h}`} value={h}>{h}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={form.endMinute} onValueChange={(value) => setField("endMinute", value)}>
+                      <SelectTrigger className="w-full"><SelectValue placeholder="MM" /></SelectTrigger>
+                      <SelectContent>{minuteOptions.map((m) => <SelectItem key={`em-${m}`} value={m}>{m}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={form.endPeriod} onValueChange={(value) => setField("endPeriod", value)}>
+                      <SelectTrigger className="w-full"><SelectValue placeholder="AM/PM" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AM">AM</SelectItem>
+                        <SelectItem value="PM">PM</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div>
-              <Label>Location</Label>
-              <Input value={form.location} onChange={(e) => setField("location", e.target.value)} placeholder="Office / Building / Room" />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between">
-                <Label>Meeting link</Label>
-                <Button type="button" variant="outline" size="sm" onClick={generateMeet} disabled={meetingLoading}>
-                  {meetingLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Video className="mr-2 h-4 w-4" />}
-                  Generate Meet
-                </Button>
+            {form.mode === "Online" && (
+              <div>
+                <div className="flex items-center justify-between">
+                  <Label>Meeting link</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={openGoogleMeetScheduler}>
+                    <Video className="mr-2 h-4 w-4" />
+                    Open Google Scheduler
+                  </Button>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  After scheduling in Google Calendar, paste the generated Google Meet link here.
+                </p>
+                <Input value={form.meetingLink} onChange={(e) => setField("meetingLink", e.target.value)} placeholder="https://meet.google.com/..." />
               </div>
-              <Input value={form.meetingLink} onChange={(e) => setField("meetingLink", e.target.value)} placeholder="https://..." />
-            </div>
+            )}
+            
+            {form.mode === "Offline" && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Interview address
+                </Label>
+                <Tabs
+                  defaultValue="office"
+                  onValueChange={(tab) => {
+                    if (tab === "office") setField("location", form.officeAddress)
+                    if (tab === "custom") setField("location", form.customAddress)
+                  }}
+                >
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="office">Office address</TabsTrigger>
+                    <TabsTrigger value="custom">Custom address</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="office">
+                    <Input
+                      value={form.officeAddress}
+                      onChange={(e) => {
+                        setField("officeAddress", e.target.value)
+                        setField("location", e.target.value)
+                      }}
+                      placeholder="Company office full address"
+                    />
+                  </TabsContent>
+                  <TabsContent value="custom">
+                    <Input
+                      value={form.customAddress}
+                      onChange={(e) => {
+                        setField("customAddress", e.target.value)
+                        setField("location", e.target.value)
+                      }}
+                      placeholder="Interview venue full address"
+                    />
+                  </TabsContent>
+                </Tabs>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
