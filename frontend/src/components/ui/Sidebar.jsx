@@ -462,7 +462,9 @@ const Sidebar = ({
 
           {canSee("recruitment") && (
             <SidebarGroup id="recruitment" icon={Users} label={getRecruitmentLabel()}>
-              <SubLink to="/staff-requisition" label="Staff Requisition" />
+              <SubLink to="/create-requisition" label="Create Requisition" />
+              <SubLink to="/dashboard/job-openings" label="Job Openings" />
+              <SubLink to="/dashboard/applications" label="Applications" />
             </SidebarGroup>
           )}
           {canSee('attendance') && (
