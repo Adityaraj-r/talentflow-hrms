@@ -1,12 +1,19 @@
 import express from 'express';
-import oauth2Client from '../config/google';
-import { protect, admin } from '../middleware/auth.middleware';
+import oauth2Client, { hasGoogleOAuthConfig } from '../config/google';
+import mongoose from 'mongoose';
+import { protect } from '../middleware/auth.middleware';
 import { createLog } from '../controllers/audit.controller';
-import { createMeetLink } from '../controllers/googleMeet.controller';
+import { createMeetLink, getGoogleMeetStatus } from '../controllers/googleMeet.controller';
 
 const router = express.Router();
 
-router.get('/auth', protect as any, admin as any, (req: any, res: any) => {
+router.get('/auth', protect as any, (req: any, res: any) => {
+  if (!hasGoogleOAuthConfig()) {
+    return res.status(400).json({
+      success: false,
+      message: 'Google OAuth is not configured. Add GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI in backend environment.',
+    });
+  }
   const scopes = ['https://www.googleapis.com/auth/calendar.events'];
   const url = oauth2Client.generateAuthUrl({
     access_type: 'offline',
@@ -17,12 +24,30 @@ router.get('/auth', protect as any, admin as any, (req: any, res: any) => {
 });
 
 router.get('/callback', async (req: any, res: any) => {
+  if (!hasGoogleOAuthConfig()) {
+    return res.status(400).send(
+      '<h1>Google OAuth not configured</h1><p>Please add GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI in backend environment and restart server.</p>'
+    );
+  }
   const { code } = req.query;
   const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
 
   try {
     const { tokens } = await oauth2Client.getToken(code as string);
     oauth2Client.setCredentials(tokens);
+    const db = mongoose.connection?.db;
+    if (db) {
+      await db.collection("settings").updateOne(
+        {},
+        {
+          $set: {
+            googleOauthTokens: tokens,
+            googleConnectedAt: new Date(),
+          },
+        },
+        { upsert: true }
+      );
+    }
 
     await createLog(
       'system',
@@ -56,5 +81,6 @@ router.get('/callback', async (req: any, res: any) => {
 });
 
 router.post('/create-meet', protect as any, createMeetLink as any);
+router.get('/status', protect as any, getGoogleMeetStatus as any);
 
 export default router;
