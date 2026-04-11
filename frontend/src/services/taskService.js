@@ -1,20 +1,37 @@
 import apiClient from "./apiClient";
 
 const taskService = {
-  // Fetch tasks assigned to the logged-in user
   getMyTasks: async () => {
     return await apiClient.get("/tasks/my-tasks");
   },
 
-  // Create a task (Admin only)
-  createTask: async (taskData) => {
-    return await apiClient.post("/tasks/create", taskData);
+  getAllTasks: async (filters = {}) => {
+    return await apiClient.get("/tasks", { params: filters });
   },
-  
-  // Placeholder for future update status logic
+
+  createTask: async (taskData) => {
+    return await apiClient.post("/tasks", taskData);
+  },
+
   updateTaskStatus: async (taskId, status) => {
     return await apiClient.patch(`/tasks/${taskId}/status`, { status });
-  }
+  },
+
+  updateTask: async (taskId, taskData) => {
+    return await apiClient.patch(`/tasks/${taskId}`, taskData);
+  },
+
+  deleteTask: async (taskId) => {
+    return await apiClient.delete(`/tasks/${taskId}`);
+  },
+
+  getTaskAnalytics: async () => {
+    return await apiClient.get("/tasks/analytics");
+  },
+
+  getAssignableUsers: async () => {
+    return await apiClient.get("/tasks/assignable-users");
+  },
 };
 
 export default taskService;
