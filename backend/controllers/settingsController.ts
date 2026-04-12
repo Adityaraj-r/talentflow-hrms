@@ -23,7 +23,7 @@ export const getCompanyInfo = async (req: Request, res: Response) => {
 
 export const getSettings = async (req: Request, res: Response) => {
   try {
-    let settings = await Settings.findOne();
+    let settings = await Settings.findOne().select('+hrSmtpPass');
 
     if (!settings) {
       settings = await Settings.create({
@@ -34,9 +34,16 @@ export const getSettings = async (req: Request, res: Response) => {
       });
     }
 
+    const settingsObj = settings.toObject() as unknown as Record<string, unknown>;
+    const hrSmtpPass = typeof settingsObj.hrSmtpPass === 'string' ? settingsObj.hrSmtpPass : '';
+    delete settingsObj.hrSmtpPass;
+
     res.status(200).json({
       success: true,
-      settings,
+      settings: {
+        ...settingsObj,
+        hrSmtpPassConfigured: Boolean(hrSmtpPass.trim()),
+      },
     });
   } catch (error: any) {
     res.status(500).json({
@@ -49,28 +56,57 @@ export const getSettings = async (req: Request, res: Response) => {
 
 export const updateSettings = async (req: Request, res: Response) => {
   try {
-    const settingsData = req.body;
+    const settingsData = req.body as Record<string, unknown>;
     const userId = (req as any).user?.uid || 'system';
 
-    let settings = await Settings.findOne();
+    let settings = await Settings.findOne().select('+hrSmtpPass');
+    const incomingPass = settingsData.hrSmtpPass;
+    const mergedData = { ...settingsData };
+    delete (mergedData as Record<string, unknown>).hrSmtpPass;
+    if (mergedData.hrSmtpPort === '' || mergedData.hrSmtpPort === undefined) {
+      mergedData.hrSmtpPort = null;
+    }
+    if (typeof mergedData.hrSmtpPort === 'string') {
+      const parsed = Number(mergedData.hrSmtpPort);
+      mergedData.hrSmtpPort = Number.isFinite(parsed) ? parsed : null;
+    }
 
     if (settings) {
       Object.assign(settings, {
-        ...settingsData,
+        ...mergedData,
         updatedBy: userId,
       });
+      if (typeof incomingPass === 'string') {
+        settings.hrSmtpPass = incomingPass.trim();
+      } else if (incomingPass === null) {
+        settings.hrSmtpPass = '';
+      }
       await settings.save();
     } else {
       settings = await Settings.create({
-        ...settingsData,
+        ...mergedData,
+        hrSmtpPass:
+          typeof incomingPass === 'string'
+            ? incomingPass.trim()
+            : '',
         updatedBy: userId,
       });
     }
 
+    const refreshed = await Settings.findById(settings._id).select('+hrSmtpPass');
+    const settingsObj =
+      (refreshed?.toObject() as unknown as Record<string, unknown>) ||
+      (settings.toObject() as unknown as Record<string, unknown>);
+    const hrSmtpPass = typeof settingsObj.hrSmtpPass === 'string' ? settingsObj.hrSmtpPass : '';
+    delete settingsObj.hrSmtpPass;
+
     res.status(200).json({
       success: true,
       message: 'Settings updated successfully',
-      settings,
+      settings: {
+        ...settingsObj,
+        hrSmtpPassConfigured: Boolean(hrSmtpPass.trim()),
+      },
     });
   } catch (error: any) {
     res.status(500).json({

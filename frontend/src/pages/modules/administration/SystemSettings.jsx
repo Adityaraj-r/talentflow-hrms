@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, RefreshCw, Building2, Globe, Bell, Shield, Check } from 'lucide-react';
+import { Save, RefreshCw, Building2, Globe, Bell, Shield, Check, Mail } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,13 @@ const SystemSettings = () => {
     sessionTimeout: 30,
     passwordExpiryDays: 90,
     requireMFA: false,
+    hrSmtpHost: '',
+    hrSmtpPort: '',
+    hrSmtpSecure: false,
+    hrSmtpUser: '',
+    hrSmtpPass: '',
   });
+  const [smtpPassConfigured, setSmtpPassConfigured] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -49,7 +55,13 @@ const SystemSettings = () => {
         sessionTimeout: settings.sessionTimeout || 30,
         passwordExpiryDays: settings.passwordExpiryDays || 90,
         requireMFA: settings.requireMFA ?? false,
+        hrSmtpHost: settings.hrSmtpHost || '',
+        hrSmtpPort: settings.hrSmtpPort ?? '',
+        hrSmtpSecure: settings.hrSmtpSecure ?? false,
+        hrSmtpUser: settings.hrSmtpUser || '',
+        hrSmtpPass: '',
       });
+      setSmtpPassConfigured(Boolean(settings.hrSmtpPassConfigured));
     }
   }, [settings]);
 
@@ -136,6 +148,10 @@ const SystemSettings = () => {
             <TabsTrigger value="security" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Shield className="h-4 w-4" />
               <span className="hidden sm:inline">Security</span>
+            </TabsTrigger>
+            <TabsTrigger value="email" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Mail className="h-4 w-4" />
+              <span className="hidden sm:inline">Email SMTP</span>
             </TabsTrigger>
           </TabsList>
 
@@ -380,6 +396,81 @@ const SystemSettings = () => {
                   <Switch
                     checked={formData.requireMFA}
                     onCheckedChange={(checked) => handleChange('requireMFA', checked)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="email" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">HR Outbound Email (SMTP)</CardTitle>
+                <CardDescription>
+                  Configure centralized SMTP so interview and welcome emails work on any server.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="hrSmtpHost">SMTP Host</Label>
+                    <Input
+                      id="hrSmtpHost"
+                      value={formData.hrSmtpHost}
+                      onChange={(e) => handleChange('hrSmtpHost', e.target.value)}
+                      placeholder="smtp.gmail.com"
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="hrSmtpPort">SMTP Port</Label>
+                    <Input
+                      id="hrSmtpPort"
+                      type="number"
+                      value={formData.hrSmtpPort}
+                      onChange={(e) => handleChange('hrSmtpPort', e.target.value ? Number(e.target.value) : '')}
+                      placeholder="587"
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="hrSmtpUser">SMTP User</Label>
+                    <Input
+                      id="hrSmtpUser"
+                      value={formData.hrSmtpUser}
+                      onChange={(e) => handleChange('hrSmtpUser', e.target.value)}
+                      placeholder="hr@yourcompany.com"
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="hrSmtpPass">
+                      SMTP Password {smtpPassConfigured ? '(configured)' : '(not configured)'}
+                    </Label>
+                    <Input
+                      id="hrSmtpPass"
+                      type="password"
+                      value={formData.hrSmtpPass}
+                      onChange={(e) => handleChange('hrSmtpPass', e.target.value)}
+                      placeholder="Enter app password"
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-medium">Use Secure SMTP (TLS/SSL)</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Enable for providers requiring secure transport.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={Boolean(formData.hrSmtpSecure)}
+                    onCheckedChange={(checked) => handleChange('hrSmtpSecure', checked)}
                   />
                 </div>
               </CardContent>

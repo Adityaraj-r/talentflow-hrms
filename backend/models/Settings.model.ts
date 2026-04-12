@@ -22,6 +22,13 @@ export interface ISettings extends Document {
   sessionTimeout: number;
   passwordExpiryDays: number;         // Changed from passwordExpiry
   requireMFA: boolean;                // Changed from twoFactorAuth
+
+  // HR Outbound Email (DB-based SMTP)
+  hrSmtpHost?: string;
+  hrSmtpPort?: number | null;
+  hrSmtpSecure?: boolean;
+  hrSmtpUser?: string;
+  hrSmtpPass?: string;
   
   // Metadata
   updatedBy?: string;
@@ -51,6 +58,13 @@ const SettingsSchema = new Schema<ISettings>({
   sessionTimeout: { type: Number, default: 30 },
   passwordExpiryDays: { type: Number, default: 90 },
   requireMFA: { type: Boolean, default: false },
+
+  // HR Outbound Email (DB-based SMTP)
+  hrSmtpHost: { type: String, default: '' },
+  hrSmtpPort: { type: Number, default: null },
+  hrSmtpSecure: { type: Boolean, default: false },
+  hrSmtpUser: { type: String, default: '' },
+  hrSmtpPass: { type: String, default: '', select: false },
   
   // Metadata
   updatedBy: { type: String },

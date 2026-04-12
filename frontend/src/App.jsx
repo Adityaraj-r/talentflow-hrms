@@ -37,6 +37,8 @@ import AuditLogs from "./pages/modules/administration/AuditLogs"
 import Integrations from "./pages/modules/administration/Integrations"
 
 // Recruitment Module
+import CreateRequisition from "./pages/modules/recruitment/CreateRequisition"
+
 import Onboarding from "./pages/modules/recruitment/Onboarding"
 import StaffRequisition from "./pages/modules/recruitment/StaffRequisition"
 import Careers from "./pages/Careers"
@@ -45,6 +47,7 @@ import JobOpenings from "./pages/modules/recruitment/JobOpenings"
 import ApplyJob from "./pages/ApplyJob"
 import CandidateApplications from "./pages/modules/recruitment/CandidateApplications"
 import RecruitmentPipeline from "./pages/modules/recruitment/RecruitmentPipeline"
+import InterviewScheduling from "./pages/modules/recruitment/InterviewScheduling"
 import ApplicationStatus from "./pages/ApplicationStatus"
 import AdminRecruitmentSuggestions from "./pages/modules/recruitment/AdminRecruitmentSuggestions"
 import RecruitmentSuggestionsInbox from "./pages/modules/recruitment/RecruitmentSuggestionsInbox"
@@ -398,6 +401,11 @@ function App() {
                     } />
 
                     {/* ── Recruitment — MATRIX ENFORCED ────────────────── */}
+                    <Route path="/create-requisition" element={
+                      <ProtectedRoute allowedRoles={["HR_OFFICER"]}>
+                        <DashboardLayout><CreateRequisition /></DashboardLayout>  
+                      </ProtectedRoute>
+                    } />
                     <Route path="/employee-center/onboarding" element={
                       <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER"]}>
                         <DashboardLayout><Onboarding /></DashboardLayout>
@@ -422,6 +430,11 @@ function App() {
                     <Route path="/dashboard/recruitment-pipeline" element={
                       <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
                         <DashboardLayout><RecruitmentPipeline /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/dashboard/interview-scheduling" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER"]}>
+                        <DashboardLayout><InterviewScheduling /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/job-openings" element={

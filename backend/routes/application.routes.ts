@@ -1,5 +1,5 @@
 import express from "express"
-import { applyJob, getApplications, updateApplicationStatus, getPublicApplicationStatus } from "../controllers/application.controller"
+import { applyJob, getApplications, updateApplicationStatus, getPublicApplicationStatus, scheduleInterviewAndSendMail } from "../controllers/application.controller"
 import upload from "../middleware/upload"
 import { protect } from "../middleware/auth.middleware"
 import { authorizeByMatrix, MODULE_KEYS } from "../middleware/role.middleware"
@@ -26,6 +26,16 @@ router.put(
     next()
   },
   updateApplicationStatus
+)
+router.post(
+  "/:id/schedule-interview",
+  authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"),
+  (req: any, res: any, next: any) => {
+    const role = (req.user?.role || "").toString().toUpperCase().replace(/\s+/g, "_")
+    if (role === "OPERATIONS_MANAGER") return res.status(403).json({ message: "Access denied" })
+    next()
+  },
+  scheduleInterviewAndSendMail
 )
 
 export default router

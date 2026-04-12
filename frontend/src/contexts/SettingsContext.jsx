@@ -38,6 +38,12 @@ export const SettingsProvider = ({ children }) => {
       sessionTimeout: 30,
       requireMFA: false,
       passwordExpiryDays: 90,
+      hrSmtpHost: '',
+      hrSmtpPort: '',
+      hrSmtpSecure: false,
+      hrSmtpUser: '',
+      hrSmtpPass: '',
+      hrSmtpPassConfigured: false,
     }
   })
   
