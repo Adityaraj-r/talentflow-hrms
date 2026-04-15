@@ -231,6 +231,15 @@ const PayrollProcessing = () => {
 
   const preview = calculatePreview()
 
+  const payrollLockToast = (err, fallback) => {
+    let msg = err?.error || err?.message || fallback
+    const pl = err?.payrollLock
+    if (pl?.sampleUnlockedDates?.length) {
+      msg += ` Sample unlocked dates: ${pl.sampleUnlockedDates.slice(0, 5).join(", ")}.`
+    }
+    return msg
+  }
+
   const handleGenerate = async () => {
     if (!selectedEmp) { toast.error("Please select an employee"); return }
     if (!salaryData)  { toast.error("No salary structure found for this employee"); return }
@@ -255,7 +264,7 @@ const PayrollProcessing = () => {
       setBonus(0); setOvertime(0); setLopDays(0); setSelectedEmp("")
       await refreshPayrollTables()
     } catch (err) {
-      toast.error(err?.error || err?.message || "Failed to generate payroll")
+      toast.error(payrollLockToast(err, "Failed to generate payroll"))
     } finally {
       setProcessing(false)
     }
@@ -277,7 +286,7 @@ const PayrollProcessing = () => {
       await refreshPayrollTables()
       setActiveTab("records")
     } catch (err) {
-      toast.error(err?.error || err?.message || "Bulk payroll run failed")
+      toast.error(payrollLockToast(err, "Bulk payroll run failed"))
     } finally {
       setBulkProcessing(false)
     }

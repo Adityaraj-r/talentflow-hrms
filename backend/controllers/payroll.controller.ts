@@ -13,7 +13,7 @@ import { getOrCreatePayrollSettings } from "../models/payrollCompanySettings.mod
 import {
   computeEmployeePayrollLine,
   getPeriodBounds,
-  assertAttendancePeriodLocked,
+  getAttendanceLockStatus,
   applyAdvanceTicketBalances,
 } from "../services/payrollCalculation.service"
 import { logPayrollAudit } from "../utils/payrollAudit.util"
@@ -167,10 +167,23 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
     const period = getPeriodBounds(month, Number(year))
 
     if (requireAttendancePeriodLocked && !skipAttendanceLockCheck) {
-      try {
-        await assertAttendancePeriodLocked(period.startStr, period.endStr)
-      } catch (e: any) {
-        return res.status(400).json({ success: false, error: e.message })
+      const lockStatus = await getAttendanceLockStatus(period.startStr, period.endStr)
+      if (lockStatus.total > 0 && lockStatus.locked !== lockStatus.total) {
+        return res.status(400).json({
+          success: false,
+          error: `Attendance lock required: ${lockStatus.unlocked} of ${lockStatus.total} attendance row(s) are not locked (${lockStatus.locked} locked). Lock all attendance for ${period.month} ${period.year} in the Attendance module, then run payroll again. Use "Skip attendance lock check" only when appropriate.`,
+          code: "PAYROLL_LOCK",
+          payrollLock: {
+            periodStart: period.startStr,
+            periodEnd: period.endStr,
+            month: period.month,
+            year: period.year,
+            totalRows: lockStatus.total,
+            lockedRows: lockStatus.locked,
+            unlockedRows: lockStatus.unlocked,
+            sampleUnlockedDates: lockStatus.sampleUnlockedDates,
+          },
+        })
       }
     }
 
@@ -790,13 +803,18 @@ export const downloadPayslip = async (req: AuthRequest, res: Response) => {
     const period = getPeriodBounds(payroll.month, payroll.year)
     const ytd = await computePayslipYearToDate(payroll.year, payroll.month, employeeId)
 
-    const employerName =
-      (settingsDoc as { companyName?: string } | null)?.companyName ||
-      process.env.PAYSLIP_COMPANY_NAME ||
-      "Company"
+    const employerName = "Indux Tech.Pvt. Ltd."
     const employerAddress =
       (settingsDoc as { address?: string } | null)?.address ||
       process.env.PAYSLIP_COMPANY_ADDRESS ||
+      ""
+    const companyPhone =
+      (settingsDoc as { phone?: string } | null)?.phone ||
+      process.env.PAYSLIP_COMPANY_PHONE ||
+      ""
+    const companyEmail =
+      (settingsDoc as { companyEmail?: string } | null)?.companyEmail ||
+      process.env.PAYSLIP_COMPANY_EMAIL ||
       ""
 
     const employeeName = user
@@ -822,8 +840,15 @@ export const downloadPayslip = async (req: AuthRequest, res: Response) => {
       employeeName,
       employeeCode: String(codeStr),
       position: employee?.designation || employee?.role || "—",
-      employeeAddress: formatEmployeeAddress(employee) || "—",
+      employeeAddress:
+        formatEmployeeAddress(employee) ||
+        (employee?.currentAddress as string | undefined)?.trim() ||
+        "—",
+      employeePhone: employee?.phoneNumber || user?.phoneNumber || "",
+      employeeEmail: employee?.workEmail || employee?.email || user?.email || "",
       paymentMethod: employee?.bankDetails?.accountNumber ? "Bank Transfer" : "—",
+      companyPhone,
+      companyEmail,
       currencySymbol: payslipCurrencySymbol(
         (settingsDoc as { currency?: string } | null)?.currency,
         employee?.salary?.currency

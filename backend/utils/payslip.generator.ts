@@ -17,10 +17,11 @@ const MONTHS_ORDER = [
   "December",
 ] as const
 
-const LABEL_BG = "#f0f0ff"
-const BAR_BG = "#e8e8ff"
-const TEXT = "#1a1a1a"
-const MUTED = "#555555"
+const TEXT = "#0f172a"
+const MUTED = "#64748b"
+const BORDER = "#1e293b"
+const HEADER_BLUE = "#1e40af"
+const SECTION_BG = "#dbeafe"
 
 export type SlipLine = {
   employeeId: string
@@ -190,7 +191,7 @@ function paymentDateAfterPeriod(endIso: string): string {
 }
 
 function money(sym: string, n: number): string {
-  return `${sym}${Math.round(n).toLocaleString("en-US")}`
+  return `${sym}${Math.round(n).toLocaleString("en-IN")}`
 }
 
 export type PayslipContext = {
@@ -208,7 +209,11 @@ export type PayslipContext = {
   employeeCode: string
   position: string
   employeeAddress: string
+  employeePhone?: string
+  employeeEmail?: string
   paymentMethod: string
+  companyPhone?: string
+  companyEmail?: string
   currencySymbol: string
   defaultMonthWorkingHours: number
   ytd: PayslipYtd
@@ -216,13 +221,59 @@ export type PayslipContext = {
   fileBaseName: string
 }
 
-/** Builds Pay Stub PDF; attachment filename `{employeeCode}.pdf`. */
+function amountToWordsIndian(num: number): string {
+  const n = Math.max(0, Math.round(num))
+  if (n === 0) return "Zero Only"
+  const ones = [
+    "",
+    "One",
+    "Two",
+    "Three",
+    "Four",
+    "Five",
+    "Six",
+    "Seven",
+    "Eight",
+    "Nine",
+    "Ten",
+    "Eleven",
+    "Twelve",
+    "Thirteen",
+    "Fourteen",
+    "Fifteen",
+    "Sixteen",
+    "Seventeen",
+    "Eighteen",
+    "Nineteen",
+  ]
+  const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"]
+  const under100 = (x: number) => {
+    if (x < 20) return ones[x]
+    return `${tens[Math.floor(x / 10)]}${x % 10 ? ` ${ones[x % 10]}` : ""}`
+  }
+  const under1000 = (x: number) => {
+    if (x < 100) return under100(x)
+    return `${ones[Math.floor(x / 100)]} Hundred${x % 100 ? ` ${under100(x % 100)}` : ""}`
+  }
+  const crore = Math.floor(n / 10000000)
+  const lakh = Math.floor((n % 10000000) / 100000)
+  const thousand = Math.floor((n % 100000) / 1000)
+  const hundred = n % 1000
+  const parts: string[] = []
+  if (crore) parts.push(`${under1000(crore)} Crore`)
+  if (lakh) parts.push(`${under1000(lakh)} Lakh`)
+  if (thousand) parts.push(`${under1000(thousand)} Thousand`)
+  if (hundred) parts.push(under1000(hundred))
+  return `${parts.join(" ")} Only`
+}
+
+/** Builds salary slip PDF; attachment filename `{employeeCode}.pdf`. */
 export const generatePayslip = (res: any, ctx: PayslipContext) => {
   const snap = normalizeSlip(ctx.slip)
-  const doc = new PDFDocument({ margin: 48, size: "LETTER" })
-  const pageW = 612
-  const left = 48
-  const right = pageW - 48
+  const doc = new PDFDocument({ margin: 36, size: "A4" })
+  const pageW = 595.28
+  const left = 36
+  const right = pageW - 36
   const contentW = right - left
 
   const chunks: Buffer[] = []
@@ -243,9 +294,6 @@ export const generatePayslip = (res: any, ctx: PayslipContext) => {
   })
 
   const sym = ctx.currencySymbol
-  const hours = Math.max(1, ctx.defaultMonthWorkingHours)
-  const basic = snap.earnings.basic || 0
-  const rateRegular = basic > 0 ? Math.round((basic / hours) * 100) / 100 : 0
   const otherCurrent =
     (snap.earnings.hra || 0) +
     (snap.earnings.allowances || 0) +
@@ -253,179 +301,164 @@ export const generatePayslip = (res: any, ctx: PayslipContext) => {
     (snap.earnings.overtime || 0) +
     (snap.earnings.reimbursement || 0) +
     (snap.earnings.performanceBonus || 0)
-  const rateOther =
-    otherCurrent > 0 && hours > 0 ? Math.round((otherCurrent / hours) * 100) / 100 : 0
 
   const d = snap.deductions as Record<string, number | undefined> & { _legacyTotal?: number }
-  let medicare = 0,
-    socialSecurity = 0,
-    federalTax = 0,
-    stateTax = 0,
+  let pf = 0,
+    esi = 0,
+    pt = 0,
+    tds = 0,
     otherDed = 0
   if (d._legacyTotal != null && d._legacyTotal > 0) {
     otherDed = Number(d._legacyTotal)
   } else {
-    medicare = d.esi || 0
-    socialSecurity = d.pf || 0
-    federalTax = d.tds || 0
-    stateTax = d.pt || 0
+    pf = d.pf || 0
+    esi = d.esi || 0
+    tds = d.tds || 0
+    pt = d.pt || 0
     otherDed =
       (d.insurance || 0) + (d.other || 0) + (d.lopAmount || 0) + (d.advanceTotal || 0)
   }
 
-  const y = ctx.ytd
-
-  let cy = 48
-
-  doc.font("Helvetica-Bold").fontSize(22).fillColor(TEXT).text("Pay Stub", left, cy, {
-    width: contentW,
-    align: "center",
-  })
-  cy = doc.y + 16
-
-  doc.font("Helvetica-Bold").fontSize(10).fillColor(TEXT).text(ctx.employerName, left, cy)
-  cy = doc.y + 4
-  doc.font("Helvetica").fontSize(9).fillColor(MUTED).text(ctx.employerAddress || " ", left, cy, {
-    width: contentW * 0.55,
-  })
-  cy = doc.y + 14
-
-  const labelX = left
-  const valX = left + 118
-  const rowH = 16
-  const addField = (label: string, value: string) => {
-    doc.font("Helvetica-Bold").fontSize(9).fillColor(TEXT).text(label, labelX, cy)
-    doc.font("Helvetica").fontSize(9).fillColor(TEXT).text(value, valX, cy, { width: contentW - valX + left - 8 })
-    cy += rowH
-  }
-  addField("Employee Name:", ctx.employeeName)
-  addField("Employee ID No:", ctx.employeeCode)
-  addField("Position/Title:", ctx.position || "—")
-  addField("Address:", ctx.employeeAddress || "—")
-  addField("Payment Method:", ctx.paymentMethod)
-  cy += 8
-
-  const barH = 26
-  doc.rect(left, cy, contentW, barH).fill(BAR_BG)
-  const colW = contentW / 3
-  const pFrom = fmtUSDate(ctx.period.startStr)
-  const pTo = fmtUSDate(ctx.period.endStr)
   const payDt = ctx.payroll.disbursedAt
     ? fmtUSDate(ctx.payroll.disbursedAt.toISOString().slice(0, 10))
     : paymentDateAfterPeriod(ctx.period.endStr)
-  doc.fillColor(TEXT).font("Helvetica-Bold").fontSize(8)
-  doc.text("Payment Period (From)", left + 8, cy + 6, { width: colW - 16 })
-  doc.font("Helvetica").fontSize(9).text(pFrom, left + 8, cy + 14, { width: colW - 16 })
-  doc.font("Helvetica-Bold").fontSize(8).text("Payment Period (To)", left + colW + 8, cy + 6, { width: colW - 16 })
-  doc.font("Helvetica").fontSize(9).text(pTo, left + colW + 8, cy + 14, { width: colW - 16 })
-  doc.font("Helvetica-Bold").fontSize(8).text("Payment Date", left + 2 * colW + 8, cy + 6, { width: colW - 16 })
-  doc.font("Helvetica").fontSize(9).text(payDt, left + 2 * colW + 8, cy + 14, { width: colW - 16 })
-  cy += barH + 14
 
-  const colLabelW = 108
-  const colRate = 72
-  const colHours = 52
-  const colCur = 92
-  const colYtd = 92
-  const xRate = left + colLabelW
-  const xHours = xRate + colRate
-  const xCur = xHours + colHours
-  const xYtd = xCur + colCur
+  const companyName = ctx.employerName || "Indux Tech.Pvt. Ltd."
+  let cy = 28
 
-  const drawHeader = (titles: string[]) => {
-    doc.rect(left, cy, contentW, 18).fill(LABEL_BG)
-    doc.fillColor(TEXT).font("Helvetica-Bold").fontSize(8)
-    doc.text(titles[0], left + 6, cy + 5, { width: colLabelW - 8 })
-    doc.text(titles[1], xRate, cy + 5, { width: colRate - 4, align: "right" })
-    doc.text(titles[2], xHours, cy + 5, { width: colHours - 4, align: "right" })
-    doc.text(titles[3], xCur, cy + 5, { width: colCur - 4, align: "right" })
-    doc.text(titles[4], xYtd, cy + 5, { width: colYtd - 4, align: "right" })
-    cy += 18
-  }
-
-  doc.font("Helvetica-Bold").fontSize(11).fillColor(TEXT).text("Earnings", left, cy)
-  cy = doc.y + 6
-  drawHeader(["", "Rate", "Hours", "Current Total", "YTD"])
-
-  const earnRow = (
-    name: string,
-    rate: number,
-    hrs: number,
-    cur: number,
-    ytdVal: number
-  ) => {
-    const h = 20
-    doc.rect(left, cy, colLabelW, h).fill(LABEL_BG)
-    doc.fillColor(TEXT).font("Helvetica").fontSize(9).text(name, left + 6, cy + 5, { width: colLabelW - 10 })
-    doc
-      .rect(xRate, cy, colRate + colHours + colCur + colYtd, h)
-      .fill("#ffffff")
-    doc.fillColor(TEXT).font("Helvetica").fontSize(9)
-    doc.text(rate > 0 ? money(sym, rate) : "—", xRate, cy + 5, { width: colRate - 6, align: "right" })
-    doc.text(String(hrs), xHours, cy + 5, { width: colHours - 6, align: "right" })
-    doc.text(money(sym, cur), xCur, cy + 5, { width: colCur - 6, align: "right" })
-    doc.text(money(sym, ytdVal), xYtd, cy + 5, { width: colYtd - 6, align: "right" })
-    cy += h
-  }
-
-  earnRow("Regular", rateRegular, hours, basic, y.regular)
-  earnRow("Other", rateOther, otherCurrent > 0 ? hours : 0, otherCurrent, y.otherEarnings)
-
-  const grossH = 20
-  doc.rect(left, cy, colLabelW, grossH).fill(LABEL_BG)
-  doc.font("Helvetica-Bold").fontSize(9).text("Gross", left + 6, cy + 6, { width: colLabelW - 10 })
-  doc.rect(xRate, cy, colRate + colHours + colCur + colYtd, grossH).fill("#fafafa")
-  doc.font("Helvetica-Bold").fillColor(TEXT)
-  doc.text("", xRate, cy + 6, { width: colRate + colHours - 6 })
-  doc.text(money(sym, snap.grossPay), xCur, cy + 6, { width: colCur - 6, align: "right" })
-  doc.text(money(sym, y.gross), xYtd, cy + 6, { width: colYtd - 6, align: "right" })
-  cy += grossH + 16
-
-  doc.font("Helvetica-Bold").fontSize(11).text("Deductions", left, cy)
-  cy = doc.y + 6
-  drawHeader(["", "", "", "Current Total", "YTD"])
-
-  const dedRow = (name: string, cur: number, ytdVal: number) => {
-    const h = 20
-    doc.rect(left, cy, colLabelW, h).fill(LABEL_BG)
-    doc.fillColor(TEXT).font("Helvetica").fontSize(9).text(name, left + 6, cy + 5, { width: colLabelW - 10 })
-    doc.rect(xRate, cy, colRate + colHours + colCur + colYtd, h).fill("#ffffff")
-    doc.fillColor(TEXT)
-    doc.text(money(sym, cur), xCur, cy + 5, { width: colCur - 6, align: "right" })
-    doc.text(money(sym, ytdVal), xYtd, cy + 5, { width: colYtd - 6, align: "right" })
-    cy += h
-  }
-
-  dedRow("Medicare", medicare, y.medicare)
-  dedRow("Social Security", socialSecurity, y.socialSecurity)
-  dedRow("Federal Tax", federalTax, y.federalTax)
-  dedRow("State Tax", stateTax, y.stateTax)
-  dedRow("Other", otherDed, y.otherDeductions)
-
-  const totDedH = 20
-  doc.rect(left, cy, colLabelW, totDedH).fill(LABEL_BG)
-  doc.font("Helvetica-Bold").fontSize(9).text("Total Deductions", left + 6, cy + 5, { width: colLabelW - 10 })
-  doc.rect(xRate, cy, colRate + colHours + colCur + colYtd, totDedH).fill("#fafafa")
-  doc.fillColor(TEXT)
-  doc.text(money(sym, snap.totalDeductions), xCur, cy + 5, { width: colCur - 6, align: "right" })
-  doc.text(money(sym, y.totalDeductions), xYtd, cy + 5, { width: colYtd - 6, align: "right" })
-  cy += totDedH + 16
-
-  const netH = 24
-  doc.rect(left, cy, colLabelW, netH).fill(LABEL_BG)
-  doc.font("Helvetica-Bold").fontSize(10).text("Net Pay", left + 6, cy + 7, { width: colLabelW - 10 })
-  doc.rect(xRate, cy, colRate + colHours + colCur + colYtd, netH).fill("#f5f5ff")
-  doc.fillColor(TEXT).font("Helvetica-Bold").fontSize(10)
-  doc.text(money(sym, snap.netPay), xCur, cy + 7, { width: colCur - 6, align: "right" })
-  doc.text(money(sym, y.net), xYtd, cy + 7, { width: colYtd - 6, align: "right" })
-  cy += netH + 20
-
-  doc.font("Helvetica").fontSize(8).fillColor(MUTED).text(
-    "Amounts reflect this payroll run. YTD includes all regular runs for this calendar year through this pay period.",
+  doc.font("Helvetica-Bold").fontSize(17).fillColor(HEADER_BLUE).text(companyName, left, cy, {
+    width: contentW,
+    align: "center",
+  })
+  cy = doc.y + 4
+  doc.font("Helvetica").fontSize(9).fillColor(MUTED).text(
+    `${ctx.payroll.month} ${ctx.payroll.year} · Confidential`,
     left,
     cy,
     { width: contentW, align: "center" }
   )
+  cy = doc.y + 10
+
+  doc.rect(left, cy, contentW, 30).fill(HEADER_BLUE)
+  doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(16).text("Salary Slip", left, cy + 6, {
+    width: contentW,
+    align: "center",
+  })
+  cy += 30
+
+  const sectionBar = (title: string) => {
+    doc.rect(left, cy, contentW, 22).fill(SECTION_BG)
+    doc.strokeColor(BORDER).rect(left, cy, contentW, 22).stroke()
+    doc.fillColor(TEXT).font("Helvetica-Bold").fontSize(10).text(title, left, cy + 6, {
+      width: contentW,
+      align: "center",
+    })
+    cy += 22
+  }
+
+  const fieldLine = (label: string, value: string, y: number, labelW: number) => {
+    doc.font("Helvetica-Bold").fontSize(9).fillColor(TEXT).text(`${label}:`, left + 10, y, { width: labelW })
+    doc.font("Helvetica").fontSize(9).text(value || "—", left + 10 + labelW, y, {
+      width: contentW - labelW - 20,
+    })
+  }
+
+  sectionBar("Company Information")
+  const companyH = 86
+  doc.rect(left, cy, contentW, companyH).stroke(BORDER)
+  let ly = cy + 10
+  const lw = 140
+  fieldLine("Company Name", companyName, ly, lw)
+  ly += 18
+  fieldLine("Address", ctx.employerAddress || "—", ly, lw)
+  ly += 18
+  fieldLine("Phone", ctx.companyPhone || "—", ly, lw)
+  ly += 18
+  fieldLine("Email", ctx.companyEmail || "—", ly, lw)
+  cy += companyH
+
+  sectionBar("Employee Information")
+  const empH = 104
+  doc.rect(left, cy, contentW, empH).stroke(BORDER)
+  ly = cy + 10
+  fieldLine("Name", ctx.employeeName || "—", ly, lw)
+  ly += 18
+  fieldLine("Address", ctx.employeeAddress || "—", ly, lw)
+  ly += 18
+  fieldLine("Phone", ctx.employeePhone || "—", ly, lw)
+  ly += 18
+  fieldLine("Email", ctx.employeeEmail || "—", ly, lw)
+  ly += 18
+  fieldLine("Employee Code", ctx.employeeCode || "—", ly, lw)
+  cy += empH
+
+  const rowH = 21
+  const colW = [contentW * 0.34, contentW * 0.16, contentW * 0.34, contentW * 0.16]
+  const colX = [left, left + colW[0], left + colW[0] + colW[1], left + colW[0] + colW[1] + colW[2]]
+
+  const drawRow = (cells: [string, string, string, string], opts: { header?: boolean; bold?: boolean } = {}) => {
+    const { header, bold } = opts
+    if (header) {
+      doc.rect(left, cy, contentW, rowH).fill(SECTION_BG).stroke(BORDER)
+    } else {
+      doc.rect(left, cy, contentW, rowH).stroke(BORDER)
+    }
+    for (let i = 1; i < 4; i += 1) {
+      doc.moveTo(colX[i], cy).lineTo(colX[i], cy + rowH).stroke(BORDER)
+    }
+    const font = bold ? "Helvetica-Bold" : "Helvetica"
+    doc.fillColor(TEXT).font(font).fontSize(9)
+    doc.text(cells[0], colX[0] + 6, cy + 6, { width: colW[0] - 12, align: "left" })
+    doc.text(cells[1], colX[1] + 4, cy + 6, { width: colW[1] - 8, align: "right" })
+    doc.text(cells[2], colX[2] + 6, cy + 6, { width: colW[2] - 12, align: "left" })
+    doc.text(cells[3], colX[3] + 4, cy + 6, { width: colW[3] - 8, align: "right" })
+    cy += rowH
+  }
+
+  drawRow(["Earnings", "Amount", "Deductions", "Amount"], { header: true })
+  drawRow(["Basic", money(sym, snap.earnings.basic || 0), "Provident Fund", money(sym, pf)])
+  drawRow(["HRA", money(sym, snap.earnings.hra || 0), "ESI", money(sym, esi)])
+  drawRow(["Special Allowance", money(sym, snap.earnings.allowances || 0), "Professional Tax", money(sym, pt)])
+  drawRow(["Gross Salary", money(sym, snap.grossPay), "Salary Advance", money(sym, d.advanceTotal || 0)], { bold: true })
+  drawRow(["Other Earnings", money(sym, otherCurrent), "TDS", money(sym, tds)])
+  drawRow(["Incentives", money(sym, snap.earnings.performanceBonus || 0), "Other Deduction", money(sym, otherDed)])
+  drawRow(["Bonus", money(sym, snap.earnings.bonus || 0), "", ""])
+  drawRow(["Over Time Pay", money(sym, snap.earnings.overtime || 0), "", ""])
+  drawRow(["Total Earnings", money(sym, snap.grossPay), "", ""], { bold: true })
+
+  const wordsLine = `In words: ${amountToWordsIndian(snap.netPay)}`
+  doc.font("Helvetica").fontSize(9)
+  const wordsH = doc.heightOfString(wordsLine, { width: contentW - 24 })
+  const netTop = cy
+  const netLine1 = 28
+  const netBlockH = netLine1 + Math.max(28, wordsH + 16)
+
+  doc.rect(left, netTop, contentW, netBlockH).fill("#eff6ff").stroke(BORDER)
+  doc.moveTo(left + colW[0], netTop).lineTo(left + colW[0], netTop + netLine1).stroke(BORDER)
+  doc.moveTo(left + colW[0] + colW[1], netTop).lineTo(left + colW[0] + colW[1], netTop + netLine1).stroke(BORDER)
+  doc.fillColor(TEXT).font("Helvetica-Bold").fontSize(11)
+  doc.text("Net Pay", left + 8, netTop + 8, { width: colW[0] - 12, align: "center" })
+  doc.text(money(sym, snap.netPay), left + colW[0] + 8, netTop + 8, { width: colW[1] - 12, align: "right" })
+  doc.moveTo(left, netTop + netLine1).lineTo(left + contentW, netTop + netLine1).stroke(BORDER)
+  doc.font("Helvetica").fontSize(9).fillColor(TEXT)
+  doc.text(wordsLine, left + 12, netTop + netLine1 + 8, { width: contentW - 24 })
+  cy = netTop + netBlockH + 14
+
+  const footH = 52
+  doc.rect(left, cy, contentW / 2, footH).fill(SECTION_BG).stroke(BORDER)
+  doc.rect(left + contentW / 2, cy, contentW / 2, footH).fill(SECTION_BG).stroke(BORDER)
+  doc.fillColor(TEXT).font("Helvetica-Bold").fontSize(10)
+  doc.text("Prepared By:", left + 12, cy + 32)
+  doc.text("Received By:", left + contentW / 2 + 12, cy + 32)
+
+  doc.font("Helvetica").fontSize(8).fillColor(MUTED)
+  doc.text(`Pay period: ${fmtUSDate(ctx.period.startStr)} – ${fmtUSDate(ctx.period.endStr)}`, left, cy + footH + 8, {
+    width: contentW * 0.55,
+  })
+  doc.text(`Payment date: ${payDt}  ·  ${ctx.paymentMethod || "—"}`, left + contentW * 0.45, cy + footH + 8, {
+    width: contentW * 0.55,
+    align: "right",
+  })
 
   doc.end()
 }
