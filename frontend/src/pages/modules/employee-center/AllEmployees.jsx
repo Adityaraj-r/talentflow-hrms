@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, UserCheck, ShieldAlert, Users, RefreshCw, ChevronRight } from "lucide-react"
+import { Search, UserCheck, ShieldAlert, Users, RefreshCw, ChevronRight, Download, Loader2 } from "lucide-react"
 import adminService from "@/services/adminService"
 import { ROLES } from "@/constants/roles"
 import { useAuth } from "@/contexts/AuthContext"
@@ -16,16 +16,20 @@ const AllEmployees = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState(false)
   const [employees, setEmployees] = useState([])
-  const [filters, setFilters] = useState({ search: '', role: 'all' })
+  const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, totalItems: 0 })
+  const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0, roles: 0 })
+  const [filters, setFilters] = useState({ search: '', role: 'all', page: 1, limit: 10 })
 
-const fetchEmployees = useCallback(async () => {
+  const fetchEmployees = useCallback(async () => {
     setIsLoading(true)
     try {
-      // Use the service which correctly points to /admin/users
       const response = await adminService.getAllEmployees(filters)
 
-      const userData = response.data?.users || response.data || response || []
+      const userData = response.data || response.users || []
+      const pagData = response.pagination || { currentPage: 1, totalPages: 1, totalItems: userData.length }
+      
       const dataArray = Array.isArray(userData) ? userData : []
 
       const formatted = dataArray.map(u => ({
@@ -42,7 +46,18 @@ const fetchEmployees = useCallback(async () => {
         avatar: (u.firstName?.[0] || u.name?.[0] || 'U').toUpperCase(),
         createdAt: u.createdAt,
       }))
+      
       setEmployees(formatted)
+      setPagination(pagData)
+      
+      if (response.stats) {
+        setStats({
+          total: response.stats.total,
+          active: response.stats.active,
+          inactive: response.stats.inactive,
+          roles: response.stats.rolesAssigned
+        })
+      }
     } catch (error) {
       console.error("Fetch Error:", error)
     } finally {
@@ -52,12 +67,48 @@ const fetchEmployees = useCallback(async () => {
 
   useEffect(() => { fetchEmployees() }, [fetchEmployees])
 
-  const stats = useMemo(() => ({
-    total: employees.length,
-    active: employees.filter(u => u.status === 'Active').length,
-    inactive: employees.filter(u => u.status === 'Inactive').length,
-    roles: new Set(employees.map(e => e.role).filter(Boolean)).size,
-  }), [employees])
+  const exportToCSV = async () => {
+    setIsExporting(true)
+    try {
+      const exportParams = { ...filters, page: 1, limit: 10000 }
+      const response = await adminService.getAllEmployees(exportParams)
+      
+      const allUsers = response.data || response.users || []
+      const dataArray = Array.isArray(allUsers) ? allUsers : []
+
+      const headers = ['Name', 'Email', 'Department', 'Role', 'Gender', 'Status', 'Joined Date']
+      
+      const csvRows = dataArray.map(u => {
+        const name = u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || '—'
+        const status = u.isActive ? 'Active' : 'Inactive'
+        const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'
+        
+        return [
+          name, 
+          u.email || '', 
+          u.department || 'N/A', 
+          u.role || '', 
+          u.gender || 'N/A', 
+          status, 
+          joinedDate
+        ].map(v => `"${v}"`).join(',')
+      })
+      
+      const csvContent = [headers.map(h => `"${h}"`).join(','), ...csvRows].join('\n')
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `Directory_Export_${new Date().toISOString().split('T')[0]}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (error) {
+      console.error("Export Error:", error)
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   if (user?.role === "EMPLOYEE") {
     const selfId = user?.employeeId || user?._id
@@ -68,8 +119,14 @@ const fetchEmployees = useCallback(async () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">All Employees</h1>
-          <p className="text-muted-foreground">View and browse all employee profiles in the system.</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {user?.role === 'DEPARTMENT_MANAGER' ? 'Department Directory' : 'All Employees'}
+          </h1>
+          <p className="text-muted-foreground">
+            {user?.role === 'DEPARTMENT_MANAGER' 
+              ? 'View and browse employee profiles within your department.' 
+              : 'View and browse all employee profiles in the system.'}
+          </p>
         </div>
       </div>
 
@@ -82,16 +139,16 @@ const fetchEmployees = useCallback(async () => {
 
       <Card>
         <div className="p-4 border-b flex flex-col md:flex-row gap-4 items-center justify-between bg-muted/20">
-          <div className="flex gap-2 w-full md:w-auto">
+          <div className="flex flex-wrap gap-2 w-full md:w-auto">
             <div className="relative flex-1 md:w-80">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by name, email or ID..."
                 className="pl-10"
-                onChange={e => setFilters(p => ({ ...p, search: e.target.value }))}
+                onChange={e => setFilters(p => ({ ...p, search: e.target.value, page: 1 }))}
               />
             </div>
-            <Select onValueChange={v => setFilters(p => ({ ...p, role: v }))}>
+            <Select onValueChange={v => setFilters(p => ({ ...p, role: v, page: 1 }))}>
               <SelectTrigger className="w-40"><SelectValue placeholder="All Roles" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
@@ -101,10 +158,16 @@ const fetchEmployees = useCallback(async () => {
               </SelectContent>
             </Select>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchEmployees} disabled={isLoading}>
-            <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
-            Sync Data
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={exportToCSV} disabled={employees.length === 0 || isExporting}>
+              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              {isExporting ? "Exporting..." : "Export CSV"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={fetchEmployees} disabled={isLoading}>
+              <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
+              Sync Data
+            </Button>
+          </div>
         </div>
 
         <CardContent className="p-0">
@@ -168,9 +231,32 @@ const fetchEmployees = useCallback(async () => {
               )}
             </TableBody>
           </Table>
-          <div className="p-4 border-t flex items-center justify-between text-xs text-muted-foreground font-medium">
-            <span>Displaying {employees.length} employee records</span>
-            <span>Read-only view · Manage in Administration → User Management</span>
+          
+          <div className="p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground font-medium">
+            <span>
+              Displaying {employees.length > 0 ? ((pagination.currentPage - 1) * 10) + 1 : 0} - {Math.min(pagination.currentPage * 10, pagination.totalItems)} of {pagination.totalItems} records
+            </span>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 text-xs"
+                disabled={pagination.currentPage <= 1 || isLoading} 
+                onClick={() => setFilters(p => ({ ...p, page: p.page - 1 }))}
+              >
+                Previous
+              </Button>
+              <span className="px-2">Page {pagination.currentPage} of {pagination.totalPages}</span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 text-xs"
+                disabled={pagination.currentPage >= pagination.totalPages || isLoading} 
+                onClick={() => setFilters(p => ({ ...p, page: p.page + 1 }))}
+              >
+                Next
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

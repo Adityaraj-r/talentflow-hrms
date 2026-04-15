@@ -54,17 +54,25 @@ export const getAllTransfers = async (req: AuthRequest, res: Response) => {
             ];
         }
 
+        // NEW: Strict RBAC Data Isolation for Department Managers
+        if (req.user?.role === 'DEPARTMENT_MANAGER') {
+            query.currentDepartment = req.user.department;
+        }
+
         const total = await Transfer.countDocuments(query);
         const transfers = await Transfer.find(query)
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit);
 
+        // Keep global stats for Admin, but isolated stats for Dept Manager
+        const statQuery = req.user?.role === 'DEPARTMENT_MANAGER' ? { currentDepartment: req.user.department } : {};
+        
         const [totalStats, pendingStats, approvedStats, rejectedStats] = await Promise.all([
-            Transfer.countDocuments({}),
-            Transfer.countDocuments({ status: 'Pending' }),
-            Transfer.countDocuments({ status: 'Approved' }),
-            Transfer.countDocuments({ status: 'Rejected' })
+            Transfer.countDocuments(statQuery),
+            Transfer.countDocuments({ ...statQuery, status: 'Pending' }),
+            Transfer.countDocuments({ ...statQuery, status: 'Approved' }),
+            Transfer.countDocuments({ ...statQuery, status: 'Rejected' })
         ]);
 
         res.status(200).json({
@@ -124,7 +132,7 @@ export const updateTransferStatus = async (req: AuthRequest, res: Response) => {
     const { status, adminRemarks } = req.body;
 
     try {
-        const allowedRoles = ['ADMIN', 'CEO'];
+        const allowedRoles = ['HR_MANAGER', 'CEO', 'COUNTRY_MANAGER'];
 
         if (!req.user || !allowedRoles.includes(req.user.role)) {
             return res.status(403).json({
@@ -140,11 +148,14 @@ export const updateTransferStatus = async (req: AuthRequest, res: Response) => {
         const isApproving = status === 'Approved' && transfer.status !== 'Approved';
         const isReverting = status === 'Rejected' && transfer.status === 'Approved';
 
-        const actionTakerRole = req.user.role === 'CEO' ? 'CEO' : 'Admin';
+        let actionTakerRole = 'HR Manager';
+        if (req.user.role === 'CEO') actionTakerRole = 'CEO';
+        if (req.user.role === 'COUNTRY_MANAGER') actionTakerRole = 'Country Manager';
+        
         let formattedAction = status;
 
-        if (isReverting && actionTakerRole === 'CEO') {
-            formattedAction = `Overridden to Rejected by CEO`;
+        if (isReverting && (actionTakerRole === 'CEO' || actionTakerRole === 'Country Manager')) {
+            formattedAction = `Overridden to Rejected by ${actionTakerRole}`;
         } else {
             formattedAction = `${status} by ${actionTakerRole}`;
         }
@@ -211,5 +222,36 @@ export const getEmployeeLatestTransfer = async (req: AuthRequest, res: Response)
         res.status(200).json(latestTransfer);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
+    }
+};
+
+// NEW: Add Manager Recommendation
+export const addManagerRecommendation = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { recommendation } = req.body;
+
+        const transfer = await Transfer.findById(id);
+        if (!transfer) {
+            res.status(404).json({ success: false, error: 'Transfer request not found' });
+            return;
+        }
+
+        transfer.managerRecommendation = recommendation;
+        transfer.auditLog.push({
+            action: 'Recommendation Added',
+            by: req.user?.id || 'System',
+            remarks: recommendation,
+            timestamp: new Date()
+        });
+
+        await transfer.save();
+
+        res.status(200).json({
+            success: true,
+            data: transfer
+        });
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
     }
 };

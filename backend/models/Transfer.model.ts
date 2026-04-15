@@ -14,6 +14,7 @@ export interface ITransfer extends Document {
     reason?: string;
     status: 'Pending' | 'Approved' | 'Rejected';
     adminRemarks?: string;
+    managerRecommendation?: string; // <-- NEW
     requestDate: Date;
     auditLog: Array<{
         action: string;
@@ -41,6 +42,7 @@ const TransferSchema: Schema = new Schema({
         default: 'Pending' 
     },
     adminRemarks: { type: String, default: "" },
+    managerRecommendation: { type: String, default: "" }, // <-- NEW
     requestDate: { type: Date, default: Date.now },
     auditLog: [{
         action: { type: String, required: true },

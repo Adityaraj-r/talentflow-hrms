@@ -81,7 +81,6 @@ export const getMyUploadedDocuments = async (req: Request, res: Response): Promi
   try {
     const requestingUser = (req as any).user;
     
-    // 1. The Guaranteed Key: Every authenticated user has an _id or id
     const userId = requestingUser._id || requestingUser.id;
 
     if (!userId) {
@@ -89,7 +88,19 @@ export const getMyUploadedDocuments = async (req: Request, res: Response): Promi
       return;
     }
 
-    // 2. Direct lookup: Find the Employee document that belongs to this User ID
+    if (requestingUser.role === 'DEPARTMENT_MANAGER') {
+      const deptEmployees = await Employee.find({ department: requestingUser.department }).select('employeeCode');
+      const empIds = deptEmployees.map(emp => emp.employeeCode);
+      
+      const managerDocs = await Document.find({
+        employeeId: { $in: empIds },
+        category: { $in: ['Education', 'Employment'] }
+      }).sort({ uploadDate: -1 });
+      
+      res.status(200).json(managerDocs);
+      return;
+    }
+
     const employee = await Employee.findOne({ userId: userId });
 
     if (!employee || !employee.employeeCode) {
@@ -97,7 +108,6 @@ export const getMyUploadedDocuments = async (req: Request, res: Response): Promi
       return;
     }
 
-    // 3. Fetch documents using the true employeeCode (e.g., EMP-0011)
     const docs = await Document.find({ employeeId: employee.employeeCode }).sort({ uploadDate: -1 });
     
     res.status(200).json(docs);

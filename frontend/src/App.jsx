@@ -59,6 +59,7 @@ import SalarySlip from "./pages/modules/payroll/SalarySlip"
 import EmployeeTransfer from "./pages/modules/transfer/EmployeeTransfer"
 import TransferPage from "./pages/modules/transfer/TransferPage"
 import EmployeePromotion from "./pages/modules/transfer/EmployeePromotion"
+import HRDocumentRequests from "./pages/modules/employee-center/HRDocumentRequests"
 
 // Performance Module
 import AdminPerformance from "./pages/modules/performance/AdminPerformance"
@@ -371,7 +372,7 @@ function App() {
 
                     {/* ── Employee Center ───────────────────────────────── */}
                     <Route path="/employee-center/all-employees" element={
-                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER"]}>
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER"]}>
                         <DashboardLayout><AllEmployees /></DashboardLayout>
                       </ProtectedRoute>
                     } />
@@ -381,7 +382,7 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="/employee-center/digital-locker" element={
-                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "EMPLOYEE"]}>
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "EMPLOYEE", "DEPARTMENT_MANAGER"]}>
                         <DashboardLayout><DigitalLocker /></DashboardLayout>
                       </ProtectedRoute>
                     } />
@@ -395,19 +396,18 @@ function App() {
                         <DashboardLayout><EmployeePromotion /></DashboardLayout>
                       </ProtectedRoute>
                     } />
-
-                    {/* ── Recruitment — MATRIX ENFORCED ────────────────── */}
                     <Route path="/employee-center/onboarding" element={
+                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER"]}>
+                        <DashboardLayout><Onboarding /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/employee-center/document-requests" element={
                       <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER"]}>
-                        <DashboardLayout><Onboarding /></DashboardLayout>
+                        <DashboardLayout><HRDocumentRequests /></DashboardLayout>
                       </ProtectedRoute>
                     } />
-                    {/* Keep old onboarding path for sidebar compatibility */}
-                    <Route path="/dashboard/onboarding" element={
-                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER"]}>
-                        <DashboardLayout><Onboarding /></DashboardLayout>
-                      </ProtectedRoute>
-                    } />
+
+                     {/* ── Recruitment — MATRIX ENFORCED ────────────────── */}
                     <Route path="/staff-requisition" element={
                       <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
                         <DashboardLayout><StaffRequisition /></DashboardLayout>
