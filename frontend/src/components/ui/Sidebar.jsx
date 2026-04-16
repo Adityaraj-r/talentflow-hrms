@@ -110,11 +110,8 @@ const Sidebar = ({
   }, [location.pathname, isCollapsed])
 
   const canSee = (moduleKey) => {
-    if (userRole === "SUPER ADMIN") return true
-    if (userRole === "ADMIN") {
-      return user?.permissions?.[moduleKey]?.read === true
-    }
-    return dbPermissions[moduleKey]?.read !== false
+    if (userRole === "SUPER ADMIN" || userRole === "SUPER_ADMIN") return true
+    return dbPermissions[moduleKey]?.read === true
   }
 
   const toggleGroup = (group) => {
@@ -710,6 +707,26 @@ const Sidebar = ({
           )}
           {canSee("employees") && (
             <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
+          )}
+          {(user?.permissions?.employees?.read || user?.permissions?.settings?.read) && (
+            <SidebarGroup id="administration" icon={Settings} label="Administration">
+              {(user?.permissions?.employees?.read || user?.permissions?.settings?.read) && (
+                <SubLink to="/dashboard/users" label="User Management" icon={Users} />
+              )}
+              {user?.permissions?.settings?.read && (
+                <>
+                  <SubLink to="/settings" label="System Settings" icon={Settings} />
+                  <SubLink to="/admin/company-structure" label="Company Structure" icon={Building} />
+                  <SubLink to="/admin/integrations" label="Integrations" icon={Layers} />
+                </>
+              )}
+              {user?.permissions?.roles?.read && (
+                <SubLink to="/admin/roles" label="Roles & Permissions" icon={Shield} />
+              )}
+              {user?.permissions?.audit?.read && (
+                <SubLink to="/admin/audit-logs" label="Audit Logs" icon={FileText} />
+              )}
+            </SidebarGroup>
           )}
           <TeamPayrollSidebar />
         </>

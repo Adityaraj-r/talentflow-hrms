@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller';
 import { protect } from '../middleware/auth.middleware';
+import { authRouteLimiter } from '../middleware/rateLimit.middleware';
 
 const router = Router();
 
-// Public routes
-router.post('/login', AuthController.login);
-router.post('/register', AuthController.register);
+router.post('/login', authRouteLimiter, AuthController.login);
+router.post('/register', authRouteLimiter, AuthController.register);
 
 // Protected routes
 router.get('/profile', protect as any, AuthController.getProfile as any);

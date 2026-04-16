@@ -487,11 +487,9 @@
 import { Request, Response } from "express";
 import Employee from "../models/Employee.model";
 import Attendance from "../models/Attendance.model";
-import Leave from "../models/Leave.model";
+import Leave from "../models/leave.model";
 
-/* =========================================================
-   HELPER: Build Employee Filter
-========================================================= */
+// Build employee filter from query (department, role).
 const buildEmployeeFilter = (query: any) => {
   const { department, role } = query;
   const filter: any = {};
@@ -507,9 +505,7 @@ const buildEmployeeFilter = (query: any) => {
   return filter;
 };
 
-/* =========================================================
-   HELPER: Get Filtered Employees
-========================================================= */
+// Load employees matching the report filter.
 const getFilteredEmployees = async (query: any) => {
   const filter = buildEmployeeFilter(query);
 
@@ -522,9 +518,7 @@ const getFilteredEmployees = async (query: any) => {
   return { employees, userIds, filter };
 };
 
-/* =========================================================
-   1️⃣ SUMMARY (KPI)
-========================================================= */
+// Report: summary KPIs (headcount, attendance, payroll).
 export const getSummary = async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query as any;
@@ -601,9 +595,7 @@ export const getSummary = async (req: Request, res: Response) => {
   }
 };
 
-/* =========================================================
-   2️⃣ WORKFORCE TREND
-========================================================= */
+// Report: workforce trend over time.
 export const getWorkforceData = async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query as any;
@@ -646,9 +638,7 @@ export const getWorkforceData = async (req: Request, res: Response) => {
   }
 };
 
-/* =========================================================
-   3️⃣ ATTENDANCE TREND
-========================================================= */
+// Report: attendance trend by month.
 export const getAttendanceData = async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query as any;
@@ -704,9 +694,7 @@ export const getAttendanceData = async (req: Request, res: Response) => {
   }
 };
 
-/* =========================================================
-   4️⃣ DEPARTMENT DISTRIBUTION
-========================================================= */
+// Report: headcount by department.
 export const getDepartmentData = async (req: Request, res: Response) => {
   try {
     const { employees } = await getFilteredEmployees(req.query);
@@ -733,9 +721,7 @@ export const getDepartmentData = async (req: Request, res: Response) => {
   }
 };
 
-/* =========================================================
-   5️⃣ LEAVE BREAKDOWN
-========================================================= */
+// Report: approved leave by type.
 export const getLeaveData = async (req: Request, res: Response) => {
   try {
     const { userIds } = await getFilteredEmployees(req.query);
@@ -763,9 +749,7 @@ export const getLeaveData = async (req: Request, res: Response) => {
   }
 };
 
-/* =========================================================
-   6️⃣ EMPLOYEE PERFORMANCE
-========================================================= */
+// Report: employee performance table (paginated).
 export const getEmployeePerformance = async (req: Request, res: Response) => {
   try {
     const { search, page = 1, limit = 10 } = req.query as any;
@@ -810,9 +794,7 @@ export const getEmployeePerformance = async (req: Request, res: Response) => {
   }
 };
 
-/* =========================================================
-   7️⃣ DEPARTMENT WORKING HOURS
-========================================================= */
+// Report: working hours aggregated by department.
 export const getDepartmentWorkingHours = async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query as any;
@@ -864,9 +846,7 @@ export const getDepartmentWorkingHours = async (req: Request, res: Response) => 
   }
 };
 
-/* =========================================================
-   8️⃣ EXPORT DATA (CSV / PDF)
-========================================================= */
+// Report: export dataset (attendance + employee fields).
 export const getExportData = async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query as any;

@@ -27,6 +27,7 @@ export const MODULE_KEYS = {
   ATTENDANCE:  'attendance',
   SETTINGS:    'settings',
   ROLES:       'roles',
+  AUDIT:       'audit',
 } as const;
 
 export type ModuleKey       = typeof MODULE_KEYS[keyof typeof MODULE_KEYS];
@@ -34,11 +35,8 @@ export type PermissionAction = 'read' | 'write' | 'delete';
 
 const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'];
 
-const SUPER_ADMIN_ROLES = ['SUPER ADMIN', 'SUPER_ADMIN'];
-
 const normalizeRole = (str: string | undefined): string => {
   if (!str) return '';
-  // Strips spaces and underscores, ensures uppercase
   return str.toUpperCase().replace(/[\s_]/g, "");
 };
 
@@ -53,7 +51,7 @@ export const authorize = (...allowedRoles: string[]) => {
     const normalizedAllowed = allowedRoles.map(normalizeRole);
 
     if (!normalizedAllowed.includes(userRole)) {
-      logger.warn(`[STATIC] Access denied: ${req.user.email} (${userRole})`);
+      logger.warn(`Access denied: ${req.user.email} (${userRole})`);
       ResponseHandler.forbidden(res, 'You do not have permission to access this resource');
       return;
     }
@@ -82,7 +80,7 @@ export const authorizeByMatrix = (module: ModuleKey, action: PermissionAction) =
       const roleDoc = roles.find(r => normalizeRole(r.name) === normalizedUserRole);
 
       if (!roleDoc) {
-        logger.warn(`[MATRIX] Role not found: "${rawUserRole}" for ${req.user.email}`);
+        logger.warn(`Role not found in permission map: "${rawUserRole}" (${req.user.email})`);
         ResponseHandler.forbidden(res, 'Role configuration not found');
         return;
       }
@@ -91,7 +89,7 @@ export const authorizeByMatrix = (module: ModuleKey, action: PermissionAction) =
 
       if (!permission || !permission[action]) {
         logger.warn(
-          `[MATRIX] Denied: ${req.user.email} (${rawUserRole}) — ${action} on "${module}"`
+          `Permission denied: ${req.user.email} (${rawUserRole}) — ${action} on "${module}"`
         );
         ResponseHandler.forbidden(
           res,
@@ -102,7 +100,55 @@ export const authorizeByMatrix = (module: ModuleKey, action: PermissionAction) =
 
       next();
     } catch (err) {
-      logger.error(`[MATRIX] Permission check error for ${req.user.email}: ${err}`);
+      logger.error(`Permission check error for ${req.user.email}: ${err}`);
+      ResponseHandler.serverError(res, 'Permission check failed');
+    }
+  };
+};
+
+export const authorizeByMatrixAny = (
+  checks: { module: ModuleKey; action: PermissionAction }[]
+) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user) {
+      ResponseHandler.unauthorized(res, 'User not authenticated');
+      return;
+    }
+
+    const rawUserRole = req.user.role;
+    const normalizedUserRole = normalizeRole(rawUserRole);
+
+    if (ADMIN_ROLES.some(role => normalizeRole(role) === normalizedUserRole)) {
+      next();
+      return;
+    }
+
+    try {
+      const roles = await Role.find({});
+      const roleDoc = roles.find(r => normalizeRole(r.name) === normalizedUserRole);
+
+      if (!roleDoc) {
+        logger.warn(`Role not found in permission map: "${rawUserRole}" (${req.user.email})`);
+        ResponseHandler.forbidden(res, 'Role configuration not found');
+        return;
+      }
+
+      const allowed = checks.some(({ module, action }) => {
+        const permission = roleDoc.permissions.get(module);
+        return permission && permission[action];
+      });
+
+      if (!allowed) {
+        logger.warn(
+          `Permission denied (alternate modules): ${req.user.email} (${rawUserRole}) — ${checks.map(c => `${c.action}:${c.module}`).join(', ')}`
+        );
+        ResponseHandler.forbidden(res, 'Access denied for this resource');
+        return;
+      }
+
+      next();
+    } catch (err) {
+      logger.error(`Permission check error for ${req.user.email}: ${err}`);
       ResponseHandler.serverError(res, 'Permission check failed');
     }
   };

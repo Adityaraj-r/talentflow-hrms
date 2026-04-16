@@ -16,13 +16,11 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import adminService from "@/services/adminService"
+import apiClient from "@/services/apiClient"
+import { useUser } from "@/contexts/UserContext"
 import { ROLES } from "@/constants/roles"
 import { cn } from "@/lib/utils"
 
-// const [formData, setFormData] = useState({
-//     firstName: '', lastName: '', email: '', password: '',
-//     role: '', department: '', phoneNumber: '', gender: '', employeeCode: ''
-//   })
 const EMPTY_FORM = {
   firstName: '', lastName: '', email: '', password: '',
   role: '', department: '', phoneNumber: '', gender: '',
@@ -34,6 +32,10 @@ const EMPTY_FORM = {
 }
 
 const UserManagement = () => {
+  const { user: currentUser } = useUser()
+  const canWriteSettings = currentUser?.can?.("settings", "write")
+  const canDeleteSettings = currentUser?.can?.("settings", "delete")
+
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isBulkOpen, setIsBulkOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -53,18 +55,14 @@ const UserManagement = () => {
   useEffect(() => {
     const fetchOnboarded = async () => {
       try {
-        const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:5001/api/onboarding/list/all?unenrolled=true', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-        const data = await response.json()
+        const data = await apiClient.get("/onboarding/list/all?unenrolled=true")
         setOnboardedList(Array.isArray(data) ? data : [])
       } catch (error) {
         console.error("Failed to fetch onboarded employees:", error)
       }
     }
-    if (isCreateOpen) fetchOnboarded()
-  }, [isCreateOpen])
+    if (isCreateOpen && canWriteSettings) fetchOnboarded()
+  }, [isCreateOpen, canWriteSettings])
 
   const handleSelectEmployee = (employeeCode) => {
     const selectedEmp = onboardedList.find(emp => emp.employeeCode === employeeCode)
@@ -192,13 +190,7 @@ const UserManagement = () => {
       return toast.error("Role, Department, and Phone Number are compulsory fields.")
     setIsActionLoading(true)
     try {
-      const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:5001/api/users/${editUserId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(formData)
-      })
-      const data = await res.json()
+      const data = await apiClient.put(`/users/${editUserId}`, formData)
       if (data.success) {
         toast.success("User updated successfully")
         setIsEditOpen(false)
@@ -222,12 +214,7 @@ const UserManagement = () => {
     if (!deleteTarget) return
     setIsDeleting(true)
     try {
-      const token = localStorage.getItem('token')
-      const res = await fetch(`http://localhost:5001/api/admin/users/${deleteTarget.id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      const data = await res.json()
+      const data = await apiClient.delete(`/admin/users/${deleteTarget.id}`)
       if (data.success) {
         toast.success(`${deleteTarget.name} has been removed from the system`)
         setUsers(prev => prev.filter(u => u.id !== deleteTarget.id))
@@ -366,6 +353,7 @@ const UserManagement = () => {
         </div>
         <div className="flex gap-2">
 
+          {canWriteSettings && (
           <Dialog open={isBulkOpen} onOpenChange={setIsBulkOpen}>
             <DialogTrigger asChild>
               <Button variant="outline"><Upload className="mr-2 h-4 w-4" /> Bulk Upload</Button>
@@ -399,7 +387,9 @@ const UserManagement = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          )}
 
+          {canWriteSettings && (
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="mr-2 h-4 w-4" /> Add Employee</Button>
@@ -410,7 +400,6 @@ const UserManagement = () => {
                 <DialogDescription>Create a single employee record in the system.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateUser} autoComplete="off" className="space-y-4 py-4">
-                {/* AUTO-FILL DROPDOWN START */}
                 <div className="mb-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-lg">
                   <Label className="text-blue-700 dark:text-blue-400 font-semibold mb-2 block">
                     Link Onboarded Candidate (Optional)
@@ -424,7 +413,6 @@ const UserManagement = () => {
                         <SelectItem value="none" disabled>No pending candidates</SelectItem>
                       ) : (
                         onboardedList.map((emp, index) => {
-                          // Create a guaranteed safe string value to prevent UI crashes
                           const safeValue = emp.employeeCode || emp._id || `fallback-${index}`;
                           const displayCode = emp.employeeCode || "No ID";
 
@@ -438,7 +426,6 @@ const UserManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                {/* AUTO-FILL DROPDOWN END */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
@@ -515,6 +502,7 @@ const UserManagement = () => {
               </form>
             </DialogContent>
           </Dialog>
+          )}
 
           <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
             <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
@@ -614,7 +602,7 @@ const UserManagement = () => {
                   from the system?
                   <br /><br />
                   <span className="text-xs text-muted-foreground">
-                    ⚠️ This is a soft delete — the employee's payroll history, audit logs,
+                    This is a soft delete — the employee's payroll history, audit logs,
                     and documents are preserved. Their account will be deactivated and
                     their Employee status set to <strong>Terminated</strong>.
                   </span>
@@ -729,24 +717,30 @@ const UserManagement = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary"
-                          onClick={() => openEditModal(user)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost" size="icon"
-                          className={cn("h-8 w-8", user.status === 'Active' ? "hover:text-orange-500" : "hover:text-green-500")}
-                          onClick={() => handleToggleStatus(user.id, user.status)}
-                        >
-                          <Power className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost" size="icon"
-                          className="h-8 w-8 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
-                          onClick={() => openDeleteModal(user)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {canWriteSettings && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary"
+                            onClick={() => openEditModal(user)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {canWriteSettings && (
+                          <Button
+                            variant="ghost" size="icon"
+                            className={cn("h-8 w-8", user.status === 'Active' ? "hover:text-orange-500" : "hover:text-green-500")}
+                            onClick={() => handleToggleStatus(user.id, user.status)}
+                          >
+                            <Power className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {canDeleteSettings && (
+                          <Button
+                            variant="ghost" size="icon"
+                            className="h-8 w-8 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
+                            onClick={() => openDeleteModal(user)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

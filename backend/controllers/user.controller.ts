@@ -1,19 +1,44 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.model';
 import Employee from '../models/Employee.model';
+import Role from '../models/Role.model';
 import { sendWelcomeEmail } from '../utils/sendEmail';
+import { AuthRequest } from '../middleware/auth.middleware';
+import { createLog } from './audit.controller';
+import {
+  checkAdminSafeguard,
+  isAssignableRoleStable,
+  normalizeRoleKey,
+} from '../utils/adminRules.util';
 
-// Create User 
-export const createUser = async (req: Request, res: Response): Promise<void> => {
+async function resolveRegisteredRoleName(input: string): Promise<string | null> {
+  const roles = await Role.find({}).lean();
+  const n = normalizeRoleKey(input);
+  const found = roles.find((r) => normalizeRoleKey(String(r.name)) === n);
+  return found ? String(found.name) : null;
+}
+
+export const createUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { email, password, firstName, lastName, role, phoneNumber, department, gender, employeeCode, salary } = req.body;
+    const ip = String(req.headers['x-forwarded-for'] || req.ip || 'unknown');
 
     if (!email || !password || !firstName || !lastName || !role) {
       res.status(400).json({
         success: false,
         message: 'Email, password, first name, last name and role are required',
       });
+      return;
+    }
+
+    const resolvedRole = await resolveRegisteredRoleName(role);
+    if (!resolvedRole) {
+      res.status(400).json({ success: false, message: 'Unknown or invalid role' });
+      return;
+    }
+    if (!isAssignableRoleStable(resolvedRole)) {
+      res.status(403).json({ success: false, message: 'Role assignment is not permitted through this endpoint' });
       return;
     }
 
@@ -34,7 +59,6 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const empCount = await Employee.countDocuments();
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -51,7 +75,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       password: hashedPassword,
       firstName,
       lastName,
-      role: role || 'EMPLOYEE',
+      role: resolvedRole,
       phoneNumber: phoneNumber || null,
       department: department || null,
       gender: gender || null,
@@ -60,7 +84,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       isActive: true,
     });
 
-    const employeeData: any = {
+    const employeeData: Record<string, unknown> = {
       userId: user._id,
       workEmail: user.email,
       firstName: user.firstName,
@@ -111,13 +135,28 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       sendWelcomeEmail(personalEmail, firstName, user.email, password);
     }
 
+    const actorName = [req.user?.firstName, req.user?.lastName].filter(Boolean).join(' ').trim() || 'System';
+    await createLog(
+      req.user?.id || 'system',
+      actorName,
+      'CREATE_USER',
+      'ADMINISTRATION',
+      `Created user ${user.email}`,
+      ip,
+      'Success',
+      {
+        userRole: req.user?.role,
+        afterValue: { email: user.email, role: user.role, employeeId: employee._id.toString() },
+      }
+    );
+
     res.status(201).json({
       success: true,
       message: 'User and Employee profile created successfully',
       data: {
         id: user._id,
         employeeId: employee._id,
-        employeeCode: employee.employeeCode,
+        employeeCode: (employee as { employeeCode?: string }).employeeCode,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -126,7 +165,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         gender: user.gender,
         phoneNumber: user.phoneNumber,
         isActive: user.isActive,
-        salary: employee.salary,
+        salary: (employee as { salary?: unknown }).salary,
       },
     });
   } catch (error: any) {
@@ -134,12 +173,11 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-// Get All User List
-export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
+export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { role, isActive, search } = req.query;
 
-    const filter: any = {};
+    const filter: Record<string, unknown> = {};
     if (role) filter.role = role;
     if (isActive !== undefined) filter.isActive = isActive === 'true';
     if (search) {
@@ -158,8 +196,7 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-// Get User By ID
-export const getUserById = async (req: Request, res: Response): Promise<void> => {
+export const getUserById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = await User.findById(req.params.id).select('-password');
     if (!user) {
@@ -172,8 +209,7 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-// Update User
-export const updateUser = async (req: Request, res: Response): Promise<void> => {
+export const updateUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.params.id || req.body.id;
     const {
@@ -181,6 +217,8 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       department, role, gender, phoneNumber, isActive,
       salary
     } = req.body;
+
+    const ip = String(req.headers['x-forwarded-for'] || req.ip || 'unknown');
 
     if (!role || !department || !phoneNumber) {
       res.status(400).json({
@@ -196,11 +234,59 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
+    if (req.user?.id === userId && role !== user.role) {
+      res.status(403).json({ success: false, message: 'You cannot change your own role' });
+      return;
+    }
+
+    const resolvedRole = await resolveRegisteredRoleName(role);
+    if (!resolvedRole) {
+      res.status(400).json({ success: false, message: 'Unknown or invalid role' });
+      return;
+    }
+    if (!isAssignableRoleStable(resolvedRole)) {
+      res.status(403).json({ success: false, message: 'Role assignment is not permitted through this endpoint' });
+      return;
+    }
+
+    if (resolvedRole !== user.role) {
+      const safeguard = await checkAdminSafeguard({
+        userId,
+        operation: 'role_change',
+        nextRole: resolvedRole,
+      });
+      if (!safeguard.ok) {
+        res.status(400).json({ success: false, message: safeguard.message });
+        return;
+      }
+    }
+
+    if (isActive !== undefined && isActive === false && user.isActive === true) {
+      const safeguard = await checkAdminSafeguard({
+        userId,
+        operation: 'deactivate',
+        nextIsActive: false,
+      });
+      if (!safeguard.ok) {
+        res.status(400).json({ success: false, message: safeguard.message });
+        return;
+      }
+    }
+
+    const beforeSnap = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      department: user.department,
+      isActive: user.isActive,
+    };
+
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
     if (email) user.email = email;
     if (department) user.department = department;
-    if (role) user.role = role;
+    user.role = resolvedRole;
     if (gender) user.gender = gender;
     if (phoneNumber) user.phoneNumber = phoneNumber;
     if (isActive !== undefined) user.isActive = isActive;
@@ -213,7 +299,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     await user.save();
 
     if (user.employeeId) {
-      const employeeUpdate: any = {
+      const employeeUpdate: Record<string, unknown> = {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -246,16 +332,40 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     }
 
     const { password: _, ...userResponse } = user.toObject();
+
+    const actorName = [req.user?.firstName, req.user?.lastName].filter(Boolean).join(' ').trim() || 'System';
+    await createLog(
+      req.user?.id || 'system',
+      actorName,
+      'UPDATE_USER',
+      'ADMINISTRATION',
+      `Updated user ${user.email}`,
+      ip,
+      'Success',
+      {
+        userRole: req.user?.role,
+        beforeValue: beforeSnap,
+        afterValue: {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role,
+          department: user.department,
+          isActive: user.isActive,
+        },
+      }
+    );
+
     res.status(200).json({ success: true, message: 'User updated successfully', data: userResponse });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Error updating user details', error: error.message });
   }
 };
 
-// Reset User Password
-export const resetUserPassword = async (req: Request, res: Response): Promise<void> => {
+export const resetUserPassword = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { newPassword } = req.body;
+    const ip = String(req.headers['x-forwarded-for'] || req.ip || 'unknown');
 
     if (!newPassword || newPassword.length < 6) {
       res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
@@ -276,34 +386,74 @@ export const resetUserPassword = async (req: Request, res: Response): Promise<vo
       return;
     }
 
+    const actorName = [req.user?.firstName, req.user?.lastName].filter(Boolean).join(' ').trim() || 'System';
+    await createLog(
+      req.user?.id || 'system',
+      actorName,
+      'RESET_PASSWORD',
+      'ADMINISTRATION',
+      `Password reset for ${user.email}`,
+      ip,
+      'Success',
+      { userRole: req.user?.role, afterValue: { userId: user._id.toString() } }
+    );
+
     res.status(200).json({ success: true, message: 'Password reset successfully' });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Error resetting password', error: error.message });
   }
 };
 
-// Deactivate User
-export const deactivateUser = async (req: Request, res: Response): Promise<void> => {
+export const deactivateUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { isActive: false },
-      { new: true }
-    ).select('-password');
-
+    const ip = String(req.headers['x-forwarded-for'] || req.ip || 'unknown');
+    const user = await User.findById(req.params.id);
     if (!user) {
       res.status(404).json({ success: false, message: 'User not found' });
       return;
     }
 
-    if (user.employeeId) {
-      await Employee.findByIdAndUpdate(user.employeeId, { status: 'Inactive' });
+    const safeguard = await checkAdminSafeguard({
+      userId: user._id.toString(),
+      operation: 'deactivate',
+      nextIsActive: false,
+    });
+    if (!safeguard.ok) {
+      res.status(400).json({ success: false, message: safeguard.message });
+      return;
     }
+
+    const updated = await User.findByIdAndUpdate(
+      req.params.id,
+      { isActive: false },
+      { new: true }
+    ).select('-password');
+
+    if (!updated) {
+      res.status(404).json({ success: false, message: 'User not found' });
+      return;
+    }
+
+    if (updated.employeeId) {
+      await Employee.findByIdAndUpdate(updated.employeeId, { status: 'Inactive' });
+    }
+
+    const actorName = [req.user?.firstName, req.user?.lastName].filter(Boolean).join(' ').trim() || 'System';
+    await createLog(
+      req.user?.id || 'system',
+      actorName,
+      'DEACTIVATE_USER',
+      'ADMINISTRATION',
+      `Deactivated ${updated.email}`,
+      ip,
+      'Success',
+      { userRole: req.user?.role, afterValue: { userId: updated._id.toString() } }
+    );
 
     res.status(200).json({
       success: true,
-      message: `User ${user.firstName} has been deactivated`,
-      data: user,
+      message: `User ${updated.firstName} has been deactivated`,
+      data: updated,
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Error deactivating user', error: error.message });

@@ -7,7 +7,8 @@ import {
 } from '../controllers/adminController';
 import { getSettings, updateSettings } from '../controllers/settingsController';
 import { protect } from '../middleware/auth.middleware';
-import { authorizeByMatrix, MODULE_KEYS } from '../middleware/role.middleware';
+import { authorizeByMatrix, authorizeByMatrixAny, MODULE_KEYS } from '../middleware/role.middleware';
+import { adminMutationLimiter } from '../middleware/rateLimit.middleware';
 import { createUser } from '../controllers/user.controller';
 
 const router: Router = express.Router();
@@ -15,20 +16,27 @@ const upload = multer({ dest: 'uploads/' });
 
 router.use(protect);
 
-// Dashboard
 router.get('/metrics',           authorizeByMatrix(MODULE_KEYS.DASHBOARD, 'read'),   getAdminMetrics);
 router.get('/dashboard-stats',   authorizeByMatrix(MODULE_KEYS.DASHBOARD, 'read'),   getDashboardStats);
 router.get('/activities',        authorizeByMatrix(MODULE_KEYS.DASHBOARD, 'read'),   getRecentActivities);
 router.get('/user-distribution', authorizeByMatrix(MODULE_KEYS.DASHBOARD, 'read'),   getUserDistribution);
 router.get('/department-stats',  authorizeByMatrix(MODULE_KEYS.DASHBOARD, 'read'),   getDepartmentStats);
 
-router.get('/users',                              authorizeByMatrix(MODULE_KEYS.EMPLOYEES, 'read'),   getAllUsers);
-router.post('/enroll-user',                       authorizeByMatrix(MODULE_KEYS.EMPLOYEES, 'write'),  createUser);
-router.patch('/users/:id/toggle-status',          authorizeByMatrix(MODULE_KEYS.EMPLOYEES, 'write'),  toggleUserStatus);
-router.post('/bulk-upload', upload.single('file'), authorizeByMatrix(MODULE_KEYS.EMPLOYEES, 'write'), bulkUploadUsers);
-router.delete('/users/:id',                        authorizeByMatrix(MODULE_KEYS.EMPLOYEES, 'delete'), deleteUser); 
-// System Settings
+router.get(
+  '/users',
+  authorizeByMatrixAny([
+    { module: MODULE_KEYS.SETTINGS, action: 'read' },
+    { module: MODULE_KEYS.EMPLOYEES, action: 'read' },
+    { module: MODULE_KEYS.PAYROLL, action: 'read' },
+  ]),
+  getAllUsers
+);
+router.post('/enroll-user', adminMutationLimiter, authorizeByMatrix(MODULE_KEYS.SETTINGS, 'write'), createUser);
+router.patch('/users/:id/toggle-status', adminMutationLimiter, authorizeByMatrix(MODULE_KEYS.SETTINGS, 'write'), toggleUserStatus);
+router.post('/bulk-upload', adminMutationLimiter, upload.single('file'), authorizeByMatrix(MODULE_KEYS.SETTINGS, 'write'), bulkUploadUsers);
+router.delete('/users/:id', adminMutationLimiter, authorizeByMatrix(MODULE_KEYS.SETTINGS, 'delete'), deleteUser);
+
 router.get('/settings',  authorizeByMatrix(MODULE_KEYS.SETTINGS, 'read'),  getSettings);
-router.put('/settings',  authorizeByMatrix(MODULE_KEYS.SETTINGS, 'write'), updateSettings);
+router.put('/settings', adminMutationLimiter, authorizeByMatrix(MODULE_KEYS.SETTINGS, 'write'), updateSettings);
 
 export default router;
