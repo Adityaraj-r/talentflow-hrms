@@ -27,7 +27,7 @@ const Sidebar = ({
 
   const [openGroups, setOpenGroups] = useState({
     employeeCenter: false, recruitment: false, timeAttendance: false,
-    payroll: false, payrollOperations: true, administration: false,
+    payroll: false, payrollOperations: false, administration: false,
     appraisal: false, disciplinaryActions: false, documentRequests: false,
   })
 
@@ -49,6 +49,13 @@ const Sidebar = ({
     if (isCollapsed) return
     const path = location.pathname
 
+    const payrollRouteActive =
+      path === "/payroll" ||
+      path.startsWith("/payroll/") ||
+      path.startsWith("/tickets") ||
+      path.startsWith("/indemnity") ||
+      path.startsWith("/ceo/payroll")
+
     const isDashboardPath =
       path === "/dashboard" ||
       path === "/admin/dashboard" ||
@@ -59,8 +66,8 @@ const Sidebar = ({
         employeeCenter: false,
         recruitment: false,
         timeAttendance: false,
-        payroll: prev.payroll,
-        payrollOperations: prev.payrollOperations,
+        payroll: payrollRouteActive ? true : prev.payroll,
+        payrollOperations: payrollRouteActive ? true : prev.payrollOperations,
         administration: false,
         appraisal: false,
         disciplinaryActions: false,
@@ -78,8 +85,8 @@ const Sidebar = ({
 
       timeAttendance: path.startsWith("/attendance") || path.includes("/employee/attendance"),
 
-      payroll: prev.payroll,
-      payrollOperations: prev.payrollOperations,
+      payroll: payrollRouteActive ? true : prev.payroll,
+      payrollOperations: payrollRouteActive ? true : prev.payrollOperations,
 
       administration:
         path.startsWith("/settings") ||

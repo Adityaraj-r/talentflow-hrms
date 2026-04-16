@@ -374,12 +374,34 @@ function slipEarnings(slip) {
   }
 }
 
+function slipDeductionRows(slip) {
+  const d = slip.deductions
+  if (d != null && typeof d === "number") {
+    return { mode: "legacy", rows: [{ label: "Deductions", amount: d }] }
+  }
+  if (!d || typeof d !== "object") {
+    return { mode: "detail", rows: [] }
+  }
+  const rows = [
+    { label: "Provident Fund", amount: Number(d.pf) || 0 },
+    { label: "ESI", amount: Number(d.esi) || 0 },
+    { label: "Professional Tax", amount: Number(d.pt) || 0 },
+    { label: "TDS", amount: Number(d.tds) || 0 },
+    { label: "Insurance", amount: Number(d.insurance) || 0 },
+    { label: "Other", amount: Number(d.other) || 0 },
+    { label: "LOP", amount: Number(d.lopAmount) || 0 },
+    { label: "Salary advance", amount: Number(d.advanceTotal) || 0 },
+  ].filter((r) => r.amount > 0)
+  return { mode: "detail", rows }
+}
+
 const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
   const eg = slipEarnings(slip)
   const gross = Number(slip.grossPay) > 0
     ? Number(slip.grossPay)
     : eg.basic + eg.hra + eg.allowances + eg.bonus + eg.overtime + eg.reimbursement + eg.performanceBonus
   const deductions = Number(slip.totalDeductions ?? slip.deductions ?? 0)
+  const dedMeta = slipDeductionRows(slip)
 
   return (
     <Card className="border-2 border-blue-100">
@@ -417,41 +439,41 @@ const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
               Earnings
             </h3>
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Basic Salary</span>
-                <span className="font-medium">₹ {eg.basic.toLocaleString()}</span>
+              <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
+                <span className="text-muted-foreground shrink-0">Basic Salary</span>
+                <span className="font-medium font-mono tabular-nums text-right">₹ {eg.basic.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span>HRA</span>
-                <span className="font-medium">₹ {eg.hra.toLocaleString()}</span>
+              <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
+                <span className="text-muted-foreground shrink-0">HRA</span>
+                <span className="font-medium font-mono tabular-nums text-right">₹ {eg.hra.toLocaleString()}</span>
               </div>
               {eg.allowances > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span>Other Allowances</span>
-                  <span className="font-medium">₹ {eg.allowances.toLocaleString()}</span>
+                <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
+                  <span className="text-muted-foreground shrink-0">Other Allowances</span>
+                  <span className="font-medium font-mono tabular-nums text-right">₹ {eg.allowances.toLocaleString()}</span>
                 </div>
               )}
               {eg.bonus > 0 && (
-                <div className="flex justify-between text-sm text-green-600">
-                  <span>Bonus</span>
-                  <span className="font-medium">₹ {eg.bonus.toLocaleString()}</span>
+                <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem] text-green-600">
+                  <span className="shrink-0">Bonus</span>
+                  <span className="font-medium font-mono tabular-nums text-right">₹ {eg.bonus.toLocaleString()}</span>
                 </div>
               )}
               {eg.overtime > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span>Overtime</span>
-                  <span className="font-medium">₹ {eg.overtime.toLocaleString()}</span>
+                <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
+                  <span className="text-muted-foreground shrink-0">Overtime</span>
+                  <span className="font-medium font-mono tabular-nums text-right">₹ {eg.overtime.toLocaleString()}</span>
                 </div>
               )}
               {(eg.reimbursement + eg.performanceBonus) > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span>Reimbursement / performance</span>
-                  <span className="font-medium">₹ {(eg.reimbursement + eg.performanceBonus).toLocaleString()}</span>
+                <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
+                  <span className="text-muted-foreground shrink-0">Reimbursement / performance</span>
+                  <span className="font-medium font-mono tabular-nums text-right">₹ {(eg.reimbursement + eg.performanceBonus).toLocaleString()}</span>
                 </div>
               )}
-              <div className="border-t pt-2 flex justify-between text-sm font-bold">
+              <div className="border-t pt-2 flex justify-between items-center gap-4 text-sm font-bold min-h-[1.5rem]">
                 <span>Gross Salary</span>
-                <span>₹ {Math.round(gross).toLocaleString()}</span>
+                <span className="font-mono tabular-nums text-right">₹ {Math.round(gross).toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -461,14 +483,30 @@ const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
               Deductions
             </h3>
             <div className="space-y-2">
-              <div className="flex justify-between text-sm text-red-500">
-                <span>Total Deductions</span>
-                <span className="font-medium">- ₹ {deductions.toLocaleString()}</span>
+              {dedMeta.mode === "detail" && dedMeta.rows.length > 0 && dedMeta.rows.map((r) => (
+                <div key={r.label} className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
+                  <span className="text-muted-foreground shrink-0">{r.label}</span>
+                  <span className="font-medium font-mono tabular-nums text-right text-red-600/90">
+                    − ₹ {r.amount.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+              {dedMeta.mode === "legacy" && dedMeta.rows.map((r) => (
+                <div key={r.label} className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
+                  <span className="text-muted-foreground shrink-0">{r.label}</span>
+                  <span className="font-medium font-mono tabular-nums text-right text-red-600/90">
+                    − ₹ {Number(r.amount).toLocaleString()}
+                  </span>
+                </div>
+              ))}
+              <div className="border-t pt-2 flex justify-between items-center gap-4 text-sm font-bold text-red-600 min-h-[1.5rem]">
+                <span>Total</span>
+                <span className="font-mono tabular-nums text-right">− ₹ {deductions.toLocaleString()}</span>
               </div>
               {slip.lopDays > 0 && (
-                <div className="flex justify-between text-sm text-orange-500">
+                <div className="flex justify-between items-center gap-4 text-sm text-orange-600 min-h-[1.5rem]">
                   <span>LOP Days</span>
-                  <span>{slip.lopDays} days</span>
+                  <span className="font-mono tabular-nums">{slip.lopDays} days</span>
                 </div>
               )}
             </div>
