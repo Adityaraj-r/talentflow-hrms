@@ -3,43 +3,39 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface ITask extends Document {
   title: string;
   description: string;
-  assignedTo: mongoose.Types.ObjectId; 
-  assignedBy: mongoose.Types.ObjectId; 
-  status: "Pending" | "In Progress" | "Completed" | "Overdue";
-  priority: "High" | "Medium" | "Low";
+  assignedTo: mongoose.Types.ObjectId;
+  assignedBy: mongoose.Types.ObjectId;
+  status: "TO_DO" | "IN_PROGRESS" | "DONE";
+  priority: "HIGH" | "MEDIUM" | "LOW";
   dueDate: Date;
+  createdBy: mongoose.Types.ObjectId;
 }
 
 const TaskSchema = new Schema<ITask>(
   {
-    title: { type: String, required: true },
-    description: { type: String },
+    title: { type: String, required: true, trim: true },
+    description: { type: String, default: "" },
 
-    // The 'assignedTo' and 'assignedBy' both point to the 'User' collection.
-    // One represents the executor (Employee), the other the creator (Admin/Manager).
     assignedTo: { type: Schema.Types.ObjectId, ref: "User", required: true },
     assignedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
 
     status: {
       type: String,
-      enum: ["Pending", "In Progress", "Completed", "Overdue"],
-      default: "Pending",
+      enum: ["TO_DO", "IN_PROGRESS", "DONE"],
+      default: "TO_DO",
     },
 
     priority: {
       type: String,
-      enum: ["High", "Medium", "Low"],
-      default: "Medium",
+      enum: ["HIGH", "MEDIUM", "LOW"],
+      default: "MEDIUM",
     },
 
-    // Important: The system should ideally have a background job to flip 
-    // status to 'Overdue' if the current date passes this dueDate.
     dueDate: { type: Date, required: true },
   },
-  { 
-    // timestamps help us track how long a task stayed in 'In Progress' 
-    // vs when it was originally created.
-    timestamps: true 
+  {
+    timestamps: true,
   }
 );
 
