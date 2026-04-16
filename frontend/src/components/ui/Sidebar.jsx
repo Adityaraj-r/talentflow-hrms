@@ -27,7 +27,7 @@ const Sidebar = ({
 
   const [openGroups, setOpenGroups] = useState({
     employeeCenter: false, recruitment: false, timeAttendance: false,
-    payroll: false, payrollOperations: true, administration: false,
+    payroll: false, payrollOperations: false, administration: false,
     appraisal: false, disciplinaryActions: false, documentRequests: false,
   })
 
@@ -49,6 +49,13 @@ const Sidebar = ({
     if (isCollapsed) return
     const path = location.pathname
 
+    const payrollRouteActive =
+      path === "/payroll" ||
+      path.startsWith("/payroll/") ||
+      path.startsWith("/tickets") ||
+      path.startsWith("/indemnity") ||
+      path.startsWith("/ceo/payroll")
+
     const isDashboardPath =
       path === "/dashboard" ||
       path === "/admin/dashboard" ||
@@ -59,8 +66,8 @@ const Sidebar = ({
         employeeCenter: false,
         recruitment: false,
         timeAttendance: false,
-        payroll: prev.payroll,
-        payrollOperations: prev.payrollOperations,
+        payroll: payrollRouteActive ? true : prev.payroll,
+        payrollOperations: payrollRouteActive ? true : prev.payrollOperations,
         administration: false,
         appraisal: false,
         disciplinaryActions: false,
@@ -78,8 +85,8 @@ const Sidebar = ({
 
       timeAttendance: path.startsWith("/attendance") || path.includes("/employee/attendance"),
 
-      payroll: prev.payroll,
-      payrollOperations: prev.payrollOperations,
+      payroll: payrollRouteActive ? true : prev.payroll,
+      payrollOperations: payrollRouteActive ? true : prev.payrollOperations,
 
       administration:
         path.startsWith("/settings") ||
@@ -103,11 +110,8 @@ const Sidebar = ({
   }, [location.pathname, isCollapsed])
 
   const canSee = (moduleKey) => {
-    if (userRole === "SUPER ADMIN") return true
-    if (userRole === "ADMIN") {
-      return user?.permissions?.[moduleKey]?.read === true
-    }
-    return dbPermissions[moduleKey]?.read !== false
+    if (userRole === "SUPER ADMIN" || userRole === "SUPER_ADMIN") return true
+    return dbPermissions[moduleKey]?.read === true
   }
 
   const toggleGroup = (group) => {
@@ -703,6 +707,26 @@ const Sidebar = ({
           )}
           {canSee("employees") && (
             <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
+          )}
+          {(user?.permissions?.employees?.read || user?.permissions?.settings?.read) && (
+            <SidebarGroup id="administration" icon={Settings} label="Administration">
+              {(user?.permissions?.employees?.read || user?.permissions?.settings?.read) && (
+                <SubLink to="/dashboard/users" label="User Management" icon={Users} />
+              )}
+              {user?.permissions?.settings?.read && (
+                <>
+                  <SubLink to="/settings" label="System Settings" icon={Settings} />
+                  <SubLink to="/admin/company-structure" label="Company Structure" icon={Building} />
+                  <SubLink to="/admin/integrations" label="Integrations" icon={Layers} />
+                </>
+              )}
+              {user?.permissions?.roles?.read && (
+                <SubLink to="/admin/roles" label="Roles & Permissions" icon={Shield} />
+              )}
+              {user?.permissions?.audit?.read && (
+                <SubLink to="/admin/audit-logs" label="Audit Logs" icon={FileText} />
+              )}
+            </SidebarGroup>
           )}
           <TeamPayrollSidebar />
         </>

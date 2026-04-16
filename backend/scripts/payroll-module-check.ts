@@ -107,7 +107,7 @@ function runVisibilityChecks() {
 }
 
 function warn(msg: string) {
-  console.warn(`  ⚠ ${msg}`)
+  console.warn(`  WARN: ${msg}`)
 }
 
 /** Needs a live connection — countDocuments buffers forever if disconnected. */

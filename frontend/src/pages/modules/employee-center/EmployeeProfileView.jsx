@@ -331,7 +331,7 @@ const SalaryTab = ({ userId, employeeName }) => {
     <div className="space-y-6">
       {!hasExisting && (
         <div className="rounded-lg border border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-700 px-4 py-3 text-sm text-yellow-800 dark:text-yellow-300">
-          ⚠️ No salary structure found for <strong>{employeeName}</strong>. Fill in the details below to create one.
+          No salary structure found for <strong>{employeeName}</strong>. Fill in the details below to create one.
         </div>
       )}
 

@@ -115,7 +115,7 @@ const RequisitionForm = () => {
         }
       })
 
-      alert("Requisition Created ✅")
+      alert("Requisition created.")
 
       setFormData({
         position: "",

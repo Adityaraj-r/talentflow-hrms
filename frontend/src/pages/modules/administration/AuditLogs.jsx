@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { 
-  Search, RefreshCw, FileJson, ShieldCheck, ShieldAlert, Info, Clock
+  Search, RefreshCw, FileJson, FileSpreadsheet, ShieldCheck, ShieldAlert, Info, Clock
 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -30,9 +30,15 @@ const AuditLogs = () => {
   const fetchLogs = useCallback(async (showToast = false) => {
     setIsRefreshing(true)
     try {
-      const response = await adminService.getAuditLogs()
+      const response = await adminService.getAuditLogs({
+        page: 1,
+        limit: 500,
+        ...(filters.search && { search: filters.search }),
+        ...(filters.module !== "all" && { module: filters.module }),
+        ...(filters.status !== "all" && { status: filters.status }),
+      })
       if (response.success) {
-        setLogs(response.data)
+        setLogs(response.data || [])
         if (showToast) toast.success("Logs synchronized with server")
       }
     } catch (error) {
@@ -41,13 +47,35 @@ const AuditLogs = () => {
       setIsLoading(false)
       setIsRefreshing(false)
     }
-  }, [])
+  }, [filters.search, filters.module, filters.status])
 
   useEffect(() => { fetchLogs() }, [fetchLogs])
 
   const updateFilter = (key, value) => {
     setFilters(p => ({ ...p, [key]: value }))
     setPage(1)
+  }
+
+  const handleExportCsv = async () => {
+    try {
+      const text = await adminService.exportAuditLogsCsv({
+        page: 1,
+        limit: 5000,
+        ...(filters.search && { search: filters.search }),
+        ...(filters.module !== "all" && { module: filters.module }),
+        ...(filters.status !== "all" && { status: filters.status }),
+      })
+      const blob = new Blob([text], { type: "text/csv;charset=utf-8" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `audit-logs-${format(new Date(), "yyyy-MM-dd")}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success("CSV export ready")
+    } catch {
+      toast.error("CSV export failed")
+    }
   }
 
   const handleExportJSON = () => {
@@ -121,6 +149,9 @@ const AuditLogs = () => {
             <Button variant="outline" size="sm" onClick={handleExportJSON}>
               <FileJson className="mr-2 h-4 w-4" /> Export JSON
             </Button>
+            <Button variant="outline" size="sm" onClick={handleExportCsv}>
+              <FileSpreadsheet className="mr-2 h-4 w-4" /> Export CSV
+            </Button>
           </div>
         </div>
 
@@ -173,6 +204,7 @@ const AuditLogs = () => {
                     <SelectItem value="all">All Modules</SelectItem>
                     <SelectItem value="Auth">Auth</SelectItem>
                     <SelectItem value="User Management">User Management</SelectItem>
+                    <SelectItem value="ADMINISTRATION">Administration</SelectItem>
                     <SelectItem value="Security">Security</SelectItem>
                   </SelectContent>
                 </Select>

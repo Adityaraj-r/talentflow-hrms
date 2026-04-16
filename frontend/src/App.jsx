@@ -141,7 +141,7 @@ const queryClient = new QueryClient({
 
 const ADMIN_ROLES = ["ADMIN", "SUPER ADMIN"]
 
-const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
+const ProtectedRoute = ({ children, allowedRoles, requiredPermission, requiredPermissionAny }) => {
   const { user, isAuthenticated, loading } = useAuth()
   const [permLoading, setPermLoading] = useState(false)
   const [hasPermission, setHasPermission] = useState(null)
@@ -151,7 +151,10 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
     : user?.role?.name || ""
 
   useEffect(() => {
-    if (!requiredPermission || !user) return
+    const needsMatrix =
+      requiredPermission ||
+      (Array.isArray(requiredPermissionAny) && requiredPermissionAny.length > 0)
+    if (!needsMatrix || !user) return
 
     const upper = userRoleStr.toUpperCase()
     if (
@@ -167,7 +170,15 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
       setPermLoading(true)
       try {
         const permissions = await getMyPermissions(userRoleStr)
-        setHasPermission(can(permissions, requiredPermission.module, requiredPermission.action))
+        if (Array.isArray(requiredPermissionAny) && requiredPermissionAny.length > 0) {
+          setHasPermission(
+            requiredPermissionAny.some((p) =>
+              can(permissions, p.module, p.action)
+            )
+          )
+        } else if (requiredPermission) {
+          setHasPermission(can(permissions, requiredPermission.module, requiredPermission.action))
+        }
       } catch {
         setHasPermission(false)
       } finally {
@@ -176,7 +187,7 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
     }
 
     checkMatrix()
-  }, [user, requiredPermission, userRoleStr])
+  }, [user, requiredPermission, requiredPermissionAny, userRoleStr])
 
   if (loading || permLoading) {
     return (
@@ -194,7 +205,10 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission }) => {
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
 
-  if (requiredPermission) {
+  const needsMatrixGate =
+    requiredPermission ||
+    (Array.isArray(requiredPermissionAny) && requiredPermissionAny.length > 0)
+  if (needsMatrixGate) {
     if (hasPermission === null) return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-950">
         <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
@@ -338,7 +352,10 @@ function App() {
                     } />
 
                     <Route path="/dashboard/users" element={
-                      <ProtectedRoute requiredPermission={{ module: "employees", action: "read" }}>
+                      <ProtectedRoute requiredPermissionAny={[
+                        { module: "employees", action: "read" },
+                        { module: "settings", action: "read" },
+                      ]}>
                         <DashboardLayout><UserManagement /></DashboardLayout>
                       </ProtectedRoute>
                     } />
@@ -353,12 +370,12 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/company-structure" element={
-                      <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                      <ProtectedRoute requiredPermission={{ module: "settings", action: "read" }}>
                         <DashboardLayout><CompanyStructure /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/audit-logs" element={
-                      <ProtectedRoute requiredPermission={{ module: "roles", action: "read" }}>
+                      <ProtectedRoute requiredPermission={{ module: "audit", action: "read" }}>
                         <DashboardLayout><AuditLogs /></DashboardLayout>
                       </ProtectedRoute>
                     } />

@@ -307,16 +307,20 @@ export const generatePayslip = (res: any, ctx: PayslipContext) => {
     esi = 0,
     pt = 0,
     tds = 0,
-    otherDed = 0
-  if (d._legacyTotal != null && d._legacyTotal > 0) {
-    otherDed = Number(d._legacyTotal)
+    legacyOtherBundle = 0
+  let lopAmt = 0
+  let insOther = 0
+  const advAmt = d.advanceTotal || 0
+  const isLegacyDed = d._legacyTotal != null && d._legacyTotal > 0
+  if (isLegacyDed) {
+    legacyOtherBundle = Number(d._legacyTotal)
   } else {
     pf = d.pf || 0
     esi = d.esi || 0
     tds = d.tds || 0
     pt = d.pt || 0
-    otherDed =
-      (d.insurance || 0) + (d.other || 0) + (d.lopAmount || 0) + (d.advanceTotal || 0)
+    lopAmt = d.lopAmount || 0
+    insOther = (d.insurance || 0) + (d.other || 0)
   }
 
   const payDt = ctx.payroll.disbursedAt
@@ -392,9 +396,10 @@ export const generatePayslip = (res: any, ctx: PayslipContext) => {
   fieldLine("Employee Code", ctx.employeeCode || "—", ly, lw)
   cy += empH
 
-  const rowH = 21
+  const rowH = 24
   const colW = [contentW * 0.34, contentW * 0.16, contentW * 0.34, contentW * 0.16]
   const colX = [left, left + colW[0], left + colW[0] + colW[1], left + colW[0] + colW[1] + colW[2]]
+  const textY = (y: number) => y + (rowH - 9) / 2 + 1
 
   const drawRow = (cells: [string, string, string, string], opts: { header?: boolean; bold?: boolean } = {}) => {
     const { header, bold } = opts
@@ -408,10 +413,11 @@ export const generatePayslip = (res: any, ctx: PayslipContext) => {
     }
     const font = bold ? "Helvetica-Bold" : "Helvetica"
     doc.fillColor(TEXT).font(font).fontSize(9)
-    doc.text(cells[0], colX[0] + 6, cy + 6, { width: colW[0] - 12, align: "left" })
-    doc.text(cells[1], colX[1] + 4, cy + 6, { width: colW[1] - 8, align: "right" })
-    doc.text(cells[2], colX[2] + 6, cy + 6, { width: colW[2] - 12, align: "left" })
-    doc.text(cells[3], colX[3] + 4, cy + 6, { width: colW[3] - 8, align: "right" })
+    const y0 = textY(cy)
+    doc.text(cells[0], colX[0] + 6, y0, { width: colW[0] - 12, align: "left" })
+    doc.text(cells[1], colX[1] + 4, y0, { width: colW[1] - 8, align: "right" })
+    doc.text(cells[2], colX[2] + 6, y0, { width: colW[2] - 12, align: "left" })
+    doc.text(cells[3], colX[3] + 4, y0, { width: colW[3] - 8, align: "right" })
     cy += rowH
   }
 
@@ -419,12 +425,31 @@ export const generatePayslip = (res: any, ctx: PayslipContext) => {
   drawRow(["Basic", money(sym, snap.earnings.basic || 0), "Provident Fund", money(sym, pf)])
   drawRow(["HRA", money(sym, snap.earnings.hra || 0), "ESI", money(sym, esi)])
   drawRow(["Special Allowance", money(sym, snap.earnings.allowances || 0), "Professional Tax", money(sym, pt)])
-  drawRow(["Gross Salary", money(sym, snap.grossPay), "Salary Advance", money(sym, d.advanceTotal || 0)], { bold: true })
+  drawRow(["Gross Salary", money(sym, snap.grossPay), "Salary Advance", money(sym, advAmt)], { bold: true })
   drawRow(["Other Earnings", money(sym, otherCurrent), "TDS", money(sym, tds)])
-  drawRow(["Incentives", money(sym, snap.earnings.performanceBonus || 0), "Other Deduction", money(sym, otherDed)])
-  drawRow(["Bonus", money(sym, snap.earnings.bonus || 0), "", ""])
-  drawRow(["Over Time Pay", money(sym, snap.earnings.overtime || 0), "", ""])
-  drawRow(["Total Earnings", money(sym, snap.grossPay), "", ""], { bold: true })
+  if (isLegacyDed) {
+    drawRow([
+      "Incentives",
+      money(sym, snap.earnings.performanceBonus || 0),
+      "Other Deduction",
+      money(sym, legacyOtherBundle),
+    ])
+    drawRow(["Bonus", money(sym, snap.earnings.bonus || 0), "", ""])
+    drawRow(["Over Time Pay", money(sym, snap.earnings.overtime || 0), "", ""])
+  } else {
+    drawRow([
+      "Incentives",
+      money(sym, snap.earnings.performanceBonus || 0),
+      "Insurance & Other",
+      money(sym, insOther),
+    ])
+    drawRow(["Bonus", money(sym, snap.earnings.bonus || 0), "LOP", money(sym, lopAmt)])
+    drawRow(["Over Time Pay", money(sym, snap.earnings.overtime || 0), "", ""])
+  }
+  drawRow(
+    ["Total Earnings", money(sym, snap.grossPay), "Total Deductions", money(sym, snap.totalDeductions || 0)],
+    { bold: true }
+  )
 
   const wordsLine = `In words: ${amountToWordsIndian(snap.netPay)}`
   doc.font("Helvetica").fontSize(9)

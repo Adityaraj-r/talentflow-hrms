@@ -42,8 +42,14 @@ const adminService = {
   updateSettings: async (settingsData) =>
     await apiClient.put('/admin/settings', settingsData),
 
-  getAuditLogs: async () =>
-    await apiClient.get('/audit'),
+  getAuditLogs: async (params = {}) =>
+    await apiClient.get('/audit', { params }),
+
+  exportAuditLogsCsv: async (params = {}) =>
+    await apiClient.get('/audit', {
+      params: { ...params, format: 'csv' },
+      responseType: 'text',
+    }),
 
   getGoogleAuthUrl: async () =>
     await apiClient.get('/google/auth'),

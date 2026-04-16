@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { FileText, Check, X, Search, Loader2, Plus } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { FileText, Check, X, Search, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import * as payrollService from "@/services/payrollService";
 import apiClient from "@/services/apiClient";
 
-const HR_ROLES = ["HRMANAGER", "HROFFICER", "PAYROLLOFFICER", "ADMIN", "SUPER ADMIN"];
+const normStaffRole = (user) => {
+  const r = typeof user?.role === "string" ? user.role : user?.role?.name;
+  return (r || "").toUpperCase().replace(/[\s_-]/g, "");
+};
+
+const canManageTickets = (user) => {
+  const n = normStaffRole(user);
+  return new Set([
+    "HRMANAGER", "HROFFICER", "PAYROLLOFFICER", "FINANCEMANAGER",
+    "ADMIN", "SUPERADMIN",
+  ]).has(n);
+};
 
 const STATUS_COLORS = {
   Pending:  "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -24,8 +35,7 @@ const STATUS_COLORS = {
 
 const Tickets = () => {
   const { user } = useAuth();
-  const userRole = (typeof user?.role === "string" ? user.role : user?.role?.name)?.toUpperCase();
-  const isHR = HR_ROLES.includes(userRole);
+  const isStaff = canManageTickets(user);
 
   return (
     <div className="space-y-6">
@@ -34,33 +44,32 @@ const Tickets = () => {
         <p className="text-muted-foreground">Manage employee travel tickets and salary advance requests.</p>
       </div>
 
-      <Tabs defaultValue="pending">
-        <TabsList>
-          {isHR && <TabsTrigger value="request">New Request</TabsTrigger>}
-          {isHR && <TabsTrigger value="pending">Pending Approvals</TabsTrigger>}
-          <TabsTrigger value="history">History</TabsTrigger>
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="flex flex-wrap h-auto gap-1">
+          <TabsTrigger value="all">All tickets</TabsTrigger>
+          {isStaff && <TabsTrigger value="pending">Pending approvals</TabsTrigger>}
+          {isStaff && <TabsTrigger value="request">New request</TabsTrigger>}
         </TabsList>
 
-        {isHR && (
-          <TabsContent value="request">
+        <TabsContent value="all" className="mt-4">
+          <TicketListTable mode="all" />
+        </TabsContent>
+        {isStaff && (
+          <TabsContent value="pending" className="mt-4">
+            <PendingTicketsPanel />
+          </TabsContent>
+        )}
+        {isStaff && (
+          <TabsContent value="request" className="mt-4">
             <TicketForm onSuccess={() => {}} />
           </TabsContent>
         )}
-        {isHR && (
-          <TabsContent value="pending">
-            <PendingTickets userEmail={user?.email} />
-          </TabsContent>
-        )}
-        <TabsContent value="history">
-          <TicketHistory />
-        </TabsContent>
       </Tabs>
     </div>
   );
 };
 
 const TicketForm = ({ onSuccess }) => {
-  const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
@@ -162,6 +171,9 @@ const TicketForm = ({ onSuccess }) => {
                       <SelectItem value="business">Business Meeting</SelectItem>
                       <SelectItem value="conference">Conference</SelectItem>
                       <SelectItem value="training">Training</SelectItem>
+                      <SelectItem value="client-site">Client Site Visit</SelectItem>
+                      <SelectItem value="relocation">Relocation</SelectItem>
+                      <SelectItem value="audit">Audit / Compliance Visit</SelectItem>
                       <SelectItem value="personal">Personal (Sponsored)</SelectItem>
                     </SelectContent>
                   </Select>
@@ -187,6 +199,7 @@ const TicketForm = ({ onSuccess }) => {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="economy">Economy</SelectItem>
+                      <SelectItem value="premium-economy">Premium Economy</SelectItem>
                       <SelectItem value="business">Business</SelectItem>
                       <SelectItem value="first">First Class</SelectItem>
                     </SelectContent>
@@ -227,117 +240,26 @@ const TicketForm = ({ onSuccess }) => {
   );
 };
 
-const PendingTickets = () => {
+const TicketListTable = ({ mode }) => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
-  const fetchPending = async () => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await payrollService.getTickets({ status: "Pending" });
+      const params = mode === "pending" ? { status: "Pending" } : {};
+      const res = await payrollService.getTickets(params);
       setTickets(res.data || []);
     } catch {
-      toast.error("Failed to load pending tickets");
+      toast.error("Failed to load tickets");
+      setTickets([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [mode]);
 
-  useEffect(() => { fetchPending(); }, []);
-
-  const handleAction = async (id, status) => {
-    try {
-      await payrollService.updateTicketStatus(id, status);
-      toast.success(`Request ${status.toLowerCase()} successfully`);
-      fetchPending();
-    } catch {
-      toast.error("Action failed");
-    }
-  };
-
-  if (loading) return (
-    <Card><CardContent className="flex justify-center py-12">
-      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-    </CardContent></Card>
-  );
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Pending Approvals</CardTitle>
-        <CardDescription>{tickets.length} requests awaiting action</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Employee</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Details</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead>Requested</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tickets.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No pending requests.
-                </TableCell>
-              </TableRow>
-            ) : tickets.map(t => (
-              <TableRow key={t._id}>
-                <TableCell className="font-medium">{t.employeeName}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className={t.type === "advance"
-                    ? "bg-blue-50 text-blue-700 border-blue-200"
-                    : "bg-purple-50 text-purple-700 border-purple-200"}>
-                    {t.type === "advance" ? "Salary Advance" : "Travel Ticket"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {t.type === "advance"
-                    ? `₹ ${Number(t.amount).toLocaleString()}`
-                    : `${t.destination} · ${t.ticketClass}`}
-                </TableCell>
-                <TableCell className="text-sm">{t.reason}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {new Date(t.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button size="icon" variant="outline"
-                      className="h-8 w-8 text-green-600 hover:bg-green-50"
-                      onClick={() => handleAction(t._id, "Approved")}>
-                      <Check className="h-4 w-4" />
-                    </Button>
-                    <Button size="icon" variant="outline"
-                      className="h-8 w-8 text-red-600 hover:bg-red-50"
-                      onClick={() => handleAction(t._id, "Rejected")}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-};
-
-const TicketHistory = () => {
-  const [tickets, setTickets]   = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [search, setSearch]     = useState("");
-
-  useEffect(() => {
-    payrollService.getTickets().then(res => {
-      setTickets(res.data || []);
-    }).catch(() => toast.error("Failed to load history"))
-      .finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { void load(); }, [load]);
 
   const filtered = tickets.filter(t =>
     t.employeeName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -352,14 +274,16 @@ const TicketHistory = () => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <CardTitle>Ticket History</CardTitle>
-          <CardDescription>All travel and advance requests</CardDescription>
+          <CardTitle>{mode === "all" ? "All tickets" : "Pending approvals"}</CardTitle>
+          <CardDescription>
+            {mode === "all" ? "Travel and advance requests" : "Awaiting your action"}
+          </CardDescription>
         </div>
-        <div className="relative">
+        <div className="relative w-full sm:w-64">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search..." className="pl-8 w-64"
+          <Input placeholder="Search…" className="pl-8"
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </CardHeader>
@@ -371,41 +295,49 @@ const TicketHistory = () => {
               <TableHead>Type</TableHead>
               <TableHead>Details</TableHead>
               <TableHead>Reason</TableHead>
-              <TableHead>Status</TableHead>
+              {mode === "all" && <TableHead>Status</TableHead>}
               <TableHead>Date</TableHead>
+              {mode === "pending" && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={mode === "all" ? 6 : 6} className="text-center py-8 text-muted-foreground">
                   No records found.
                 </TableCell>
               </TableRow>
             ) : filtered.map(t => (
               <TableRow key={t._id}>
-                <TableCell className="font-medium">{t.employeeName}</TableCell>
-                <TableCell>
+                <TableCell className="font-medium align-middle">{t.employeeName}</TableCell>
+                <TableCell className="align-middle">
                   <Badge variant="outline" className={t.type === "advance"
                     ? "bg-blue-50 text-blue-700 border-blue-200"
                     : "bg-purple-50 text-purple-700 border-purple-200"}>
                     {t.type === "advance" ? "Salary Advance" : "Travel Ticket"}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell className="text-sm text-muted-foreground align-middle">
                   {t.type === "advance"
                     ? `₹ ${Number(t.amount).toLocaleString()}`
-                    : `${t.destination} · ${t.ticketClass}`}
+                    : `${t.destination || "—"} · ${t.ticketClass || "—"}`}
                 </TableCell>
-                <TableCell className="text-sm">{t.reason}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className={STATUS_COLORS[t.status] || ""}>
-                    {t.status}
-                  </Badge>
+                <TableCell className="text-sm align-middle max-w-[200px] truncate" title={t.reason}>{t.reason}</TableCell>
+                {mode === "all" && (
+                  <TableCell className="align-middle">
+                    <Badge variant="outline" className={STATUS_COLORS[t.status] || ""}>
+                      {t.status}
+                    </Badge>
+                  </TableCell>
+                )}
+                <TableCell className="text-sm text-muted-foreground align-middle whitespace-nowrap">
+                  {t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "—"}
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {new Date(t.createdAt).toLocaleDateString()}
-                </TableCell>
+                {mode === "pending" && (
+                  <TableCell className="text-right align-middle">
+                    <PendingRowActions ticketId={t._id} onDone={load} />
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
@@ -414,5 +346,34 @@ const TicketHistory = () => {
     </Card>
   );
 };
+
+const PendingRowActions = ({ ticketId, onDone }) => (
+  <div className="inline-flex gap-1 justify-end">
+    <Button size="icon" variant="outline"
+      className="h-8 w-8 text-green-600 hover:bg-green-50"
+      onClick={async () => {
+        try {
+          await payrollService.updateTicketStatus(ticketId, "Approved");
+          toast.success("Approved");
+          onDone();
+        } catch { toast.error("Action failed"); }
+      }}>
+      <Check className="h-4 w-4" />
+    </Button>
+    <Button size="icon" variant="outline"
+      className="h-8 w-8 text-red-600 hover:bg-red-50"
+      onClick={async () => {
+        try {
+          await payrollService.updateTicketStatus(ticketId, "Rejected");
+          toast.success("Rejected");
+          onDone();
+        } catch { toast.error("Action failed"); }
+      }}>
+      <X className="h-4 w-4" />
+    </Button>
+  </div>
+);
+
+const PendingTicketsPanel = () => <TicketListTable mode="pending" />;
 
 export default Tickets;

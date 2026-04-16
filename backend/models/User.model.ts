@@ -54,6 +54,7 @@ const UserSchema = new Schema<IUser>(
         'OPERATIONS_MANAGER',
         'FINANCE_MANAGER',
         'ADMIN',
+        'SUPER_ADMIN',
         'EMPLOYEE',
       ],
     },
