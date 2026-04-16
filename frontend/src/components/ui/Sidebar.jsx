@@ -410,6 +410,7 @@ const Sidebar = ({
             <SubLink to="/employee-center/onboarding" label="Onboarding & KYC" />
             <SubLink to="/employee-center/employee-transfer" label="Transfers & Promotions" />
             <SubLink to="/employee-center/digital-locker" label="Digital Locker" />
+            <SubLink to="/employee-center/document-requests" label="Document Requests" />
           </SidebarGroup>
 
           {canSee("recruitment") && (
@@ -494,6 +495,7 @@ const Sidebar = ({
             <SubLink to="/employee-center/onboarding" label="Onboarding & KYC" />
             <SubLink to="/employee-center/employee-transfer" label="Transfers & Promotions" />
             <SubLink to="/employee-center/digital-locker" label="Digital Locker" />
+            <SubLink to="/employee-center/document-requests" label="Document Requests" />
           </SidebarGroup>
 
           <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
@@ -581,6 +583,14 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          
+          <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
+            <SubLink to="/employee-center/all-employees" label="Department Directory" />
+            <SubLink to="/employee-center/employee-transfer" label="Transfers & Promotions" />
+            <SubLink to="/employee-center/digital-locker" label="Digital Locker" />
+          </SidebarGroup>
+
+
           {canSee('recruitment') && <SidebarLink to="/staff-requisition" icon={Users} label={getRecruitmentLabel()} />}
           {canSee('attendance') && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">

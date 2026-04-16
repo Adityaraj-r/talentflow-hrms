@@ -54,7 +54,7 @@ router.get(
 router.get(
   '/:employeeId',
   protect,
-  allowRoles('ADMIN', 'HR_MANAGER', 'HR_OFFICER', 'CEO', 'EMPLOYEE'),
+  allowRoles('ADMIN', 'HR_MANAGER', 'HR_OFFICER', 'CEO', 'EMPLOYEE','DEPARTMENT_MANAGER'),
   getDocumentsByEmployee
 );
 

@@ -356,7 +356,7 @@ export const getDepartmentStats = async (req: AuthRequest, res: Response): Promi
 
 export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { role, search, scope } = req.query;
+    const { role, search, scope, page = 1, limit = 10 } = req.query;
     const query: any = { isDeleted: { $ne: true } };
 
     if (role && role !== 'all') query.role = role;
@@ -368,8 +368,12 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
       ];
     }
 
+    if (req.user?.role === 'DEPARTMENT_MANAGER') {
+      query.department = req.user.department;
+    }
+
     if (scope === 'payroll') {
-      let payrollQuery: typeof query = { ...query }
+      let payrollQuery: typeof query = { ...query };
       if (req.user && isTeamPayrollViewerRole(req.user.role)) {
         const allowed = await getPayrollTeamUserIdStrings({
           id: req.user.id,
@@ -378,9 +382,9 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
           firstName: req.user.firstName,
           lastName: req.user.lastName,
           department: req.user.department,
-        })
-        const ids = [...allowed].map(id => new mongoose.Types.ObjectId(id))
-        payrollQuery._id = { $in: ids }
+        });
+        const ids = [...allowed].map(id => new mongoose.Types.ObjectId(id));
+        payrollQuery._id = { $in: ids };
       }
       const users = await User.find(payrollQuery)
         .select('_id firstName lastName email department role employeeId employeeCode')
@@ -390,8 +394,32 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    const users = await User.find(query).select('-password').sort({ createdAt: -1 }).lean();
-    res.status(200).json({ success: true, data: users });
+    const skipNum = (Number(page) - 1) * Number(limit);
+    const limitNum = Number(limit);
+
+    const [users, totalCount, activeCount, uniqueRoles] = await Promise.all([
+      User.find(query).select('-password').sort({ createdAt: -1 }).skip(skipNum).limit(limitNum).lean(),
+      User.countDocuments(query),
+      User.countDocuments({ ...query, isActive: true }),
+      User.distinct('role', query)
+    ]);
+
+    res.status(200).json({ 
+      success: true, 
+      data: users,
+      pagination: {
+        currentPage: Number(page),
+        totalPages: Math.ceil(totalCount / limitNum),
+        totalItems: totalCount,
+        itemsPerPage: limitNum
+      },
+      stats: {
+        total: totalCount,
+        active: activeCount,
+        inactive: totalCount - activeCount,
+        rolesAssigned: uniqueRoles.length
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch users' });
   }

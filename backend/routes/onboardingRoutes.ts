@@ -40,10 +40,10 @@ const upload = multer({
 });
 
 router.use(protect);
-router.use(authorize('ADMIN', 'HR_MANAGER', 'HR_OFFICER'));
 
 router.post(
   '/save',
+  authorize('ADMIN', 'HR_MANAGER', 'HR_OFFICER'),
   upload.fields([
     { name: 'aadharCard',      maxCount: 1 },
     { name: 'panCard',         maxCount: 1 },
@@ -55,7 +55,7 @@ router.post(
   saveOnboardingProgress
 );
 
-router.get('/list/all', getAllOnboardingEmployees);
-router.get('/:email', getOnboardingDetails);
+router.get('/list/all', authorize('ADMIN', 'HR_MANAGER', 'HR_OFFICER', 'DEPARTMENT_MANAGER'), getAllOnboardingEmployees);
+router.get('/:email', authorize('ADMIN', 'HR_MANAGER', 'HR_OFFICER', 'DEPARTMENT_MANAGER'), getOnboardingDetails);
 
 export default router;

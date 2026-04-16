@@ -45,6 +45,13 @@ const isImageFile = (doc) => {
   return false
 }
 
+const isPdfFile = (doc) => {
+  if (!doc) return false
+  if (doc.fileType && doc.fileType === 'application/pdf') return true
+  if (doc.filePath && doc.filePath.toLowerCase().includes('.pdf')) return true
+  return false
+}
+
 const MyDocuments = () => {
   const [selectedDoc, setSelectedDoc] = useState(null)
   const [activeTab, setActiveTab] = useState("All")
@@ -143,32 +150,52 @@ const MyDocuments = () => {
           setZoomLevel(1)
         }
       }}>
-        <DialogContent className="sm:max-w-4xl md:max-w-[80vw] h-[85vh] flex flex-col p-0 overflow-hidden bg-background">
-          <DialogHeader className="p-4 border-b bg-muted/30 flex-shrink-0">
+        <DialogContent className={cn(
+          "flex flex-col p-0 overflow-hidden bg-background",
+          selectedDoc && isPdfFile(selectedDoc) ? "max-w-[98vw] w-[98vw] h-[102vh] max-h-[110vh]" : "sm:max-w-4xl md:max-w-[80vw] h-[85vh]"
+        )}>
+          <DialogHeader className={cn(
+            "border-b bg-muted/30 flex-shrink-0",
+            selectedDoc && isPdfFile(selectedDoc) ? "px-4 py-2" : "p-4"
+          )}>
            <DialogTitle className="flex justify-between items-center pr-6">
-            <span className="truncate pr-4">{selectedDoc?.originalName}</span>
+            <span className={cn("truncate pr-4", selectedDoc && isPdfFile(selectedDoc) && "text-base")}>
+              {selectedDoc?.originalName}
+            </span>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1 bg-background border rounded-md px-1 py-0.5">
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.25))} title="Zoom Out">
-                  <ZoomOut className="h-4 w-4 text-muted-foreground" />
-                </Button>
-                <span className="text-xs font-medium w-9 text-center">{Math.round(zoomLevel * 100)}%</span>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setZoomLevel(prev => Math.min(3, prev + 0.25))} title="Zoom In">
-                  <ZoomIn className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </div>
+              
+              {selectedDoc && !isPdfFile(selectedDoc) && (
+                <div className="flex items-center gap-1 bg-background border rounded-md px-1 py-0.5">
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.25))} title="Zoom Out">
+                    <ZoomOut className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                  <span className="text-xs font-medium w-9 text-center">{Math.round(zoomLevel * 100)}%</span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setZoomLevel(prev => Math.min(3, prev + 0.25))} title="Zoom In">
+                    <ZoomIn className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </div>
+              )}
               {selectedDoc && getStatusBadge(selectedDoc.status)}
             </div>
           </DialogTitle>
           </DialogHeader>
           
-          <div className="flex-1 bg-muted/10 relative flex items-center justify-center p-4 overflow-auto custom-scrollbar">
+          <div className={cn(
+            "flex-1 bg-muted/10 relative",
+            selectedDoc && isPdfFile(selectedDoc) ? "w-full h-full" : "flex items-center justify-center p-4 overflow-auto custom-scrollbar"
+          )}>
             {selectedDoc && isImageFile(selectedDoc) ? (
               <img 
                 src={selectedDoc.filePath} 
                 alt={selectedDoc.originalName}
                 className="max-w-full max-h-full object-contain rounded-md shadow-sm transition-transform duration-200"
                 style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center' }}
+              />
+            ) : selectedDoc && isPdfFile(selectedDoc) ? (
+              <iframe 
+                src={`${selectedDoc.filePath}#view=FitH`} 
+                className="w-full h-full border-0 bg-white"
+                title={selectedDoc.originalName}
               />
             ) : selectedDoc ? (
               <div 
@@ -184,8 +211,15 @@ const MyDocuments = () => {
             ) : null}
           </div>
           
-          <div className="p-4 border-t bg-muted/30 flex justify-end flex-shrink-0">
-            <Button onClick={() => window.open(forceCloudinaryDownload(selectedDoc?.filePath), '_blank')} className="w-full sm:w-auto">
+          <div className={cn(
+            "border-t bg-muted/30 flex justify-end flex-shrink-0",
+            selectedDoc && isPdfFile(selectedDoc) ? "px-4 py-2" : "p-4"
+          )}>
+            <Button 
+              size={selectedDoc && isPdfFile(selectedDoc) ? "sm" : "default"} 
+              onClick={() => window.open(forceCloudinaryDownload(selectedDoc?.filePath), '_blank')} 
+              className="w-full sm:w-auto"
+            >
               <Download className="h-4 w-4 mr-2" /> Download Original File
             </Button>
           </div>
