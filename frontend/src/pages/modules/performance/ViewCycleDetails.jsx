@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { performanceApi } from "@/services/performanceApi";
 import { reviewApi } from "@/services/reviewApi";
 import AssignReviewModal from "@/components/performance/AssignReviewModal";
+import { displayDepartment, displayPersonName } from "@/lib/pmsDisplay";
 import SubmitReviewModal from "@/components/performance/SubmitReviewModal";
 
 const ViewCycleDetails = () => {
@@ -48,16 +49,34 @@ const ViewCycleDetails = () => {
         reviewApi.getAllReviews({ cycleId: id })
       ]);
 
-      setCycle(cycleRes?.data ?? cycleRes);
+      const cyclePayload =
+        cycleRes && typeof cycleRes === "object" && "data" in cycleRes
+          ? cycleRes.data
+          : cycleRes;
+      const cycleDoc =
+        cyclePayload &&
+        typeof cyclePayload === "object" &&
+        cyclePayload !== null &&
+        "data" in cyclePayload &&
+        typeof cyclePayload.data === "object"
+          ? cyclePayload.data
+          : cyclePayload;
+      setCycle(cycleDoc);
 
-      const allReviews = reviewsRes?.data ?? [];
+      const reviewsPayload =
+        reviewsRes && typeof reviewsRes === "object" && "data" in reviewsRes
+          ? reviewsRes.data
+          : reviewsRes;
+      const allReviews = Array.isArray(reviewsPayload)
+        ? reviewsPayload
+        : Array.isArray(reviewsPayload?.data)
+          ? reviewsPayload.data
+          : [];
       setReviews(
-        Array.isArray(allReviews)
-          ? allReviews.filter(r => {
+        allReviews.filter((r) => {
               const cId = typeof r.cycleId === "object" ? r.cycleId?._id : r.cycleId;
-              return cId === id;
+              return String(cId) === String(id);
             })
-          : []
       );
 
     } catch (error) {
@@ -96,18 +115,16 @@ const ViewCycleDetails = () => {
   };
 
   const getEmployeeName = (review) => {
-    const emp = review.employeeId;
-    if (!emp) return "—";
-    if (typeof emp === "object") return `${emp.firstName ?? ""} ${emp.lastName ?? ""}`.trim();
-    return emp;
+    const n = displayPersonName(review.employeeId);
+    return n === "N/A" ? "—" : n;
   };
 
   const getReviewerName = (review) => {
-    const reviewer = review.reviewerId;
-    if (!reviewer) return "—";
-    if (typeof reviewer === "object") return `${reviewer.firstName ?? ""} ${reviewer.lastName ?? ""}`.trim();
-    return reviewer;
+    const n = displayPersonName(review.reviewerId);
+    return n === "N/A" ? "—" : n;
   };
+
+  const getEmployeeDept = (review) => displayDepartment(review.employeeId);
 
   if (loading) {
     return (
@@ -316,7 +333,7 @@ const ViewCycleDetails = () => {
                         {getEmployeeName(review)}
                       </td>
                       <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
-                        {review.employeeId?.department ?? "—"}
+                        {getEmployeeDept(review)}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 w-fit ${getStatusStyle(review.status)}`}>

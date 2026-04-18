@@ -23,6 +23,7 @@ const RoleManagement = () => {
     { id: "settings", name: "System Configuration", description: "Global Settings" },
     { id: "roles", name: "Access Control", description: "RBAC Management" },
     { id: "audit", name: "Audit & Compliance", description: "Security and administration logs" },
+    { id: "performance", name: "Performance (PMS)", description: "Appraisal cycles, reviews, goals, PIP" },
   ];
 
   useEffect(() => {

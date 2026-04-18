@@ -4,6 +4,10 @@ export const performanceApi = {
 
   getStats: () => api.get('/performance/stats'),
 
+  getAnalyticsSummary: () => api.get('/performance/analytics-summary'),
+
+  getDashboardAnalytics: () => api.get('/performance/dashboard-analytics'),
+
   getCycles: (status) => {
     const params = status ? { status } : {};
     return api.get('/performance/cycles', { params });
@@ -17,6 +21,16 @@ export const performanceApi = {
 
   deleteCycle: (id) => api.delete(`/performance/cycles/${id}`),
 
+  /** Goals CRUD — same paths as backend goalRoutes mounted at /api/performance/goals */
+  getMyGoals: () => api.get('/performance/goals/my-goals'),
+
+  getTeamGoals: () => api.get('/performance/goals/team-goals'),
+
+  createGoal: (data) => api.post('/performance/goals', data),
+
+  updateGoal: (id, data) => api.put(`/performance/goals/${id}`, data),
+
+  deleteGoal: (id) => api.delete(`/performance/goals/${id}`),
 };
 
 export default performanceApi;

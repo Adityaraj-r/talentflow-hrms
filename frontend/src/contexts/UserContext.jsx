@@ -55,7 +55,12 @@ export const UserProvider = ({ children }) => {
       permissions: rolePermissions || {},
       can: (module, action = "read") => {
         if (!rolePermissions) return false;
-        if (roleName === "SUPER ADMIN" || roleName === "SUPER_ADMIN") return true;
+        if (roleName === "SUPER ADMIN" || roleName === "SUPER_ADMIN") {
+          if (module === "performance") {
+            return rolePermissions?.performance?.[action] === true;
+          }
+          return true;
+        }
         return rolePermissions?.[module]?.[action] === true;
       },
     };

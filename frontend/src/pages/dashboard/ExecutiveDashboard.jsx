@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/services/apiClient";
+import CEOAppraisalDashboardSection from "@/pages/pms/CEOAppraisalDashboard";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Users, UserCheck, Stethoscope, Briefcase, DollarSign, Activity,
@@ -212,6 +213,8 @@ const ExecutiveDashboard = () => {
           Headcount is experiencing {metrics.headcountGrowth} growth this month, currently standing at {metrics.headcount} employees. Payroll costs are tracking at {metrics.payroll}, showing a {metrics.payrollGrowth} variance from last month. With an average performance score of {metrics.perfScore} and an attrition rate holding at {metrics.attrition30} (30d), the workforce remains highly stable. There are {metrics.openReqs} active job requisitions filling vacancies.
         </p>
       </div>
+
+      <CEOAppraisalDashboardSection />
 
     </div>
   );

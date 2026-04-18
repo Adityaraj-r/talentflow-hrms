@@ -28,6 +28,8 @@ export const MODULE_KEYS = {
   SETTINGS:    'settings',
   ROLES:       'roles',
   AUDIT:       'audit',
+  /** Performance Management System — Admin/Super Admin must NOT bypass matrix (use authorizeByMatrixStrict). */
+  PERFORMANCE: 'performance',
 } as const;
 
 export type ModuleKey       = typeof MODULE_KEYS[keyof typeof MODULE_KEYS];
@@ -101,6 +103,51 @@ export const authorizeByMatrix = (module: ModuleKey, action: PermissionAction) =
       next();
     } catch (err) {
       logger.error(`Permission check error for ${req.user.email}: ${err}`);
+      ResponseHandler.serverError(res, 'Permission check failed');
+    }
+  };
+};
+
+/**
+ * Same as authorizeByMatrix but never grants access via Admin/Super Admin bypass.
+ * Use for PMS routes so system admins cannot access Performance data without explicit DB permissions.
+ */
+export const authorizeByMatrixStrict = (module: ModuleKey, action: PermissionAction) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user) {
+      ResponseHandler.unauthorized(res, 'User not authenticated');
+      return;
+    }
+
+    const rawUserRole = req.user.role;
+    const normalizedUserRole = normalizeRole(rawUserRole);
+
+    try {
+      const roles = await Role.find({});
+      const roleDoc = roles.find(r => normalizeRole(r.name) === normalizedUserRole);
+
+      if (!roleDoc) {
+        logger.warn(`Role not found in permission map: "${rawUserRole}" (${req.user.email})`);
+        ResponseHandler.forbidden(res, 'Role configuration not found');
+        return;
+      }
+
+      const permission = roleDoc.permissions.get(module);
+
+      if (!permission || !permission[action]) {
+        logger.warn(
+          `Permission denied (strict): ${req.user.email} (${rawUserRole}) — ${action} on "${module}"`
+        );
+        ResponseHandler.forbidden(
+          res,
+          `Access denied: your role does not have ${action} permission on ${module}`
+        );
+        return;
+      }
+
+      next();
+    } catch (err) {
+      logger.error(`Strict permission check error for ${req.user.email}: ${err}`);
       ResponseHandler.serverError(res, 'Permission check failed');
     }
   };
