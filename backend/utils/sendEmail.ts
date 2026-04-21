@@ -321,3 +321,70 @@ export const sendInterviewScheduleEmail = async (
         return { sent: false, reason: error?.message || 'Email send failed' };
     }
 };
+
+
+export const sendApplicationStatusEmail = async (
+    candidateEmail: string,
+    candidateName: string,
+    status: "Shortlisted" | "Rejected" | "Selected"
+) => {
+    try {
+        const mailer = await createHrTransporter();
+
+        if (!mailer) {
+            console.error("SMTP not configured. Skipping status email.");
+            return;
+        }
+
+        let subject = "";
+        let html = "";
+
+        if (status === "Shortlisted") {
+            subject = "You are Shortlisted 🎉";
+            html = `
+                <h2>Hi ${candidateName},</h2>
+                <p>Congratulations! You have been <b>shortlisted</b> for the next round.</p>
+                <p>We will contact you soon with further details.</p>
+                <br/>
+                <p>Best regards,<br/>HR Team</p>
+            `;
+        }
+
+        if (status === "Rejected") {
+            subject = "Application Update";
+            html = `
+                <h2>Hi ${candidateName},</h2>
+                <p>Thank you for applying.</p>
+                <p>We regret to inform you that you were not selected.</p>
+                <br/>
+                <p>We wish you all the best for your future.</p>
+                <p>Regards,<br/>HR Team</p>
+            `;
+        }
+
+        if (status === "Selected") {
+            subject = "You are Selected 🎉";
+            html = `
+                <h2>Hi ${candidateName},</h2>
+                <p>Congratulations! 🎉</p>
+                <p>You have been <b>selected</b> for the position.</p>
+                <p>HR team will contact you with onboarding details.</p>
+                <br/>
+                <p>Best regards,<br/>HR Team</p>
+            `;
+        }
+
+        const fromEmail = mailer.cfg.user;
+
+        await mailer.transporter.sendMail({
+            from: `"InternsLand HR" <${fromEmail}>`,
+            to: candidateEmail,
+            subject,
+            html,
+        });
+
+        console.log(`Status email sent to ${candidateEmail}`);
+    } catch (error) {
+        console.error("Error sending status email:", error);
+    }
+};
