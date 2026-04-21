@@ -8,7 +8,10 @@ describe('validatePermissionsPayload', () => {
   });
 
   it('accepts valid permission maps', () => {
-    const p = { settings: { read: true, write: false, delete: false } };
+    const p = {
+      settings: { read: true, write: false, delete: false },
+      performance: { read: true, write: false, delete: false },
+    };
     expect(validatePermissionsPayload(p)).toBe(true);
     expect(validateModuleKeys(p).ok).toBe(true);
   });
