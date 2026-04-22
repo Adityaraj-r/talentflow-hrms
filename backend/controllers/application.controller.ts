@@ -2,7 +2,7 @@ import { Request, Response } from "express"
 import mongoose from "mongoose"
 import Application from "../models/application.model"
 import { getHrSenderEmail, sendInterviewScheduleEmail } from "../utils/sendEmail"
-
+import { sendApplicationStatusEmail } from "../utils/sendEmail";
 export const applyJob = async (req: Request, res: Response) => {
 
   try {
@@ -63,6 +63,15 @@ export const updateApplicationStatus = async (req: Request, res: Response) => {
       { status },
       { new: true }
     )
+
+    // ✅ EMAIL TRIGGER (NEW ADD)
+    if (application && ["Shortlisted", "Rejected", "Selected"].includes(status)) {
+      await sendApplicationStatusEmail(
+        (application as any).email,
+        (application as any).name,
+        status
+      )
+    }
 
     res.json(application)
 
