@@ -178,7 +178,7 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
     const { role, isActive, search } = req.query;
 
     const filter: Record<string, unknown> = {};
-    if (role) filter.role = role;
+    if (role && role !== 'all') filter.role = role;
     if (isActive !== undefined) filter.isActive = isActive === 'true';
     if (search) {
       filter.$or = [
@@ -189,9 +189,39 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
       ];
     }
 
+    const requestingUser = req.user;
+    const managerId = requestingUser?.id || (requestingUser as any)?._id;
+    const managerRole = typeof requestingUser?.role === 'string' ? requestingUser.role : (requestingUser as any)?.role?.name;
+
+    if (managerRole === "DIRECT_MANAGER" && managerId) {
+      
+      const managerEmployee = await Employee.findOne({
+        $or: [{ userId: managerId }, { email: requestingUser?.email }]
+      });
+
+      console.log("Manager's Employee Code:", managerEmployee?.employeeCode);
+
+      if (managerEmployee && managerEmployee.employeeCode) {
+        const directReports = await Employee.find({ reportingManagerId: managerEmployee.employeeCode }).select('employeeCode');
+        const reportCodes = directReports.map(emp => emp.employeeCode).filter(Boolean);
+
+        console.log("Direct Reports Found (Codes):", reportCodes);
+
+        filter.employeeCode = { $in: reportCodes };
+        filter.role = "EMPLOYEE"; 
+      } else {
+        console.log("FAILSAFE TRIGGERED: Manager has no employeeCode.");
+        filter.employeeCode = { $in: [] };
+      }
+    } 
+    else if (managerRole === "DEPARTMENT_MANAGER") {
+      filter.department = requestingUser?.department;
+    }
+
     const users = await User.find(filter).select('-password').sort({ createdAt: -1 });
     res.status(200).json({ success: true, count: users.length, data: users });
   } catch (error: any) {
+    console.error("GET ALL USERS ERROR:", error);
     res.status(500).json({ success: false, message: 'Error fetching users', error: error.message });
   }
 };

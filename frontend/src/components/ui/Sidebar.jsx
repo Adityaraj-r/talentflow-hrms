@@ -386,6 +386,7 @@ const Sidebar = ({
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           <SidebarLink to="/dashboard/employee/make-transfer" icon={ArrowLeftRight} label="Make Transfer Request" />
+          <SidebarLink to="/employee/resignation" icon={AlertTriangle} label="Initiate Separation" />
           <SidebarLink to="/payroll/salary-slip" icon={FileText} label="My Salary Slips" />
 
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
@@ -438,13 +439,7 @@ const Sidebar = ({
               <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" /> 
             </SidebarGroup>
           )}
-
-          {canSee("employees") && (
-            <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
-          )}
-
           <HRPayrollSidebarGroup />
-
           <SidebarGroup id="appraisal" icon={Award} label="Performance (PMS)">
             <SubLink to="/role/hr_manager/appraisal" label="Appraisal Hub" />
             <SubLink to="/role/hr_manager/appraisal/cycles" label="Manage Cycles" />
@@ -620,6 +615,12 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+
+          <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
+            <SubLink to="/employee-center/all-employees" label="My Team Directory" />
+            <SubLink to="/employee-center/employee-transfer" label="Transfers & Promotions" />
+          </SidebarGroup>
+
           {canSee('attendance') && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/dashboard/employee/attendance" label="My Attendance" />

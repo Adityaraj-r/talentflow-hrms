@@ -6,18 +6,18 @@ import User from '../models/User.model';
 
 export const nominateForPromotion = async (req: AuthRequest, res: Response) => {
     try {
-        if (!req.user || req.user.role !== 'HR_MANAGER') {
-            return res.status(403).json({ success: false, error: 'Only HR Managers can nominate employees for promotion.' });
+        if (!req.user || req.user.role !== 'DIRECT_MANAGER') {
+            return res.status(403).json({ success: false, error: 'Only Direct Managers can nominate employees for promotion.' });
         }
 
         const promotionData = new Promotion({
             ...req.body,
             nominatedBy: req.user.id,
-            status: 'Pending Verification', 
+            status: 'Pending HR Review', 
             auditLog: [{
                 action: 'Nominated',
                 by: req.user.id,
-                remarks: req.body.justification || 'Promotion nomination submitted by HR'
+                remarks: req.body.justification || 'Promotion nomination submitted by Direct Manager'
             }]
         });
 
@@ -43,6 +43,20 @@ export const getAllPromotions = async (req: AuthRequest, res: Response) => {
             ];
         }
 
+        if (req.user?.role === 'DIRECT_MANAGER') {
+            const managerEmployee = await Employee.findOne({
+                $or: [{ userId: req.user.id }, { email: req.user.email }]
+            });
+
+            if (managerEmployee && managerEmployee.employeeCode) {
+                const directReports = await Employee.find({ reportingManagerId: managerEmployee.employeeCode }).select('employeeCode');
+                const reportCodes = directReports.map(emp => emp.employeeCode).filter(Boolean);
+                query.employeeId = { $in: reportCodes };
+            } else {
+                query.employeeId = { $in: [] }; // Failsafe
+            }
+        }
+
         const total = await Promotion.countDocuments(query);
         const promotions = await Promotion.find(query)
             .sort({ createdAt: -1 })
@@ -63,7 +77,7 @@ export const updatePromotionStatus = async (req: AuthRequest, res: Response) => 
     const { status, adminRemarks, newDesignation, newSalary, newRole } = req.body;
 
     try {
-        const allowedRoles = ['COUNTRY_MANAGER', 'CEO'];
+        const allowedRoles = ['HR_MANAGER', 'COUNTRY_MANAGER', 'CEO'];
 
         if (!req.user || !allowedRoles.includes(req.user.role)) {
             return res.status(403).json({ success: false, error: "Unauthorized to action this request." });
@@ -76,17 +90,28 @@ export const updatePromotionStatus = async (req: AuthRequest, res: Response) => 
 
         const actionTakerRole = req.user.role;
         let formattedAction = `${status} by ${actionTakerRole}`;
+        
         const updateData: any = {
             status,
             actionedBy: req.user.id,
             actionedAt: new Date(),
         };
 
+        if (actionTakerRole === 'HR_MANAGER' && status === 'Pending Country Manager') {
+            formattedAction = `Compliance verified and forwarded to Country Manager by HR`;
+        }
+
         if (actionTakerRole === 'COUNTRY_MANAGER' && status === 'Pending CEO') {
-            formattedAction = `Verified and forwarded to CEO by Country Manager`;
+            formattedAction = `Finances verified and forwarded to CEO by Country Manager`;
             if (newDesignation) updateData.newDesignation = newDesignation;
             if (newSalary) updateData.newSalary = newSalary;
             if (newRole) updateData.newRole = newRole;
+        }
+
+        if (actionTakerRole === 'CEO') {
+            if (status === 'Approved') formattedAction = `Final Approval granted by CEO`;
+            if (status === 'Rejected') formattedAction = `Promotion Rejected by CEO`;
+            if (status === 'Pending Country Manager') formattedAction = `Returned for re-evaluation by CEO`;
         }
 
         const finalRemarks = adminRemarks ? `${formattedAction} | Remarks: ${adminRemarks}` : formattedAction;

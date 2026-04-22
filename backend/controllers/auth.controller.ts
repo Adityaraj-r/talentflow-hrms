@@ -23,6 +23,12 @@ export class AuthController {
 
       if (user.isActive === false) {
         await createLog(user._id.toString(), `${user.firstName} ${user.lastName}`, 'Login Attempt', 'Auth', 'Deactivated account access attempt', String(ip), 'Failed');
+        if (user.isDeleted) {
+            return res.status(403).json({ 
+              success: false, 
+              error: 'Your account has been terminated. Please contact the HR department for further assistance.' 
+            });
+        }
         return res.status(403).json({ success: false, error: 'Your account has been deactivated.' });
       }
 
