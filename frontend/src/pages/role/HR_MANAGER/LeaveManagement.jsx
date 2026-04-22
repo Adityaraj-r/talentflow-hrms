@@ -93,12 +93,10 @@ const LeaveRequestForm = () => {
 
     setIsSubmitting(true)
 
-    // Simulate API call
     setTimeout(() => {
       toast.success("Leave request submitted successfully")
       setIsSubmitting(false)
 
-      // Reset form
       setLeaveType("")
       setReason("")
       setAdvancePayment("no")

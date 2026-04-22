@@ -1,9 +1,9 @@
 import mongoose from "mongoose"
 import Attendance from "../models/Attendance.model"
-import Leave from "../models/Leave.model"
+import Leave from "../models/leave.model"
 import Ticket from "../models/ticket.model"
 import Employee from "../models/Employee.model"
-import { PerformanceReviewModel, ReviewStatus } from "../models/PerformanceReview"
+import { PerformanceReviewModel } from "../models/PerformanceReview"
 import type { IPayrollCompanySettings } from "../models/payrollCompanySettings.model"
 import { applyStatutoryDeductions } from "./payrollStatutory.service"
 import type { IAdvanceAllocation, IEmployeePayroll } from "../models/payroll.model"
@@ -117,7 +117,14 @@ async function performanceBonusForUser(
   const end = new Date(year, month, 0, 23, 59, 59)
   const reviews = await PerformanceReviewModel.find({
     employeeId: userOid,
-    status: { $in: [ReviewStatus.COMPLETED, ReviewStatus.APPROVED] },
+    status: {
+      $in: [
+        "completed",
+        "approved",
+        "final_approved",
+        "feedback_released",
+      ],
+    },
     updatedAt: { $gte: start, $lte: end },
   }).limit(5)
   if (!reviews.length) return 0

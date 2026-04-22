@@ -9,6 +9,8 @@ export interface IUser extends Document {
   firstName: string;
   lastName: string;
   department?: string;
+  designation?: string;
+  profilePhoto?: string;
   phoneNumber?: string;
   gender?: string;
   employeeId?: mongoose.Types.ObjectId;
@@ -54,6 +56,7 @@ const UserSchema = new Schema<IUser>(
         'OPERATIONS_MANAGER',
         'FINANCE_MANAGER',
         'ADMIN',
+        'SUPER_ADMIN',
         'EMPLOYEE',
       ],
     },
@@ -74,6 +77,16 @@ const UserSchema = new Schema<IUser>(
     department: {
       type: String,
       default: null,
+    },
+    designation: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    profilePhoto: {
+      type: String,
+      default: null,
+      trim: true,
     },
     gender: {
       type: String,

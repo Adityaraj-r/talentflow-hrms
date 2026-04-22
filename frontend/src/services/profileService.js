@@ -1,7 +1,6 @@
 import apiClient from './apiClient';
 
 const profileService = {
-  // Update Profile Details 
   updateProfile: async (profileData) => {
     try {
       const response = await apiClient.put('/auth/profile', profileData);
@@ -11,7 +10,6 @@ const profileService = {
     }
   },
 
-  // Upload Avatar
   uploadAvatar: async (formData) => {
     try {
       const response = await apiClient.post('/auth/avatar', formData, {
@@ -25,7 +23,6 @@ const profileService = {
     }
   },
 
-  // Fetch Profile Details
   getProfile: async () => {
     try {
       const response = await apiClient.get('/auth/profile');
@@ -35,7 +32,6 @@ const profileService = {
     }
   },
 
-  // Change Password
   changePassword: async (passwordData) => {
     try {
       const response = await apiClient.put('/auth/change-password', passwordData);

@@ -38,7 +38,7 @@ export const getActiveOnboarding = async (req: Request, res: Response) => {
 
 export const getEmployeeById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const requestingUser = (req as any).user;
 
     if (requestingUser?.role === "EMPLOYEE") {
@@ -52,7 +52,13 @@ export const getEmployeeById = async (req: Request, res: Response) => {
       }
     }
 
-    const employee = await Employee.findById(id);
+    let employee = null;
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      employee = await Employee.findById(id);
+    }
+    if (!employee) {
+      employee = await Employee.findOne({ employeeCode: id });
+    }
 
     if (!employee) {
       return res.status(404).json({ message: "Employee not found" });

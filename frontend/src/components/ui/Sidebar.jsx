@@ -27,7 +27,7 @@ const Sidebar = ({
 
   const [openGroups, setOpenGroups] = useState({
     employeeCenter: false, recruitment: false, timeAttendance: false,
-    payroll: false, payrollOperations: true, administration: false,
+    payroll: false, payrollOperations: false, administration: false,
     appraisal: false, disciplinaryActions: false, documentRequests: false,
   })
 
@@ -49,6 +49,13 @@ const Sidebar = ({
     if (isCollapsed) return
     const path = location.pathname
 
+    const payrollRouteActive =
+      path === "/payroll" ||
+      path.startsWith("/payroll/") ||
+      path.startsWith("/tickets") ||
+      path.startsWith("/indemnity") ||
+      path.startsWith("/ceo/payroll")
+
     const isDashboardPath =
       path === "/dashboard" ||
       path === "/admin/dashboard" ||
@@ -59,8 +66,8 @@ const Sidebar = ({
         employeeCenter: false,
         recruitment: false,
         timeAttendance: false,
-        payroll: prev.payroll,
-        payrollOperations: prev.payrollOperations,
+        payroll: payrollRouteActive ? true : prev.payroll,
+        payrollOperations: payrollRouteActive ? true : prev.payrollOperations,
         administration: false,
         appraisal: false,
         disciplinaryActions: false,
@@ -78,8 +85,8 @@ const Sidebar = ({
 
       timeAttendance: path.startsWith("/attendance") || path.includes("/employee/attendance"),
 
-      payroll: prev.payroll,
-      payrollOperations: prev.payrollOperations,
+      payroll: payrollRouteActive ? true : prev.payroll,
+      payrollOperations: payrollRouteActive ? true : prev.payrollOperations,
 
       administration:
         path.startsWith("/settings") ||
@@ -103,11 +110,11 @@ const Sidebar = ({
   }, [location.pathname, isCollapsed])
 
   const canSee = (moduleKey) => {
-    if (userRole === "SUPER ADMIN") return true
-    if (userRole === "ADMIN") {
-      return user?.permissions?.[moduleKey]?.read === true
+    if (userRole === "SUPER ADMIN" || userRole === "SUPER_ADMIN") {
+      if (moduleKey === "performance") return dbPermissions.performance?.read === true
+      return true
     }
-    return dbPermissions[moduleKey]?.read !== false
+    return dbPermissions[moduleKey]?.read === true
   }
 
   const toggleGroup = (group) => {
@@ -386,9 +393,12 @@ const Sidebar = ({
           <SidebarLink to="/dashboard/employee/make-transfer" icon={ArrowLeftRight} label="Make Transfer Request" />
           <SidebarLink to="/payroll/salary-slip" icon={FileText} label="My Salary Slips" />
 
+          {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
             <SubLink to="/role/employee/appraisal" label="My Appraisal" />
+            <SubLink to="/employee/appraisal-result" label="Published results" />
           </SidebarGroup>
+          )}
 
           <SidebarGroup id="documentRequests" icon={FileCheck} label="Documents">
             <SubLink to="/role/employee/my-documents" label="View my Documents" />
@@ -408,6 +418,7 @@ const Sidebar = ({
             <SubLink to="/employee-center/onboarding" label="Onboarding & KYC" />
             <SubLink to="/employee-center/employee-transfer" label="Transfers & Promotions" />
             <SubLink to="/employee-center/digital-locker" label="Digital Locker" />
+            <SubLink to="/employee-center/document-requests" label="Document Requests" />
           </SidebarGroup>
 
           {canSee("recruitment") && (
@@ -444,11 +455,14 @@ const Sidebar = ({
 
           <HRPayrollSidebarGroup />
 
+          {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Performance (PMS)">
             <SubLink to="/role/hr_manager/appraisal" label="Appraisal Hub" />
             <SubLink to="/role/hr_manager/appraisal/cycles" label="Manage Cycles" />
-            <SubLink to="/role/ceo/appraisal" label="Analytics" icon={TrendingUp} />
+            <SubLink to="/pms/appraisal-cycles" label="Appraisal cycles (bonus)" />
+            <SubLink to="/role/hr_manager/appraisal/analytics" label="Analytics" icon={TrendingUp} />
           </SidebarGroup>
+          )}
 
           <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
             <SubLink to="/role/hr_manager/disciplinary-actions" label="Manage Actions" />
@@ -496,6 +510,7 @@ const Sidebar = ({
             <SubLink to="/employee-center/onboarding" label="Onboarding & KYC" />
             <SubLink to="/employee-center/employee-transfer" label="Transfers & Promotions" />
             <SubLink to="/employee-center/digital-locker" label="Digital Locker" />
+            <SubLink to="/employee-center/document-requests" label="Document Requests" />
           </SidebarGroup>
 
           <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
@@ -505,6 +520,15 @@ const Sidebar = ({
           <SidebarGroup id="documentRequests" icon={FileCheck} label="Documents">
             <SubLink to="/role/hr_officer/document-requests" label="Requests" />
           </SidebarGroup>
+
+          {canSee("performance") && (
+          <SidebarGroup id="appraisal" icon={Award} label="Performance (PMS)">
+            <SubLink to="/role/hr_manager/appraisal/cycles" label="Cycles & Reviews" />
+            <SubLink to="/pms/appraisal-cycles" label="Appraisal cycles (bonus)" />
+            <SubLink to="/role/hr_manager/appraisal" label="Hub" />
+            <SubLink to="/role/hr_manager/appraisal/analytics" label="Analytics" icon={TrendingUp} />
+          </SidebarGroup>
+          )}
         </>
       )
     }
@@ -568,10 +592,14 @@ const Sidebar = ({
             </SidebarGroup>
           )}
 
+          {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Performance (PMS)">
             <SubLink to="/ceo/performance" label="CEO Overview" icon={Target} />
+            <SubLink to="/pms/appraisal-cycles" label="Appraisal cycles" />
+            <SubLink to="/role/ceo/performance-review" label="CEO sign-off" icon={FileBadge} />
             <SubLink to="/role/ceo/appraisal" label="Analytics Dashboard" icon={TrendingUp} />
           </SidebarGroup>
+          )}
 
           {canSee("reports") && (
             <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
@@ -584,6 +612,14 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          
+          <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
+            <SubLink to="/employee-center/all-employees" label="Department Directory" />
+            <SubLink to="/employee-center/employee-transfer" label="Transfers & Promotions" />
+            <SubLink to="/employee-center/digital-locker" label="Digital Locker" />
+          </SidebarGroup>
+
+
           {canSee('recruitment') && <SidebarLink to="/staff-requisition" icon={Users} label={getRecruitmentLabel()} />}
           {canSee('attendance') && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
@@ -598,9 +634,11 @@ const Sidebar = ({
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
 
+          {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
             <SubLink to="/role/department_manager/appraisal" label="Team Appraisals" />
           </SidebarGroup>
+          )}
 
           <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
             <SubLink to="/role/department_manager/disciplinary-actions" label="Manage Actions" />
@@ -629,9 +667,11 @@ const Sidebar = ({
           
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
 
+          {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
             <SubLink to="/role/direct_manager/appraisal" label="Team Appraisals" />
           </SidebarGroup>
+          )}
 
           <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
             <SubLink to="/role/direct_manager/disciplinary-actions" label="Manage Actions" />
@@ -655,6 +695,11 @@ const Sidebar = ({
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           <FullPayrollSidebarGroup label={getPayrollLabel()} />
+          {canSee("performance") && (
+            <SidebarGroup id="appraisal" icon={Award} label="Performance (bonus)">
+              <SubLink to="/pms/appraisal-cycles" label="Appraisal cycles" />
+            </SidebarGroup>
+          )}
         </>
       )
     }
@@ -670,6 +715,9 @@ const Sidebar = ({
             </SidebarGroup>
           )}
           <FullPayrollSidebarGroup label={getPayrollLabel()} />
+          {canSee("performance") && (
+            <SidebarLink to="/role/ceo/appraisal" icon={Award} label="Performance (bonus signals)" />
+          )}
         </>
       )
     }
@@ -715,6 +763,26 @@ const Sidebar = ({
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           {canSee("employees") && (
             <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
+          )}
+          {(user?.permissions?.employees?.read || user?.permissions?.settings?.read) && (
+            <SidebarGroup id="administration" icon={Settings} label="Administration">
+              {(user?.permissions?.employees?.read || user?.permissions?.settings?.read) && (
+                <SubLink to="/dashboard/users" label="User Management" icon={Users} />
+              )}
+              {user?.permissions?.settings?.read && (
+                <>
+                  <SubLink to="/settings" label="System Settings" icon={Settings} />
+                  <SubLink to="/admin/company-structure" label="Company Structure" icon={Building} />
+                  <SubLink to="/admin/integrations" label="Integrations" icon={Layers} />
+                </>
+              )}
+              {user?.permissions?.roles?.read && (
+                <SubLink to="/admin/roles" label="Roles & Permissions" icon={Shield} />
+              )}
+              {user?.permissions?.audit?.read && (
+                <SubLink to="/admin/audit-logs" label="Audit Logs" icon={FileText} />
+              )}
+            </SidebarGroup>
           )}
           <TeamPayrollSidebar />
         </>

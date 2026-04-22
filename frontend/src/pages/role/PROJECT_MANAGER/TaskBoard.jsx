@@ -364,15 +364,11 @@ const TaskDetailDrawer = ({ task, onClose, onStatusChange, onDelete }) => {
             <div>
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Move to</p>
               <div className="flex flex-wrap gap-2">
-                {/* FIX 2: Previously showed ALL other statuses, allowing illegal transitions
-                    (e.g., TO_DO → DONE skipping IN_PROGRESS). Now enforces RBAC §7:
-                    TO_DO → IN_PROGRESS only | IN_PROGRESS → DONE only
-                    DONE → IN_PROGRESS (reopen) — PM is always the creator so reopen is valid */}
                 {(() => {
                   const ALLOWED = {
                     TO_DO:       [TASK_STATUS.IN_PROGRESS],
                     IN_PROGRESS: [TASK_STATUS.DONE],
-                    DONE:        [TASK_STATUS.IN_PROGRESS], // reopen
+                    DONE:        [TASK_STATUS.IN_PROGRESS], 
                   }
                   const allowed = ALLOWED[task.status] ?? []
                   return allowed.map(k => (
@@ -593,9 +589,6 @@ const TaskBoard = () => {
   }
 
   const handleCreate = async (payload) => {
-    // FIX 1: try/catch was missing — any API error (400 invalid assignedTo,
-    // 403 forbidden, network failure) was silently swallowed. The modal would
-    // freeze in "Creating..." state with no feedback to the user.
     try {
       const res     = await taskService.createTask(payload)
       const created = res?.data ?? res
@@ -609,7 +602,6 @@ const TaskBoard = () => {
         err?.message ||
         "Failed to create task. Please try again."
       toast.error(msg)
-      // Do NOT close the modal — user needs to correct the form
     }
   }
 

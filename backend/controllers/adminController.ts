@@ -8,9 +8,11 @@ import { createLog } from './audit.controller';
 import Document from '../models/Document.model';
 import Transfer from '../models/Transfer.model';
 import Requisition from '../models/Requisition.model';
-import Leave from '../models/Leave.model';
+import Leave from '../models/leave.model';
 import Employee from '../models/Employee.model';
 import { isTeamPayrollViewerRole, getPayrollTeamUserIdStrings } from '../utils/payrollTeamScope.util';
+import { checkAdminSafeguard, normalizeRoleKey } from '../utils/adminRules.util';
+import Role from '../models/Role.model';
 
 const Activity = require('../models/Activity').default || require('../models/Activity');
 const SystemAlert = require('../models/SystemAlert').default || require('../models/SystemAlert');
@@ -83,7 +85,19 @@ export const bulkUploadUsers = async (req: AuthRequest, res: Response): Promise<
     session.startTransaction();
 
     try {
-      const processedUsers = [];
+      const processedUsers: {
+        email: string;
+        password: string;
+        firstName: string;
+        lastName: string;
+        role: string;
+        department: string | null;
+        phoneNumber: string | null;
+        isActive: boolean;
+        isEmailVerified: boolean;
+      }[] = [];
+
+      const roleDocs = await Role.find({}).session(session).lean();
 
       for (const row of results) {
         try {
@@ -92,7 +106,14 @@ export const bulkUploadUsers = async (req: AuthRequest, res: Response): Promise<
             continue;
           }
 
-          const existingUser = await User.findOne({ email: row.email.toLowerCase().trim() });
+          const rn = normalizeRoleKey(row.role.trim());
+          const matched = roleDocs.find((r) => normalizeRoleKey(String(r.name)) === rn);
+          if (!matched) {
+            errors.push({ email: row.email, error: 'Unknown or invalid role' });
+            continue;
+          }
+
+          const existingUser = await User.findOne({ email: row.email.toLowerCase().trim() }).session(session);
           if (existingUser) {
             errors.push({ email: row.email, error: 'User already exists' });
             continue;
@@ -106,7 +127,7 @@ export const bulkUploadUsers = async (req: AuthRequest, res: Response): Promise<
             password: hashedPassword,
             firstName: row.firstName.trim(),
             lastName: row.lastName.trim(),
-            role: row.role.trim().toUpperCase(),
+            role: matched.name,
             department: row.department || null,
             phoneNumber: row.phoneNumber?.trim() || null,
             isActive: true,
@@ -335,7 +356,7 @@ export const getDepartmentStats = async (req: AuthRequest, res: Response): Promi
 
 export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { role, search, scope } = req.query;
+    const { role, search, scope, page = 1, limit = 10 } = req.query;
     const query: any = { isDeleted: { $ne: true } };
 
     if (role && role !== 'all') query.role = role;
@@ -347,8 +368,12 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
       ];
     }
 
+    if (req.user?.role === 'DEPARTMENT_MANAGER') {
+      query.department = req.user.department;
+    }
+
     if (scope === 'payroll') {
-      let payrollQuery: typeof query = { ...query }
+      let payrollQuery: typeof query = { ...query };
       if (req.user && isTeamPayrollViewerRole(req.user.role)) {
         const allowed = await getPayrollTeamUserIdStrings({
           id: req.user.id,
@@ -357,9 +382,9 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
           firstName: req.user.firstName,
           lastName: req.user.lastName,
           department: req.user.department,
-        })
-        const ids = [...allowed].map(id => new mongoose.Types.ObjectId(id))
-        payrollQuery._id = { $in: ids }
+        });
+        const ids = [...allowed].map(id => new mongoose.Types.ObjectId(id));
+        payrollQuery._id = { $in: ids };
       }
       const users = await User.find(payrollQuery)
         .select('_id firstName lastName email department role employeeId employeeCode')
@@ -369,8 +394,32 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    const users = await User.find(query).select('-password').sort({ createdAt: -1 }).lean();
-    res.status(200).json({ success: true, data: users });
+    const skipNum = (Number(page) - 1) * Number(limit);
+    const limitNum = Number(limit);
+
+    const [users, totalCount, activeCount, uniqueRoles] = await Promise.all([
+      User.find(query).select('-password').sort({ createdAt: -1 }).skip(skipNum).limit(limitNum).lean(),
+      User.countDocuments(query),
+      User.countDocuments({ ...query, isActive: true }),
+      User.distinct('role', query)
+    ]);
+
+    res.status(200).json({ 
+      success: true, 
+      data: users,
+      pagination: {
+        currentPage: Number(page),
+        totalPages: Math.ceil(totalCount / limitNum),
+        totalItems: totalCount,
+        itemsPerPage: limitNum
+      },
+      stats: {
+        total: totalCount,
+        active: activeCount,
+        inactive: totalCount - activeCount,
+        rolesAssigned: uniqueRoles.length
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch users' });
   }
@@ -378,7 +427,8 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
 
 export const toggleUserStatus = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { id: rawId } = req.params;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
     const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
     const adminName = req.user?.firstName || 'Admin';
 
@@ -388,7 +438,20 @@ export const toggleUserStatus = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    user.isActive = !user.isActive;
+    const willBeActive = !user.isActive;
+    if (!willBeActive) {
+      const safeguard = await checkAdminSafeguard({
+        userId: String(id),
+        operation: 'deactivate',
+        nextIsActive: false,
+      });
+      if (!safeguard.ok) {
+        res.status(400).json({ success: false, message: safeguard.message });
+        return;
+      }
+    }
+
+    user.isActive = willBeActive;
     await user.save();
 
     if (user.employeeId) {
@@ -412,7 +475,8 @@ export const toggleUserStatus = async (req: AuthRequest, res: Response): Promise
 
 export const deleteUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { id: rawId } = req.params;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
     const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
     const adminName = req.user?.firstName || 'Admin';
 
@@ -424,6 +488,12 @@ export const deleteUser = async (req: AuthRequest, res: Response): Promise<void>
 
     if (user._id.toString() === req.user?.id) {
       res.status(400).json({ success: false, message: 'You cannot delete your own account' });
+      return;
+    }
+
+    const safeguard = await checkAdminSafeguard({ userId: String(id), operation: 'delete' });
+    if (!safeguard.ok) {
+      res.status(400).json({ success: false, message: safeguard.message });
       return;
     }
 

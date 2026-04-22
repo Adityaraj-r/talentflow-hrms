@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calculator, Check, X, Search, Loader2, FileText } from "lucide-react";
+import { Calculator, Check, X, Search, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import * as payrollService from "@/services/payrollService";
 import apiClient from "@/services/apiClient";
 
-const HR_ROLES = ["HRMANAGER", "HROFFICER", "PAYROLLOFFICER", "ADMIN", "SUPER ADMIN"];
+const normStaffRole = (user) => {
+  const r = typeof user?.role === "string" ? user.role : user?.role?.name;
+  return (r || "").toUpperCase().replace(/[\s_-]/g, "");
+};
+
+const canManageIndemnity = (user) => {
+  const n = normStaffRole(user);
+  return new Set([
+    "HRMANAGER", "HROFFICER", "PAYROLLOFFICER", "FINANCEMANAGER",
+    "ADMIN", "SUPERADMIN",
+  ]).has(n);
+};
 
 const STATUS_COLORS = {
   Pending:  "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -25,8 +36,7 @@ const STATUS_COLORS = {
 
 const Indemnity = () => {
   const { user } = useAuth();
-  const userRole = (typeof user?.role === "string" ? user.role : user?.role?.name)?.toUpperCase();
-  const isHR = HR_ROLES.includes(userRole);
+  const isStaff = canManageIndemnity(user);
 
   return (
     <div className="space-y-6">
@@ -35,24 +45,24 @@ const Indemnity = () => {
         <p className="text-muted-foreground">Calculate and manage end-of-service benefit (EOSB) payments.</p>
       </div>
 
-      <Tabs defaultValue={isHR ? "calculator" : "history"}>
-        <TabsList>
-          {isHR && <TabsTrigger value="calculator">Calculator</TabsTrigger>}
-          {isHR && <TabsTrigger value="pending">Pending Approvals</TabsTrigger>}
-          <TabsTrigger value="history">History</TabsTrigger>
+      <Tabs defaultValue={isStaff ? "calculator" : "history"} className="w-full">
+        <TabsList className="flex flex-wrap h-auto gap-1">
+          {isStaff && <TabsTrigger value="calculator">Calculator</TabsTrigger>}
+          {isStaff && <TabsTrigger value="pending">Pending approvals</TabsTrigger>}
+          <TabsTrigger value="history">All indemnities</TabsTrigger>
         </TabsList>
 
-        {isHR && (
-          <TabsContent value="calculator">
+        {isStaff && (
+          <TabsContent value="calculator" className="mt-4">
             <IndemnityCalculator />
           </TabsContent>
         )}
-        {isHR && (
-          <TabsContent value="pending">
+        {isStaff && (
+          <TabsContent value="pending" className="mt-4">
             <PendingIndemnities />
           </TabsContent>
         )}
-        <TabsContent value="history">
+        <TabsContent value="history" className="mt-4">
           <IndemnityHistory />
         </TabsContent>
       </Tabs>
@@ -79,12 +89,11 @@ const IndemnityCalculator = () => {
 
   const set = (field, val) => {
     setForm(p => ({ ...p, [field]: val }));
-    setResult(null); // reset result on any change
+    setResult(null);
   };
 
   const handleEmployeeChange = (id) => {
     const emp = employees.find(e => e._id === id);
-    set("employeeId", id);
     setForm(p => ({
       ...p,
       employeeId: id,
@@ -142,7 +151,6 @@ const IndemnityCalculator = () => {
 
   return (
     <div className="grid lg:grid-cols-3 gap-6">
-      {/* Form */}
       <div className="lg:col-span-2">
         <Card>
           <CardHeader>
@@ -177,6 +185,11 @@ const IndemnityCalculator = () => {
                     <SelectItem value="resignation">Resignation</SelectItem>
                     <SelectItem value="retirement">Retirement</SelectItem>
                     <SelectItem value="end-of-contract">End of Contract</SelectItem>
+                    <SelectItem value="redundancy">Redundancy / Role elimination</SelectItem>
+                    <SelectItem value="mutual-separation">Mutual separation</SelectItem>
+                    <SelectItem value="medical-release">Medical release</SelectItem>
+                    <SelectItem value="visa-cancellation">Visa / work permit cancellation</SelectItem>
+                    <SelectItem value="relocation-abroad">Relocation abroad</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -197,6 +210,20 @@ const IndemnityCalculator = () => {
                 <Label>Basic Salary (₹) <span className="text-red-500">*</span></Label>
                 <Input type="number" min="0" placeholder="Enter basic salary"
                   value={form.basicSalary} onChange={e => set("basicSalary", e.target.value)} />
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {[25000, 40000, 55000, 75000, 100000, 150000].map((amt) => (
+                    <Button
+                      key={amt}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => set("basicSalary", String(amt))}
+                    >
+                      ₹ {amt.toLocaleString("en-IN")}
+                    </Button>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-2 md:col-span-2">
@@ -225,7 +252,6 @@ const IndemnityCalculator = () => {
         </Card>
       </div>
 
-      {/* Result Panel */}
       <div className="lg:col-span-1">
         <Card className="bg-slate-50 dark:bg-slate-900 border-dashed h-full">
           <CardHeader>
@@ -289,7 +315,7 @@ const PendingIndemnities = () => {
     }
   };
 
-  useEffect(() => { fetchPending(); }, []);
+  useEffect(() => { void fetchPending(); }, []);
 
   const handleAction = async (id, status) => {
     try {
@@ -393,14 +419,14 @@ const IndemnityHistory = () => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <CardTitle>Indemnity History</CardTitle>
+          <CardTitle>All indemnities</CardTitle>
           <CardDescription>All EOSB requests and their status</CardDescription>
         </div>
-        <div className="relative">
+        <div className="relative w-full sm:w-64">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search..." className="pl-8 w-64"
+          <Input placeholder="Search…" className="pl-8"
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </CardHeader>
@@ -425,18 +451,18 @@ const IndemnityHistory = () => {
               </TableRow>
             ) : filtered.map(r => (
               <TableRow key={r._id}>
-                <TableCell className="font-medium">{r.employeeName}</TableCell>
-                <TableCell>{r.yearsOfService} yrs</TableCell>
-                <TableCell className="font-bold text-blue-600">
+                <TableCell className="font-medium align-middle">{r.employeeName}</TableCell>
+                <TableCell className="align-middle">{r.yearsOfService} yrs</TableCell>
+                <TableCell className="font-bold text-blue-600 align-middle">
                   ₹ {Number(r.calculatedAmount).toLocaleString()}
                 </TableCell>
-                <TableCell className="capitalize">{r.reason}</TableCell>
-                <TableCell>
+                <TableCell className="capitalize align-middle">{r.reason}</TableCell>
+                <TableCell className="align-middle">
                   <Badge variant="outline" className={STATUS_COLORS[r.status] || ""}>
                     {r.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell className="text-sm text-muted-foreground align-middle whitespace-nowrap">
                   {new Date(r.createdAt).toLocaleDateString()}
                 </TableCell>
               </TableRow>

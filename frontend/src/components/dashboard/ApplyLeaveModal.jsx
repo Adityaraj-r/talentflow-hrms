@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { X, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button"; // Using your existing UI components
-import { toast } from "sonner"; // Assuming you use sonner for toasts
+import { Button } from "@/components/ui/button"; 
+import { toast } from "sonner"; 
 import leaveService from "@/services/leaveService";
 
 const ApplyLeaveModal = ({ isOpen, onClose, onSuccess }) => {
@@ -26,9 +26,9 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess }) => {
     try {
       await leaveService.applyLeave(formData);
       toast.success("Leave application submitted successfully!");
-      onSuccess(); // Refresh parent data
-      onClose();   // Close modal
-      setFormData({ leaveType: "Annual", startDate: "", endDate: "", reason: "" }); // Reset
+      onSuccess(); 
+      onClose();   
+      setFormData({ leaveType: "Annual", startDate: "", endDate: "", reason: "" }); 
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || "Failed to apply for leave");
@@ -41,7 +41,7 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden border border-gray-200 dark:border-gray-700">
         
-        {/* Header */}
+       
         <div className="flex justify-between items-center p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Apply for Leave</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
@@ -49,10 +49,10 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess }) => {
           </button>
         </div>
 
-        {/* Form */}
+        
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           
-          {/* Leave Type */}
+      
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Leave Type</label>
             <select
@@ -68,7 +68,6 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess }) => {
             </select>
           </div>
 
-          {/* Dates Row */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
@@ -94,7 +93,6 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
           </div>
 
-          {/* Reason */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Reason</label>
             <textarea
@@ -108,7 +106,6 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess }) => {
             ></textarea>
           </div>
 
-          {/* Footer Actions */}
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancel

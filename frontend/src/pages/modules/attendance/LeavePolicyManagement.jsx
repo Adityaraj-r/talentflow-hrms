@@ -39,7 +39,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils"; // Added cn import for StatsCard
+import { cn } from "@/lib/utils"; 
 
 const LEAVE_TYPES = [
   "Annual",
@@ -554,7 +554,6 @@ const LeavePolicyManagement = () => {
   );
 };
 
-// Reused StatsCard Component from Attendance Module
 const StatsCard = ({ title, value, icon, variant }) => {
   const styles = {
     blue: {

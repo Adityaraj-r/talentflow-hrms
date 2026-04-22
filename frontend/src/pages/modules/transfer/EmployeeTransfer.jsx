@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
 import { FileText, Check, X, Search, ArrowLeftRight, CheckCircle2, Clock, XCircle, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import apiClient from "@/services/apiClient"
@@ -59,17 +61,27 @@ const EmployeeTransfer = () => {
     </div>
   )
 }
+
 const AdminTransferView = ({ user }) => {
   const userRole = user?.role?.toUpperCase() || ""
   
-  const canAction = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER", "DEPARTMENT_MANAGER"].includes(userRole)
+  const canAction = ["CEO", "COUNTRY_MANAGER", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "OPERATIONS_MANAGER"].includes(userRole)
   const isCEO = userRole === "CEO"
+  
+  const canApproveReject = ["HR_MANAGER", "CEO", "COUNTRY_MANAGER"].includes(userRole)
+  const canRecommend = ["DEPARTMENT_MANAGER", "DIRECT_MANAGER", "OPERATIONS_MANAGER"].includes(userRole)
+
   const queryClient = useQueryClient()
 
   const [activeTab, setActiveTab] = useState("pending")
   const [page, setPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
+
+  const [recommendModalOpen, setRecommendModalOpen] = useState(false)
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [selectedTransfer, setSelectedTransfer] = useState(null)
+  const [recommendText, setRecommendText] = useState("")
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300)
@@ -104,8 +116,32 @@ const AdminTransferView = ({ user }) => {
     }
   })
 
+  const recommendMutation = useMutation({
+    mutationFn: ({ id, recommendation }) => apiClient.patch(`/transfers/recommend/${id}`, { recommendation }),
+    onSuccess: () => {
+      toast.success("Recommendation submitted successfully")
+      setRecommendModalOpen(false)
+      setRecommendText("")
+      setSelectedTransfer(null)
+      queryClient.invalidateQueries(['transfers'])
+    },
+    onError: (error) => {
+      toast.error(error.message || error.error || "Error submitting recommendation")
+    }
+  })
+
   const handleUpdateStatus = (id, newStatus) => {
     updateMutation.mutate({ id, newStatus })
+  }
+
+  const handleRecommendSubmit = () => {
+    if (!recommendText.trim()) return toast.error("Please enter a recommendation")
+    recommendMutation.mutate({ id: selectedTransfer._id, recommendation: recommendText })
+  }
+
+  const handleViewDetails = (transfer) => {
+    setSelectedTransfer(transfer)
+    setDetailsModalOpen(true)
   }
 
   return (
@@ -140,6 +176,10 @@ const AdminTransferView = ({ user }) => {
             onSearchChange={setSearchTerm}
             pagination={pagination}
             onPageChange={setPage}
+            canApproveReject={canApproveReject}
+            canRecommend={canRecommend}
+            onRecommend={(item) => { setSelectedTransfer(item); setRecommendModalOpen(true); }}
+            onViewDetails={handleViewDetails}
           />
         </TabsContent>
 
@@ -154,9 +194,74 @@ const AdminTransferView = ({ user }) => {
             onSearchChange={setSearchTerm}
             pagination={pagination}
             onPageChange={setPage}
+            canApproveReject={isCEO}
+            onViewDetails={handleViewDetails}
           />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={recommendModalOpen} onOpenChange={setRecommendModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Recommendation</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              Add a written recommendation or context for <strong>{selectedTransfer?.employeeName}'s</strong> transfer. This will be visible to the HR Manager and CEO during the final approval process.
+            </p>
+            <Textarea
+              placeholder="Enter your recommendation or remarks here..."
+              value={recommendText}
+              onChange={(e) => setRecommendText(e.target.value)}
+              className="min-h-[120px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRecommendModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleRecommendSubmit} disabled={recommendMutation.isLoading}>
+              {recommendMutation.isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Submit Recommendation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Transfer Request Details</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-sm bg-muted/20 p-4 rounded-md border">
+              <div><span className="text-muted-foreground block text-xs">Employee Name</span> <span className="font-medium">{selectedTransfer?.employeeName} ({selectedTransfer?.employeeId})</span></div>
+              <div><span className="text-muted-foreground block text-xs">Transfer Type</span> <span className="font-medium">{selectedTransfer?.transferType}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Current Department</span> <span className="font-medium">{selectedTransfer?.currentDepartment}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Requested Department</span> <span className="font-medium">{selectedTransfer?.newDepartment}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Effective Date</span> <span className="font-medium">{selectedTransfer ? new Date(selectedTransfer.effectiveDate).toLocaleDateString() : ''}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Current Status</span> <span className="font-medium">{selectedTransfer?.status}</span></div>
+            </div>
+            
+            <div>
+              <span className="text-sm font-semibold text-foreground block mb-1">Employee's Reason for Transfer:</span>
+              <div className="p-3 bg-muted/50 rounded-md text-sm whitespace-pre-wrap border border-muted">
+                {selectedTransfer?.reason || "No reason provided by employee."}
+              </div>
+            </div>
+
+            {selectedTransfer?.managerRecommendation && (
+              <div>
+                <span className="text-sm font-semibold text-primary block mb-1">Department Manager's Recommendation:</span>
+                <div className="p-3 bg-primary/10 border border-primary/20 rounded-md text-sm whitespace-pre-wrap text-primary-800">
+                  {selectedTransfer.managerRecommendation}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setDetailsModalOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -218,7 +323,7 @@ const EmployeeTransferView = ({ user }) => {
         <Card>
           <CardHeader>
             <CardTitle>New Transfer Request</CardTitle>
-            <CardDescription>Submit a request to transfer to another department. Your request will be reviewed by Admin.</CardDescription>
+            <CardDescription>Submit a request to transfer to another department. Your request will be reviewed by HR.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -327,7 +432,7 @@ const StatCard = ({ title, value, icon, color = "text-foreground" }) => (
   </Card>
 )
 
-const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTerm, onSearchChange, pagination, onPageChange }) => {
+const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTerm, onSearchChange, pagination, onPageChange, canApproveReject = true, canRecommend = false, onRecommend, onViewDetails }) => {
   return (
     <Card className="shadow-sm border">
       {isHistory && (
@@ -355,7 +460,7 @@ const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTe
                 <th className="p-4">{isHistory ? "From" : "Current"} Dept</th>
                 <th className="p-4">{isHistory ? "To" : "New"} Dept</th>
                 <th className="p-4">Type</th>
-                <th className="p-4">Effective Date</th>
+                <th className="p-4">Timeline</th>
                 <th className="p-4 text-center">{!canAction ? "Status" : (isHistory ? "Status & Override" : "Actions")}</th>
               </tr>
             </thead>
@@ -372,7 +477,20 @@ const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTe
                     <td className="p-4">{item.currentDepartment}</td>
                     <td className="p-4">{item.newDepartment}</td>
                     <td className="p-4">{item.transferType}</td>
-                    <td className="p-4">{new Date(item.effectiveDate).toLocaleDateString()}</td>
+                    
+                    <td className="p-4 text-xs whitespace-nowrap  ">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-blue-600 dark:text-blue-400 font-medium">
+                          Req: {new Date(item.requestDate || item.createdAt).toLocaleDateString()}
+                        </div>
+                        {item.status !== 'Pending' && item.actionedAt && (
+                          <div className={item.status === 'Approved' ? 'text-green-600 dark:text-green-500 font-medium' : 'text-red-600 dark:text-red-500 font-medium'}>
+                            {item.status === 'Approved' ? 'Appr' : 'Rej'}: {new Date(item.actionedAt).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+
                     <td className="p-4">
                       {!canAction ? (
                         <div className="flex justify-center">
@@ -397,7 +515,7 @@ const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTe
                             </span>
                           )}
                           
-                          {item.status !== "Approved" && (
+                          {(isHistory || canApproveReject) && item.status !== "Approved" && (
                             <Button
                               variant="outline"
                               size="icon"
@@ -409,7 +527,7 @@ const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTe
                             </Button>
                           )}
 
-                          {item.status !== "Rejected" && (
+                          {(isHistory || canApproveReject) && item.status !== "Rejected" && (
                             <Button
                               variant="outline"
                               size="icon"
@@ -420,12 +538,28 @@ const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTe
                               <X className="h-4 w-4" />
                             </Button>
                           )}
-                          
-                          {!isHistory && (
-                            <Button variant="outline" size="icon" className="h-8 w-8">
-                              <FileText className="h-4 w-4" />
+
+                          {!isHistory && canRecommend && !item.managerRecommendation && (
+                            <Button variant="outline" size="sm" className="h-8 text-xs font-medium bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700" onClick={() => onRecommend(item)}>
+                              Recommend
                             </Button>
                           )}
+
+                          {!isHistory && canRecommend && item.managerRecommendation && (
+                            <span className="px-2.5 py-1 bg-green-50 text-green-600 border border-green-200 rounded-md text-xs font-semibold">
+                              Recommended
+                            </span>
+                          )}
+                          
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className={cn("h-8 w-8 hover:bg-muted", item.managerRecommendation && "border-primary text-primary hover:bg-primary/10")} 
+                            onClick={() => onViewDetails(item)}
+                            title="View Details & Recommendations"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
                         </div>
                       )}
                     </td>

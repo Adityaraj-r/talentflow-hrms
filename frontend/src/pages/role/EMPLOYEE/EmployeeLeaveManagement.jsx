@@ -572,7 +572,6 @@ const EmployeeLeaveManagement = () => {
   );
 };
 
-// Reused StatsCard Component from Attendance Module
 const StatsCard = ({ title, value, icon, variant }) => {
   const styles = {
     blue: {

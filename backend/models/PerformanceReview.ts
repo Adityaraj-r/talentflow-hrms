@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+/** @deprecated Prefer WorkflowStage strings; kept for backward compatibility */
 export enum ReviewStatus {
   PENDING = 'pending',
   SELF_ASSESSMENT_DONE = 'self assessment done',
@@ -8,6 +9,20 @@ export enum ReviewStatus {
   COMPLETED = 'completed',
   APPROVED = 'approved',
 }
+
+/** All values accepted in DB (legacy + canonical workflow). Validated on transition in services. */
+export const REVIEW_STATUS_STORAGE = [
+  ...Object.values(ReviewStatus),
+  'goals_pending',
+  'goals_locked',
+  'self_assessment_done',
+  'manager_review_done',
+  'hr_reviewed',
+  'ceo_reviewed',
+  'calibrated',
+  'final_approved',
+  'feedback_released',
+] as const;
 
 export interface ICompetencyRating {
   name: string;
@@ -19,7 +34,7 @@ export interface IPerformanceReview extends Document {
   cycleId: mongoose.Types.ObjectId;
   employeeId: mongoose.Types.ObjectId;
   reviewerId: mongoose.Types.ObjectId;
-  status: ReviewStatus;
+  status: string;
   competencies: ICompetencyRating[];
   overallRating: number;
   strengths?: string;
@@ -32,6 +47,15 @@ export interface IPerformanceReview extends Document {
   approvedBy?: mongoose.Types.ObjectId;
   approvedAt?: Date;
   adminFeedback?: string;
+  requiresCeoReview?: boolean;
+  ceoReviewerId?: mongoose.Types.ObjectId;
+  ceoComments?: string;
+  ceoReviewedAt?: Date;
+  calibrationNotes?: string;
+  calibratedAt?: Date;
+  calibratedBy?: mongoose.Types.ObjectId;
+  feedbackReleasedAt?: Date;
+  immutableLockedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,8 +76,8 @@ const PerformanceReviewSchema = new Schema<IPerformanceReview>(
     reviewerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     status: {
       type: String,
-      enum: Object.values(ReviewStatus),
-      default: ReviewStatus.PENDING,
+      enum: REVIEW_STATUS_STORAGE,
+      default: 'goals_pending',
     },
     competencies: {
       type: [CompetencyRatingSchema],
@@ -75,6 +99,15 @@ const PerformanceReviewSchema = new Schema<IPerformanceReview>(
     approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     approvedAt: { type: Date },
     adminFeedback: { type: String, trim: true, default: '' },
+    requiresCeoReview: { type: Boolean, default: false },
+    ceoReviewerId: { type: Schema.Types.ObjectId, ref: 'User' },
+    ceoComments: { type: String, trim: true, default: '' },
+    ceoReviewedAt: { type: Date },
+    calibrationNotes: { type: String, trim: true, default: '' },
+    calibratedAt: { type: Date },
+    calibratedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    feedbackReleasedAt: { type: Date },
+    immutableLockedAt: { type: Date },
   },
   { timestamps: true }
 );

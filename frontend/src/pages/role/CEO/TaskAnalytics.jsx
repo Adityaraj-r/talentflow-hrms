@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ROLES } from "@/constants/roles"
 
-// ── StatsCard — matches MyAttendance reference design system ─────────────────
 const StatsCard = ({ title, value, icon, variant }) => {
   const styles = {
     blue: {
@@ -59,7 +58,6 @@ const StatsCard = ({ title, value, icon, variant }) => {
   )
 }
 
-// ── Priority bar component ───────────────────────────────────────────────────
 const PriorityBar = ({ label, count, total, color }) => {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0
   return (
@@ -84,9 +82,6 @@ const PriorityBar = ({ label, count, total, color }) => {
   )
 }
 
-// ============================================================================
-// Main Component
-// ============================================================================
 
 const TaskAnalytics = () => {
   const { user } = useUser()
@@ -115,12 +110,10 @@ const TaskAnalytics = () => {
 
   useEffect(() => { fetchAnalytics() }, [fetchAnalytics])
 
-  // ── Completion rate ────────────────────────────────────────────────────────
   const completionRate = analytics?.total > 0
     ? Math.round((analytics.completed / analytics.total) * 100)
     : 0
 
-  // ── Priority data from backend byPriority array ───────────────────────────
   const getPriorityCount = (level) => {
     if (!analytics?.byPriority) return 0
     const found = analytics.byPriority.find(
@@ -133,7 +126,6 @@ const TaskAnalytics = () => {
   const mediumCount = getPriorityCount("MEDIUM")
   const lowCount    = getPriorityCount("LOW")
 
-  // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -145,7 +137,6 @@ const TaskAnalytics = () => {
     )
   }
 
-  // ── Error ──────────────────────────────────────────────────────────────────
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -163,7 +154,6 @@ const TaskAnalytics = () => {
   return (
     <div className="space-y-6 pb-10">
 
-      {/* ── Page header ───────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -180,7 +170,6 @@ const TaskAnalytics = () => {
           </p>
         </div>
 
-        {/* Read-only badge — CEO/COUNTRY_MANAGER cannot create tasks */}
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
           <Eye className="w-4 h-4 text-slate-500 dark:text-slate-400" />
           <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">
@@ -189,7 +178,6 @@ const TaskAnalytics = () => {
         </div>
       </div>
 
-      {/* ── Stats strip ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           title="Total Tasks"
@@ -217,10 +205,8 @@ const TaskAnalytics = () => {
         />
       </div>
 
-      {/* ── Two column layout: Progress + Priority breakdown ──────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-        {/* Overall completion progress */}
         <Card className="border-slate-200 dark:border-slate-800">
           <CardHeader className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -230,7 +216,6 @@ const TaskAnalytics = () => {
           </CardHeader>
           <CardContent className="p-5 space-y-5">
 
-            {/* Big rate number */}
             <div className="flex items-end gap-3">
               <p className="text-5xl font-bold text-slate-900 dark:text-white tabular-nums">
                 {completionRate}%
@@ -240,7 +225,6 @@ const TaskAnalytics = () => {
               </p>
             </div>
 
-            {/* Progress bar */}
             <div>
               <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div
@@ -250,7 +234,6 @@ const TaskAnalytics = () => {
               </div>
             </div>
 
-            {/* Status breakdown legend */}
             <div className="grid grid-cols-3 gap-3 pt-1">
               {[
                 { label: "To Do",       value: analytics?.toDo      ?? 0, dot: "bg-slate-400",   text: "text-slate-600 dark:text-slate-400" },
@@ -267,7 +250,6 @@ const TaskAnalytics = () => {
           </CardContent>
         </Card>
 
-        {/* Priority distribution */}
         <Card className="border-slate-200 dark:border-slate-800">
           <CardHeader className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -303,7 +285,6 @@ const TaskAnalytics = () => {
                   color="bg-blue-400"
                 />
 
-                {/* Overdue alert strip */}
                 {analytics?.overdue > 0 && (
                   <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl mt-2">
                     <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
@@ -324,7 +305,6 @@ const TaskAnalytics = () => {
         </Card>
       </div>
 
-      {/* ── Health summary card ────────────────────────────────────────────── */}
       <Card className="border-slate-200 dark:border-slate-800">
         <CardHeader className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -340,7 +320,6 @@ const TaskAnalytics = () => {
         <CardContent className="p-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
-            {/* Completion health */}
             <div className={cn(
               "rounded-xl p-4 border",
               completionRate >= 70
@@ -365,7 +344,6 @@ const TaskAnalytics = () => {
               </p>
             </div>
 
-            {/* Overdue health */}
             <div className={cn(
               "rounded-xl p-4 border",
               analytics?.overdue === 0
@@ -390,7 +368,6 @@ const TaskAnalytics = () => {
               </p>
             </div>
 
-            {/* Active workload */}
             <div className="bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800 rounded-xl p-4">
               <p className="text-xs font-semibold uppercase tracking-wide mb-1 text-blue-700 dark:text-blue-400">
                 Active Workload

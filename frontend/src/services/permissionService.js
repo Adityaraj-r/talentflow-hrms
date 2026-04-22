@@ -39,4 +39,5 @@ export const MODULES = {
   ATTENDANCE:  'attendance',
   SETTINGS:    'settings',
   ROLES:       'roles',
+  AUDIT:       'audit',
 };

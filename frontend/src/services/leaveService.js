@@ -34,7 +34,6 @@ const leaveService = {
     return await apiClient.post("/leaves/balance/initialize", {}, { params });
   },
 
-  // ── Leave Requests ────────────────────────────────────────────────────────
   applyLeave: async (leaveData) => {
     return await apiClient.post("/leaves/apply", leaveData);
   },

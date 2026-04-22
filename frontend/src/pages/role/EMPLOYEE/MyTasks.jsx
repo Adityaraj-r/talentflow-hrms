@@ -60,7 +60,6 @@ const PRIORITY_ORDER = { HIGH: 0, MEDIUM: 1, LOW: 2 }
 const MyTasks = () => {
   const { user } = useAuth()
 
-  // Roles that can create and assign tasks from the My Tasks view (RBAC §3, §5.1)
   const CREATOR_ROLES = ["HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "ADMIN", "SUPER_ADMIN"]
   const canCreateTask = CREATOR_ROLES.includes(user?.role?.toUpperCase())
 
@@ -166,9 +165,6 @@ const MyTasks = () => {
     setStatusDialog({ open: true, task, newStatus })
   }
 
-  // Create task handler — used only by creator roles (HR_MANAGER etc.)
-  // Prepends the newly created task to local state so it appears immediately
-  // without a full refetch, matching the TaskBoard.jsx pattern.
   const handleCreateTask = async (payload) => {
     try {
       const res     = await taskService.createTask(payload)
@@ -239,10 +235,6 @@ const MyTasks = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <ListTodo className="w-5 h-5 text-blue-500" />
-            {/* FIX 4: getMyTasks calls GET /tasks/my-tasks which returns tasks where
-                assignedTo === userId for ALL roles. The subtitle previously said
-                "tasks created by you" for creator roles, which was incorrect since
-                this page only shows tasks assigned TO the user, not tasks they created. */}
             <span className="text-sm text-muted-foreground font-medium">
               {stats.total} task{stats.total !== 1 ? "s" : ""} assigned to you
             </span>
@@ -257,7 +249,6 @@ const MyTasks = () => {
           </p>
         </div>
 
-        {/* + New Task — only rendered for creator roles (HR Manager, Dept Manager, Direct Manager, Admin) */}
         {canCreateTask && (
           <Button onClick={() => setIsCreateOpen(true)} className="gap-2 shrink-0">
             <Plus className="w-4 h-4" /> New Task
@@ -356,8 +347,6 @@ const MyTasks = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* FIX 5: sortBy state was wired into filteredTasks but had no UI control.
-                  Default was always "dueDate" with no way to switch. Now exposed. */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="h-9 gap-1">
@@ -525,7 +514,6 @@ const MyTasks = () => {
         </CardContent>
       </Card>
 
-      {/* Create Task Modal — only mounted for creator roles */}
       {canCreateTask && (
         <CreateTaskModal
           isOpen={isCreateOpen}
