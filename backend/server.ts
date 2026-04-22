@@ -43,6 +43,9 @@ import recruitmentSuggestionRoutes from './routes/recruitmentSuggestion.routes';
 import executiveRoutes from "./routes/executive.routes";
 import offboardingRoutes from "./routes/offboarding.routes";
 import ceoRoutes from './routes/ceo.routes';
+import appraisalCycleRoutes from './routes/appraisalCycle.routes';
+import bonusRoutes from './routes/bonus.routes';
+import notificationRoutes from './routes/notification.routes';
 import offerRoutes from './routes/offer.routes';
 import User from './models/User.model';
 
@@ -153,6 +156,9 @@ app.use('/api/document-requests', documentRequestRoutes);
 app.use('/api/salary-structure', salaryRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/ceo', ceoRoutes);
+app.use('/api/pms/cycles', appraisalCycleRoutes);
+app.use('/api/pms/bonus', bonusRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/offers', offerRoutes);
 
 app.use((req, res) => {

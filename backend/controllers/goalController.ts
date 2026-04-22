@@ -8,7 +8,8 @@ export class GoalController {
     try {
       const employeeId = req.user?.id
       const goals = await GoalModel.find({ employeeId })
-        .populate('cycleId', 'name status')
+        .populate('cycleId', 'name startDate endDate status')
+        .populate('createdBy', 'firstName lastName email department designation profilePhoto')
         .sort({ createdAt: -1 })
       res.json({ success: true, data: goals })
     } catch (error: any) {
@@ -21,8 +22,9 @@ export class GoalController {
     try {
       const managerId = req.user?.id
       const goals = await GoalModel.find({ createdBy: managerId })
-        .populate('employeeId', 'firstName lastName email department')
-        .populate('cycleId', 'name status')
+        .populate('employeeId', 'firstName lastName email department designation profilePhoto employeeCode')
+        .populate('createdBy', 'firstName lastName email department designation profilePhoto')
+        .populate('cycleId', 'name startDate endDate status')
         .sort({ createdAt: -1 })
       res.json({ success: true, data: goals })
     } catch (error: any) {
@@ -48,7 +50,11 @@ export class GoalController {
         targetDate,
         createdBy: req.user?.id,
       })
-      res.status(201).json({ success: true, data: goal })
+      const full = await GoalModel.findById(goal._id)
+        .populate('employeeId', 'firstName lastName email department designation profilePhoto employeeCode')
+        .populate('createdBy', 'firstName lastName email department designation profilePhoto')
+        .populate('cycleId', 'name startDate endDate status')
+      res.status(201).json({ success: true, data: full })
     } catch (error: any) {
       res.status(500).json({ success: false, error: 'Failed to create goal', details: error.message })
     }
@@ -58,6 +64,9 @@ export class GoalController {
   static async updateGoal(req: AuthRequest, res: Response) {
     try {
       const goal = await GoalModel.findByIdAndUpdate(req.params.id, req.body, { new: true })
+        .populate('employeeId', 'firstName lastName email department designation profilePhoto employeeCode')
+        .populate('createdBy', 'firstName lastName email department designation profilePhoto')
+        .populate('cycleId', 'name startDate endDate status')
       if (!goal) return res.status(404).json({ success: false, error: 'Goal not found' })
       res.json({ success: true, data: goal })
     } catch (error: any) {

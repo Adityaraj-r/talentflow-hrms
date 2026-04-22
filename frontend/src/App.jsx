@@ -115,6 +115,10 @@ import DocumentRequestsEmployee from "./pages/role/EMPLOYEE/DocumentRequests"
 import HRManagerLeaveManagement from "./pages/role/HR_MANAGER/LeaveManagement"
 
 // CEO-Specific Pages
+import CEOAppraisal from "./pages/role/CEO/CEOAppraisal"
+import AppraisalCyclesPage from "./pages/pms/AppraisalCyclesPage"
+import AppraisalCycleDetailPage from "./pages/pms/AppraisalCycleDetailPage"
+import EmployeeAppraisalResultPage from "./pages/pms/EmployeeAppraisalResultPage"
 import WorkforceAnalytics from "./pages/role/CEO/WorkforceAnalytics"
 import PayrollCostDashboard from "./pages/role/CEO/PayrollCostDashboard"
 import CEORecruitmentModule from "./pages/role/CEO/RecruitmentModule"
@@ -159,11 +163,14 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission, requiredPe
     if (!needsMatrix || !user) return
 
     const upper = userRoleStr.toUpperCase()
-    if (
-      upper === "SUPER ADMIN" ||
-      upper === "SUPER_ADMIN" ||
-      upper === "ADMIN"
-    ) {
+    const isSystemAdmin =
+      upper === "SUPER ADMIN" || upper === "SUPER_ADMIN" || upper === "ADMIN"
+    const moduleIsPerformance = (m) => m === "performance"
+    const needsStrictPerformance =
+      moduleIsPerformance(requiredPermission?.module) ||
+      (Array.isArray(requiredPermissionAny) &&
+        requiredPermissionAny.some((p) => moduleIsPerformance(p.module)))
+    if (isSystemAdmin && !needsStrictPerformance) {
       setHasPermission(true)
       return
     }
@@ -575,19 +582,24 @@ function App() {
                       </ProtectedRoute>
                     } />
 
-                    {/* Cycle management — HR_MANAGER only */}
+                    {/* Cycle management — HR (matrix: performance.read); structural actions gated by delete in UI/API */}
                     <Route path="/role/hr_manager/appraisal/cycles" element={
-                      <ProtectedRoute allowedRoles={["HR_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER"]}>
                         <DashboardLayout><AdminPerformance /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/role/hr_manager/appraisal/view/:id" element={
-                      <ProtectedRoute allowedRoles={["HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "CEO", "COUNTRY_MANAGER"]}>
                         <DashboardLayout><ViewCycleDetails /></DashboardLayout>
                       </ProtectedRoute>
                     } />
+                    <Route path="/role/hr_manager/appraisal/analytics" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER"]}>
+                        <DashboardLayout><PerformanceAnalytics /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
                     <Route path="/role/hr_manager/review/:id" element={
-                      <ProtectedRoute allowedRoles={["HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "CEO"]}>
                         <DashboardLayout><ReviewDetailPage /></DashboardLayout>
                       </ProtectedRoute>
                     } />
@@ -597,8 +609,13 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="/role/ceo/appraisal" element={
-                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "PAYROLL_OFFICER"]}>
                         <DashboardLayout><PerformanceAnalytics /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/ceo/performance-review" element={
+                      <ProtectedRoute allowedRoles={["CEO"]}>
+                        <DashboardLayout><CEOAppraisal /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/role/department_manager/appraisal" element={
@@ -614,6 +631,28 @@ function App() {
                     <Route path="/role/employee/appraisal" element={
                       <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
                         <DashboardLayout><EmployeeAppraisal /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/role/employee/review/:id" element={
+                      <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                        <DashboardLayout><ReviewDetailPage /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+
+                    <Route path="/employee/appraisal-result" element={
+                      <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                        <DashboardLayout><EmployeeAppraisalResultPage /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+
+                    <Route path="/pms/appraisal-cycles" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER ADMIN", "CEO", "COUNTRY_MANAGER", "FINANCE_MANAGER"]}>
+                        <DashboardLayout><AppraisalCyclesPage /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/pms/appraisal-cycles/:id" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER ADMIN", "CEO", "COUNTRY_MANAGER", "FINANCE_MANAGER"]}>
+                        <DashboardLayout><AppraisalCycleDetailPage /></DashboardLayout>
                       </ProtectedRoute>
                     } />
 
