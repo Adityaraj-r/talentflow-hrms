@@ -11,6 +11,30 @@ const profileService = {
     }
   },
 
+  // Upload Avatar
+  uploadAvatar: async (formData) => {
+    try {
+      const response = await apiClient.post('/auth/avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { error: 'Failed to upload avatar' };
+    }
+  },
+
+  // Fetch Profile Details
+  getProfile: async () => {
+    try {
+      const response = await apiClient.get('/auth/profile');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { error: 'Failed to fetch profile' };
+    }
+  },
+
   // Change Password
   changePassword: async (passwordData) => {
     try {

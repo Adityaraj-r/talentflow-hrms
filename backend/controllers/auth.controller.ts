@@ -53,6 +53,7 @@ export class AuthController {
           role: user.role,
           department: user.department,
           phoneNumber: user.phoneNumber,
+          gender: user.gender, // <-- ADD THIS LINE
           isActive: user.isActive
         }
       });
@@ -80,7 +81,7 @@ export class AuthController {
         return res.status(404).json({ success: false, error: 'User not found' });
       }
 
-      return res.json({
+     return res.json({
         success: true,
         data: {
           id: user._id,
@@ -91,6 +92,7 @@ export class AuthController {
           role: user.role,
           department: user.department,
           phoneNumber: user.phoneNumber,
+          gender: user.gender,
           isActive: user.isActive,
           currentShift: user.currentShift,
           isEmailVerified: user.isEmailVerified,

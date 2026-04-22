@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
+import { useAuth } from "@/contexts/AuthContext"
 import taskService from "@/services/taskService"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -29,9 +30,11 @@ import {
   MoreHorizontal,
   ChevronDown,
   X,
+  Plus,
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import CreateTaskModal from "@/components/ui/CreateTaskModal"
 
 const TASK_STATUS = {
   TO_DO:       "TO_DO",
@@ -55,9 +58,16 @@ const PRIORITY_ORDER = { HIGH: 0, MEDIUM: 1, LOW: 2 }
 
 
 const MyTasks = () => {
+  const { user } = useAuth()
+
+  // Roles that can create and assign tasks from the My Tasks view (RBAC §3, §5.1)
+  const CREATOR_ROLES = ["HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "ADMIN", "SUPER_ADMIN"]
+  const canCreateTask = CREATOR_ROLES.includes(user?.role?.toUpperCase())
+
   const [tasks, setTasks]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [updating, setUpdating] = useState(null)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   const [searchQuery, setSearchQuery]   = useState("")
   const [filterStatus, setFilterStatus] = useState("ALL")
@@ -156,6 +166,21 @@ const MyTasks = () => {
     setStatusDialog({ open: true, task, newStatus })
   }
 
+  // Create task handler — used only by creator roles (HR_MANAGER etc.)
+  // Prepends the newly created task to local state so it appears immediately
+  // without a full refetch, matching the TaskBoard.jsx pattern.
+  const handleCreateTask = async (payload) => {
+    try {
+      const res     = await taskService.createTask(payload)
+      const created = res?.data ?? res
+      setTasks(prev => [created, ...prev])
+      setIsCreateOpen(false)
+      toast.success("Task created and assigned")
+    } catch (err) {
+      toast.error(err?.response?.data?.error || err?.message || "Failed to create task")
+    }
+  }
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A"
     const d = new Date(dateString)
@@ -214,6 +239,10 @@ const MyTasks = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <ListTodo className="w-5 h-5 text-blue-500" />
+            {/* FIX 4: getMyTasks calls GET /tasks/my-tasks which returns tasks where
+                assignedTo === userId for ALL roles. The subtitle previously said
+                "tasks created by you" for creator roles, which was incorrect since
+                this page only shows tasks assigned TO the user, not tasks they created. */}
             <span className="text-sm text-muted-foreground font-medium">
               {stats.total} task{stats.total !== 1 ? "s" : ""} assigned to you
             </span>
@@ -221,8 +250,19 @@ const MyTasks = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
             My Tasks
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage your assigned work and deadlines.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {canCreateTask
+              ? "Create and manage tasks for your team."
+              : "Manage your assigned work and deadlines."}
+          </p>
         </div>
+
+        {/* + New Task — only rendered for creator roles (HR Manager, Dept Manager, Direct Manager, Admin) */}
+        {canCreateTask && (
+          <Button onClick={() => setIsCreateOpen(true)} className="gap-2 shrink-0">
+            <Plus className="w-4 h-4" /> New Task
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -313,6 +353,25 @@ const MyTasks = () => {
                       {p.charAt(0) + p.slice(1).toLowerCase()}
                     </DropdownMenuItem>
                   ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* FIX 5: sortBy state was wired into filteredTasks but had no UI control.
+                  Default was always "dueDate" with no way to switch. Now exposed. */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9 gap-1">
+                    {sortBy === "dueDate" ? "Sort: Due Date" : "Sort: Priority"}
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => setSortBy("dueDate")}>
+                    Due Date {sortBy === "dueDate" && "✓"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortBy("priority")}>
+                    Priority {sortBy === "priority" && "✓"}
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -465,6 +524,15 @@ const MyTasks = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Create Task Modal — only mounted for creator roles */}
+      {canCreateTask && (
+        <CreateTaskModal
+          isOpen={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
+          onCreate={handleCreateTask}
+        />
+      )}
 
       <Dialog
         open={statusDialog.open}

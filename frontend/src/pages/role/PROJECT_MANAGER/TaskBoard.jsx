@@ -364,18 +364,31 @@ const TaskDetailDrawer = ({ task, onClose, onStatusChange, onDelete }) => {
             <div>
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Move to</p>
               <div className="flex flex-wrap gap-2">
-                {Object.entries(STATUS_CONFIG)
-                  .filter(([k]) => k !== task.status)
-                  .map(([k, v]) => (
+                {/* FIX 2: Previously showed ALL other statuses, allowing illegal transitions
+                    (e.g., TO_DO → DONE skipping IN_PROGRESS). Now enforces RBAC §7:
+                    TO_DO → IN_PROGRESS only | IN_PROGRESS → DONE only
+                    DONE → IN_PROGRESS (reopen) — PM is always the creator so reopen is valid */}
+                {(() => {
+                  const ALLOWED = {
+                    TO_DO:       [TASK_STATUS.IN_PROGRESS],
+                    IN_PROGRESS: [TASK_STATUS.DONE],
+                    DONE:        [TASK_STATUS.IN_PROGRESS], // reopen
+                  }
+                  const allowed = ALLOWED[task.status] ?? []
+                  return allowed.map(k => (
                     <button
                       key={k}
                       onClick={() => onStatusChange(task._id, k)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-foreground hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     >
                       <ArrowRight className="w-3 h-3" />
-                      {v.label}
+                      {STATUS_CONFIG[k].label}
+                      {task.status === TASK_STATUS.DONE && (
+                        <span className="text-[9px] text-muted-foreground ml-0.5">(reopen)</span>
+                      )}
                     </button>
-                  ))}
+                  ))
+                })()}
               </div>
             </div>
 
@@ -580,11 +593,24 @@ const TaskBoard = () => {
   }
 
   const handleCreate = async (payload) => {
-    const res     = await taskService.createTask(payload)
-    const created = res?.data ?? res
-    setTasks(prev => [created, ...prev])
-    setIsCreateOpen(false)
-    toast.success("Task created")
+    // FIX 1: try/catch was missing — any API error (400 invalid assignedTo,
+    // 403 forbidden, network failure) was silently swallowed. The modal would
+    // freeze in "Creating..." state with no feedback to the user.
+    try {
+      const res     = await taskService.createTask(payload)
+      const created = res?.data ?? res
+      setTasks(prev => [created, ...prev])
+      setIsCreateOpen(false)
+      toast.success("Task created and assigned")
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to create task. Please try again."
+      toast.error(msg)
+      // Do NOT close the modal — user needs to correct the form
+    }
   }
 
   const handleDeleteConfirm = async (task) => {
