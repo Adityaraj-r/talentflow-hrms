@@ -19,8 +19,8 @@ const EmployeeTransfer = () => {
   const userRole = user?.role?.toUpperCase() || ""
 
   const canViewPromotions = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "HR_OFFICER"].includes(userRole)
-  const canViewOffboarding = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER", "HR_OFFICER"].includes(userRole)
-  const canViewAdminTransfers = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "HR_OFFICER", "OPERATIONS_MANAGER"].includes(userRole)
+  const canViewOffboarding = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER", "HR_OFFICER", "DIRECT_MANAGER"].includes(userRole)
+  const canViewAdminTransfers = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "HR_OFFICER", "OPERATIONS_MANAGER", "PROJECT_MANAGER"].includes(userRole)
 
   if (userRole === "EMPLOYEE" || !canViewAdminTransfers) {
     return <EmployeeTransferView user={user} />
@@ -64,12 +64,11 @@ const EmployeeTransfer = () => {
 
 const AdminTransferView = ({ user }) => {
   const userRole = user?.role?.toUpperCase() || ""
-  
-  const canAction = ["CEO", "COUNTRY_MANAGER", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "OPERATIONS_MANAGER"].includes(userRole)
+  const canAction = ["CEO", "COUNTRY_MANAGER", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "OPERATIONS_MANAGER", "PROJECT_MANAGER"].includes(userRole)
   const isCEO = userRole === "CEO"
   
   const canApproveReject = ["HR_MANAGER", "CEO", "COUNTRY_MANAGER"].includes(userRole)
-  const canRecommend = ["DEPARTMENT_MANAGER", "DIRECT_MANAGER", "OPERATIONS_MANAGER"].includes(userRole)
+  const canRecommend = ["DEPARTMENT_MANAGER", "DIRECT_MANAGER", "OPERATIONS_MANAGER", "PROJECT_MANAGER"].includes(userRole)
 
   const queryClient = useQueryClient()
 
@@ -180,6 +179,7 @@ const AdminTransferView = ({ user }) => {
             canRecommend={canRecommend}
             onRecommend={(item) => { setSelectedTransfer(item); setRecommendModalOpen(true); }}
             onViewDetails={handleViewDetails}
+            userRole={userRole}
           />
         </TabsContent>
 
@@ -196,6 +196,7 @@ const AdminTransferView = ({ user }) => {
             onPageChange={setPage}
             canApproveReject={isCEO}
             onViewDetails={handleViewDetails}
+            userRole={userRole}
           />
         </TabsContent>
       </Tabs>
@@ -250,7 +251,7 @@ const AdminTransferView = ({ user }) => {
 
             {selectedTransfer?.managerRecommendation && (
               <div>
-                <span className="text-sm font-semibold text-primary block mb-1">Department Manager's Recommendation:</span>
+                <span className="text-sm font-semibold text-primary block mb-1">Management Recommendations:</span>
                 <div className="p-3 bg-primary/10 border border-primary/20 rounded-md text-sm whitespace-pre-wrap text-primary-800">
                   {selectedTransfer.managerRecommendation}
                 </div>
@@ -432,7 +433,7 @@ const StatCard = ({ title, value, icon, color = "text-foreground" }) => (
   </Card>
 )
 
-const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTerm, onSearchChange, pagination, onPageChange, canApproveReject = true, canRecommend = false, onRecommend, onViewDetails }) => {
+const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTerm, onSearchChange, pagination, onPageChange, canApproveReject = true, canRecommend = false, onRecommend, onViewDetails, userRole }) => {
   return (
     <Card className="shadow-sm border">
       {isHistory && (
@@ -470,7 +471,11 @@ const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTe
               ) : data.length === 0 ? (
                 <tr><td colSpan="7" className="p-8 text-center text-muted-foreground">No records found</td></tr>
               ) : (
-                data.map((item) => (
+                data.map((item) => {
+                  const formattedUserRole = userRole ? userRole.replace('_', ' ') : '';
+                  const hasRecommended = item.managerRecommendation && item.managerRecommendation.includes(`[${formattedUserRole}]`);
+                  
+                  return (
                   <tr key={item._id} className="hover:bg-muted/20 transition-colors">
                     <td className="p-4 font-medium">{item.employeeName}</td>
                     <td className="p-4">{item.employeeId}</td>
@@ -539,13 +544,13 @@ const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTe
                             </Button>
                           )}
 
-                          {!isHistory && canRecommend && !item.managerRecommendation && (
+                          {!isHistory && canRecommend && !hasRecommended && (
                             <Button variant="outline" size="sm" className="h-8 text-xs font-medium bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700" onClick={() => onRecommend(item)}>
                               Recommend
                             </Button>
                           )}
 
-                          {!isHistory && canRecommend && item.managerRecommendation && (
+                          {!isHistory && canRecommend && hasRecommended && (
                             <span className="px-2.5 py-1 bg-green-50 text-green-600 border border-green-200 rounded-md text-xs font-semibold">
                               Recommended
                             </span>
@@ -564,7 +569,7 @@ const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTe
                       )}
                     </td>
                   </tr>
-                ))
+                )})
               )}
             </tbody>
           </table>

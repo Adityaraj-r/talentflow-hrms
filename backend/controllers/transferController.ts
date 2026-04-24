@@ -54,9 +54,20 @@ export const getAllTransfers = async (req: AuthRequest, res: Response) => {
             ];
         }
 
-        // NEW: Strict RBAC Data Isolation for Department Managers
         if (req.user?.role === 'DEPARTMENT_MANAGER') {
             query.currentDepartment = req.user.department;
+        } else if (req.user?.role === 'DIRECT_MANAGER' || req.user?.role === 'PROJECT_MANAGER') {
+            const managerEmployee = await Employee.findOne({
+                $or: [{ userId: req.user.id }, { email: req.user.email }]
+            });
+
+            if (managerEmployee && managerEmployee.employeeCode) {
+                const directReports = await Employee.find({ reportingManagerId: managerEmployee.employeeCode }).select('employeeCode');
+                const reportCodes = directReports.map(emp => emp.employeeCode).filter(Boolean);
+                query.employeeId = { $in: reportCodes };
+            } else {
+                query.employeeId = { $in: [] };
+            }
         }
 
         const total = await Transfer.countDocuments(query);
@@ -65,8 +76,12 @@ export const getAllTransfers = async (req: AuthRequest, res: Response) => {
             .skip((page - 1) * limit)
             .limit(limit);
 
-        // Keep global stats for Admin, but isolated stats for Dept Manager
-        const statQuery = req.user?.role === 'DEPARTMENT_MANAGER' ? { currentDepartment: req.user.department } : {};
+        let statQuery: any = {};
+        if (req.user?.role === 'DEPARTMENT_MANAGER') {
+            statQuery = { currentDepartment: req.user.department };
+        } else if (req.user?.role === 'DIRECT_MANAGER' || req.user?.role === 'PROJECT_MANAGER') {
+            statQuery = { employeeId: query.employeeId };
+        }
         
         const [totalStats, pendingStats, approvedStats, rejectedStats] = await Promise.all([
             Transfer.countDocuments(statQuery),
@@ -225,7 +240,6 @@ export const getEmployeeLatestTransfer = async (req: AuthRequest, res: Response)
     }
 };
 
-// NEW: Add Manager Recommendation
 export const addManagerRecommendation = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
@@ -237,7 +251,13 @@ export const addManagerRecommendation = async (req: AuthRequest, res: Response) 
             return;
         }
 
-        transfer.managerRecommendation = recommendation;
+        const roleStr = req.user?.role ? req.user.role.replace('_', ' ') : 'MANAGER';
+        const formattedRec = `[${roleStr}]: ${recommendation}`;
+
+        transfer.managerRecommendation = transfer.managerRecommendation
+            ? `${transfer.managerRecommendation}\n\n${formattedRec}`
+            : formattedRec;
+
         transfer.auditLog.push({
             action: 'Recommendation Added',
             by: req.user?.id || 'System',

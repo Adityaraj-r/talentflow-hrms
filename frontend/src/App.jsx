@@ -130,6 +130,7 @@ import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/EmployeeLeaveManageme
 import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 import Profile from "./pages/dashboard/Profile"
 import AttendanceAnalytics from "./pages/modules/attendance/AttendanceAnalytics"
+import EmployeeResignation from "./pages/role/EMPLOYEE/EmployeeResignation"
 
 // Document Module
 import MyDocuments from "./pages/modules/documents/MyDocuments"
@@ -401,7 +402,7 @@ function App() {
 
                     {/* ── Employee Center ───────────────────────────────── */}
                     <Route path="/employee-center/all-employees" element={
-                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
                         <DashboardLayout><AllEmployees /></DashboardLayout>
                       </ProtectedRoute>
                     } />
@@ -416,7 +417,7 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="/employee-center/employee-transfer" element={
-                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER", "ADMIN", "SUPER ADMIN", "EMPLOYEE"]}>
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER", "ADMIN", "SUPER ADMIN", "EMPLOYEE"]}>
                         <DashboardLayout><EmployeeTransfer /></DashboardLayout>
                       </ProtectedRoute>
                     } />
@@ -720,7 +721,11 @@ function App() {
                         <DashboardLayout><TransferPage /></DashboardLayout>
                       </ProtectedRoute>
                     } />
-
+                    <Route path="/employee/resignation" element={
+                      <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                        <DashboardLayout><EmployeeResignation /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
                     <Route path="/role/employee/my-documents" element={
                       <ProtectedRoute allowedRoles={["EMPLOYEE", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "COUNTRY_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "FINANCE_MANAGER", "PAYROLL_OFFICER", "PROJECT_MANAGER", "OPERATIONS_MANAGER"]}>
                         <DashboardLayout><MyDocuments /></DashboardLayout>

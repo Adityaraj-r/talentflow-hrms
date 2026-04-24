@@ -226,7 +226,6 @@ const EmployeeDashboard = ({ stats = {}, isLoading = false }) => {
                 </CardContent>
             </Card>
         </TabsContent>
-
         {/* Other tabs placeholders */}
         <TabsContent value="documents">
             <Card className="bg-white dark:bg-[#1e293b] border-slate-200 dark:border-slate-700 shadow-sm p-8 text-center">

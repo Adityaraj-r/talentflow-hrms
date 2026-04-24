@@ -2,13 +2,14 @@ import { ROLES } from './roles';
 
 export const EC_PERMISSIONS = {
   allEmployees: {
-    canView: [ROLES.CEO, ROLES.ADMIN, ROLES.HR_MANAGER, ROLES.HR_OFFICER, ROLES.DEPARTMENT_MANAGER],
+    canView: [ROLES.CEO, ROLES.ADMIN, ROLES.HR_MANAGER, ROLES.HR_OFFICER, ROLES.DEPARTMENT_MANAGER,ROLES.DIRECT_MANAGER],
     scope: {
       [ROLES.CEO]: 'organization',
       [ROLES.ADMIN]: 'organization',
       [ROLES.HR_MANAGER]: 'organization',
       [ROLES.HR_OFFICER]: 'organization',
       [ROLES.DEPARTMENT_MANAGER]: 'department',
+      [ROLES.DIRECT_MANAGER]: 'direct_reports',
       [ROLES.EMPLOYEE]: 'self',         
     },
   },
@@ -18,7 +19,7 @@ export const EC_PERMISSIONS = {
     canGenerate: [ROLES.ADMIN, ROLES.HR_MANAGER],                    
   },
   transfers: {
-    canView: [ROLES.CEO, ROLES.ADMIN, ROLES.HR_MANAGER, ROLES.HR_OFFICER, ROLES.DEPARTMENT_MANAGER],
+    canView: [ROLES.CEO, ROLES.ADMIN, ROLES.HR_MANAGER, ROLES.HR_OFFICER, ROLES.DEPARTMENT_MANAGER,ROLES.DIRECT_MANAGER],
     canInitiate: [ROLES.EMPLOYEE, ROLES.DIRECT_MANAGER],                                   
     canApprove: [ROLES.ADMIN, ROLES.DEPARTMENT_MANAGER],
     canOverride: [ROLES.CEO],                                     

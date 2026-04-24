@@ -59,7 +59,18 @@ const Login = () => {
       await login(email, password);
       navigate('/dashboard-redirect');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to login. Please check your credentials.');
+      console.error("Login error object:", err); 
+      
+      const errorMessage = 
+        err?.response?.data?.error || 
+        err?.response?.data?.message || 
+        err?.data?.error ||
+        err?.error || 
+        (typeof err === 'string' ? err : null) || 
+        err?.message || 
+        'Failed to login. Please check your credentials.';
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
