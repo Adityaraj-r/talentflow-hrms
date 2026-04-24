@@ -2,6 +2,28 @@ import Employee from "../models/Employee.model";
 import { Request, Response } from "express";
 import User from '../models/User.model';
 
+export const getAllEmployees = async (req: Request, res: Response) => {
+  try {
+    const requestingUser = (req as any).user;
+    let filter: any = {};
+
+    if (requestingUser?.role === "DIRECT_MANAGER") {
+      filter = { 
+        reportingManagerId: requestingUser.employeeCode,
+        role: "EMPLOYEE" 
+      };
+    } 
+    else if (requestingUser?.role === "DEPARTMENT_MANAGER") {
+      filter = { department: requestingUser.department };
+    }
+
+    const employees = await Employee.find(filter).sort({ createdAt: -1 });
+    res.status(200).json(employees);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const getRecentHires = async (req: Request, res: Response) => {
   try {
     const employees = await Employee.find()
@@ -66,7 +88,7 @@ export const getEmployeeById = async (req: Request, res: Response) => {
 
     const data = employee.toObject() as Record<string, any>;
 
-    if (!["ADMIN", "HR_MANAGER"].includes(requestingUser?.role)) {
+    if (!["ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER"].includes(requestingUser?.role)) {
       delete data.bankDetails;
       delete data.kycDetails;
     }
