@@ -428,34 +428,25 @@ const EmployeeLeaveManagement = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-xl border p-5 bg-yellow-50 dark:bg-yellow-500/10 border-yellow-200 dark:border-yellow-500/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
-              <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{pendingCount}</p>
-            </div>
-            <Clock className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
-          </div>
-        </div>
-        <div className="rounded-xl border p-5 bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Approved</p>
-              <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{approvedCount}</p>
-            </div>
-            <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
-          </div>
-        </div>
-        <div className="rounded-xl border p-5 bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Days Used</p>
-              <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{totalUsed}</p>
-            </div>
-            <CalendarDays className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatsCard
+          title="Pending"
+          value={pendingCount}
+          icon={<Clock className="h-8 w-8" />}
+          variant="amber"
+        />
+        <StatsCard
+          title="Approved"
+          value={approvedCount}
+          icon={<CheckCircle2 className="h-8 w-8" />}
+          variant="green"
+        />
+        <StatsCard
+          title="Days Used"
+          value={totalUsed}
+          icon={<CalendarDays className="h-8 w-8" />}
+          variant="blue"
+        />
       </div>
 
       {balances.length > 0 && (
@@ -577,6 +568,48 @@ const EmployeeLeaveManagement = () => {
         policies={policies}
         balances={balances}
       />
+    </div>
+  );
+};
+
+const StatsCard = ({ title, value, icon, variant }) => {
+  const styles = {
+    blue: {
+      card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
+      icon: "text-blue-600 dark:text-blue-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+    },
+    green: {
+      card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
+      icon: "text-green-600 dark:text-green-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+    },
+    amber: {
+      card: "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30",
+      icon: "text-amber-600 dark:text-amber-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+    },
+  };
+
+  const s = styles[variant] || styles.blue;
+
+  return (
+    <div
+      className={cn(
+        "rounded-xl border p-6 transition-all duration-200 hover:scale-105",
+        s.card
+      )}
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className={cn("text-sm", s.label)}>{title}</p>
+          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
+        </div>
+        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
+      </div>
     </div>
   );
 };

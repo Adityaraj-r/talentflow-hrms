@@ -123,6 +123,7 @@ import WorkforceAnalytics from "./pages/role/CEO/WorkforceAnalytics"
 import PayrollCostDashboard from "./pages/role/CEO/PayrollCostDashboard"
 import CEORecruitmentModule from "./pages/role/CEO/RecruitmentModule"
 import CEORecruitmentBriefing from "./pages/role/CEO/RecruitmentBriefing"
+import TaskAnalytics from "./pages/role/CEO/TaskAnalytics"
 
 // Employee Role Pages
 import EmployeeLeaveManagement from "./pages/role/EMPLOYEE/EmployeeLeaveManagement"
@@ -345,7 +346,7 @@ function App() {
                     } />
 
                     <Route path="/dashboard/pm/tasks" element={
-                      <ProtectedRoute allowedRoles={["PROJECT_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["PROJECT_MANAGER", "ADMIN", "SUPER_ADMIN"]}>
                         <DashboardLayout><TaskBoard /></DashboardLayout>
                       </ProtectedRoute>
                     } />
@@ -711,7 +712,7 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/employee/tasks" element={
-                      <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                      <ProtectedRoute allowedRoles={["EMPLOYEE","HR_MANAGER","HR_OFFICER","DEPARTMENT_MANAGER", "DIRECT_MANAGER", "FINANCE_MANAGER","PAYROLL_OFFICER","OPERATIONS_MANAGER","ADMIN","SUPER_ADMIN", ]}>
                         <DashboardLayout><MyTasks /></DashboardLayout>
                       </ProtectedRoute>
                     } />
@@ -770,6 +771,12 @@ function App() {
                     <Route path="/ceo/recruitment/employer-brand-health" element={
                       <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
                         <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                   
+                    <Route path="/ceo/task-analytics" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                        <DashboardLayout><TaskAnalytics /></DashboardLayout>
                       </ProtectedRoute>
                     } />
 

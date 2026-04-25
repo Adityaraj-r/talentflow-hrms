@@ -55,7 +55,7 @@ const InfoRow = ({ label, value, canCopy = false, canEdit = false, onEdit, prese
         {label}
       </span>
       <div className="flex items-center justify-between flex-1 mt-1 sm:mt-0 gap-4 overflow-hidden">
-        
+
         <span className={`text-sm text-foreground font-medium truncate ${preserveCase ? "" : "capitalize"}`}>
           {value || (
             <span className="text-muted-foreground font-normal italic lowercase">Not provided</span>
@@ -150,7 +150,7 @@ const Profile = () => {
     } catch (err) {
       console.error("Profile fetch failed:", err)
       setProfileError(true)
-      
+
       setProfile(authUser)
     } finally {
       setProfileLoading(false)
@@ -231,7 +231,7 @@ const Profile = () => {
     setProfileSaveLoading(true)
     try {
       await profileService.updateProfile({ firstName, lastName })
-      
+
       setProfile((prev) => ({ ...prev, firstName, lastName }))
       toast.success("Profile details updated successfully")
       setIsEditProfileOpen(false)
@@ -243,7 +243,7 @@ const Profile = () => {
   }
 
   const handlePasswordUpdate = async () => {
-    
+
     if (passwordData.new.length < 8) {
       toast.error("New password must be at least 8 characters")
       return
@@ -256,8 +256,8 @@ const Profile = () => {
       toast.error("New password must be different from current password")
       return
     }
-    setPasswordLoading(true) 
-    
+    setPasswordLoading(true)
+
     try {
       await profileService.changePassword({
         currentPassword: passwordData.current,
@@ -371,7 +371,7 @@ const Profile = () => {
               <div className="space-y-1 mb-6">
                 <h2 className="text-xl font-bold text-foreground">{fullName}</h2>
                 <p className="text-sm font-semibold text-primary tracking-wide">{roleDisplay}</p>
-                <p className="text-sm text-muted-foreground">{user.department || "No Department"}</p>       
+                <p className="text-sm text-muted-foreground">{user.department || "No Department"}</p>
                 {user.employeeCode && (
                   <p className="text-xs text-muted-foreground/70 font-mono">{user.employeeCode}</p>
                 )}
@@ -380,11 +380,10 @@ const Profile = () => {
               <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
                 <Badge
                   variant="outline"
-                  className={`px-3 py-1 text-xs font-medium border ${
-                    user.isActive
+                  className={`px-3 py-1 text-xs font-medium border ${user.isActive
                       ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
                       : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
-                  }`}
+                    }`}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full mr-1.5 shrink-0 ${user.isActive ? "bg-emerald-500" : "bg-slate-400"}`} />
                   {user.isActive ? "Active Employee" : "Inactive"}
@@ -453,8 +452,10 @@ const Profile = () => {
               canEdit
               onEdit={() => { setPhoneInput(user.phoneNumber || ""); setIsPhoneOpen(true) }}
             />
-            
-            <InfoRow label="Gender" value={user.gender || ""} />
+            <InfoRow
+              label="Gender"
+              value={user.gender && user.gender !== "N/A" ? user.gender : null}
+            />
           </ProfileSection>
 
           <ProfileSection title="Employment Information" icon={Briefcase} defaultOpen>
@@ -508,7 +509,7 @@ const Profile = () => {
             <Button variant="outline" onClick={() => setIsPhoneOpen(false)} disabled={phoneLoading}>
               Cancel
             </Button>
-            
+
             <Button onClick={handlePhoneUpdate} disabled={phoneLoading || phoneInput.length !== 10}>
               {phoneLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : "Save Changes"}
             </Button>
@@ -600,11 +601,10 @@ const Profile = () => {
                   <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div className={`h-full rounded-full transition-all duration-300 ${pwStrength.color} ${pwStrength.width}`} />
                   </div>
-                  <p className={`text-xs font-medium ${
-                    pwStrength.label === "Weak" ? "text-red-500" :
-                    pwStrength.label === "Fair" ? "text-yellow-600" :
-                    pwStrength.label === "Good" ? "text-blue-600" : "text-emerald-600"
-                  }`}>
+                  <p className={`text-xs font-medium ${pwStrength.label === "Weak" ? "text-red-500" :
+                      pwStrength.label === "Fair" ? "text-yellow-600" :
+                        pwStrength.label === "Good" ? "text-blue-600" : "text-emerald-600"
+                    }`}>
                     {pwStrength.label} — {passwordData.new.length < 8 ? "minimum 8 characters required" : ""}
                   </p>
                 </div>
@@ -618,11 +618,10 @@ const Profile = () => {
                   type={showPasswords.confirm ? "text" : "password"}
                   value={passwordData.confirm}
                   onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
-                  className={`pr-10 ${
-                    passwordData.confirm && passwordData.new !== passwordData.confirm
+                  className={`pr-10 ${passwordData.confirm && passwordData.new !== passwordData.confirm
                       ? "border-red-400 focus-visible:ring-red-400"
                       : ""
-                  }`}
+                    }`}
                 />
                 <button
                   type="button"

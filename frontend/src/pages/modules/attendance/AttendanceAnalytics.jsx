@@ -94,23 +94,6 @@ const buildLeaveDistribution = (leaves) => {
   return Object.entries(map).map(([name, value]) => ({ name, value }));
 };
 
-const KPICard = ({ title, value, subtitle, icon: Icon, colorClass, trend }) => (
-  <div className={cn("rounded-xl border p-5 flex items-start justify-between", colorClass)}>
-    <div>
-      <p className="text-xs font-medium opacity-70 mb-1">{title}</p>
-      <p className="text-3xl font-bold">{value}</p>
-      {subtitle && <p className="text-xs opacity-60 mt-1">{subtitle}</p>}
-      {trend !== undefined && (
-        <div className={cn("flex items-center gap-1 mt-2 text-xs font-medium", trend >= 0 ? "text-emerald-600" : "text-red-500")}>
-          {trend >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-          {Math.abs(trend)}% vs yesterday
-        </div>
-      )}
-    </div>
-    <Icon className="w-8 h-8 opacity-50" />
-  </div>
-);
-
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
@@ -266,47 +249,47 @@ const AttendanceAnalytics = () => {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
-        <KPICard
+        <StatsCard
           title="Total Logged In"
           value={totalToday}
           subtitle="employees today"
-          icon={Users}
-          colorClass="bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 text-blue-800 dark:text-blue-300"
+          icon={<Users className="h-8 w-8" />}
+          variant="blue"
         />
-        <KPICard
+        <StatsCard
           title="Present Today"
           value={presentToday}
           subtitle={`${attendanceRate}% attendance rate`}
-          icon={CheckCircle2}
-          colorClass="bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300"
+          icon={<CheckCircle2 className="h-8 w-8" />}
+          variant="green"
         />
-        <KPICard
+        <StatsCard
           title="Late Arrivals"
           value={lateToday}
           subtitle="arrived after grace period"
-          icon={Clock}
-          colorClass="bg-yellow-50 dark:bg-yellow-500/10 border-yellow-200 dark:border-yellow-500/30 text-yellow-800 dark:text-yellow-300"
+          icon={<Clock className="h-8 w-8" />}
+          variant="amber"
         />
-        <KPICard
+        <StatsCard
           title="Absent Today"
           value={absentToday}
           subtitle="unmarked absence"
-          icon={XCircle}
-          colorClass="bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-800 dark:text-red-300"
+          icon={<XCircle className="h-8 w-8" />}
+          variant="red"
         />
-        <KPICard
+        <StatsCard
           title="On Approved Leave"
           value={onLeaveToday}
           subtitle={`${pendingLeaves} pending approval`}
-          icon={CalendarDays}
-          colorClass="bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30 text-indigo-800 dark:text-indigo-300"
+          icon={<CalendarDays className="h-8 w-8" />}
+          variant="indigo"
         />
-        <KPICard
+        <StatsCard
           title="Working Overtime"
           value={otToday}
           subtitle={`${totalOtHours.toFixed(1)}h pending approval`}
-          icon={Timer}
-          colorClass="bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30 text-orange-800 dark:text-orange-300"
+          icon={<Timer className="h-8 w-8" />}
+          variant="orange"
         />
       </div>
 
@@ -599,6 +582,76 @@ const AttendanceAnalytics = () => {
         </div>
       </div>
 
+    </div>
+  );
+};
+
+// Upgraded Reused StatsCard Component to accept subtitle
+const StatsCard = ({ title, value, subtitle, icon, variant }) => {
+  const styles = {
+    blue: {
+      card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
+      icon: "text-blue-600 dark:text-blue-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+      sub: "text-blue-600/70 dark:text-blue-400/70",
+    },
+    green: {
+      card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
+      icon: "text-green-600 dark:text-green-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+      sub: "text-green-600/70 dark:text-green-400/70",
+    },
+    orange: {
+      card: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30",
+      icon: "text-orange-600 dark:text-orange-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+      sub: "text-orange-600/70 dark:text-orange-400/70",
+    },
+    red: {
+      card: "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30",
+      icon: "text-red-600 dark:text-red-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+      sub: "text-red-600/70 dark:text-red-400/70",
+    },
+    amber: {
+      card: "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30",
+      icon: "text-amber-600 dark:text-amber-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+      sub: "text-amber-600/70 dark:text-amber-400/70",
+    },
+    indigo: {
+      card: "bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30",
+      icon: "text-indigo-600 dark:text-indigo-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+      sub: "text-indigo-600/70 dark:text-indigo-400/70",
+    }
+  };
+
+  const s = styles[variant] || styles.blue;
+
+  return (
+    <div
+      className={cn(
+        "rounded-xl border p-6 transition-all duration-200 hover:scale-105",
+        s.card
+      )}
+    >
+      <div className="flex items-start justify-between">
+        <div>
+          <p className={cn("text-sm", s.label)}>{title}</p>
+          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
+          {subtitle && (
+            <p className={cn("text-xs mt-1 font-medium", s.sub)}>{subtitle}</p>
+          )}
+        </div>
+        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
+      </div>
     </div>
   );
 };
