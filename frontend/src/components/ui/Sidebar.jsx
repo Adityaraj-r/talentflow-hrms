@@ -313,6 +313,7 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
           <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
             <SubLink to="/employee-center/all-employees" label="All Employees" />
@@ -381,6 +382,7 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
           {canSee("recruitment") && (
             <SidebarGroup id="recruitment" icon={Users} label={getRecruitmentLabel()}>
@@ -428,7 +430,6 @@ const Sidebar = ({
    if (userRole === ROLES.CEO || userRole === ROLES.COUNTRY_MANAGER) {
       return (
         <>
-          {/* MAIN CEO DASHBOARD ROUTE */}
           <SidebarLink to="/ceo/dashboard" icon={LayoutDashboard} label="Dashboard" />
           
           {/* CEO MODULES */}
@@ -477,6 +478,7 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+
           {canSee('recruitment') && <SidebarLink to="/staff-requisition" icon={Users} label={getRecruitmentLabel()} />}
           {canSee('attendance') && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
@@ -489,6 +491,7 @@ const Sidebar = ({
           )}
 
           <SidebarLink to="/role/department_manager/appraisal" icon={Award} label="Appraisal" />
+          <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
         </>
       )
     }
@@ -509,6 +512,7 @@ const Sidebar = ({
           )}
 
           <SidebarLink to="/role/direct_manager/appraisal" icon={Award} label="Appraisal" />
+          <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
         </>
       )
     }
@@ -557,6 +561,7 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
           {canSee("recruitment") && (
             <SidebarGroup id="recruitment" icon={Briefcase} label={getRecruitmentLabel()}>
               <SubLink to="/staff-requisition" label="Staff Requisition" />

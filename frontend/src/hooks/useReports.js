@@ -1,201 +1,172 @@
-// import { useEffect, useState } from "react";
-// import api from "@/services/apiClient"; 
-
-// export default function useReports(filters) {
-//   const [data, setData] = useState(null);
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState(null);
-
-//   useEffect(() => {
-//     const fetchAll = async () => {
-//       try {
-//         setLoading(true);
-//         setError(null);
-
-//         const [
-//           summaryRes,
-//           workforceRes,
-//           attendanceRes,
-//           departmentsRes,
-//           leavesRes,
-//         ] = await Promise.all([
-//           api.get("/reports/summary", { params: filters }),
-//           api.get("/reports/workforce", { params: filters }),
-//           api.get("/reports/attendance", { params: filters }),
-//           api.get("/reports/departments", { params: filters }),
-//           api.get("/reports/leaves", { params: filters }),
-//         ]);
-                
-//         setData({
-//           summary: summaryRes.data,
-//           workforceTrend: workforceRes.data,
-//           attendanceTrend: attendanceRes.data,
-//           departmentDistribution: departmentsRes.data,
-//           leaveBreakdown: leavesRes.data,
-//         });
-
-//       } catch (err) {
-//         console.error("Reports fetch failed:", err);
-//         setError("Failed to load dashboard data");
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchAll();
-//   }, [filters]);
-
-//   return { data, loading, error };
-// }
-
-// import { useEffect, useState } from "react";
-// import api from "@/services/apiClient";
-
-// /* ======================================================
-//    SUMMARY HOOK
-// ====================================================== */
-// export function useSummary(filters) {
-//   const [data, setData] = useState(null);
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState(null);
-
-//   useEffect(() => {
-//     const fetchSummary = async () => {
-//       try {
-//         setLoading(true);
-//         const res = await api.get("/reports/summary", { params: filters });
-//         setData(res.data);
-//       } catch (err) {
-//         setError("Failed to load summary");
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchSummary();
-//   }, [filters]);
-
-//   return { data, loading, error };
-// }
-
-// /* ======================================================
-//    WORKFORCE HOOK
-// ====================================================== */
-// export function useWorkforce(filters) {
-//   const [data, setData] = useState(null);
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState(null);
-
-//   useEffect(() => {
-//     const fetchWorkforce = async () => {
-//       try {
-//         setLoading(true);
-//         const res = await api.get("/reports/workforce", { params: filters });
-//         setData(res.data);
-//       } catch (err) {
-//         setError("Failed to load workforce data");
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchWorkforce();
-//   }, [filters]);
-
-//   return { data, loading, error };
-// }
-
-// /* ======================================================
-//    ATTENDANCE HOOK
-// ====================================================== */
-// export function useAttendance(filters) {
-//   const [data, setData] = useState(null);
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState(null);
-
-//   useEffect(() => {
-//     const fetchAttendance = async () => {
-//       try {
-//         setLoading(true);
-//         const res = await api.get("/reports/attendance", { params: filters });
-//         setData(res.data);
-//       } catch (err) {
-//         setError("Failed to load attendance data");
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchAttendance();
-//   }, [filters]);
-
-//   return { data, loading, error };
-// }
-
-// /* ======================================================
-//    DEFAULT (FULL DASHBOARD) HOOK
-// ====================================================== */
-// export default function useReports(filters) {
-//   const summary = useSummary(filters);
-//   const workforce = useWorkforce(filters);
-//   const attendance = useAttendance(filters);
-
-//   return {
-//     summary,
-//     workforce,
-//     attendance,
-//   };
-// }
-
 import { useEffect, useState } from "react";
-import api from "@/services/apiClient";
+import { useAuth } from "@/contexts/AuthContext";
+
+import {
+  getSummary,
+  getWorkforce,
+  getAttendance,
+  getDepartments,
+  getLeaves,
+  getEmployeePerformance,
+  getDepartmentWorkingHours,
+} from "@/services/reports.service";
 
 export default function useReports(filters) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { user } = useAuth();
+
+  const role =
+    typeof user?.role === "string"
+      ? user.role
+      : user?.role?.name || "";
+
+  const [data, setData] = useState({
+    summary: {},
+    workforceTrend: [],
+    attendanceTrend: [],
+    departmentDistribution: [],
+    leaveBreakdown: [],
+    departmentWorkingHours: [],
+    performance: [],
+  });
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState(null);
 
   useEffect(() => {
-    const fetchAll = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    const fetchReports =
+      async () => {
+        try {
+          setLoading(true);
+          setError(null);
 
-        const [
-          summaryRes,
-          workforceRes,
-          attendanceRes,
-          departmentsRes,
-          leavesRes,
-          departmentHoursRes,
-        ] = await Promise.all([
-          api.get("/reports/summary", { params: filters }),
-          api.get("/reports/workforce", { params: filters }),
-          api.get("/reports/attendance", { params: filters }),
-          api.get("/reports/departments", { params: filters }),
-          api.get("/reports/leaves", { params: filters }),
-          api.get("/reports/department-hours", { params: filters }),
-        ]);
+          if (
+            role === "DEPARTMENT_MANAGER" ||
+            role === "DIRECT_MANAGER") {
+            const [
+              summaryRes,
+              attendanceRes,
+              leavesRes,
+              hoursRes,
+              performanceRes,
+            ] =
+              await Promise.all([
+                getSummary(filters),
+                getAttendance( filters),
+                getLeaves(filters),
+                getDepartmentWorkingHours(filters),
+                getEmployeePerformance(filters),
+              ]);
 
-        setData({
-          summary: summaryRes.data,
-          workforceTrend: workforceRes.data,
-          attendanceTrend: attendanceRes.data,
-          departmentDistribution: departmentsRes.data,
-          leaveBreakdown: leavesRes.data,
-          departmentWorkingHours: departmentHoursRes.data,
-        });
+            setData({
+              summary:summaryRes?.data?.data || {},
+              workforceTrend:[],
+              attendanceTrend:attendanceRes?.data?.data || [],
+              departmentDistribution: [],
+              leaveBreakdown:leavesRes?.data?.data || [],
+              departmentWorkingHours:hoursRes?.data?.data || [],
+              performance: performanceRes?.data?.data || [],
+            });
 
-      } catch (err) {
-        console.error("Reports fetch failed:", err);
-        setError("Failed to load dashboard data");
-      } finally {
-        setLoading(false);
-      }
-    };
+            return;
+          }
 
-    fetchAll();
-  }, [filters]);
+          if (role === "HR_OFFICER") {
+            const [
+              summaryRes,
+              attendanceRes,
+              leavesRes
+            ] = await Promise.all([
+              getSummary(filters),
+              getAttendance(filters),
+              getLeaves(filters)
+            ]);
 
-  return { data, loading, error };
+            setData({
+              summary: summaryRes?.data?.data || {},
+              workforceTrend: [],
+              attendanceTrend: attendanceRes?.data?.data || [],
+              departmentDistribution: [],
+              leaveBreakdown: leavesRes?.data?.data || [],
+              departmentWorkingHours: [],
+              performance: [],
+            });
+
+            return;
+          }
+
+          if (role === "EMPLOYEE") {
+            const [
+              summaryRes,
+              attendanceRes,
+              leavesRes
+            ] = await Promise.all([
+              getSummary(filters),
+              getAttendance(filters),
+              getLeaves(filters)
+            ]);
+
+            setData({
+              summary: summaryRes?.data?.data || {},
+              workforceTrend: [],
+              attendanceTrend: attendanceRes?.data?.data || [],
+              departmentDistribution: [],
+              leaveBreakdown: leavesRes?.data?.data || [],
+              departmentWorkingHours: [],
+              performance: [],
+            });
+
+            return;
+          }
+
+          const [
+            summaryRes,
+            workforceRes,
+            attendanceRes,
+            departmentsRes,
+            leavesRes,
+            hoursRes,
+            performanceRes,
+          ] =
+            await Promise.all([getSummary(filters),
+              getWorkforce(filters),
+              getAttendance(filters),
+              getDepartments(filters),
+              getLeaves(filters),
+              getDepartmentWorkingHours(filters),
+              getEmployeePerformance(filters),
+            ]);
+
+          setData({
+            summary:summaryRes?.data?.data || {},
+            workforceTrend:workforceRes?.data?.data || [],
+            attendanceTrend:attendanceRes?.data?.data || [],
+            departmentDistribution:departmentsRes?.data?.data || [],
+            leaveBreakdown:leavesRes?.data?.data || [],
+            departmentWorkingHours:hoursRes?.data?.data || [],
+            performance:performanceRes?.data?.data || [],
+          });
+        } catch (err) {
+          console.error("Reports fetch failed:",err);
+
+          setError("Failed to load dashboard data");
+          
+        } finally {
+          setLoading(false);
+        }
+      };
+
+    fetchReports();
+  }, [
+    JSON.stringify(filters),
+    role,
+  ]);
+
+  return {
+    data,
+    loading,
+    error,
+  };
 }

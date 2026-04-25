@@ -240,7 +240,6 @@ function App() {
         <AuthProvider>
           <SettingsProvider>
             <RoleProvider>
-              <UserProvider>
                 <Router>
                   <Toaster position="top-right" richColors />
                   <Routes>
@@ -628,7 +627,6 @@ function App() {
 
                   </Routes>
                 </Router>
-              </UserProvider>
             </RoleProvider>
           </SettingsProvider>
         </AuthProvider>

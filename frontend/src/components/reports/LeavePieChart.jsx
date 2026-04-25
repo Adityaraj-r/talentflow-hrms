@@ -1,92 +1,3 @@
-// import {
-//   PieChart,
-//   Pie,
-//   Cell,
-//   Tooltip,
-//   ResponsiveContainer,
-//   Legend,
-// } from "recharts";
-// import { motion } from "framer-motion";
-
-// const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444"];
-
-// export default function LeavePieChart({
-//   data = [],
-//   loading,
-//   error,
-// }) {
-//   const totalLeaves = data.reduce(
-//     (acc, item) => acc + (item.value || 0),
-//     0
-//   );
-
-//   if (loading) {
-//     return (
-//       <div className="bg-white dark:bg-slate-900 border p-6 rounded-2xl">
-//         <p className="text-gray-500 dark:text-gray-300">
-//           Loading Leave Data...
-//         </p>
-//       </div>
-//     );
-//   }
-
-//   if (error) {
-//     return (
-//       <div className="text-red-500">
-//         Failed to load leave data
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <motion.div
-//       initial={{ opacity: 0, y: 40 }}
-//       animate={{ opacity: 1, y: 0 }}
-//       transition={{ duration: 0.6 }}
-//       className="bg-white dark:bg-slate-900 border rounded-2xl p-6 shadow-sm"
-//     >
-//       <h2 className="text-xl font-semibold mb-6">
-//         Leave Breakdown
-//       </h2>
-
-//       <div className="relative w-full h-[320px]">
-//         <ResponsiveContainer width="100%" height="100%">
-//           <PieChart>
-//             <Tooltip />
-//             <Legend />
-
-//             <Pie
-//               data={data}
-//               dataKey="value"
-//               nameKey="name"
-//               innerRadius={70}
-//               outerRadius={110}
-//               paddingAngle={3}
-//             >
-//               {data.map((entry, index) => (
-//                 <Cell
-//                   key={`cell-${index}`}
-//                   fill={COLORS[index % COLORS.length]}
-//                 />
-//               ))}
-//             </Pie>
-//           </PieChart>
-//         </ResponsiveContainer>
-
-//         {/* Center Total */}
-//         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-//           <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-//             Total Leaves
-//           </p>
-//           <p className="text-3xl font-bold">
-//             {totalLeaves}
-//           </p>
-//         </div>
-//       </div>
-//     </motion.div>
-//   );
-// }
-
 import {
   PieChart,
   Pie,
@@ -95,12 +6,19 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+
 import { motion } from "framer-motion";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
-const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444"];
+const COLORS = [
+  "#6366f1",
+  "#22c55e",
+  "#f59e0b",
+  "#ef4444",
+];
 
 export default function LeavePieChart({
   data = [],
@@ -108,16 +26,17 @@ export default function LeavePieChart({
   error,
 }) {
   const totalLeaves = data.reduce(
-    (acc, item) => acc + (item.value || 0),
+    (acc, item) =>
+      acc + (item.value || 0),
     0
   );
 
   if (loading) {
     return (
-      <Card className="rounded-2xl">
+      <Card className="rounded-2xl shadow-sm">
         <CardContent className="p-6 space-y-4">
-          <Skeleton className="h-5 w-40" />
-          <Skeleton className="h-[280px] w-full rounded-xl" />
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-[300px] w-full rounded-xl" />
         </CardContent>
       </Card>
     );
@@ -125,7 +44,7 @@ export default function LeavePieChart({
 
   if (error) {
     return (
-      <Card>
+      <Card className="rounded-2xl shadow-sm">
         <CardContent className="p-6 text-red-500">
           Failed to load leave data
         </CardContent>
@@ -133,52 +52,131 @@ export default function LeavePieChart({
     );
   }
 
+  if (!data.length || totalLeaves === 0) {
+    return (
+      <Card className="rounded-2xl shadow-sm border">
+        <CardContent className="p-6">
+          <div className="mb-5">
+            <h2 className="text-xl font-bold">
+              Leave Breakdown
+            </h2>
+
+            <p className="text-sm text-muted-foreground mt-1">
+              Team leave summary
+            </p>
+          </div>
+
+          <div className="h-[280px] flex flex-col items-center justify-center text-center">
+            <div className="text-5xl">
+              📅
+            </div>
+
+            <h3 className="font-semibold mt-4">
+              No Leaves Recorded
+            </h3>
+
+            <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+              Your department has no
+              leave activity for the
+              selected period.
+            </p>
+
+            <Button
+              variant="outline"
+              className="mt-5"
+            >
+              Total Leaves: 0
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      initial={{
+        opacity: 0,
+        y: 30,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      transition={{
+        duration: 0.4,
+      }}
     >
-      <Card className="rounded-2xl shadow-sm">
+      <Card className="rounded-2xl shadow-sm border">
         <CardContent className="p-6">
-          <h2 className="text-xl font-semibold mb-6">
-            Leave Breakdown
-          </h2>
+
+          <div className="mb-5">
+            <h2 className="text-xl font-bold">
+              Leave Breakdown
+            </h2>
+
+            <p className="text-sm text-muted-foreground mt-1">
+              Team leave category split
+            </p>
+          </div>
 
           <div className="relative w-full h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer
+              width="99%"
+              height={320}
+            >
               <PieChart>
                 <Tooltip />
-                <Legend />
+
+                <Legend
+                  verticalAlign="bottom"
+                  height={36}
+                />
 
                 <Pie
                   data={data}
                   dataKey="value"
                   nameKey="name"
-                  innerRadius={70}
+                  innerRadius={75}
                   outerRadius={110}
                   paddingAngle={3}
                 >
-                  {data.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
+                  {data.map(
+                    (
+                      entry,
+                      index
+                    ) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={
+                          COLORS[
+                            index %
+                              COLORS.length
+                          ]
+                        }
+                      />
+                    )
+                  )}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
 
-            {/* Center Total */}
+            {/* CENTER TEXT */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <p className="text-sm font-medium text-muted-foreground">
-                Total Leaves
-              </p>
-              <p className="text-3xl font-bold">
+              <span className="text-xs text-muted-foreground">
+                Total
+              </span>
+
+              <span className="text-3xl font-bold">
                 {totalLeaves}
-              </p>
+              </span>
+
+              <span className="text-xs text-muted-foreground">
+                Leaves
+              </span>
             </div>
           </div>
+
         </CardContent>
       </Card>
     </motion.div>

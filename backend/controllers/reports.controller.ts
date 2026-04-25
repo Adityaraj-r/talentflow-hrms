@@ -1,540 +1,92 @@
-// import { Request, Response } from "express";
-// import Employee from "../models/Employee.model";
-// import Attendance from "../models/Attendance.model";
-// import Leave from "../models/leave.model";
-
-// /* =========================================================
-//    SUMMARY (KPI SECTION)
-// ========================================================= */
-// export const getSummary = async (
-//   req: Request,
-//   res: Response
-// ): Promise<void> => {
-//   try {
-//     const { startDate, endDate, department, role } = req.query as any;
-
-//     const filter: any = {};
-
-//     if (department && department !== "all") {
-//       filter.department = department;
-//     }
-
-//     if (role && role !== "all") {
-//       filter.designation = role;
-//     }
-
-//     /* ================= HEADCOUNT ================= */
-
-//     const headcount = await Employee.countDocuments({
-//       status: "Active",
-//       ...filter,
-//     });
-
-//     const totalEmployees = await Employee.countDocuments(filter);
-
-//     const inactiveEmployees = await Employee.countDocuments({
-//       status: "Inactive",
-//       ...filter,
-//     });
-
-//     const attritionRate =
-//       totalEmployees > 0
-//         ? Number(((inactiveEmployees / totalEmployees) * 100).toFixed(1))
-//         : 0;
-
-//     /* ================= PAYROLL ================= */
-
-//     const payrollAgg = await Employee.aggregate([
-//       { $match: { status: "Active", ...filter } },
-//       {
-//         $group: {
-//           _id: null,
-//           totalPayroll: {
-//             $sum: { $ifNull: ["$salary.basic", 0] },
-//           },
-//         },
-//       },
-//     ]);
-
-//     const totalPayroll = payrollAgg[0]?.totalPayroll || 0;
-
-//     /* ================= WORKING HOURS ================= */
-
-//     const employees = await Employee.find(filter)
-//       .select("userId")
-//       .lean();
-
-//     const userIds = employees.map((e: any) => e.userId).filter(Boolean);
-
-//     const attendanceMatch: any = {
-//       userId: { $in: userIds },
-//     };
-
-//     if (startDate && endDate) {
-//       attendanceMatch.date = {
-//         $gte: startDate,
-//         $lte: endDate,
-//       };
-//     }
-
-//     const attendanceAgg = await Attendance.aggregate([
-//       { $match: attendanceMatch },
-//       {
-//         $group: {
-//           _id: null,
-//           totalWorkingHours: { $sum: { $ifNull: ["$totalHours", 0] } },
-//           totalDays: { $sum: 1 },
-//         },
-//       },
-//     ]);
-
-//     const totalWorkingHours =
-//       attendanceAgg[0]?.totalWorkingHours
-//         ? Number(attendanceAgg[0].totalWorkingHours.toFixed(1))
-//         : 0;
-
-//     const avgWorkingHours =
-//       attendanceAgg[0]?.totalDays > 0
-//         ? Number(
-//             (totalWorkingHours / attendanceAgg[0].totalDays).toFixed(1)
-//           )
-//         : 0;
-
-//     res.json({
-//       success: true,
-//       data: {
-//         headcount,
-//         activeEmployees: headcount,
-//         attritionRate,
-//         totalPayroll,
-//         totalWorkingHours,
-//         avgWorkingHours,
-//         openPositions: 5,
-//       },
-//     });
-
-//   } catch (error) {
-//     console.error("getSummary error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Server error",
-//     });
-//   }
-// };
-
-
-// /* =========================================================
-//    WORKFORCE TREND
-// ========================================================= */
-// export const getWorkforceData = async (
-//   req: Request,
-//   res: Response
-// ): Promise<void> => {
-//   try {
-//     const { startDate, endDate, department, role } = req.query as any;
-
-//     const filter: any = {};
-
-//     if (department && department !== "all") {
-//       filter.department = department;
-//     }
-
-//     if (role && role !== "all") {
-//       filter.designation = role;
-//     }
-
-//     const start = startDate
-//       ? new Date(startDate)
-//       : new Date(new Date().setMonth(new Date().getMonth() - 12));
-
-//     const end = endDate ? new Date(endDate) : new Date();
-
-//     const employees = await Employee.find({
-//       ...filter,
-//       joiningDate: { $lte: end },
-//     }).lean();
-
-//     const monthlyData: any[] = [];
-//     const current = new Date(start);
-
-//     while (current <= end) {
-//       const monthEnd = new Date(current);
-//       monthEnd.setMonth(monthEnd.getMonth() + 1);
-//       monthEnd.setDate(0);
-
-//       const count = employees.filter((emp: any) => {
-//         return (
-//           emp.joiningDate &&
-//           new Date(emp.joiningDate) <= monthEnd
-//         );
-//       }).length;
-
-//       monthlyData.push({
-//         month: current.toLocaleString("default", {
-//           month: "short",
-//           year: "numeric",
-//         }),
-//         headcount: count,
-//       });
-
-//       current.setMonth(current.getMonth() + 1);
-//     }
-
-//     res.json({ success: true, data: monthlyData });
-
-//   } catch (error) {
-//     console.error("getWorkforceData error:", error);
-//     res.status(500).json({ success: false, message: "Server error" });
-//   }
-// };
-
-
-// /* =========================================================
-//    ATTENDANCE TREND
-// ========================================================= */
-// export const getAttendanceData = async (
-//   req: Request,
-//   res: Response
-// ): Promise<void> => {
-//   try {
-//     const { startDate, endDate, department, role } = req.query as any;
-
-//     const filter: any = {};
-
-//     if (department && department !== "all") {
-//       filter.department = department;
-//     }
-
-//     if (role && role !== "all") {
-//       filter.designation = role;
-//     }
-
-//     const employees = await Employee.find(filter)
-//       .select("userId")
-//       .lean();
-
-//     const userIds = employees.map((e: any) => e.userId).filter(Boolean);
-
-//     const match: any = {
-//       userId: { $in: userIds },
-//     };
-
-//     if (startDate && endDate) {
-//       match.date = {
-//         $gte: startDate,
-//         $lte: endDate,
-//       };
-//     }
-
-//     const attendance = await Attendance.aggregate([
-//       { $match: match },
-//       {
-//         $group: {
-//           _id: {
-//             year: { $substr: ["$date", 0, 4] },
-//             month: { $substr: ["$date", 5, 2] },
-//           },
-//           totalDays: { $sum: 1 },
-//           presentDays: {
-//             $sum: {
-//               $cond: [
-//                 { $in: ["$status", ["Present", "Late", "Half Day"]] },
-//                 1,
-//                 0,
-//               ],
-//             },
-//           },
-//         },
-//       },
-//       { $sort: { "_id.year": 1, "_id.month": 1 } },
-//     ]);
-
-//     const monthNames = [
-//       "Jan","Feb","Mar","Apr","May","Jun",
-//       "Jul","Aug","Sep","Oct","Nov","Dec",
-//     ];
-
-//     const formatted = attendance.map((item: any) => ({
-//       month: `${monthNames[parseInt(item._id.month) - 1]} ${item._id.year}`,
-//       attendance:
-//         item.totalDays > 0
-//           ? Number(((item.presentDays / item.totalDays) * 100).toFixed(1))
-//           : 0,
-//     }));
-
-//     res.json({ success: true, data: formatted });
-
-//   } catch (error) {
-//     console.error("getAttendanceData error:", error);
-//     res.status(500).json({ success: false, message: "Server error" });
-//   }
-// };
-
-
-// /* =========================================================
-//    DEPARTMENT DISTRIBUTION
-// ========================================================= */
-// export const getDepartmentData = async (
-//   req: Request,
-//   res: Response
-// ): Promise<void> => {
-//   try {
-//     const data = await Employee.aggregate([
-//       { $match: { status: "Active" } },
-//       {
-//         $group: {
-//           _id: "$department",
-//           employees: { $sum: 1 },
-//         },
-//       },
-//       { $sort: { employees: -1 } },
-//     ]);
-
-//     const formatted = data.map((d) => ({
-//       department: d._id,
-//       employees: d.employees,
-//     }));
-
-//     res.json({ success: true, data: formatted });
-
-//   } catch (error) {
-//     console.error("getDepartmentData error:", error);
-//     res.status(500).json({ success: false, message: "Server error" });
-//   }
-// };
-
-
-// /* =========================================================
-//    LEAVE BREAKDOWN
-// ========================================================= */
-// export const getLeaveData = async (
-//   req: Request,
-//   res: Response
-// ): Promise<void> => {
-//   try {
-//     const data = await Leave.aggregate([
-//       { $match: { status: "Approved" } },
-//       {
-//         $group: {
-//           _id: "$leaveType",
-//           value: { $sum: 1 },
-//         },
-//       },
-//     ]);
-
-//     const formatted = data.map((d) => ({
-//       name: d._id,
-//       value: d.value,
-//     }));
-
-//     res.json({ success: true, data: formatted });
-
-//   } catch (error) {
-//     console.error("getLeaveData error:", error);
-//     res.status(500).json({ success: false, message: "Server error" });
-//   }
-// };
-
-
-// /* =========================================================
-//    EMPLOYEE PERFORMANCE TABLE
-// ========================================================= */
-// export const getEmployeePerformance = async (
-//   req: Request,
-//   res: Response
-// ): Promise<void> => {
-//   try {
-//     const {
-//       role,
-//       department,
-//       search,
-//       page = 1,
-//       limit = 10,
-//     } = req.query as any;
-
-//     const filter: any = {};
-
-//     if (department && department !== "all") {
-//       filter.department = department;
-//     }
-
-//     if (role && role !== "all") {
-//       filter.designation = role;
-//     }
-
-//     if (search) {
-//       filter.$or = [
-//         { firstName: { $regex: search, $options: "i" } },
-//         { lastName: { $regex: search, $options: "i" } },
-//       ];
-//     }
-
-//     const skip = (Number(page) - 1) * Number(limit);
-
-//     const employees = await Employee.find(filter)
-//       .skip(skip)
-//       .limit(Number(limit))
-//       .lean();
-
-//     const total = await Employee.countDocuments(filter);
-
-//     const formatted = employees.map((emp: any) => ({
-//       ...emp,
-//       attendance: 85,
-//       leaves: 2,
-//       lateMarks: 1,
-//       compliance: 90,
-//       performanceScore: 75,
-//       grade: "B",
-//     }));
-
-//     res.json({
-//       success: true,
-//       data: formatted,
-//       pagination: {
-//         total,
-//         page: Number(page),
-//         pages: Math.ceil(total / Number(limit)),
-//       },
-//     });
-
-//   } catch (error) {
-//     console.error("getEmployeePerformance error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Server error",
-//     });
-//   }
-// };
-
-
-// export const getDepartmentWorkingHours = async (
-//   req: Request,
-//   res: Response
-// ): Promise<void> => {
-//   try {
-//     const { startDate, endDate, department, role } = req.query as any;
-
-//     const filter: any = {};
-
-//     if (department && department !== "all") {
-//       filter.department = department;
-//     }
-
-//     if (role && role !== "all") {
-//       filter.designation = role;
-//     }
-
-//     // Step 1: Get employees
-//     const employees = await Employee.find(filter)
-//       .select("userId department")
-//       .lean();
-
-//     const userIds = employees.map((e: any) => e.userId).filter(Boolean);
-
-//     const attendanceMatch: any = {
-//       userId: { $in: userIds },
-//     };
-
-//     if (startDate && endDate) {
-//       attendanceMatch.date = {
-//         $gte: startDate,
-//         $lte: endDate,
-//       };
-//     }
-
-//     // Step 2: Aggregate by department
-//     const result = await Attendance.aggregate([
-//       { $match: attendanceMatch },
-//       {
-//         $lookup: {
-//           from: "employees",
-//           localField: "userId",
-//           foreignField: "userId",
-//           as: "employee",
-//         },
-//       },
-//       { $unwind: "$employee" },
-//       {
-//         $group: {
-//           _id: "$employee.department",
-//           totalHours: { $sum: { $ifNull: ["$totalHours", 0] } },
-//           totalRecords: { $sum: 1 },
-//         },
-//       },
-//       {
-//         $project: {
-//           department: "$_id",
-//           totalHours: { $round: ["$totalHours", 1] },
-//           avgHoursPerDay: {
-//             $round: [
-//               { $divide: ["$totalHours", "$totalRecords"] },
-//               1,
-//             ],
-//           },
-//         },
-//       },
-//     ]);
-
-//     res.json({
-//       success: true,
-//       data: result,
-//     });
-
-//   } catch (error) {
-//     console.error("getDepartmentWorkingHours error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Server error",
-//     });
-//   }
-// };
-
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import Employee from "../models/Employee.model";
 import Attendance from "../models/Attendance.model";
 import Leave from "../models/Leave.model";
+import { PerformanceReviewModel } from "../models/PerformanceReview";
 
-/* =========================================================
-   HELPER: Build Employee Filter
-========================================================= */
-const buildEmployeeFilter = (query: any) => {
+const buildEmployeeFilter = (
+  query: any,
+  user?: any
+) => {
   const { department, role } = query;
+
   const filter: any = {};
 
-  if (department && department !== "all") {
-    filter.department = department;
+  const deptValue = String(
+    department || ""
+  ).trim();
+
+  const roleValue = String(
+    role || ""
+  ).trim();
+
+  if (
+    user?.role === "DEPARTMENT_MANAGER"
+  ) {
+    filter.department = user.department;
   }
 
-  if (role && role !== "all") {
-    filter.designation = role;
+  else if (
+    deptValue &&
+    deptValue.toLowerCase() !== "all" &&
+    deptValue.toLowerCase() !== "all departments"
+  ) {
+    if (
+      mongoose.Types.ObjectId.isValid(
+        deptValue
+      )
+    ) {
+      filter.department =
+        new mongoose.Types.ObjectId(
+          deptValue
+        );
+    }
+  }
+
+  if (
+    roleValue &&
+    roleValue.toLowerCase() !== "all" &&
+    roleValue.toLowerCase() !== "all roles"
+  ) {
+    filter.designation = roleValue;
   }
 
   return filter;
 };
 
-/* =========================================================
-   HELPER: Get Filtered Employees
-========================================================= */
-const getFilteredEmployees = async (query: any) => {
-  const filter = buildEmployeeFilter(query);
+const getFilteredEmployees = async (
+  query: any,
+  user?: any
+) => {
+  const filter = buildEmployeeFilter(
+    query,
+    user
+  );
 
-  const employees = await Employee.find(filter)
-    .select("userId department status salary.basic joiningDate firstName lastName designation")
+  const employees = await Employee.find(
+    filter
+  )
+    .select(
+      "userId department status salary.basic joiningDate firstName lastName designation"
+    )
     .lean();
 
-  const userIds = employees.map((e: any) => e.userId).filter(Boolean);
+  const userIds = employees
+    .map((e: any) => e.userId)
+    .filter(Boolean);
 
-  return { employees, userIds, filter };
+  return {
+    employees,
+    userIds,
+    filter,
+  };
 };
 
-/* =========================================================
-   1️⃣ SUMMARY (KPI)
-========================================================= */
 export const getSummary = async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query as any;
-    const { employees, userIds } = await getFilteredEmployees(req.query);
+    const { employees, userIds } = await getFilteredEmployees( req.query, req.user);
 
     const totalEmployees = employees.length;
     const activeEmployees = employees.filter(e => e.status === "Active").length;
@@ -551,8 +103,11 @@ export const getSummary = async (req: Request, res: Response) => {
 
     const match: any = { userId: { $in: userIds } };
 
-    if (startDate && endDate) {
-      match.date = { $gte: startDate, $lte: endDate };
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+
+    if (start && end) {
+      match.date = { $gte: start, $lte: end };
     }
 
     const attendanceAgg = await Attendance.aggregate([
@@ -575,9 +130,9 @@ export const getSummary = async (req: Request, res: Response) => {
       },
     ]);
 
-    const totalHours = attendanceAgg[0]?.totalHours || 0;
-    const totalDays = attendanceAgg[0]?.totalDays || 0;
-    const presentDays = attendanceAgg[0]?.presentDays || 0;
+    const totalHours = attendanceAgg?.[0]?.totalHours ?? 0;
+    const totalDays = attendanceAgg?.[0]?.totalDays ?? 0;
+    const presentDays = attendanceAgg?.[0]?.presentDays ?? 0;
 
     const avgWorkingHours =
       totalDays > 0 ? Number((totalHours / totalDays).toFixed(1)) : 0;
@@ -586,6 +141,28 @@ export const getSummary = async (req: Request, res: Response) => {
       totalDays > 0
         ? Number(((presentDays / totalDays) * 100).toFixed(1))
         : 0;
+
+    const performanceAgg = await PerformanceReviewModel.aggregate([
+      { $match: { status: "completed" } },
+      {
+        $group: {
+          _id: null,
+          avgRating: { $avg: "$overallRating" },
+        },
+      },
+    ]);
+
+    const avgPerformance =
+      performanceAgg?.[0]?.avgRating
+        ? Number(((performanceAgg[0].avgRating / 5) * 100).toFixed(1))
+        : 0;
+
+    const productivityScore =
+      avgWorkingHours > 0 ? Math.min((avgWorkingHours / 8) * 100, 100) : 0;
+
+    const workforceHealthScore = Number(
+      ((avgAttendance + avgPerformance + productivityScore) / 3).toFixed(1)
+    );
 
     res.json({
       success: true,
@@ -597,23 +174,21 @@ export const getSummary = async (req: Request, res: Response) => {
         totalPayroll,
         totalWorkingHours: Number(totalHours.toFixed(1)),
         avgWorkingHours,
+        workforceHealthScore,
         openPositions: 5,
       },
     });
 
   } catch (error) {
     console.error("getSummary error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false });
   }
 };
 
-/* =========================================================
-   2️⃣ WORKFORCE TREND
-========================================================= */
 export const getWorkforceData = async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query as any;
-    const { employees } = await getFilteredEmployees(req.query);
+    const { employees } = await getFilteredEmployees( req.query, req.user );
 
     const start = startDate
       ? new Date(startDate)
@@ -648,37 +223,52 @@ export const getWorkforceData = async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error("getWorkforceData error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false });
   }
 };
 
-/* =========================================================
-   3️⃣ ATTENDANCE TREND
-========================================================= */
-export const getAttendanceData = async (req: Request, res: Response) => {
+export const getAttendanceData = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const { startDate, endDate } = req.query as any;
-    const { userIds } = await getFilteredEmployees(req.query);
 
-    const match: any = { userId: { $in: userIds } };
+    const { userIds } = await getFilteredEmployees( req.query, req.user );
+
+    const match: any = {
+      userId: { $in: userIds },
+      date: { $ne: null }, // prevent null date crash
+    };
 
     if (startDate && endDate) {
-      match.date = { $gte: startDate, $lte: endDate };
+      match.date = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
     }
 
     const attendance = await Attendance.aggregate([
       { $match: match },
+
       {
         $group: {
           _id: {
-            year: { $substr: ["$date", 0, 4] },
-            month: { $substr: ["$date", 5, 2] },
+            year: { $year: "$date" },
+            month: { $month: "$date" },
           },
+
           totalDays: { $sum: 1 },
+
           presentDays: {
             $sum: {
               $cond: [
-                { $in: ["$status", ["Present", "Late", "Half Day"]] },
+                {
+                  $in: [
+                    "$status",
+                    ["Present", "Late", "Half Day"],
+                  ],
+                },
                 1,
                 0,
               ],
@@ -686,65 +276,88 @@ export const getAttendanceData = async (req: Request, res: Response) => {
           },
         },
       },
-      { $sort: { "_id.year": 1, "_id.month": 1 } },
+
+      {
+        $sort: {
+          "_id.year": 1,
+          "_id.month": 1,
+        },
+      },
     ]);
 
     const monthNames = [
-      "Jan","Feb","Mar","Apr","May","Jun",
-      "Jul","Aug","Sep","Oct","Nov","Dec",
+      "Jan", "Feb", "Mar", "Apr",
+      "May", "Jun", "Jul", "Aug",
+      "Sep", "Oct", "Nov", "Dec",
     ];
 
     const formatted = attendance.map((item: any) => ({
-      month: `${monthNames[parseInt(item._id.month) - 1]} ${item._id.year}`,
+      month: `${monthNames[item._id.month - 1]} ${item._id.year}`,
+
       attendance:
         item.totalDays > 0
-          ? Number(((item.presentDays / item.totalDays) * 100).toFixed(1))
+          ? Number(
+              (
+                (item.presentDays / item.totalDays) *
+                100
+              ).toFixed(1)
+            )
+          : 0,
+
+      complianceScore:
+        item.totalDays > 0
+          ? Number(
+              (
+                (item.presentDays / item.totalDays) *
+                100
+              ).toFixed(1)
+            )
           : 0,
     }));
 
-    res.json({ success: true, data: formatted });
+    return res.status(200).json({
+      success: true,
+      data: formatted,
+    });
 
   } catch (error) {
-    console.error("getAttendanceData error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Attendance Error:", error);
+
+    return res.status(200).json({
+      success: true,
+      data: [],
+    });
   }
 };
 
-/* =========================================================
-   4️⃣ DEPARTMENT DISTRIBUTION
-========================================================= */
 export const getDepartmentData = async (req: Request, res: Response) => {
   try {
-    const { employees } = await getFilteredEmployees(req.query);
+    const data = await Employee.aggregate([
+      { $match: { status: "Active" } },
+      {
+        $group: {
+          _id: "$department",
+          employees: { $sum: 1 },
+        },
+      },
+    ]);
 
-    const grouped: any = {};
-
-    employees
-      .filter(e => e.status === "Active")
-      .forEach((emp: any) => {
-        if (!grouped[emp.department]) grouped[emp.department] = 0;
-        grouped[emp.department]++;
-      });
-
-    const result = Object.keys(grouped).map(dep => ({
-      department: dep,
-      employees: grouped[dep],
+    const result = data.map((d: any) => ({
+      department: d._id,
+      employees: d.employees,
     }));
 
     res.json({ success: true, data: result });
 
   } catch (error) {
     console.error("getDepartmentData error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false });
   }
 };
 
-/* =========================================================
-   5️⃣ LEAVE BREAKDOWN
-========================================================= */
 export const getLeaveData = async (req: Request, res: Response) => {
   try {
-    const { userIds } = await getFilteredEmployees(req.query);
+    const { userIds } = await getFilteredEmployees( req.query, req.user );
 
     const data = await Leave.aggregate([
       { $match: { status: "Approved", userId: { $in: userIds } } },
@@ -756,26 +369,24 @@ export const getLeaveData = async (req: Request, res: Response) => {
       },
     ]);
 
-    const formatted = data.map((d: any) => ({
-      name: d._id,
-      value: d.value,
-    }));
-
-    res.json({ success: true, data: formatted });
+    res.json({
+      success: true,
+      data: data.map((d: any) => ({
+        name: d._id,
+        value: d.value,
+      })),
+    });
 
   } catch (error) {
     console.error("getLeaveData error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false });
   }
 };
 
-/* =========================================================
-   6️⃣ EMPLOYEE PERFORMANCE
-========================================================= */
 export const getEmployeePerformance = async (req: Request, res: Response) => {
   try {
     const { search, page = 1, limit = 10 } = req.query as any;
-    const { employees } = await getFilteredEmployees(req.query);
+    const { employees } = await getFilteredEmployees( req.query, req.user );
 
     let filtered = employees;
 
@@ -790,15 +401,48 @@ export const getEmployeePerformance = async (req: Request, res: Response) => {
     const skip = (Number(page) - 1) * Number(limit);
     const paginated = filtered.slice(skip, skip + Number(limit));
 
-    const formatted = paginated.map((emp: any) => ({
-      ...emp,
-      attendance: 85,
-      leaves: 2,
-      lateMarks: 1,
-      compliance: 90,
-      performanceScore: 75,
-      grade: "B",
-    }));
+    const reviews = await PerformanceReviewModel.find({
+      employeeId: { $in: employees.map(e => e.userId) },
+      status: { $in: ["completed", "approved"] },
+    }).lean();
+
+    const performanceMap: any = {};
+
+    reviews.forEach((review: any) => {
+      const score = (review.overallRating / 5) * 100;
+
+      if (!performanceMap[review.employeeId]) {
+        performanceMap[review.employeeId] = [];
+      }
+
+      performanceMap[review.employeeId].push(score);
+    });
+
+    const formatted = paginated.map((emp: any) => {
+      const scores = performanceMap[emp.userId] || [];
+
+      const avgPerformance =
+        scores.length > 0
+          ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length)
+          : 0;
+
+      return {
+        ...emp,
+        attendance: 0,
+        leaves: 0,
+        lateMarks: 0,
+        compliance: avgPerformance,
+        performanceScore: avgPerformance,
+        grade:
+          avgPerformance > 85
+            ? "A"
+            : avgPerformance > 70
+              ? "B"
+              : avgPerformance > 50
+                ? "C"
+                : "D",
+      };
+    });
 
     res.json({
       success: true,
@@ -812,22 +456,22 @@ export const getEmployeePerformance = async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error("getEmployeePerformance error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false });
   }
 };
 
-/* =========================================================
-   7️⃣ DEPARTMENT WORKING HOURS
-========================================================= */
 export const getDepartmentWorkingHours = async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query as any;
-    const { userIds } = await getFilteredEmployees(req.query);
+    const { userIds } = await getFilteredEmployees( req.query, req.user );
 
     const match: any = { userId: { $in: userIds } };
 
-    if (startDate && endDate) {
-      match.date = { $gte: startDate, $lte: endDate };
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+
+    if (start && end) {
+      match.date = { $gte: start, $lte: end };
     }
 
     const result = await Attendance.aggregate([
@@ -853,10 +497,7 @@ export const getDepartmentWorkingHours = async (req: Request, res: Response) => 
           department: "$_id",
           totalHours: { $round: ["$totalHours", 1] },
           avgHoursPerDay: {
-            $round: [
-              { $divide: ["$totalHours", "$totalRecords"] },
-              1,
-            ],
+            $round: [{ $divide: ["$totalHours", "$totalRecords"] }, 1],
           },
         },
       },
@@ -866,22 +507,27 @@ export const getDepartmentWorkingHours = async (req: Request, res: Response) => 
 
   } catch (error) {
     console.error("getDepartmentWorkingHours error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false });
   }
 };
 
-/* =========================================================
-   8️⃣ EXPORT DATA (CSV / PDF)
-========================================================= */
 export const getExportData = async (req: Request, res: Response) => {
+  
   try {
-    const { startDate, endDate } = req.query as any;
-    const { employees, userIds } = await getFilteredEmployees(req.query);
+    const { type = "csv", startDate, endDate } = req.query as any;
+
+    const { employees, userIds } = await getFilteredEmployees(
+      req.query,
+      req.user
+    );
 
     const match: any = { userId: { $in: userIds } };
 
     if (startDate && endDate) {
-      match.date = { $gte: startDate, $lte: endDate };
+      match.date = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
     }
 
     const attendanceAgg = await Attendance.aggregate([
@@ -913,10 +559,178 @@ export const getExportData = async (req: Request, res: Response) => {
       };
     });
 
-    res.json({ success: true, data: exportData });
+    if (type === "csv") {
+      let csv =
+        "Name,Department,Role,Status,TotalWorkingHours,TotalDays\n";
+
+      exportData.forEach((row: any) => {
+        csv += `${row.Name},${row.Department},${row.Role},${row.Status},${row.TotalWorkingHours},${row.TotalDays}\n`;
+      });
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=reports.csv"
+      );
+
+      return res.send(csv);
+    }
+
+    if (type === "pdf") {
+      const PDFDocument = require("pdfkit");
+      const doc = new PDFDocument({ margin: 30 });
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=reports.pdf"
+      );
+
+      doc.pipe(res);
+
+      doc.fontSize(20).text("HRMS Reports Export", {
+        align: "center",
+      });
+
+      doc.moveDown();
+
+      exportData.forEach((row: any, index: number) => {
+        doc
+          .fontSize(12)
+          .text(
+            `${index + 1}. ${row.Name} | ${row.Department} | ${row.Role} | ${row.Status} | Hours: ${row.TotalWorkingHours}`
+          );
+      });
+
+      doc.end();
+      return;
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: "Invalid export type",
+    });
 
   } catch (error) {
     console.error("getExportData error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+
+    return res.status(500).json({
+      success: false,
+    });
+  }
+};
+
+export const getProductivityMetrics = async (req: Request, res: Response) => {
+  try {
+    const { userIds } = await getFilteredEmployees( req.query, req.user );
+
+    const attendance = await Attendance.find({
+      userId: { $in: userIds },
+    }).lean();
+
+    let totalHours = 0;
+    let totalBreakMinutes = 0;
+    let totalDays = 0;
+
+    attendance.forEach((a: any) => {
+      if (a.totalHours) {
+        totalHours += a.totalHours;
+        totalBreakMinutes += a.totalBreakMinutes || 0;
+        totalDays++;
+      }
+    });
+
+    const avgWorkingHours =
+      totalDays > 0 ? Number((totalHours / totalDays).toFixed(1)) : 0;
+
+    const avgBreakHours =
+      totalDays > 0
+        ? Number((totalBreakMinutes / totalDays / 60).toFixed(1))
+        : 0;
+
+    const efficiency =
+      avgWorkingHours > 0
+        ? Number((((avgWorkingHours - avgBreakHours) / avgWorkingHours) * 100).toFixed(1))
+        : 0;
+
+    const productivity =
+      avgWorkingHours > 0
+        ? Number(Math.min((avgWorkingHours / 8) * 100, 100).toFixed(1))
+        : 0;
+
+    res.json({
+      success: true,
+      data: {
+        avgWorkingHours,
+        avgBreakHours,
+        efficiency,
+        productivity,
+      },
+    });
+  } catch (error) {
+    console.error("getProductivityMetrics error:", error);
+    res.status(500).json({ success: false });
+  }
+};
+
+export const getCEOInsights = async (req: Request, res: Response) => {
+  try {
+    const { employees } = await getFilteredEmployees( req.query, req.user );
+
+    const reviews = await PerformanceReviewModel.find({
+      employeeId: { $in: employees.map(e => e.userId) },
+      status: { $in: ["completed", "approved"] },
+    }).lean();
+
+    const performanceMap: any = {};
+
+    reviews.forEach((review: any) => {
+      const score = (review.overallRating / 5) * 100;
+
+      if (!performanceMap[review.employeeId]) {
+        performanceMap[review.employeeId] = [];
+      }
+
+      performanceMap[review.employeeId].push(score);
+    });
+
+    const employeePerformance = employees.map((emp: any) => {
+      const scores = performanceMap[emp.userId] || [];
+
+      const avgPerformance =
+        scores.length > 0
+          ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length)
+          : 0;
+
+      return {
+        name: `${emp.firstName} ${emp.lastName}`,
+        performance: avgPerformance,
+      };
+    });
+
+    const sorted = [...employeePerformance].sort((a, b) => b.performance - a.performance);
+
+    const topPerformers = sorted.slice(0, 5);
+    const lowPerformers = sorted.slice(-5);
+
+    const distribution = {
+      A: employeePerformance.filter(e => e.performance > 85).length,
+      B: employeePerformance.filter(e => e.performance > 70 && e.performance <= 85).length,
+      C: employeePerformance.filter(e => e.performance > 50 && e.performance <= 70).length,
+      D: employeePerformance.filter(e => e.performance <= 50).length,
+    };
+
+    res.json({
+      success: true,
+      data: {
+        topPerformers,
+        lowPerformers,
+        distribution,
+      },
+    });
+
+  } catch (error) {
+    console.error("getCEOInsights error:", error);
+    res.status(500).json({ success: false });
   }
 };
