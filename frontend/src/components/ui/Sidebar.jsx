@@ -5,7 +5,7 @@ import {
   FileCheck, Home, ChevronDown, ChevronRight, ChevronLeft,
   Briefcase, Plane, Calculator, LogOut, Clock, Settings,
   FileText, ArrowLeftRight, TrendingUp, Shield, Layers, Database, Building,
-  LayoutDashboard, CircleDollarSign, Target, Network, FileBadge
+  LayoutDashboard, CircleDollarSign, Target, Network, FileBadge, BarChart2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ROLES } from "@/constants/roles"
@@ -145,7 +145,7 @@ const Sidebar = ({
     return "Payroll"
   }
 
- const getLeaveManagementPath = () => {
+  const getLeaveManagementPath = () => {
     return "/attendance/my-leaves"
   }
 
@@ -361,6 +361,8 @@ const Sidebar = ({
             <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" />
           </SidebarGroup>
 
+          <SidebarLink to="/dashboard/pm/tasks" icon={FileCheck} label="Task Board" />
+
           <FullPayrollSidebarGroup label="Payroll & Compliance" />
 
           <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
@@ -446,6 +448,13 @@ const Sidebar = ({
               <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" /> 
             </SidebarGroup>
           )}
+
+          <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+
+          {canSee("employees") && (
+            <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
+          )}
+
           <HRPayrollSidebarGroup />
 
           {canSee("performance") && (
@@ -494,6 +503,8 @@ const Sidebar = ({
               <SubLink to="/attendance/roster" label="Shift Roster" />
             </SidebarGroup>
           )}
+
+          <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
 
           <HRPayrollSidebarGroup />
 
@@ -562,6 +573,7 @@ const Sidebar = ({
           )}
           <SidebarLink to="/ceo/org-structure" icon={Network} label="Org Structure" />
           <SidebarLink to="/ceo/audit" icon={FileBadge} label="Audit Summary" />
+          <SidebarLink to="/ceo/task-analytics" icon={BarChart2} label="Task Analytics" />
 
         
           {canSee("attendance") && (
@@ -623,8 +635,9 @@ const Sidebar = ({
             </SidebarGroup>
           )}
 
-          <SidebarLink to="/role/department_manager/appraisal" icon={Award} label="Appraisal" />
+          <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
+
           {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
             <SubLink to="/role/department_manager/appraisal" label="Team Appraisals" />
@@ -661,8 +674,9 @@ const Sidebar = ({
             </SidebarGroup>
           )}
 
-          <SidebarLink to="/role/direct_manager/appraisal" icon={Award} label="Appraisal" />
+          <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
+
           {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
             <SubLink to="/role/direct_manager/appraisal" label="Team Appraisals" />
@@ -682,15 +696,14 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
-          {canSee("attendance") && (
+         
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
               <SubLink to="/attendance/my-leaves" label="My Leave" />
-              <SubLink to="/attendance" label="Attendance Records" />
-              <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" />
-              <SubLink to="/attendance/holidays" label="Holiday List" />
             </SidebarGroup>
-          )}
+       
+
+          <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           <FullPayrollSidebarGroup label={getPayrollLabel()} />
           {canSee("performance") && (
             <SidebarGroup id="appraisal" icon={Award} label="Performance (bonus)">
@@ -758,6 +771,7 @@ const Sidebar = ({
               <SubLink to="/attendance/my-leaves" label="My Leave" />
             </SidebarGroup>
           )}
+          <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           {canSee("employees") && (
             <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
           )}

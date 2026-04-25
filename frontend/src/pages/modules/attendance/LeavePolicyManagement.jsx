@@ -36,8 +36,10 @@ import {
   Users,
   RefreshCw,
   AlertTriangle,
+  CalendarDays,
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils"; 
 
 const LEAVE_TYPES = [
   "Annual",
@@ -360,33 +362,24 @@ const LeavePolicyManagement = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-xl border p-5 bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Policies</p>
-              <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{policies.length}</p>
-            </div>
-            <ShieldCheck className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-          </div>
-        </div>
-        <div className="rounded-xl border p-5 bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Active Policies</p>
-              <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{activeCount}</p>
-            </div>
-            <Users className="h-8 w-8 text-green-600 dark:text-green-400" />
-          </div>
-        </div>
-        <div className="rounded-xl border p-5 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Days / Year</p>
-              <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{totalDays}</p>
-            </div>
-            <ShieldCheck className="h-8 w-8 text-amber-600 dark:text-amber-400" />
-          </div>
-        </div>
+        <StatsCard
+          title="Total Policies"
+          value={policies.length}
+          icon={<ShieldCheck className="h-8 w-8" />}
+          variant="blue"
+        />
+        <StatsCard
+          title="Active Policies"
+          value={activeCount}
+          icon={<Users className="h-8 w-8" />}
+          variant="green"
+        />
+        <StatsCard
+          title="Total Days / Year"
+          value={totalDays}
+          icon={<CalendarDays className="h-8 w-8" />}
+          variant="amber"
+        />
       </div>
 
       <Card className="border-slate-200 dark:border-slate-800">
@@ -557,6 +550,48 @@ const LeavePolicyManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+};
+
+const StatsCard = ({ title, value, icon, variant }) => {
+  const styles = {
+    blue: {
+      card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
+      icon: "text-blue-600 dark:text-blue-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+    },
+    green: {
+      card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
+      icon: "text-green-600 dark:text-green-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+    },
+    amber: {
+      card: "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30",
+      icon: "text-amber-600 dark:text-amber-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+    },
+  };
+
+  const s = styles[variant] || styles.blue;
+
+  return (
+    <div
+      className={cn(
+        "rounded-xl border p-6 transition-all duration-200 hover:scale-105",
+        s.card
+      )}
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className={cn("text-sm", s.label)}>{title}</p>
+          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
+        </div>
+        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
+      </div>
     </div>
   );
 };
