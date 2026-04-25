@@ -1,4 +1,7 @@
 import express from "express";
+import { protect } from "../middleware/auth.middleware";
+import { authorize } from "../middleware/role.middleware";
+
 import {
   getSummary,
   getWorkforceData,
@@ -7,31 +10,78 @@ import {
   getLeaveData,
   getEmployeePerformance,
   getDepartmentWorkingHours,
+  getProductivityMetrics,
+  getCEOInsights,
   getExportData
 } from "../controllers/reports.controller";
 
 const router = express.Router();
 
-// KPI summary
-router.get("/summary", getSummary);
+router.use(protect);
 
-// Workforce analytics
-router.get("/workforce", getWorkforceData);
+router.get(
+  "/summary",
+  authorize(
+  "ADMIN",
+  "CEO",
+  "HR_MANAGER",
+  "HR_OFFICER",
+  "OPERATIONS_MANAGER",
+  "DEPARTMENT_MANAGER",
+  "DIRECT_MANAGER",
+  "EMPLOYEE"
+),
+  getSummary
+);
 
-// Attendance analytics
-router.get("/attendance", getAttendanceData);
+router.get(
+  "/workforce",
+  authorize("ADMIN", "CEO", "OPERATIONS_MANAGER", "HR_MANAGER"),
+  getWorkforceData
+);
 
-// Department distribution
+router.get(
+  "/attendance",
+  authorize("ADMIN", "CEO", "HR_MANAGER", "HR_OFFICER", "OPERATIONS_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"),
+  getAttendanceData
+);
+
 router.get("/departments", getDepartmentData);
 
-// Leave breakdown
-router.get("/leaves", getLeaveData);
+router.get(
+ "/leaves",
+ authorize("ADMIN", "CEO", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "OPERATIONS_MANAGER", "DIRECT_MANAGER" ),
+ getLeaveData
+);
 
-// Performance table
-router.get("/performance", getEmployeePerformance);
+router.get(
+  "/performance",
+  authorize("ADMIN", "CEO", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "OPERATIONS_MANAGER", "DIRECT_MANAGER"),
+  getEmployeePerformance
+);
 
-router.get("/department-hours", getDepartmentWorkingHours);
+router.get(
+  "/department-hours",
+  authorize("ADMIN", "CEO", "HR_MANAGER", "OPERATIONS_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"),
+  getDepartmentWorkingHours
+);
 
-router.get("/export", getExportData);
+router.get(
+  "/export",
+  authorize("ADMIN"),
+  getExportData
+);
+
+router.get(
+  "/productivity",
+  authorize("OPERATIONS_MANAGER", "ADMIN"),
+  getProductivityMetrics
+);
+
+router.get(
+  "/ceo-insights",
+  authorize("ADMIN", "CEO"),
+  getCEOInsights
+);
 
 export default router;

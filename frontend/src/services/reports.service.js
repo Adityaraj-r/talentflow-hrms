@@ -1,39 +1,32 @@
 import api from "@/services/apiClient";
 
-/* ===============================
-   SUMMARY
-================================ */
+const handleRequest = async (promise) => {
+  try {
+    const res = await promise;
+    return res; // already response.data from interceptor
+  } catch (error) {
+    console.error("Reports API Error:", error);
+    throw error;
+  }
+};
+
 export const getSummary = (filters) =>
-  api.get("/reports/summary", { params: filters });
+  handleRequest(api.get("/reports/summary", { params: filters }));
 
-/* ===============================
-   WORKFORCE
-================================ */
 export const getWorkforce = (filters) =>
-  api.get("/reports/workforce", { params: filters });
+  handleRequest(api.get("/reports/workforce", { params: filters }));
 
-/* ===============================
-   ATTENDANCE
-================================ */
 export const getAttendance = (filters) =>
-  api.get("/reports/attendance", { params: filters });
+  handleRequest(api.get("/reports/attendance", { params: filters }));
 
-/* ===============================
-   DEPARTMENTS
-================================ */
 export const getDepartments = (filters) =>
-  api.get("/reports/departments", { params: filters });
+  handleRequest(api.get("/reports/departments", { params: filters }));
 
-/* ===============================
-   LEAVES
-================================ */
 export const getLeaves = (filters) =>
-  api.get("/reports/leaves", { params: filters });
+  handleRequest(api.get("/reports/leaves", { params: filters }));
 
-/* ===============================
-   EMPLOYEE PERFORMANCE
-================================ */
 export const getEmployeePerformance = (filters) =>
-  api.get("/reports/performance", {
-    params: filters,
-  });
+  handleRequest(api.get("/reports/performance", { params: filters }));
+
+export const getDepartmentWorkingHours = (filters) =>
+  handleRequest(api.get("/reports/department-hours", { params: filters }));

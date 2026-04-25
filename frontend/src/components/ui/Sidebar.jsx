@@ -145,7 +145,7 @@ const Sidebar = ({
     return "Payroll"
   }
 
- const getLeaveManagementPath = () => {
+  const getLeaveManagementPath = () => {
     return "/attendance/my-leaves"
   }
 
@@ -413,6 +413,7 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
           <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
             <SubLink to="/employee-center/all-employees" label="All Employees" />
@@ -480,6 +481,7 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
           {canSee("recruitment") && (
             <SidebarGroup id="recruitment" icon={Users} label={getRecruitmentLabel()}>
@@ -634,6 +636,7 @@ const Sidebar = ({
           )}
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
           {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
@@ -671,8 +674,8 @@ const Sidebar = ({
             </SidebarGroup>
           )}
 
-          
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
           {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
@@ -751,6 +754,7 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
           {canSee("recruitment") && (
             <SidebarGroup id="recruitment" icon={Briefcase} label={getRecruitmentLabel()}>
               <SubLink to="/staff-requisition" label="Staff Requisition" />

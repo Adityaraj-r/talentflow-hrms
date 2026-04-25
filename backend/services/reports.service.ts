@@ -1,7 +1,7 @@
 import Employee from "../models/Employee.model";
 
 export const fetchSummary = async (filters: any) => {
-  const { department } = filters;
+  const { department, startDate, endDate } = filters;
 
   const match: any = {};
 
@@ -9,24 +9,45 @@ export const fetchSummary = async (filters: any) => {
     match.department = department;
   }
 
-  const headcount = await Employee.countDocuments(match);
+  if (startDate && endDate) {
+    match.createdAt = {
+      $gte: new Date(startDate),
+      $lte: new Date(endDate),
+    };
+  }
+
+  const totalEmployees = await Employee.countDocuments(match);
 
   const activeEmployees = await Employee.countDocuments({
     ...match,
     status: "active",
   });
 
+  const inactiveEmployees = await Employee.countDocuments({
+    ...match,
+    status: "inactive",
+  });
+
+  const attritionRate = totalEmployees
+    ? Number(((inactiveEmployees / totalEmployees) * 100).toFixed(1))
+    : 0;
+
   const payroll = await Employee.aggregate([
     { $match: match },
-    { $group: { _id: null, total: { $sum: "$salary" } } },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: { $ifNull: ["$salary", 0] } },
+      },
+    },
   ]);
 
   return {
-    headcount,
+    headcount: totalEmployees,
     activeEmployees,
-    attritionRate: 5, // placeholder for now
-    avgAttendance: 94, // placeholder for now
-    totalPayroll: payroll[0]?.total || 0,
-    openPositions: 12, // placeholder
+    attritionRate,
+    avgAttendance: 0, 
+    totalPayroll: payroll?.[0]?.total ?? 0,
+    openPositions: 0, 
   };
 };
