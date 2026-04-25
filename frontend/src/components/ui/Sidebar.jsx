@@ -9,7 +9,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ROLES } from "@/constants/roles"
-import { useUser } from "@/contexts/UserContext"
+import { useAuth } from "@/contexts/AuthContext"
 
 const Sidebar = ({
   isOpen,
@@ -19,7 +19,7 @@ const Sidebar = ({
   companyName,
 }) => {
   const location = useLocation()
-  const { user } = useUser()
+  const { user } = useAuth()
 
   const [localIsCollapsed, setLocalIsCollapsed] = useState(false)
   const isCollapsed = propIsCollapsed !== undefined ? propIsCollapsed : localIsCollapsed
@@ -324,7 +324,7 @@ const Sidebar = ({
     : null
 
   const renderSidebarContent = () => {
-    if (!userRole) return null
+    if (!userRole) return <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
 
     if (userRole === "ADMIN" || userRole === "SUPER ADMIN") {
       return (
@@ -673,9 +673,8 @@ const Sidebar = ({
               <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" />
             </SidebarGroup>
           )}
-
+          
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
-          <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
           {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
