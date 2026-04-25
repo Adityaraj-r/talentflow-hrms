@@ -8,22 +8,22 @@ dotenv.config();
 
 const seedData = async () => {
   try {
-    console.log('🌱 Starting to seed test data...');
+    console.log('Starting to seed test data...');
 
     await mongoose.connect(process.env.MONGODB_URI || '');
-    console.log('✅ Connected to MongoDB');
+    console.log('Connected to MongoDB');
 
     const adminUser = await User.findOne({ email: 'admin@hrms.com' });
 
     if (!adminUser) {
-      console.log('❌ Admin user not found. Please login first.');
+      console.log('Admin user not found. Please login first.');
       process.exit(1);
     }
 
-    console.log('📊 Found admin user:', adminUser.email);
+    console.log('Found admin user:', adminUser.email);
 
     // Create sample activities
-    console.log('\n📝 Creating sample activities...');
+    console.log('\nCreating sample activities...');
     const activities = [
       {
         type: 'login',
@@ -66,10 +66,10 @@ const seedData = async () => {
 
     await Activity.deleteMany({});
     await Activity.insertMany(activities);
-    console.log(`✅ Created ${activities.length} activities`);
+    console.log(`Created ${activities.length} activities`);
 
     // Create sample system alerts
-    console.log('\n🚨 Creating sample system alerts...');
+    console.log('\nCreating sample system alerts...');
     const alerts = [
       {
         title: 'High Memory Usage',
@@ -98,10 +98,10 @@ const seedData = async () => {
 
     await SystemAlert.deleteMany({});
     await SystemAlert.insertMany(alerts);
-    console.log(`✅ Created ${alerts.length} system alerts`);
+    console.log(`Created ${alerts.length} system alerts`);
 
     // Create sample Indian users
-    console.log('\n👥 Creating sample users...');
+    console.log('\nCreating sample users...');
     const sampleUsers = [
       {
         email: 'arjun.sharma@hrms.com',
@@ -206,25 +206,25 @@ const seedData = async () => {
       if (!existingUser) {
         try {
           await User.create(userData);
-          console.log(`   ✓ Created: ${userData.firstName} ${userData.lastName} (${userData.role})`);
+          console.log(`   Created: ${userData.firstName} ${userData.lastName} (${userData.role})`);
         } catch (err: any) {
-          console.log(`   ✗ Failed to create ${userData.email}:`, err.message);
+          console.log(`   Failed to create ${userData.email}:`, err.message);
         }
       } else {
         console.log(`   - Already exists: ${userData.email}`);
       }
     }
 
-    console.log('\n🎉 Seed data created successfully!');
-    console.log('\n📊 Summary:');
+    console.log('\nSeed data created successfully.');
+    console.log('\nSummary:');
     console.log(`   - Activities: ${activities.length}`);
     console.log(`   - System Alerts: ${alerts.length}`);
     console.log(`   - Sample Users: ${sampleUsers.length}`);
-    console.log('\n✅ Refresh your admin dashboard to see the data!');
+    console.log('\nRefresh your admin dashboard to see the data.');
 
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error seeding data:', error);
+    console.error('Error seeding data:', error);
     process.exit(1);
   }
 };

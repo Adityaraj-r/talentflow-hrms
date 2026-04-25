@@ -77,6 +77,46 @@ export const uploadDocument = async (req: Request, res: Response): Promise<void>
   }
 };
 
+export const getMyUploadedDocuments = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const requestingUser = (req as any).user;
+    
+    const userId = requestingUser._id || requestingUser.id;
+
+    if (!userId) {
+      res.status(400).json({ message: "Invalid user token." });
+      return;
+    }
+
+    if (requestingUser.role === 'DEPARTMENT_MANAGER') {
+      const deptEmployees = await Employee.find({ department: requestingUser.department }).select('employeeCode');
+      const empIds = deptEmployees.map(emp => emp.employeeCode);
+      
+      const managerDocs = await Document.find({
+        employeeId: { $in: empIds },
+        category: { $in: ['Education', 'Employment'] }
+      }).sort({ uploadDate: -1 });
+      
+      res.status(200).json(managerDocs);
+      return;
+    }
+
+    const employee = await Employee.findOne({ userId: userId });
+
+    if (!employee || !employee.employeeCode) {
+      res.status(404).json({ message: "Employee profile or code not found for this account." });
+      return;
+    }
+
+    const docs = await Document.find({ employeeId: employee.employeeCode }).sort({ uploadDate: -1 });
+    
+    res.status(200).json(docs);
+  } catch (error) {
+    console.error("Error fetching documents:", error);
+    res.status(500).json({ message: "Error fetching documents", error });
+  }
+};
+
 export const getDocumentsByEmployee = async (req: Request, res: Response): Promise<void> => {
   try {
     const requestingUser = (req as any).user;

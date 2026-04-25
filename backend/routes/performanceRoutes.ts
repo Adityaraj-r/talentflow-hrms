@@ -1,52 +1,46 @@
 import { Router } from 'express';
 import { PerformanceController } from '../controllers/performanceController';
 import { protect } from '../middleware/auth.middleware';
-import { authorize } from '../middleware/role.middleware';
+import { authorizeByMatrixStrict, MODULE_KEYS } from '../middleware/role.middleware';
 
 const router = Router();
 
-// All routes require authentication
+const perfRead = authorizeByMatrixStrict(MODULE_KEYS.PERFORMANCE, 'read');
+const perfWrite = authorizeByMatrixStrict(MODULE_KEYS.PERFORMANCE, 'write');
+const perfDelete = authorizeByMatrixStrict(MODULE_KEYS.PERFORMANCE, 'delete');
+
 router.use(protect as any);
 
-// ─── CYCLES (HRMANAGER only for mutations) ────────────────────────────────────
-router.post('/cycles', authorize('HR_MANAGER', 'SUPER_ADMIN'), PerformanceController.createCycle);
-router.get('/cycles', PerformanceController.getCycles);
-router.get('/cycles/:id', PerformanceController.getCycleById);
-router.put('/cycles/:id', authorize('HR_MANAGER', 'SUPER_ADMIN'), PerformanceController.updateCycle);
-router.delete('/cycles/:id', authorize('HR_MANAGER', 'SUPER_ADMIN'), PerformanceController.deleteCycle);
+router.post('/cycles', perfDelete, PerformanceController.createCycle);
+router.get('/cycles', perfRead, PerformanceController.getCycles);
+router.get('/cycles/:id', perfRead, PerformanceController.getCycleById);
+router.put('/cycles/:id', perfWrite, PerformanceController.updateCycle);
+router.delete('/cycles/:id', perfDelete, PerformanceController.deleteCycle);
 
-// ─── STATS ────────────────────────────────────────────────────────────────────
-router.get('/stats', PerformanceController.getStats);
+router.get('/stats', perfRead, PerformanceController.getStats);
+router.get('/dashboard-analytics', perfRead, PerformanceController.getDashboardAnalytics);
+router.get('/analytics-summary', perfRead, PerformanceController.getAnalyticsSummary);
 
-// ─── ANALYTICS ────────────────────────────────────────────────────────────────
-router.get('/analytics-summary', PerformanceController.getAnalyticsSummary);
+router.post('/reviews/assign', perfWrite, PerformanceController.assignReview);
+router.post('/reviews/:id/confirm-goals', perfWrite, PerformanceController.confirmGoals);
 
-// ─── PHASE 5: NEW WORKFLOW ENDPOINTS ─────────────────────────────────────────
-// IMPORTANT: specific named routes MUST come before /:id wildcard
+router.post('/self-assessment', perfWrite, PerformanceController.submitSelfAssessment);
+router.post('/manager-review', perfWrite, PerformanceController.submitManagerReview);
+router.patch('/hr-review/:id', perfWrite, PerformanceController.submitHRReview);
+router.patch('/ceo-review/:id', perfWrite, PerformanceController.submitCeoReview);
+router.patch('/calibrate/:id', perfWrite, PerformanceController.submitCalibration);
+router.patch('/finalize/:id', perfDelete, PerformanceController.finalizeReview);
+router.patch('/release-feedback/:id', perfWrite, PerformanceController.releaseFeedback);
 
-// Employee self-assessment
-router.post('/self-assessment', authorize('EMPLOYEE'), PerformanceController.submitSelfAssessment);
+router.get('/my-review/:cycleId', perfRead, PerformanceController.getMyReview);
 
-// Manager submits review (Direct or Department Manager)
-router.post('/manager-review', authorize('DIRECTMANAGER', 'DEPARTMENTMANAGER', 'SUPER ADMIN'), PerformanceController.submitManagerReview);
+router.get('/reviews/pending', perfRead, PerformanceController.getPendingReviews);
+router.get('/reviews/all', perfRead, PerformanceController.getAllReviews);
+router.get('/reviews/employee/:employeeId', perfRead, PerformanceController.getEmployeeReviews);
+router.get('/reviews/:reviewId/goals', perfRead, PerformanceController.getGoalsForReview);
+router.get('/reviews/:id', perfRead, PerformanceController.getReviewById);
 
-// HR Manager adds HR-level review notes
-router.patch('/hr-review/:id', authorize('HRMANAGER', 'SUPER ADMIN'), PerformanceController.submitHRReview);
-
-// HR Manager finalizes the review
-router.patch('/finalize/:id', authorize('HRMANAGER', 'SUPER ADMIN'), PerformanceController.finalizeReview);
-
-// Employee views their own review for a specific cycle
-router.get('/my-review/:cycleId', authorize('EMPLOYEE'), PerformanceController.getMyReview);
-
-// ─── REVIEWS ──────────────────────────────────────────────────────────────────
-// NOTE: specific routes before /:id wildcard
-router.post('/reviews/assign', authorize('HRMANAGER', 'SUPER ADMIN'), PerformanceController.assignReview);
-router.get('/reviews/pending', PerformanceController.getPendingReviews);
-router.get('/reviews/all', PerformanceController.getAllReviews);
-router.get('/reviews/employee/:employeeId', PerformanceController.getEmployeeReviews);
-router.get('/reviews/:id', PerformanceController.getReviewById);          // FIXED: added in Phase 1
-router.put('/reviews/:id/submit', PerformanceController.submitReview);
-router.put('/reviews/:id/approve', authorize('HRMANAGER', 'SUPER ADMIN'), PerformanceController.approveReview);
+router.put('/reviews/:id/submit', perfWrite, PerformanceController.submitReview);
+router.put('/reviews/:id/approve', perfDelete, PerformanceController.approveReview);
 
 export default router;

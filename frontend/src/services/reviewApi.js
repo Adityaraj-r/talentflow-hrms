@@ -16,6 +16,9 @@ export const reviewApi = {
   getReviewById: (reviewId) =>
     apiClient.get(`/performance/reviews/${reviewId}`),
 
+  getGoalsForReview: (reviewId) =>
+    apiClient.get(`/performance/reviews/${reviewId}/goals`),
+
   submitReview: (reviewId, data) =>
     apiClient.put(`/performance/reviews/${reviewId}/submit`, data),
 
@@ -27,6 +30,18 @@ export const reviewApi = {
 
   finalizeReview: (id) =>
     apiClient.patch(`/performance/finalize/${id}`),
+
+  confirmGoals: (reviewId) =>
+    apiClient.post(`/performance/reviews/${reviewId}/confirm-goals`),
+
+  ceoReview: (id, data) =>
+    apiClient.patch(`/performance/ceo-review/${id}`, data),
+
+  calibrate: (id, data) =>
+    apiClient.patch(`/performance/calibrate/${id}`, data),
+
+  releaseFeedback: (id) =>
+    apiClient.patch(`/performance/release-feedback/${id}`),
 };
 
 export default reviewApi;

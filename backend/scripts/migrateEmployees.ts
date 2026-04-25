@@ -9,7 +9,7 @@ import Employee from '../models/Employee.model';
 
 const migrate = async () => {
   await mongoose.connect(process.env.MONGODB_URI!);
-  console.log('✅ Connected to MongoDB');
+  console.log('Connected to MongoDB');
 
   const usersWithoutEmployee = await User.find({
   $or: [
@@ -67,18 +67,17 @@ const migrate = async () => {
         employeeCode: employee.employeeCode,
       });
 
-      console.log(`✅ Migrated: ${user.email} → ${employeeCode}`);
+      console.log(`Migrated: ${user.email} -> ${employeeCode}`);
       success++;
     } catch (err: any) {
-      console.error(`❌ Failed for ${user.email}: ${err.message}`);
+      console.error(`Failed for ${user.email}: ${err.message}`);
       failed++;
     }
   }
 
-  console.log('\n── Migration Complete ──────────────────────');
-  console.log(`✅ Success : ${success}`);
-  console.log(`❌ Failed  : ${failed}`);
-  console.log('────────────────────────────────────────────');
+  console.log('\nMigration complete');
+  console.log(`Success: ${success}`);
+  console.log(`Failed: ${failed}`);
 
   await mongoose.disconnect();
   process.exit(0);

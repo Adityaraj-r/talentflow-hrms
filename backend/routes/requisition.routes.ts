@@ -23,12 +23,20 @@ const denyOperationsManager = (req: any, res: any, next: any) => {
   next();
 };
 
-router.post("/", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), denyOperationsManager, createRequisition);
+const denyExecutiveReadOnly = (req: any, res: any, next: any) => {
+  const role = (req.user?.role || "").toString().toUpperCase().replace(/\s+/g, "_");
+  if (role === "CEO" || role === "COUNTRY_MANAGER") {
+    return res.status(403).json({ message: "Read-only access for this operation" });
+  }
+  next();
+};
+
+router.post("/", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), denyOperationsManager, denyExecutiveReadOnly, createRequisition);
 router.get("/stats", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "read"), getRequisitionStats);
 router.get("/pending", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "read"), getPendingRequisitions);
 router.get("/history", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "read"), getRequisitionHistory);
-router.patch("/:id/recommendations", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), addRequisitionRecommendation);
+router.patch("/:id/recommendations", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), denyExecutiveReadOnly, addRequisitionRecommendation);
 router.put("/:id/approve", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), denyOperationsManager, approveRequisition);
-router.put("/:id/reject", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), denyOperationsManager, rejectRequisition);
+router.put("/:id/reject", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), denyOperationsManager, denyExecutiveReadOnly, rejectRequisition);
 
 export default router;

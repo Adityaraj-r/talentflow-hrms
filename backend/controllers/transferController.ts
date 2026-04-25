@@ -54,17 +54,40 @@ export const getAllTransfers = async (req: AuthRequest, res: Response) => {
             ];
         }
 
+        if (req.user?.role === 'DEPARTMENT_MANAGER') {
+            query.currentDepartment = req.user.department;
+        } else if (req.user?.role === 'DIRECT_MANAGER' || req.user?.role === 'PROJECT_MANAGER') {
+            const managerEmployee = await Employee.findOne({
+                $or: [{ userId: req.user.id }, { email: req.user.email }]
+            });
+
+            if (managerEmployee && managerEmployee.employeeCode) {
+                const directReports = await Employee.find({ reportingManagerId: managerEmployee.employeeCode }).select('employeeCode');
+                const reportCodes = directReports.map(emp => emp.employeeCode).filter(Boolean);
+                query.employeeId = { $in: reportCodes };
+            } else {
+                query.employeeId = { $in: [] };
+            }
+        }
+
         const total = await Transfer.countDocuments(query);
         const transfers = await Transfer.find(query)
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit);
 
+        let statQuery: any = {};
+        if (req.user?.role === 'DEPARTMENT_MANAGER') {
+            statQuery = { currentDepartment: req.user.department };
+        } else if (req.user?.role === 'DIRECT_MANAGER' || req.user?.role === 'PROJECT_MANAGER') {
+            statQuery = { employeeId: query.employeeId };
+        }
+        
         const [totalStats, pendingStats, approvedStats, rejectedStats] = await Promise.all([
-            Transfer.countDocuments({}),
-            Transfer.countDocuments({ status: 'Pending' }),
-            Transfer.countDocuments({ status: 'Approved' }),
-            Transfer.countDocuments({ status: 'Rejected' })
+            Transfer.countDocuments(statQuery),
+            Transfer.countDocuments({ ...statQuery, status: 'Pending' }),
+            Transfer.countDocuments({ ...statQuery, status: 'Approved' }),
+            Transfer.countDocuments({ ...statQuery, status: 'Rejected' })
         ]);
 
         res.status(200).json({
@@ -124,7 +147,7 @@ export const updateTransferStatus = async (req: AuthRequest, res: Response) => {
     const { status, adminRemarks } = req.body;
 
     try {
-        const allowedRoles = ['ADMIN', 'CEO'];
+        const allowedRoles = ['HR_MANAGER', 'CEO', 'COUNTRY_MANAGER'];
 
         if (!req.user || !allowedRoles.includes(req.user.role)) {
             return res.status(403).json({
@@ -140,11 +163,14 @@ export const updateTransferStatus = async (req: AuthRequest, res: Response) => {
         const isApproving = status === 'Approved' && transfer.status !== 'Approved';
         const isReverting = status === 'Rejected' && transfer.status === 'Approved';
 
-        const actionTakerRole = req.user.role === 'CEO' ? 'CEO' : 'Admin';
+        let actionTakerRole = 'HR Manager';
+        if (req.user.role === 'CEO') actionTakerRole = 'CEO';
+        if (req.user.role === 'COUNTRY_MANAGER') actionTakerRole = 'Country Manager';
+        
         let formattedAction = status;
 
-        if (isReverting && actionTakerRole === 'CEO') {
-            formattedAction = `Overridden to Rejected by CEO`;
+        if (isReverting && (actionTakerRole === 'CEO' || actionTakerRole === 'Country Manager')) {
+            formattedAction = `Overridden to Rejected by ${actionTakerRole}`;
         } else {
             formattedAction = `${status} by ${actionTakerRole}`;
         }
@@ -211,5 +237,41 @@ export const getEmployeeLatestTransfer = async (req: AuthRequest, res: Response)
         res.status(200).json(latestTransfer);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
+    }
+};
+
+export const addManagerRecommendation = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { recommendation } = req.body;
+
+        const transfer = await Transfer.findById(id);
+        if (!transfer) {
+            res.status(404).json({ success: false, error: 'Transfer request not found' });
+            return;
+        }
+
+        const roleStr = req.user?.role ? req.user.role.replace('_', ' ') : 'MANAGER';
+        const formattedRec = `[${roleStr}]: ${recommendation}`;
+
+        transfer.managerRecommendation = transfer.managerRecommendation
+            ? `${transfer.managerRecommendation}\n\n${formattedRec}`
+            : formattedRec;
+
+        transfer.auditLog.push({
+            action: 'Recommendation Added',
+            by: req.user?.id || 'System',
+            remarks: recommendation,
+            timestamp: new Date()
+        });
+
+        await transfer.save();
+
+        res.status(200).json({
+            success: true,
+            data: transfer
+        });
+    } catch (error: any) {
+        res.status(400).json({ error: error.message });
     }
 };

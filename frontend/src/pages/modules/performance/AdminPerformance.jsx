@@ -11,8 +11,30 @@ import { toast } from "sonner";
 import EmployeeOverview from "@/pages/modules/employee-center/EmployeeOverview"
 import PerformanceAnalytics from "@/pages/modules/performance/PerformanceAnalytics"
 import { performanceApi } from "@/services/performanceApi";
+import { useUser } from "@/contexts/UserContext";
+
+function pickApiError(error) {
+  if (error && typeof error === "object" && error.error != null)
+    return String(error.error);
+  if (error && typeof error === "object" && error.message != null)
+    return String(error.message);
+  return "Request failed";
+}
+
+function toDateInputValue(value) {
+  if (value == null || value === "") return "";
+  if (typeof value === "string") return value.split("T")[0];
+  try {
+    return new Date(value).toISOString().split("T")[0];
+  } catch {
+    return "";
+  }
+}
 
 const AdminPerformance = () => {
+  const { user } = useUser();
+  const canPmsCycleStruct = user?.can?.("performance", "delete");
+  const canPmsWrite = user?.can?.("performance", "write");
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("cycles");
   const [loading, setLoading] = useState(true);
@@ -49,7 +71,6 @@ const AdminPerformance = () => {
       performanceApi.getCycles()
     ]);
 
-    // FIXED: unwrap .data since performanceApi no longer does .then(r => r.data)
     const stats  = statsResponse?.data  ?? statsResponse  ?? {};
     const cycles = cyclesResponse?.data ?? cyclesResponse ?? [];
 
@@ -62,14 +83,11 @@ const AdminPerformance = () => {
     });
   } catch (error) {
     console.error('Failed to load performance data:', error);
-    toast.error('Failed to load performance data');
+    toast.error(pickApiError(error) || 'Failed to load performance data');
   } finally {
     setLoading(false);
   }
 };
-
-
-
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -136,7 +154,7 @@ const AdminPerformance = () => {
       setShowCreateModal(false);
     } catch (error) {
       console.error('Failed to create cycle:', error);
-      toast.error(error.response?.data?.error || 'Failed to create cycle');
+      toast.error(pickApiError(error) || 'Failed to create cycle');
     } finally {
       setSubmitting(false);
     }
@@ -146,8 +164,8 @@ const AdminPerformance = () => {
     setEditingCycle(cycle);
     setFormData({
       name: cycle.name,
-      startDate: cycle.startDate.split('T')[0],
-      endDate: cycle.endDate.split('T')[0],
+      startDate: toDateInputValue(cycle.startDate),
+      endDate: toDateInputValue(cycle.endDate),
       description: cycle.description || "",
       status: cycle.status
     });
@@ -183,7 +201,7 @@ const AdminPerformance = () => {
       setEditingCycle(null);
     } catch (error) {
       console.error('Failed to update cycle:', error);
-      toast.error(error.response?.data?.error || 'Failed to update cycle');
+      toast.error(pickApiError(error) || 'Failed to update cycle');
     } finally {
       setSubmitting(false);
     }
@@ -199,7 +217,7 @@ const AdminPerformance = () => {
         await loadPerformanceData();
       } catch (error) {
         console.error('Failed to delete cycle:', error);
-        toast.error(error.response?.data?.error || 'Failed to delete cycle');
+        toast.error(pickApiError(error) || 'Failed to delete cycle');
       }
     }
   };
@@ -213,7 +231,7 @@ const AdminPerformance = () => {
   };
 
   const handleViewCycle = (cycle) => {
-    navigate(`/role/admin/appraisal/view/${cycle._id}`, { state: { cycle } });
+    navigate(`/role/hr_manager/appraisal/view/${cycle._id}`, { state: { cycle } });
   };
 
   if (loading) {
@@ -237,6 +255,7 @@ const AdminPerformance = () => {
             </p>
           </div>
           
+          {canPmsCycleStruct && (
           <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center gap-2 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 px-4 py-2 rounded-lg transition-colors font-medium"
@@ -244,6 +263,7 @@ const AdminPerformance = () => {
             <Plus className="w-5 h-5" />
             New Cycle
           </button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -257,7 +277,6 @@ const AdminPerformance = () => {
             </div>
           </div>
 
-
           <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 backdrop-blur-sm rounded-xl p-6 transition-all duration-200 hover:scale-105">
             <div className="flex items-center justify-between">
               <div>
@@ -268,7 +287,6 @@ const AdminPerformance = () => {
             </div>
           </div>
 
-
           <div className="bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 backdrop-blur-sm rounded-xl p-6 transition-all duration-200 hover:scale-105">
             <div className="flex items-center justify-between">
               <div>
@@ -278,7 +296,6 @@ const AdminPerformance = () => {
               <FileText className="w-8 h-8 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
-
 
           <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 backdrop-blur-sm rounded-xl p-6 transition-all duration-200 hover:scale-105">
             <div className="flex items-center justify-between">
@@ -292,7 +309,6 @@ const AdminPerformance = () => {
             </div>
           </div>
         </div>
-
 
         <div className="flex gap-4 mb-6 border-b border-gray-200 dark:border-gray-800">
           <button
@@ -326,7 +342,6 @@ const AdminPerformance = () => {
             Employee Overview
           </button>
         </div>
-
 
         {activeTab === "cycles" ? (
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
@@ -380,18 +395,22 @@ const AdminPerformance = () => {
                           >
                             View
                           </button>
+                          {canPmsWrite && (
                           <button 
                             className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm font-medium transition-colors"
                             onClick={() => handleEditClick(cycle)}
                           >
                             Edit
                           </button>
+                          )}
+                          {canPmsCycleStruct && (
                           <button 
                             className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm font-medium transition-colors"
                             onClick={() => handleDeleteCycle(cycle._id, cycle.name)}
                           >
                             Delete
                           </button>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -505,7 +524,6 @@ const AdminPerformance = () => {
             </div>
           </div>
         )}
-
 
         {showEditModal && (
           <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">

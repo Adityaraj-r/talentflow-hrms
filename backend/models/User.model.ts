@@ -9,6 +9,8 @@ export interface IUser extends Document {
   firstName: string;
   lastName: string;
   department?: string;
+  designation?: string;
+  profilePhoto?: string;
   phoneNumber?: string;
   gender?: string;
   employeeId?: mongoose.Types.ObjectId;
@@ -52,7 +54,9 @@ const UserSchema = new Schema<IUser>(
         'PAYROLL_OFFICER',
         'PROJECT_MANAGER',
         'OPERATIONS_MANAGER',
+        'FINANCE_MANAGER',
         'ADMIN',
+        'SUPER_ADMIN',
         'EMPLOYEE',
       ],
     },
@@ -74,6 +78,16 @@ const UserSchema = new Schema<IUser>(
       type: String,
       default: null,
     },
+    designation: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    profilePhoto: {
+      type: String,
+      default: null,
+      trim: true,
+    },
     gender: {
       type: String,
       enum: ['Male', 'Female', 'Other'],
@@ -84,11 +98,8 @@ const UserSchema = new Schema<IUser>(
       ref: 'Employee',
       default: null,
     },
-   employeeCode: {
+    employeeCode: {
       type: String,
-      default: null,
-      unique: true,
-      sparse: true,
       trim: true,
     },
     currentShift: {
@@ -114,6 +125,17 @@ const UserSchema = new Schema<IUser>(
     },
   },
   { timestamps: true }
+);
+
+// Unique only when a non-empty code is set — avoids E11000 when many users omit employeeCode (null was indexed with sparse+unique).
+UserSchema.index(
+  { employeeCode: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      employeeCode: { $exists: true, $type: 'string', $gt: '' },
+    },
+  }
 );
 
 UserSchema.methods.comparePassword = async function (

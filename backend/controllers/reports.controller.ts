@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Employee from "../models/Employee.model";
 import Attendance from "../models/Attendance.model";
-import Leave from "../models/Leave.model";
+import Leave from "../models/leave.model";
 import { PerformanceReviewModel } from "../models/PerformanceReview";
 
 const buildEmployeeFilter = (

@@ -13,10 +13,12 @@ import { toast } from "sonner";
 
 const DigitalLocker = () => {
   const { user } = useAuth();
+  const userRole = user?.role?.toUpperCase() || "";
+  const isDeptManager = userRole === "DEPARTMENT_MANAGER";
 
   const [documents, setDocuments] = useState([]);
   const [onboardingList, setOnboardingList] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState(isDeptManager ? "Onboarding" : "All");
   const [viewMode, setViewMode] = useState("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [targetEmployeeId, setTargetEmployeeId] = useState("");
@@ -28,32 +30,35 @@ const DigitalLocker = () => {
   const [uploadCategory, setUploadCategory] = useState("Personal");
   const [documentTitle, setDocumentTitle] = useState("");
 
- const userRole = user?.role?.toUpperCase() || "";
-  const canViewAll = ["ADMIN", "HR_MANAGER", "CEO", "HR_OFFICER"].includes(userRole);
+  const canViewAll = ["ADMIN", "HR_MANAGER", "CEO", "HR_OFFICER", "DEPARTMENT_MANAGER"].includes(userRole);
   const canDelete = userRole === "ADMIN";
   const canVerify = ["ADMIN", "HR_MANAGER"].includes(userRole);
   const canUpload = ["ADMIN", "HR_MANAGER", "HR_OFFICER", "EMPLOYEE"].includes(userRole);
-  const canSeeOnboarding = ["ADMIN", "HR_MANAGER", "HR_OFFICER"].includes(userRole);
-  const isAdmin = canViewAll;
+  const canSeeOnboarding = ["ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER"].includes(userRole);
+  const isAdmin = ["ADMIN", "HR_MANAGER", "CEO", "HR_OFFICER"].includes(userRole);
 
-  const allCategories = [
+ const allCategories = [
     { name: "All", label: "All Files" },
     { name: "Personal", label: "Personal IDs" },
     { name: "Education", label: "Education" },
     { name: "Employment", label: "Contracts" },
     { name: "Payroll", label: "Payroll" },
-    { name: "Onboarding", label: "Onboarding" },
+    { name: "Onboarding", label: isDeptManager ? "Department Staff" : "Onboarding" },
   ];
 
-  const categories = canSeeOnboarding
+  let categories = canSeeOnboarding
     ? allCategories
     : allCategories.filter(c => c.name !== "Onboarding");
 
+  if (isDeptManager) {
+    categories = allCategories.filter(c => ["All","Onboarding"].includes(c.name));
+  }
+
   const getActiveId = useCallback(() => {
     if (selectedCategory === "Onboarding" && targetEmployeeId) return targetEmployeeId;
-    if (isAdmin && targetEmployeeId && selectedCategory !== "Onboarding") return targetEmployeeId;
+    if (canViewAll && targetEmployeeId && selectedCategory !== "Onboarding") return targetEmployeeId;
     return user?.employeeId || user?._id || user?.id || user?.userId;
-  }, [selectedCategory, targetEmployeeId, isAdmin, user]);
+  }, [selectedCategory, targetEmployeeId, canViewAll, user]);
 
   const fetchOnboardingList = async () => {
     try {
@@ -156,28 +161,29 @@ const DigitalLocker = () => {
 
   const filteredDocs = documents.filter(doc => {
     const categoryMatch = selectedCategory === "Onboarding" ? true : (selectedCategory === "All" || doc.category === selectedCategory);
-    const searchMatch = doc.originalName.toLowerCase().includes(searchQuery.toLowerCase());
+    const searchMatch = doc.originalName?.toLowerCase().includes(searchQuery.toLowerCase());
     return categoryMatch && searchMatch;
   });
 
-  const filteredEmployees = onboardingList.filter(emp =>
-    (emp.firstName + " " + emp.lastName).toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (emp.employeeCode && emp.employeeCode.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredEmployees = onboardingList.filter(emp => {
+    const matchesSearch = (emp.firstName + " " + emp.lastName).toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (emp.employeeCode && emp.employeeCode.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesDept = isDeptManager ? emp.department === user?.department : true;
+    return matchesSearch && matchesDept;
+  });
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col">
       <div className="flex flex-col gap-1 px-4 mb-4 shrink-0 sm:px-0">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Digital Locker</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Securely store, manage, and verify your official documents.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Securely store, manage, and verify official documents.</p>
       </div>
 
       <div className="flex flex-1 flex-col lg:flex-row overflow-hidden bg-gray-50 dark:bg-gray-900/50 lg:bg-transparent lg:gap-6">
-
         <div className="flex-shrink-0 w-full bg-white dark:bg-gray-900 p-2 border-b flex gap-2 overflow-x-auto no-scrollbar lg:w-64 lg:bg-white lg:dark:bg-gray-900 lg:border lg:rounded-xl lg:shadow-sm lg:block lg:space-y-2 lg:overflow-y-auto lg:p-4 h-full">
           {categories.map((cat) => {
             let count = cat.name === "Onboarding"
-              ? onboardingList.length
+              ? isDeptManager ? filteredEmployees.length : onboardingList.length
               : cat.name === "All"
                 ? documents.length
                 : documents.filter(d => d.category === cat.name).length;
@@ -265,7 +271,7 @@ const DigitalLocker = () => {
                         <Select value={uploadCategory} onValueChange={setUploadCategory}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            {categories.filter(c => c.name !== 'All').map(c => <SelectItem key={c.name} value={c.name}>{c.label}</SelectItem>)}
+                            {categories.filter(c => c.name !== 'All' && c.name !== 'Onboarding').map(c => <SelectItem key={c.name} value={c.name}>{c.label}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>

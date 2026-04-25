@@ -1,11 +1,9 @@
 "use client"
 
-import { cn } from "@/lib/utils"
 import { useEffect, useState,useRef } from "react"
 import apiClient from "@/services/apiClient";
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import {
-  Bell,
   Menu,
   Sun,
   Moon,
@@ -28,18 +26,15 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/contexts/AuthContext"
 import { useTheme } from "@/contexts/ThemeContext"
+import { NotificationBell } from "@/components/notifications/NotificationBell"
 
 const Header = ({ toggleSidebar }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
-  const [notifications, setNotifications] = useState([])
-
-  //  OMNIBAR SEARCH STATE 
   const [searchQuery, setSearchQuery] = useState('')
   const [results, setResults] = useState({ modules: [], users: [] })
   const [isSearching, setIsSearching] = useState(false)
@@ -51,7 +46,7 @@ const Header = ({ toggleSidebar }) => {
     { id: 'mod-1', title: 'Admin Dashboard', path: '/admin/dashboard', icon: Layout },
     { id: 'mod-2', title: 'User Management (All Employees)', path: '/dashboard/users', icon: Users },
     { id: 'mod-3', title: 'Onboarding & KYC', path: '/onboarding', icon: UserPlus },
-    { id: 'mod-4', title: 'Transfers & Promotions', path: '/employee-transfer', icon: Repeat },
+    { id: 'mod-4', title: 'Transfers & Promotions', path: '/employee-center/employee-transfer', icon: Repeat },
     { id: 'mod-5', title: 'Digital Locker (Docs)', path: '/digital-locker', icon: Folder },
     { id: 'mod-6', title: 'Staff Requisition', path: '/staff-requisition', icon: FileText },
     { id: 'mod-7', title: 'System Settings', path: '/settings', icon: Settings },
@@ -76,7 +71,6 @@ const Header = ({ toggleSidebar }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // HYBRID SEARCH API CALL
   useEffect(() => {
     if (!searchQuery.trim()) {
       setResults({ modules: [], users: [] })
@@ -122,7 +116,6 @@ const Header = ({ toggleSidebar }) => {
   const canUseSearch = ALLOWED_SEARCH_ROLES.includes(userRole);
 
   useEffect(() => {
-    // SECURITY: If the user doesn't have permission, do not attach the event listener!
     if (!canUseSearch) return; 
 
     const handleKeyDown = (e) => {
@@ -135,78 +128,6 @@ const Header = ({ toggleSidebar }) => {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [canUseSearch])
 
-// UPGRADED NOTIFICATION SYSTEM (With Anti-Spam Safety)
-  const isFetchingRef = useRef(false);
-
-  useEffect(() => {
-    const fetchRealTimeNotifications = async () => {
-      // SAFETY VALVE: If the previous request is still hanging, abort this one!
-      if (isFetchingRef.current) return;
-      
-      const firstName = user?.firstName || user?.name?.split(" ")[0] || ""
-      const userRoleStr = (user?.role?.name || user?.role || "").toUpperCase()
-      
-      if (firstName) {
-        isFetchingRef.current = true; // Lock the fetcher
-        try {
-          const execRoles = ["ADMIN", "CEO", "HR_MANAGER", "COUNTRY_MANAGER"]
-          const endpoint = execRoles.includes(userRoleStr) ? "/transfers/all" : "/transfers/my-requests"
-          
-          const res = await apiClient.get(endpoint)
-          const transfersArray = Array.isArray(res) ? res : (res?.data || [])
-          
-          const myTransfers = transfersArray.filter((t) => t.employeeName && t.employeeName.includes(firstName))
-          const latest = myTransfers[0]
-          
-          if (latest && (latest.status === "Approved" || latest.status === "Rejected")) {
-            const actionDate = new Date(latest.updatedAt || latest.createdAt);
-            const formattedDate = actionDate.toLocaleString('en-US', {
-              month: 'short', day: 'numeric', year: 'numeric', 
-              hour: 'numeric', minute: '2-digit', hour12: true
-            });
-
-            const contextMessage = `Your transfer from ${latest.currentDepartment} to ${latest.newDepartment} has been ${latest.status}.`;
-
-            setNotifications((prev) => {
-              const readNotifs = JSON.parse(localStorage.getItem('readNotifications') || '[]');
-              const isAlreadyRead = readNotifs.includes(latest._id);
-
-              return [{
-                  id: latest._id,
-                  message: contextMessage,
-                  read: isAlreadyRead, 
-                  time: `Actioned on: ${formattedDate}`,
-              }]
-            })
-          }
-        } catch (err) {
-          // If it times out, we catch it silently without breaking the app
-          if (err.message !== "timeout of 10000ms exceeded") {
-             console.error("Failed to fetch notifications:", err)
-          }
-        } finally {
-          isFetchingRef.current = false; // Unlock the fetcher
-        }
-      }
-    }
-
-    fetchRealTimeNotifications()
-    const interval = setInterval(fetchRealTimeNotifications, 10000)
-    return () => clearInterval(interval)
-  }, [user])
-
-  const unreadCount = notifications.filter((n) => !n.read).length
-  
-  const markAllAsRead = () => {
-    const readNotifs = JSON.parse(localStorage.getItem('readNotifications') || '[]');
-    notifications.forEach(n => {
-      if (!readNotifs.includes(n.id)) readNotifs.push(n.id);
-    });
-    localStorage.setItem('readNotifications', JSON.stringify(readNotifs));
-
-    setNotifications(notifications.map((n) => ({ ...n, read: true })))
-  }
-  
   const canGoBack = !["/", "/dashboard", "/admin/dashboard", "/employee/dashboard"].includes(location.pathname)
 
   return (
@@ -223,7 +144,6 @@ const Header = ({ toggleSidebar }) => {
         <h1 className="text-lg font-bold text-foreground">HRMS System</h1>
       </div>
 
-      {/*  OMNIBAR SEARCH UI (CONDITIONALLY RENDERED) */}
       {canUseSearch && (
         <div className="hidden md:flex flex-1 max-w-md mx-6 relative" ref={searchRef}>
           <div className="relative w-full">
@@ -328,44 +248,7 @@ const Header = ({ toggleSidebar }) => {
           {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative focus:outline-none">
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <Badge className="absolute -right-1 -top-1 px-1.5 py-0.5 text-[10px] flex h-4 min-w-4 items-center justify-center">
-                  {unreadCount}
-                </Badge>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="z-50 w-80">
-            <DropdownMenuLabel className="flex items-center justify-between">
-              <span>Notifications</span>
-              {unreadCount > 0 && (
-                <Button variant="ghost" size="sm" onClick={markAllAsRead} className="h-auto py-1 text-xs">
-                  Mark all as read
-                </Button>
-              )}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <div className="max-h-75 overflow-y-auto">
-              {notifications.length > 0 ? (
-                notifications.map((notification) => (
-                  <DropdownMenuItem
-                    key={notification.id}
-                    className={cn("flex cursor-pointer flex-col items-start p-3", !notification.read && "bg-muted/50")}
-                  >
-                    <span className="text-sm font-medium">{notification.message}</span>
-                    <span className="text-xs text-muted-foreground mt-1">{notification.time}</span>
-                  </DropdownMenuItem>
-                ))
-              ) : (
-                <div className="py-4 px-4 text-center text-sm text-muted-foreground">No notifications</div>
-              )}
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <NotificationBell />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

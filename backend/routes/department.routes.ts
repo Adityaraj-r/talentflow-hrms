@@ -14,10 +14,8 @@ import { protect, authorize } from '../middleware/auth.middleware';
 const router = express.Router();
 router.use(protect as any);
 
-
 router.get('/', getAllDepartments);
 router.get('/:id', getDepartmentById);
-
 
 router.use(authorize('CEO', 'COUNTRY_MANAGER', 'HR_MANAGER', 'ADMIN') as any); 
 

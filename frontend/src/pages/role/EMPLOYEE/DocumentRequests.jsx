@@ -1,307 +1,153 @@
-"use client"
+import { useState, useEffect } from "react";
+import apiClient from "@/services/apiClient";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { FileText, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
-import { useState } from "react"
-import { useAuth } from "@/contexts/AuthContext"
-import { useRole } from "@/contexts/RoleContext"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { FileText, Search } from "lucide-react"
-import { toast } from "sonner"
+const RequestDocument = () => {
+  const [requests, setRequests] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    documentType: "",
+    purpose: ""
+  });
 
-const DocumentRequests = () => {
-  const { user } = useAuth()
-  const { hasRole } = useRole()
-  const canRequestDocument = hasRole(["Employee"])
+  const fetchRequests = async () => {
+    setIsLoading(true);
+    try {
+      const res = await apiClient.get("/document-requests/my-requests");
+      setRequests(res.data || []);
+    } catch (error) {
+      toast.error("Failed to load requests");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.documentType || !formData.purpose.trim()) {
+      return toast.error("Please fill all fields");
+    }
+
+    setIsSubmitting(true);
+    try {
+      await apiClient.post("/document-requests/create", formData);
+      toast.success("Request submitted successfully");
+      setFormData({ documentType: "", purpose: "" });
+      fetchRequests();
+    } catch (error) {
+      toast.error(error.message || "Failed to submit request");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    if (status === "Completed") return <span className="bg-green-100 text-green-700 px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 w-fit"><CheckCircle className="w-3 h-3" /> Completed</span>;
+    if (status === "Rejected") return <span className="bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 w-fit"><XCircle className="w-3 h-3" /> Rejected</span>;
+    if (status === "Processing") return <span className="bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 w-fit"><Loader2 className="w-3 h-3 animate-spin" /> Processing</span>;
+    return <span className="bg-yellow-100 text-yellow-700 px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 w-fit"><Clock className="w-3 h-3" /> Pending</span>;
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Document Requests (Employee)</h1>
-        <p className="text-muted-foreground">Request official documents and view your request history</p>
+        <h1 className="text-3xl font-bold tracking-tight">Request Document</h1>
+        <p className="text-muted-foreground">Submit a request to HR for official company documents.</p>
       </div>
 
-      <Tabs defaultValue={canRequestDocument ? "request" : "history"}>
-        <TabsList>
-          {canRequestDocument && <TabsTrigger value="request">Request Document</TabsTrigger>}
-          <TabsTrigger value="history">Request History</TabsTrigger>
-        </TabsList>
-
-        {canRequestDocument && (
-          <TabsContent value="request">
-            <RequestForm user={user} />
-          </TabsContent>
-        )}
-
-        <TabsContent value="history">
-          <RequestHistory user={user} />
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
-}
-
-const RequestForm = ({ user }) => {
-  const [formData, setFormData] = useState({
-    employeeId: user?.id || "",
-    employeeName: user?.name || "",
-    documentType: "",
-    requestDate: "",
-    purpose: "",
-    notes: "",
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const handleSelectChange = (name, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-
-    if (
-      !formData.employeeId ||
-      !formData.employeeName ||
-      !formData.documentType ||
-      !formData.requestDate ||
-      !formData.purpose
-    ) {
-      toast.error("Please fill in all required fields")
-      return
-    }
-
-    setIsSubmitting(true)
-
-    setTimeout(() => {
-      toast.success("Document request submitted successfully")
-      setIsSubmitting(false)
-
-      setFormData({
-        employeeId: user?.id || "",
-        employeeName: user?.name || "",
-        documentType: "",
-        requestDate: "",
-        purpose: "",
-        notes: "",
-      })
-    }, 1500)
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Request Document</CardTitle>
-        <CardDescription>Submit a request for an official document</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="employeeId">
-                Employee ID <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="employeeId"
-                name="employeeId"
-                placeholder="Enter employee ID"
-                value={formData.employeeId}
-                onChange={handleChange}
-                required
-                disabled
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="employeeName">
-                Employee Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="employeeName"
-                name="employeeName"
-                placeholder="Enter employee name"
-                value={formData.employeeName}
-                onChange={handleChange}
-                required
-                disabled
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="documentType">
-                Document Type <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.documentType}
-                onValueChange={(value) => handleSelectChange("documentType", value)}
-                required
-              >
-                <SelectTrigger id="documentType">
-                  <SelectValue placeholder="Select document type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="employment-certificate">Employment Certificate</SelectItem>
-                  <SelectItem value="salary-slip">Salary Slip</SelectItem>
-                  <SelectItem value="experience-letter">Experience Letter</SelectItem>
-                  <SelectItem value="noc">No Objection Certificate</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="requestDate">
-                Request Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="requestDate"
-                name="requestDate"
-                type="date"
-                value={formData.requestDate}
-                onChange={handleChange}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="purpose">
-              Purpose of Request <span className="text-red-500">*</span>
-            </Label>
-            <Textarea
-              id="purpose"
-              name="purpose"
-              placeholder="Enter the purpose of the document request"
-              value={formData.purpose}
-              onChange={handleChange}
-              rows={4}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Additional Notes</Label>
-            <Textarea
-              id="notes"
-              name="notes"
-              placeholder="Enter any additional notes"
-              value={formData.notes}
-              onChange={handleChange}
-              rows={4}
-            />
-          </div>
-        </form>
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline">Cancel</Button>
-        <Button onClick={handleSubmit} disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : "Submit Request"}
-        </Button>
-      </CardFooter>
-    </Card>
-  )
-}
-
-const RequestHistory = ({ user }) => {
-  const requestHistory = [
-    {
-      id: 1,
-      employeeName: user?.name || "John Doe",
-      employeeId: user?.id || "EMP001",
-      documentType: "Employment Certificate",
-      requestDate: "2025-03-01",
-      purpose: "Visa application",
-      status: "Approved",
-      approvedBy: "Jane Smith",
-      approvalDate: "2025-03-05",
-    },
-    {
-      id: 2,
-      employeeName: user?.name || "John Doe",
-      employeeId: user?.id || "EMP001",
-      documentType: "Salary Slip",
-      requestDate: "2025-02-15",
-      purpose: "Bank loan application",
-      status: "Rejected",
-      approvedBy: "Bob Williams",
-      approvalDate: "2025-02-20",
-      reason: "Incomplete request details",
-    },
-  ]
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Document Request History</CardTitle>
-          <CardDescription>View your document request history</CardDescription>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search requests..." className="pl-8 w-[200px] md:w-[300px]" />
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
-          <div className="grid grid-cols-7 bg-muted/50 p-3 text-sm font-medium">
-            <div>Employee</div>
-            <div>Employee ID</div>
-            <div>Document Type</div>
-            <div>Request Date</div>
-            <div>Purpose</div>
-            <div>Status</div>
-            <div>Actions</div>
-          </div>
-          <div className="divide-y">
-            {requestHistory.map((request) => (
-              <div key={request.id} className="grid grid-cols-7 p-3 text-sm">
-                <div className="font-medium">{request.employeeName}</div>
-                <div>{request.employeeId}</div>
-                <div>{request.documentType}</div>
-                <div>{request.requestDate}</div>
-                <div>{request.purpose}</div>
-                <div>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                      request.status === "Approved"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                        : request.status === "Rejected"
-                        ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                        : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
-                    }`}
-                  >
-                    {request.status}
-                  </span>
-                </div>
-                <div>
-                  <Button variant="ghost" size="icon">
-                    <FileText className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
-                </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1 h-fit">
+          <CardHeader>
+            <CardTitle>New Request</CardTitle>
+            <CardDescription>Select the document type and provide a reason.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Document Type</label>
+                <Select value={formData.documentType} onValueChange={(val) => setFormData({ ...formData, documentType: val })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select document..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Salary Certificate">Salary Certificate</SelectItem>
+                    <SelectItem value="Form 16">Form 16 / Tax Summary</SelectItem>
+                    <SelectItem value="Bonafide Certificate">Bonafide / Employment Certificate</SelectItem>
+                    <SelectItem value="Experience Certificate">Experience / Service Certificate</SelectItem>
+                    <SelectItem value="Relieving Letter">Relieving Letter</SelectItem>
+                    <SelectItem value="Visa NOC">Visa NOC</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Purpose</label>
+                <Textarea
+                  placeholder="e.g., Required for bank loan application"
+                  value={formData.purpose}
+                  onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
+                  className="min-h-[100px]"
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Submit Request
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
-export default DocumentRequests
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>My Request History</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-muted/50 border-b">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Document Type</th>
+                    <th className="px-4 py-3 font-medium">Date Requested</th>
+                    <th className="px-4 py-3 font-medium">Purpose</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {isLoading ? (
+                    <tr><td colSpan="4" className="text-center py-8 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></td></tr>
+                  ) : requests.length === 0 ? (
+                    <tr><td colSpan="4" className="text-center py-8 text-muted-foreground">No requests found.</td></tr>
+                  ) : (
+                    requests.map((req) => (
+                      <tr key={req._id} className="hover:bg-muted/20">
+                        <td className="px-4 py-3 font-medium flex items-center gap-2 whitespace-nowrap">
+                          <FileText className="w-4 h-4 text-blue-500" />
+                          {req.documentType}
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{new Date(req.requestDate).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 max-w-[200px] truncate" title={req.purpose}>{req.purpose}</td>
+                        <td className="px-4 py-3">{getStatusBadge(req.status)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default RequestDocument;

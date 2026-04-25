@@ -33,6 +33,7 @@ export interface IEmployee extends Document {
   employmentType?: 'Full-Time' | 'Part-Time' | 'Contract' | 'Intern';
   workLocation?: string;
   reportingManager?: string;
+  reportingManagerId?: string; 
 
   salary?: {
     basic?: number;
@@ -111,6 +112,7 @@ const EmployeeSchema = new Schema<IEmployee>(
     employmentType: { type: String, enum: ['Full-Time', 'Part-Time', 'Contract', 'Intern'] },
     workLocation: { type: String },
     reportingManager: { type: String },
+    reportingManagerId: { type: String, default: null }, 
 
     salary: {
       basic: { type: Number, default: 0 },

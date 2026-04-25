@@ -5,6 +5,8 @@ export interface ITicket extends Document {
   employeeName: string
   type: "advance" | "travel"
   amount?: number
+  /** For advances: balance left to recover (FIFO). Set to amount on approval. */
+  remainingAmount?: number
   destination?: string
   travelPurpose?: string
   departureDate?: Date
@@ -25,6 +27,7 @@ const TicketSchema = new Schema<ITicket>(
     employeeName: { type: String, required: true },
     type: { type: String, enum: ["advance", "travel"], required: true },
     amount: Number,
+    remainingAmount: { type: Number, default: undefined },
     destination: String,
     travelPurpose: String,
     departureDate: Date,

@@ -2,6 +2,28 @@ import Employee from "../models/Employee.model";
 import { Request, Response } from "express";
 import User from '../models/User.model';
 
+export const getAllEmployees = async (req: Request, res: Response) => {
+  try {
+    const requestingUser = (req as any).user;
+    let filter: any = {};
+
+    if (requestingUser?.role === "DIRECT_MANAGER") {
+      filter = { 
+        reportingManagerId: requestingUser.employeeCode,
+        role: "EMPLOYEE" 
+      };
+    } 
+    else if (requestingUser?.role === "DEPARTMENT_MANAGER") {
+      filter = { department: requestingUser.department };
+    }
+
+    const employees = await Employee.find(filter).sort({ createdAt: -1 });
+    res.status(200).json(employees);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const getRecentHires = async (req: Request, res: Response) => {
   try {
     const employees = await Employee.find()
@@ -38,7 +60,7 @@ export const getActiveOnboarding = async (req: Request, res: Response) => {
 
 export const getEmployeeById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const requestingUser = (req as any).user;
 
     if (requestingUser?.role === "EMPLOYEE") {
@@ -52,7 +74,13 @@ export const getEmployeeById = async (req: Request, res: Response) => {
       }
     }
 
-    const employee = await Employee.findById(id);
+    let employee = null;
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      employee = await Employee.findById(id);
+    }
+    if (!employee) {
+      employee = await Employee.findOne({ employeeCode: id });
+    }
 
     if (!employee) {
       return res.status(404).json({ message: "Employee not found" });
@@ -60,13 +88,40 @@ export const getEmployeeById = async (req: Request, res: Response) => {
 
     const data = employee.toObject() as Record<string, any>;
 
-    if (!["ADMIN", "HR_MANAGER"].includes(requestingUser?.role)) {
+    if (!["ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER"].includes(requestingUser?.role)) {
       delete data.bankDetails;
       delete data.kycDetails;
     }
 
     res.json(data);
   } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getMyDocuments = async (req: Request, res: Response) => {
+  try {
+    const requestingUser = (req as any).user;
+    
+    const userId = requestingUser._id || requestingUser.id;
+    
+    if (!userId) {
+      return res.status(400).json({ message: "Invalid user token." });
+    }
+
+    const employee = await Employee.findOne({ userId: userId });
+
+    if (!employee) {
+      return res.status(404).json({ message: "Employee profile not found for this account." });
+    }
+
+    const data = employee.toObject() as Record<string, any>;
+    
+    const documents = data.Documents || {};
+
+    res.status(200).json(documents);
+  } catch (err) {
+    console.error("Error fetching my documents:", err);
     res.status(500).json({ message: "Server error" });
   }
 };

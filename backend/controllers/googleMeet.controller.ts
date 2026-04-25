@@ -1,12 +1,33 @@
 import { Request, Response } from 'express';
-import { calendar } from '../config/google';
+import { calendar, ensureGoogleCredentials } from '../config/google';
 import { createLog } from './audit.controller';
 import { AuthRequest } from '../middleware/auth.middleware';
+
+export const getGoogleMeetStatus = async (_req: Request, res: Response) => {
+  const connected = await ensureGoogleCredentials();
+  return res.status(200).json({
+    success: true,
+    connected,
+  });
+};
 
 export const createMeetLink = async (req: AuthRequest, res: Response) => {
   try {
     const { summary, description, startDateTime, endDateTime, attendees } = req.body;
     const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    const hasCredentials = await ensureGoogleCredentials();
+    if (!hasCredentials) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google Meet is not connected. Please connect Google Workspace from Integrations first.'
+      });
+    }
+    if (!startDateTime || !endDateTime || !Array.isArray(attendees) || attendees.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'startDateTime, endDateTime and attendees are required'
+      });
+    }
 
     const event = {
       summary,
@@ -44,9 +65,10 @@ export const createMeetLink = async (req: AuthRequest, res: Response) => {
       eventId: response.data.id
     });
   } catch (error: any) {
+    const reason = error?.response?.data?.error?.message || error?.message || 'Failed to generate Google Meet link';
     return res.status(500).json({
       success: false,
-      error: 'Failed to generate Google Meet link'
+      message: reason
     });
   }
 };

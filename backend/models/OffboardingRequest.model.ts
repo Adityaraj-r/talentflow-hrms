@@ -9,7 +9,7 @@ export interface IOffboardingRequest extends Document {
     reason: string;
     proposedExitDate: Date;
     initiatedBy: string;
-    status: 'Pending Verification' | 'Pending CEO' | 'Re-verify' | 'Approved' | 'Rejected';
+    status: 'Pending Manager Approval' | 'Pending HR Clearance' | 'Pending Country Manager' | 'Pending CEO' | 'Approved' | 'Rejected';
     adminRemarks?: string;
     actionedBy?: string;
     actionedAt?: Date;
@@ -36,8 +36,15 @@ const OffboardingRequestSchema: Schema = new Schema({
     initiatedBy: { type: String, required: true },
     status: { 
         type: String, 
-        enum: ['Pending Verification', 'Pending CEO', 'Re-verify', 'Approved', 'Rejected'], 
-        default: 'Pending Verification',
+        enum: [
+            'Pending Manager Approval', 
+            'Pending HR Clearance', 
+            'Pending Country Manager', 
+            'Pending CEO', 
+            'Approved', 
+            'Rejected'
+        ], 
+        default: 'Pending Manager Approval',
         index: true
     },
     adminRemarks: { type: String, default: "" },

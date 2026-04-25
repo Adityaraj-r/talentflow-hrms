@@ -2,6 +2,8 @@ import { useParams } from "react-router-dom"
 import { useState } from "react"
 import axios from "axios"
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api"
+
 const ApplyJob = () => {
 
   const { id } = useParams()
@@ -10,6 +12,7 @@ const ApplyJob = () => {
   const [email,setEmail] = useState("")
   const [loading,setLoading] = useState(false)
   const [success,setSuccess] = useState(false)
+  const [applicationId,setApplicationId] = useState(null)
   const [resume,setResume] = useState(null)
 
   const handleSubmit = async (e) => {
@@ -27,8 +30,8 @@ const ApplyJob = () => {
         formData.append("email",email)
         formData.append("resume",resume)
 
-    await axios.post(
-      "http://localhost:5001/api/applications/apply",
+    const res = await axios.post(
+      `${API_BASE}/applications/apply`,
       formData,
       {
         headers:{
@@ -37,6 +40,8 @@ const ApplyJob = () => {
       }
     )
 
+      const created = res.data
+      setApplicationId(created?._id || created?.id || null)
       setSuccess(true)
 
       setName("")
@@ -68,8 +73,16 @@ const ApplyJob = () => {
 
         {success && (
 
-          <div className="bg-green-100 text-green-700 px-4 py-3 rounded-lg mb-6 text-sm">
-            Application submitted successfully 🎉
+          <div className="bg-green-100 text-green-700 px-4 py-3 rounded-lg mb-6 text-sm space-y-2">
+            <p>Application submitted successfully.</p>
+            {applicationId && (
+              <p className="font-mono text-xs break-all">
+                Save your application ID for status checks: <strong>{applicationId}</strong>
+              </p>
+            )}
+            <p className="text-xs">
+              You can track status on the Application Status page using this ID and your email.
+            </p>
           </div>
 
         )}

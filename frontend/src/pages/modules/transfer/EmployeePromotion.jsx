@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Award, Check, X, Search, Clock, Loader2, TrendingUp, ShieldCheck, Edit, RefreshCw } from "lucide-react"
+import { Award, Check, X, Search, Clock, Loader2, TrendingUp, ShieldCheck, Edit, RefreshCw, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
 import apiClient from "@/services/apiClient"
 import { cn } from "@/lib/utils"
@@ -15,10 +15,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 const EmployeePromotion = () => {
   const { user } = useAuth()
   const userRole = user?.role?.toUpperCase() || ""
-  
-  // STRICT RBAC
-  const canNominate = userRole === "HR_MANAGER"
-  const canViewBoard = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER"].includes(userRole)
+  const canNominate = userRole === "DIRECT_MANAGER"
+  const canViewBoard = ["ADMIN", "CEO", "COUNTRY_MANAGER", "HR_MANAGER" , "HR_OFFICER", "DIRECT_MANAGER"].includes(userRole)
 
   if (!canViewBoard && !canNominate) {
     return (
@@ -157,7 +155,7 @@ const ApprovalBoard = ({ userRole }) => {
                   <th className="p-4">Timeline</th>
                   <th className="p-4 min-w-[150px]">Business Case</th>
                   <th className="p-4 text-center">Status</th>
-                  {userRole !== "ADMIN" && <th className="p-4 text-center">Actions</th>}
+                  {userRole !== "ADMIN" && userRole !== "DIRECT_MANAGER" && <th className="p-4 text-center">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -212,41 +210,55 @@ const ApprovalBoard = ({ userRole }) => {
                         </div>
                       </td>
 
-                      {/* STATUS BADGE */}
                       <td className="p-4 text-center">
                         <span className={cn(
-                          "px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wider uppercase border",
-                          item.status === "Approved" ? "bg-green-50 text-green-700 border-green-200" :
-                          item.status === "Rejected" ? "bg-red-50 text-red-700 border-red-200" :
-                          item.status === "Pending CEO" ? "bg-purple-50 text-purple-700 border-purple-200" :
-                          item.status === "Re-verify" ? "bg-orange-50 text-orange-700 border-orange-200" :
-                          "bg-blue-50 text-blue-700 border-blue-200"
+                          "px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wider uppercase border whitespace-nowrap", // ADDED whitespace-nowrap
+                          item.status === "Approved" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800" :
+                          item.status === "Rejected" ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800" :
+                          item.status === "Pending HR Review" ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800" :
+                          item.status === "Pending Country Manager" ? "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800" :
+                          item.status === "Pending CEO" ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800" :
+                          item.status === "Re-verify" ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800" :
+                          "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
                         )}>
                           {item.status}
                         </span>
                       </td>
                       
-                      {userRole !== "ADMIN" && (
+                      {userRole !== "ADMIN" && userRole !== "DIRECT_MANAGER" && (
                         <td className="p-4">
                           <div className="flex justify-center gap-2">
-                            
-                            {/* COUNTRY MANAGER ACTIONS */}
-                            {userRole === "COUNTRY_MANAGER" && (item.status === "Pending Verification" || item.status === "Re-verify") && (
-                              <Button size="sm" variant="outline" className="h-8 text-blue-600 hover:bg-blue-50" onClick={() => setVerifyData(item)}>
+                            {userRole === "HR_MANAGER" && item.status === "Pending HR Review" && (
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="h-8 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/50 dark:hover:text-blue-300 transition-colors" 
+                                onClick={() => handleAction(item._id, 'Pending Country Manager')}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" /> Verify Compliance
+                              </Button>
+                            )}
+
+                            {userRole === "COUNTRY_MANAGER" && (item.status === "Pending Country Manager" || item.status === "Re-verify") && (
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-100 hover:text-indigo-700 dark:text-indigo-400 dark:border-indigo-800 dark:hover:bg-indigo-900/50 dark:hover:text-indigo-300 transition-colors" 
+                                onClick={() => setVerifyData(item)}
+                              >
                                 <Edit className="h-4 w-4 mr-1" /> Edit & Verify
                               </Button>
                             )}
-                            
-                            {/* CEO ACTIONS */}
+                          
                             {userRole === "CEO" && item.status === "Pending CEO" && (
                               <>
-                                <Button size="icon" variant="outline" className="h-8 w-8 text-green-600 hover:bg-green-50" onClick={() => handleAction(item._id, 'Approved')} title="Approve">
+                                <Button size="icon" variant="outline" className="h-8 w-8 text-green-600 border-green-200 hover:bg-green-100 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900/50 transition-colors" onClick={() => handleAction(item._id, 'Approved')} title="Approve">
                                   <Check className="h-4 w-4" />
                                 </Button>
-                                <Button size="icon" variant="outline" className="h-8 w-8 text-orange-600 hover:bg-orange-50" onClick={() => handleAction(item._id, 'Re-verify')} title="Send back to Country Manager">
+                                <Button size="icon" variant="outline" className="h-8 w-8 text-orange-600 border-orange-200 hover:bg-orange-100 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-900/50 transition-colors" onClick={() => handleAction(item._id, 'Re-verify')} title="Send back to Country Manager">
                                   <RefreshCw className="h-4 w-4" />
                                 </Button>
-                                <Button size="icon" variant="outline" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={() => handleAction(item._id, 'Rejected')} title="Reject">
+                                <Button size="icon" variant="outline" className="h-8 w-8 text-red-600 border-red-200 hover:bg-red-100 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/50 transition-colors" onClick={() => handleAction(item._id, 'Rejected')} title="Reject">
                                   <X className="h-4 w-4" />
                                 </Button>
                               </>
@@ -281,7 +293,7 @@ const NominationForm = ({ user }) => {
     const fetchTeam = async () => {
       try {
         const res = await apiClient.get('/admin/users')
-        const data = res.data?.users || res.data || []
+        const data = res.data?.users || res.data?.data || res.data || []
         setEmployees(data)
       } catch (error) { console.error(error) }
     }
@@ -296,34 +308,47 @@ const NominationForm = ({ user }) => {
     if (baseUser) {
       setIsFetchingDetails(true)
       try {
-        const relationKey = baseUser.employeeId || baseUser.employeeCode
+        const relationKey = baseUser.employeeCode || baseUser.employeeId || baseUser._id; 
+        
         if (relationKey) {
           const res = await apiClient.get(`/employees/${relationKey}`)
-          const deepEmpData = res.data || res;
-          if (deepEmpData) {
+          
+          let deepEmpData = res?.data?.data || res?.data?.employee || res?.data || res;
+          
+          if (Array.isArray(deepEmpData) && deepEmpData.length > 0) {
+              deepEmpData = deepEmpData[0];
+          }
+
+          if (deepEmpData && typeof deepEmpData === 'object') {
             setSelectedEmp(prev => ({
               ...prev,
               ...deepEmpData,
-              designation: deepEmpData.designation || prev.designation,
-              salary: deepEmpData.salary || prev.salary
+              designation: deepEmpData.designation || prev?.designation || "N/A",
+              salary: deepEmpData.salary || prev?.salary || { basic: 0 }
             }))
           }
         }
-      } catch (err) { console.error(err) } finally { setIsFetchingDetails(false) }
+      } catch (err) { 
+        console.error("Failed to fetch deep employee details:", err) 
+      } finally { 
+        setIsFetchingDetails(false) 
+      }
     }
   }
-
-  const submitMutation = useMutation({
+ const submitMutation = useMutation({
     mutationFn: (data) => apiClient.post("/promotions/nominate", data),
     onSuccess: () => {
-      toast.success("Nomination submitted to Country Manager for verification!")
+      toast.success("Nomination submitted for HR Compliance Review!")
       setSelectedEmp(null)
       setFormData({ newDesignation: "", newRole: "", newSalary: "", effectiveDate: "", justification: "" })
       queryClient.invalidateQueries(['promotions'])
     },
-    onError: (error) => toast.error(error?.message || "Failed to submit nomination")
+    onError: (err) => {
+      const errorMsg = err?.error || err?.response?.data?.error || err?.message || "Database rejected the payload.";
+      toast.error(`Error: ${errorMsg}`);
+      console.error("RAW BACKEND ERROR:", err);
+    }
   })
-
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!selectedEmp || !formData.newDesignation || !formData.newSalary || !formData.effectiveDate) {
@@ -333,7 +358,11 @@ const NominationForm = ({ user }) => {
     submitMutation.mutate({
       employeeId: selectedEmp.employeeCode || selectedEmp._id,
       employeeName: `${selectedEmp.firstName} ${selectedEmp.lastName}`,
-      employeeEmail: selectedEmp.email,
+      employeeEmail: selectedEmp.email || selectedEmp.workEmail || "N/A",
+
+      department: selectedEmp.department || "N/A",
+      currentDepartment: selectedEmp.department || "N/A",
+      
       currentDesignation: selectedEmp.designation || "Employee",
       currentRole: selectedEmp.role,
       currentSalary: selectedEmp.salary?.basic || 0,
@@ -345,14 +374,13 @@ const NominationForm = ({ user }) => {
       justification: formData.justification
     })
   }
-
   return (
     <Card className="max-w-4xl mx-auto shadow-sm border">
       <CardHeader className="bg-muted/20 border-b">
         <CardTitle className="flex items-center gap-2">
           <Award className="h-5 w-5 text-primary" /> Create Promotion Business Case
         </CardTitle>
-        <CardDescription>Initiate a promotion request. It will be sent to the Country Manager for verification.</CardDescription>
+        <CardDescription>Initiate a promotion request for your team member. It will be sent to HR for compliance verification.</CardDescription>
       </CardHeader>
       <CardContent className="p-6">
         <form onSubmit={handleSubmit} className="space-y-6">

@@ -3,8 +3,13 @@ import { Save, Plus, Loader2, Trash2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { getRoles, updateRole, createRole, deleteRole } from "@/services/roleService";
+import { clearPermissionCache } from "@/services/permissionService";
+import { useUser } from "@/contexts/UserContext";
 
 const RoleManagement = () => {
+  const { user: u } = useUser();
+  const canRolesWrite = u?.can?.("roles", "write");
+  const canRolesDelete = u?.can?.("roles", "delete");
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -17,6 +22,8 @@ const RoleManagement = () => {
     { id: "attendance", name: "Time & Attendance", description: "Leaves & Shifts" },
     { id: "settings", name: "System Configuration", description: "Global Settings" },
     { id: "roles", name: "Access Control", description: "RBAC Management" },
+    { id: "audit", name: "Audit & Compliance", description: "Security and administration logs" },
+    { id: "performance", name: "Performance (PMS)", description: "Appraisal cycles, reviews, goals, PIP" },
   ];
 
   useEffect(() => {
@@ -58,6 +65,7 @@ const RoleManagement = () => {
     setIsSaving(true);
     try {
       await Promise.all(roles.map(role => updateRole(role._id, { permissions: role.permissions })));
+      clearPermissionCache();
       toast.success("Permissions updated");
     } catch (error) {
       toast.error("Save failed");
@@ -109,13 +117,17 @@ const RoleManagement = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+            {canRolesWrite && (
             <Button variant="outline" onClick={handleAddRole} size="sm">
                 <Plus className="mr-2 h-4 w-4" /> Add Role
             </Button>
+            )}
+            {canRolesWrite && (
             <Button onClick={handleSave} disabled={isSaving} size="sm">
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Save Changes
             </Button>
+            )}
         </div>
       </div>
 
@@ -136,9 +148,11 @@ const RoleManagement = () => {
                           {role.name}
                        </span>
                        {!role.isSystemRole ? (
+                          canRolesDelete ? (
                           <button onClick={() => handleDeleteRole(role._id)} className="text-muted-foreground hover:text-red-500 p-1">
                              <Trash2 className="h-3.5 w-3.5" />
                           </button>
+                          ) : null
                        ) : <Lock className="h-3 w-3 text-muted-foreground/30" />}
                     </div>
                   </th>
@@ -159,9 +173,9 @@ const RoleManagement = () => {
                     return (
                         <td key={role._id} className="px-4 py-4 text-center align-middle whitespace-nowrap">
                           <div className="flex items-center justify-center gap-2">
-                             <PermissionToggle active={perms.read} onClick={() => !isSuperAdmin && togglePermission(rIndex, module.id, 'read')} label="View" variant="blue" disabled={isSuperAdmin} />
-                             <PermissionToggle active={perms.write} onClick={() => !isSuperAdmin && togglePermission(rIndex, module.id, 'write')} label="Edit" variant="amber" disabled={isSuperAdmin} />
-                             <PermissionToggle active={perms.delete} onClick={() => !isSuperAdmin && togglePermission(rIndex, module.id, 'delete')} label="Del" variant="red" disabled={isSuperAdmin} />
+                             <PermissionToggle active={perms.read} onClick={() => !isSuperAdmin && canRolesWrite && togglePermission(rIndex, module.id, 'read')} label="View" variant="blue" disabled={isSuperAdmin || !canRolesWrite} />
+                             <PermissionToggle active={perms.write} onClick={() => !isSuperAdmin && canRolesWrite && togglePermission(rIndex, module.id, 'write')} label="Edit" variant="amber" disabled={isSuperAdmin || !canRolesWrite} />
+                             <PermissionToggle active={perms.delete} onClick={() => !isSuperAdmin && canRolesWrite && togglePermission(rIndex, module.id, 'delete')} label="Del" variant="red" disabled={isSuperAdmin || !canRolesWrite} />
                           </div>
                         </td>
                     );

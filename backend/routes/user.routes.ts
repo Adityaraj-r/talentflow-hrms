@@ -7,18 +7,34 @@ import {
   resetUserPassword,
   deactivateUser,
 } from '../controllers/user.controller';
-import { protect, authorize } from '../middleware/auth.middleware';
+import { protect } from '../middleware/auth.middleware';
+import { authorizeByMatrix, authorizeByMatrixAny, MODULE_KEYS } from '../middleware/role.middleware';
+import { adminMutationLimiter } from '../middleware/rateLimit.middleware';
 
 const router = express.Router();
 
 router.use(protect as any);
-router.use(authorize('CEO', 'COUNTRY_MANAGER', 'HR_MANAGER', 'HR_OFFICER', 'ADMIN') as any);
 
-router.post('/', createUser);
-router.get('/', getAllUsers);
-router.get('/:id', getUserById);
-router.put('/:id', updateUser);
-router.put('/:id/reset-password', resetUserPassword);
-router.put('/:id/deactivate', deactivateUser);
+router.get(
+  '/',
+  authorizeByMatrixAny([
+    { module: MODULE_KEYS.SETTINGS, action: 'read' },
+    { module: MODULE_KEYS.EMPLOYEES, action: 'read' },
+  ]),
+  getAllUsers
+);
+router.get(
+  '/:id',
+  authorizeByMatrixAny([
+    { module: MODULE_KEYS.SETTINGS, action: 'read' },
+    { module: MODULE_KEYS.EMPLOYEES, action: 'read' },
+  ]),
+  getUserById
+);
+
+router.post('/', adminMutationLimiter, authorizeByMatrix(MODULE_KEYS.SETTINGS, 'write'), createUser);
+router.put('/:id/reset-password', adminMutationLimiter, authorizeByMatrix(MODULE_KEYS.SETTINGS, 'write'), resetUserPassword);
+router.put('/:id/deactivate', adminMutationLimiter, authorizeByMatrix(MODULE_KEYS.SETTINGS, 'write'), deactivateUser);
+router.put('/:id', adminMutationLimiter, authorizeByMatrix(MODULE_KEYS.SETTINGS, 'write'), updateUser);
 
 export default router;

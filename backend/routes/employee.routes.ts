@@ -5,6 +5,7 @@ import {
   getEmployeeById,
   getManageOnboarding,
   offboardEmployee,
+  getMyDocuments
 } from "../controllers/employee.controller";
 import { protect } from "../middleware/auth.middleware";
 
@@ -39,9 +40,23 @@ router.get(
 );
 
 router.get(
+  "/my-documents",
+  protect,
+  getMyDocuments
+);
+
+router.get(
   "/:id",
   protect,
-  allowRoles("ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "EMPLOYEE"),
+  allowRoles("ADMIN", 
+    "HR_MANAGER", 
+    "HR_OFFICER", 
+    "CEO", 
+    "COUNTRY_MANAGER", 
+    "DEPARTMENT_MANAGER", 
+    "DIRECT_MANAGER", 
+    "PROJECT_MANAGER", 
+    "EMPLOYEE"),
   getEmployeeById
 );
 

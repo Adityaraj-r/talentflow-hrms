@@ -38,47 +38,52 @@ export const SettingsProvider = ({ children }) => {
       sessionTimeout: 30,
       requireMFA: false,
       passwordExpiryDays: 90,
+      hrSmtpHost: '',
+      hrSmtpPort: '',
+      hrSmtpSecure: false,
+      hrSmtpUser: '',
+      hrSmtpPass: '',
+      hrSmtpPassConfigured: false,
     }
   })
   
   const [loading, setLoading] = useState(false)
 
-  // Fetch settings only when authenticated
-useEffect(() => {
+  useEffect(() => {
     const token = localStorage.getItem('token') || localStorage.getItem('idToken');
-    
     if (token) {
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(window.atob(base64));
+        const userRole = (payload.role?.name || payload.role || '').toUpperCase().replace(/\s+/g, "_");
         
-        if (payload.role === 'ADMIN' || payload.role === 'SUPER_ADMIN' || payload.role === 'HR_MANAGER') {
+        const allowedRoles = ["ADMIN", "SUPER_ADMIN", "SUPER ADMIN", "HR_MANAGER", "OPERATIONS_MANAGER", "CEO", "COUNTRY_MANAGER"];
+        
+        if (allowedRoles.includes(userRole)) {
           fetchSettings();
         } else {
           setLoading(false);
         }
-      } catch (error) {
-        console.error('Error decoding token in SettingsContext:', error);
-        setLoading(false);
+      } catch (e) {
+        fetchSettings();
       }
+    } else {
+      setLoading(false);
     }
   }, [])
 
  const fetchSettings = async () => {
     try {
       setLoading(true)
-      // Hit the new dedicated settings route directly
       const response = await apiClient.get('/settings/settings')
-      
-      // Safely unbox the data regardless of Axios interceptor setup
       const settingsData = response.data?.settings || response.settings || response.data || response
       
       if (settingsData && Object.keys(settingsData).length > 0) {
         setSettings(settingsData)
         localStorage.setItem('systemSettings', JSON.stringify(settingsData))
       }
-    } catch (error) {
-      if (error?.response?.status === 403) return
-      console.error('Failed to fetch settings:', error)
+    } catch {
     } finally {
       setLoading(false)
     }
