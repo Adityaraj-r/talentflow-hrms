@@ -114,9 +114,22 @@ const ViewCycleDetails = () => {
     return <Clock className="h-4 w-4 text-gray-400" />;
   };
 
+  const getEmployeePerson = (review) => {
+    if (review?.employeeId && typeof review.employeeId === "object") return review.employeeId;
+    if (review?.employee && typeof review.employee === "object") return review.employee;
+    return null;
+  };
+
   const getEmployeeName = (review) => {
-    const n = displayPersonName(review.employeeId);
-    return n === "N/A" ? "—" : n;
+    const person = getEmployeePerson(review);
+    const fromPerson = displayPersonName(person, review);
+    if (fromPerson !== "N/A") return fromPerson;
+    const fromFlat =
+      review?.employeeName ||
+      review?.employeeFullName ||
+      review?.name ||
+      review?.employeeEmail;
+    return fromFlat ? String(fromFlat) : "—";
   };
 
   const getReviewerName = (review) => {
@@ -124,7 +137,13 @@ const ViewCycleDetails = () => {
     return n === "N/A" ? "—" : n;
   };
 
-  const getEmployeeDept = (review) => displayDepartment(review.employeeId);
+  const getEmployeeDept = (review) => {
+    const person = getEmployeePerson(review);
+    const fromPerson = displayDepartment(person, review);
+    if (fromPerson !== "N/A") return fromPerson;
+    const fromFlat = review?.department || review?.employeeDepartment || review?.dept;
+    return fromFlat ? String(fromFlat) : "—";
+  };
 
   if (loading) {
     return (

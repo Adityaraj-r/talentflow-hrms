@@ -9,7 +9,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ROLES } from "@/constants/roles"
-import { useAuth } from "@/contexts/AuthContext"
+import { useUser } from "@/contexts/UserContext"
 
 const Sidebar = ({
   isOpen,
@@ -19,7 +19,7 @@ const Sidebar = ({
   companyName,
 }) => {
   const location = useLocation()
-  const { user } = useAuth()
+  const { user } = useUser()
 
   const [localIsCollapsed, setLocalIsCollapsed] = useState(false)
   const isCollapsed = propIsCollapsed !== undefined ? propIsCollapsed : localIsCollapsed
@@ -31,8 +31,17 @@ const Sidebar = ({
     appraisal: false, disciplinaryActions: false, documentRequests: false,
   })
 
+  const normalizeRole = (value) =>
+    (value || "")
+      .toString()
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+
   const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
-  const userRole = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
+  const userRole = normalizeRole(rawRole)
+  const isRole = (...roles) => roles.some((role) => normalizeRole(role) === userRole)
   const dbPermissions = user?.permissions || {}
 
   useEffect(() => {
@@ -110,11 +119,8 @@ const Sidebar = ({
   }, [location.pathname, isCollapsed])
 
   const canSee = (moduleKey) => {
-    if (userRole === "SUPER ADMIN" || userRole === "SUPER_ADMIN") {
-      if (moduleKey === "performance") return dbPermissions.performance?.read === true
-      return true
-    }
-    return dbPermissions[moduleKey]?.read === true
+    if (isRole("ADMIN", "SUPER ADMIN", "SUPER_ADMIN")) return true;
+    return dbPermissions[moduleKey]?.read === true;
   }
 
   const toggleGroup = (group) => {
@@ -326,7 +332,7 @@ const Sidebar = ({
   const renderSidebarContent = () => {
     if (!userRole) return <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
 
-    if (userRole === "ADMIN" || userRole === "SUPER ADMIN") {
+    if (isRole(ROLES.ADMIN, ROLES.SUPER_ADMIN, "SUPER ADMIN")) {
       return (
         <>
           <SidebarLink to="/admin/dashboard" icon={Home} label="Dashboard" />
@@ -364,6 +370,8 @@ const Sidebar = ({
           <SidebarLink to="/dashboard/pm/tasks" icon={FileCheck} label="Task Board" />
 
           <FullPayrollSidebarGroup label="Payroll & Compliance" />
+          
+          <SidebarLink to="/pms/appraisal-cycles" icon={Award} label="Performance (PMS)" />
 
           <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
@@ -379,7 +387,7 @@ const Sidebar = ({
       )
     }
 
-    if (userRole === "EMPLOYEE") {
+    if (isRole(ROLES.EMPLOYEE)) {
       return (
         <>
           <SidebarLink to="/employee/dashboard" icon={Home} label="Dashboard" />
@@ -394,12 +402,10 @@ const Sidebar = ({
           <SidebarLink to="/employee/resignation" icon={AlertTriangle} label="Initiate Separation" />
           <SidebarLink to="/payroll/salary-slip" icon={FileText} label="My Salary Slips" />
 
-          {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
             <SubLink to="/role/employee/appraisal" label="My Appraisal" />
             <SubLink to="/employee/appraisal-result" label="Published results" />
           </SidebarGroup>
-          )}
 
           <SidebarGroup id="documentRequests" icon={FileCheck} label="Documents">
             <SubLink to="/role/employee/my-documents" label="View my Documents" />
@@ -409,7 +415,7 @@ const Sidebar = ({
       )
     }
 
-    if (userRole === ROLES.HR_MANAGER) {
+    if (isRole(ROLES.HR_MANAGER)) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
@@ -457,14 +463,12 @@ const Sidebar = ({
 
           <HRPayrollSidebarGroup />
 
-          {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Performance (PMS)">
             <SubLink to="/role/hr_manager/appraisal" label="Appraisal Hub" />
             <SubLink to="/role/hr_manager/appraisal/cycles" label="Manage Cycles" />
             <SubLink to="/pms/appraisal-cycles" label="Appraisal cycles (bonus)" />
             <SubLink to="/role/hr_manager/appraisal/analytics" label="Analytics" icon={TrendingUp} />
           </SidebarGroup>
-          )}
 
           <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
             <SubLink to="/role/hr_manager/disciplinary-actions" label="Manage Actions" />
@@ -477,7 +481,7 @@ const Sidebar = ({
       )
     }
 
-    if (userRole === ROLES.HR_OFFICER) {
+    if (isRole(ROLES.HR_OFFICER)) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
@@ -524,19 +528,16 @@ const Sidebar = ({
             <SubLink to="/role/hr_officer/document-requests" label="Requests" />
           </SidebarGroup>
 
-          {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Performance (PMS)">
             <SubLink to="/role/hr_manager/appraisal/cycles" label="Cycles & Reviews" />
             <SubLink to="/pms/appraisal-cycles" label="Appraisal cycles (bonus)" />
-            <SubLink to="/role/hr_manager/appraisal" label="Hub" />
             <SubLink to="/role/hr_manager/appraisal/analytics" label="Analytics" icon={TrendingUp} />
           </SidebarGroup>
-          )}
         </>
       )
     }
 
-   if (userRole === ROLES.CEO || userRole === ROLES.COUNTRY_MANAGER) {
+   if (isRole(ROLES.CEO, ROLES.COUNTRY_MANAGER)) {
       return (
         <>
           <SidebarLink to="/ceo/dashboard" icon={LayoutDashboard} label="Dashboard" />
@@ -548,7 +549,7 @@ const Sidebar = ({
             <SubLink to="/employee-center/employee-transfer" label="Employee Lifecycle" />
           </SidebarGroup>
 
-          {(userRole === ROLES.CEO || userRole === ROLES.COUNTRY_MANAGER) && (
+          {isRole(ROLES.CEO, ROLES.COUNTRY_MANAGER) && (
             <SidebarGroup
               id="payroll"
               icon={DollarSign}
@@ -595,14 +596,12 @@ const Sidebar = ({
             </SidebarGroup>
           )}
 
-          {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Performance (PMS)">
-            <SubLink to="/ceo/performance" label="CEO Overview" icon={Target} />
+            <SubLink to="/role/ceo/appraisal" label="CEO Overview" icon={Target} />
             <SubLink to="/pms/appraisal-cycles" label="Appraisal cycles" />
             <SubLink to="/role/ceo/performance-review" label="CEO sign-off" icon={FileBadge} />
             <SubLink to="/role/ceo/appraisal" label="Analytics Dashboard" icon={TrendingUp} />
           </SidebarGroup>
-          )}
 
           {canSee("reports") && (
             <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
@@ -611,7 +610,7 @@ const Sidebar = ({
       );
     }
 
-    if (userRole === ROLES.DEPARTMENT_MANAGER) {
+    if (isRole(ROLES.DEPARTMENT_MANAGER)) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
@@ -622,8 +621,8 @@ const Sidebar = ({
             <SubLink to="/employee-center/digital-locker" label="Digital Locker" />
           </SidebarGroup>
 
-
           {canSee('recruitment') && <SidebarLink to="/staff-requisition" icon={Users} label={getRecruitmentLabel()} />}
+          
           {canSee('attendance') && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
@@ -653,7 +652,7 @@ const Sidebar = ({
       )
     }
 
-    if (userRole === ROLES.DIRECT_MANAGER) {
+    if (isRole(ROLES.DIRECT_MANAGER)) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
@@ -676,11 +675,9 @@ const Sidebar = ({
           
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
 
-          {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
             <SubLink to="/role/direct_manager/appraisal" label="Team Appraisals" />
           </SidebarGroup>
-          )}
 
           <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
             <SubLink to="/role/direct_manager/disciplinary-actions" label="Manage Actions" />
@@ -691,29 +688,30 @@ const Sidebar = ({
       )
     }
 
-    if (userRole === ROLES.FINANCE_MANAGER) {
+    if (isRole(ROLES.FINANCE_MANAGER)) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
-         
+          {canSee("attendance") && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
               <SubLink to="/attendance/my-leaves" label="My Leave" />
-            </SidebarGroup>
-       
-
-          <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
-          <FullPayrollSidebarGroup label={getPayrollLabel()} />
-          {canSee("performance") && (
-            <SidebarGroup id="appraisal" icon={Award} label="Performance (bonus)">
-              <SubLink to="/pms/appraisal-cycles" label="Appraisal cycles" />
+              <SubLink to="/attendance" label="Attendance Records" />
+              <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" />
+              <SubLink to="/attendance/holidays" label="Holiday List" />
             </SidebarGroup>
           )}
+          <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          <FullPayrollSidebarGroup label={getPayrollLabel()} />
+          
+          <SidebarGroup id="appraisal" icon={Award} label="Performance (bonus)">
+            <SubLink to="/pms/appraisal-cycles" label="Appraisal cycles" />
+          </SidebarGroup>
         </>
       )
     }
 
-    if (userRole === ROLES.PAYROLL_OFFICER) {
+    if (isRole(ROLES.PAYROLL_OFFICER)) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
@@ -724,14 +722,13 @@ const Sidebar = ({
             </SidebarGroup>
           )}
           <FullPayrollSidebarGroup label={getPayrollLabel()} />
-          {canSee("performance") && (
-            <SidebarLink to="/role/ceo/appraisal" icon={Award} label="Performance (bonus signals)" />
-          )}
+          
+          <SidebarLink to="/role/ceo/appraisal" icon={Award} label="Performance (bonus signals)" />
         </>
       )
     }
 
-    if (userRole === ROLES.PROJECT_MANAGER) {
+    if (isRole(ROLES.PROJECT_MANAGER)) {
       return (
         <>
           <SidebarLink to="/dashboard/project-manager" icon={Home} label="Dashboard" />
@@ -749,7 +746,7 @@ const Sidebar = ({
       )
     }
 
-    if (userRole === ROLES.OPERATIONS_MANAGER) {
+    if (isRole(ROLES.OPERATIONS_MANAGER)) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
