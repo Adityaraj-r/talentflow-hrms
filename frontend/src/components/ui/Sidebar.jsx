@@ -31,8 +31,17 @@ const Sidebar = ({
     appraisal: false, disciplinaryActions: false, documentRequests: false,
   })
 
+  const normalizeRole = (value) =>
+    (value || "")
+      .toString()
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+
   const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
-  const userRole = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
+  const userRole = normalizeRole(rawRole)
+  const isRole = (...roles) => roles.some((role) => normalizeRole(role) === userRole)
   const dbPermissions = user?.permissions || {}
 
   useEffect(() => {
@@ -110,7 +119,7 @@ const Sidebar = ({
   }, [location.pathname, isCollapsed])
 
   const canSee = (moduleKey) => {
-    if (["ADMIN", "SUPER ADMIN", "SUPER_ADMIN"].includes(userRole)) return true;
+    if (isRole("ADMIN", "SUPER ADMIN", "SUPER_ADMIN")) return true;
     return dbPermissions[moduleKey]?.read === true;
   }
 
@@ -323,7 +332,7 @@ const Sidebar = ({
   const renderSidebarContent = () => {
     if (!userRole) return <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
 
-    if (userRole === "ADMIN" || userRole === "SUPER ADMIN") {
+    if (isRole(ROLES.ADMIN, ROLES.SUPER_ADMIN, "SUPER ADMIN")) {
       return (
         <>
           <SidebarLink to="/admin/dashboard" icon={Home} label="Dashboard" />
@@ -378,7 +387,7 @@ const Sidebar = ({
       )
     }
 
-    if (userRole === "EMPLOYEE") {
+    if (isRole(ROLES.EMPLOYEE)) {
       return (
         <>
           <SidebarLink to="/employee/dashboard" icon={Home} label="Dashboard" />
@@ -406,7 +415,7 @@ const Sidebar = ({
       )
     }
 
-    if (userRole === ROLES.HR_MANAGER) {
+    if (isRole(ROLES.HR_MANAGER)) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
@@ -472,7 +481,7 @@ const Sidebar = ({
       )
     }
 
-    if (userRole === ROLES.HR_OFFICER) {
+    if (isRole(ROLES.HR_OFFICER)) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
@@ -528,7 +537,7 @@ const Sidebar = ({
       )
     }
 
-   if (userRole === ROLES.CEO || userRole === ROLES.COUNTRY_MANAGER) {
+   if (isRole(ROLES.CEO, ROLES.COUNTRY_MANAGER)) {
       return (
         <>
           <SidebarLink to="/ceo/dashboard" icon={LayoutDashboard} label="Dashboard" />
@@ -540,7 +549,7 @@ const Sidebar = ({
             <SubLink to="/employee-center/employee-transfer" label="Employee Lifecycle" />
           </SidebarGroup>
 
-          {(userRole === ROLES.CEO || userRole === ROLES.COUNTRY_MANAGER) && (
+          {isRole(ROLES.CEO, ROLES.COUNTRY_MANAGER) && (
             <SidebarGroup
               id="payroll"
               icon={DollarSign}
@@ -601,7 +610,7 @@ const Sidebar = ({
       );
     }
 
-    if (userRole === ROLES.DEPARTMENT_MANAGER) {
+    if (isRole(ROLES.DEPARTMENT_MANAGER)) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
@@ -643,7 +652,7 @@ const Sidebar = ({
       )
     }
 
-    if (userRole === ROLES.DIRECT_MANAGER) {
+    if (isRole(ROLES.DIRECT_MANAGER)) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
@@ -679,7 +688,7 @@ const Sidebar = ({
       )
     }
 
-    if (userRole === ROLES.FINANCE_MANAGER) {
+    if (isRole(ROLES.FINANCE_MANAGER)) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
@@ -702,7 +711,7 @@ const Sidebar = ({
       )
     }
 
-    if (userRole === ROLES.PAYROLL_OFFICER) {
+    if (isRole(ROLES.PAYROLL_OFFICER)) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
@@ -719,7 +728,7 @@ const Sidebar = ({
       )
     }
 
-    if (userRole === ROLES.PROJECT_MANAGER) {
+    if (isRole(ROLES.PROJECT_MANAGER)) {
       return (
         <>
           <SidebarLink to="/dashboard/project-manager" icon={Home} label="Dashboard" />
@@ -737,7 +746,7 @@ const Sidebar = ({
       )
     }
 
-    if (userRole === ROLES.OPERATIONS_MANAGER) {
+    if (isRole(ROLES.OPERATIONS_MANAGER)) {
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
