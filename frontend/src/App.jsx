@@ -612,6 +612,11 @@ function App() {
                         <DashboardLayout><PerformanceAnalytics /></DashboardLayout>
                       </ProtectedRoute>
                     } />
+                    <Route path="/role/ceo/performance" element={
+                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                        <Navigate to="/role/ceo/appraisal" replace />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/role/ceo/performance-review" element={
                       <ProtectedRoute allowedRoles={["CEO"]}>
                         <DashboardLayout><CEOAppraisal /></DashboardLayout>

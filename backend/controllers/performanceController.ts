@@ -243,7 +243,7 @@ export class PerformanceController {
         reviews.length > 0
           ? reviews.reduce((sum, r) => sum + (r.overallRating || 0), 0) / reviews.length
           : 0;
-      const UserModel = (await import('../models/User.model')).default;
+      const UserModel = (await import('../models/User.model.js')).default as unknown as typeof import('../models/User.model').default;
       const totalEmployees = await UserModel.countDocuments({ role: 'EMPLOYEE', isActive: true });
       res.json({
         success: true,
@@ -332,7 +332,7 @@ export class PerformanceController {
       const c = canonicalStatus(review.status);
       if (c !== WorkflowStage.GOALS_PENDING)
         return res.status(400).json({ success: false, error: 'Goals already confirmed or workflow started' });
-      const { GoalModel } = await import('../models/Goal');
+      const { GoalModel } = await import('../models/Goal.js');
       const gc = await GoalModel.countDocuments({ employeeId: review.employeeId, cycleId: review.cycleId });
       if (gc < 1)
         return res.status(400).json({ success: false, error: 'Add at least one goal before confirming.' });
@@ -487,7 +487,7 @@ export class PerformanceController {
         reviewerId: review.reviewerId as mongoose.Types.ObjectId,
         employeeDepartment: (emp?.department as string) || null,
       });
-      const { GoalModel } = await import('../models/Goal');
+      const { GoalModel } = await import('../models/Goal.js');
       const goals = await GoalModel.find({
         cycleId: review.cycleId,
         employeeId: review.employeeId,
