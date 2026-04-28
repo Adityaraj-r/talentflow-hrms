@@ -5,7 +5,7 @@ import {
   FileCheck, Home, ChevronDown, ChevronRight, ChevronLeft,
   Briefcase, Plane, Calculator, LogOut, Clock, Settings,
   FileText, ArrowLeftRight, TrendingUp, Shield, Layers, Database, Building,
-  LayoutDashboard, CircleDollarSign, Target, Network, FileBadge
+  LayoutDashboard, CircleDollarSign, Target, Network, FileBadge, BarChart2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ROLES } from "@/constants/roles"
@@ -142,7 +142,7 @@ const Sidebar = ({
     return "Payroll"
   }
 
- const getLeaveManagementPath = () => {
+  const getLeaveManagementPath = () => {
     return "/attendance/my-leaves"
   }
 
@@ -321,7 +321,7 @@ const Sidebar = ({
     : null
 
   const renderSidebarContent = () => {
-    if (!userRole) return null
+    if (!userRole) return <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
 
     if (userRole === "ADMIN" || userRole === "SUPER ADMIN") {
       return (
@@ -358,6 +358,8 @@ const Sidebar = ({
             <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" />
           </SidebarGroup>
 
+          <SidebarLink to="/dashboard/pm/tasks" icon={FileCheck} label="Task Board" />
+
           <FullPayrollSidebarGroup label="Payroll & Compliance" />
           
           <SidebarLink to="/pms/appraisal-cycles" icon={Award} label="Performance (PMS)" />
@@ -388,6 +390,7 @@ const Sidebar = ({
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           <SidebarLink to="/dashboard/employee/make-transfer" icon={ArrowLeftRight} label="Make Transfer Request" />
+          <SidebarLink to="/employee/resignation" icon={AlertTriangle} label="Initiate Separation" />
           <SidebarLink to="/payroll/salary-slip" icon={FileText} label="My Salary Slips" />
 
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
@@ -407,6 +410,7 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
           <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
             <SubLink to="/employee-center/all-employees" label="All Employees" />
@@ -442,6 +446,8 @@ const Sidebar = ({
             </SidebarGroup>
           )}
 
+          <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+
           {canSee("employees") && (
             <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
           )}
@@ -470,6 +476,7 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
           {canSee("recruitment") && (
             <SidebarGroup id="recruitment" icon={Users} label={getRecruitmentLabel()}>
@@ -491,6 +498,8 @@ const Sidebar = ({
               <SubLink to="/attendance/roster" label="Shift Roster" />
             </SidebarGroup>
           )}
+
+          <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
 
           <HRPayrollSidebarGroup />
 
@@ -556,6 +565,7 @@ const Sidebar = ({
           )}
           <SidebarLink to="/ceo/org-structure" icon={Network} label="Org Structure" />
           <SidebarLink to="/ceo/audit" icon={FileBadge} label="Audit Summary" />
+          <SidebarLink to="/ceo/task-analytics" icon={BarChart2} label="Task Analytics" />
 
         
           {canSee("attendance") && (
@@ -618,9 +628,11 @@ const Sidebar = ({
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
+          {canSee("performance") && (
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
             <SubLink to="/role/department_manager/appraisal" label="Team Appraisals" />
           </SidebarGroup>
+          )}
 
           <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
             <SubLink to="/role/department_manager/disciplinary-actions" label="Manage Actions" />
@@ -635,6 +647,12 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+
+          <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
+            <SubLink to="/employee-center/all-employees" label="My Team Directory" />
+            <SubLink to="/employee-center/employee-transfer" label="Transfers & Promotions" />
+          </SidebarGroup>
+
           {canSee('attendance') && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
@@ -645,6 +663,8 @@ const Sidebar = ({
               <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" />
             </SidebarGroup>
           )}
+          
+          <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
 
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
             <SubLink to="/role/direct_manager/appraisal" label="Team Appraisals" />
@@ -721,6 +741,7 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
+          <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
           {canSee("recruitment") && (
             <SidebarGroup id="recruitment" icon={Briefcase} label={getRecruitmentLabel()}>
               <SubLink to="/staff-requisition" label="Staff Requisition" />
@@ -737,6 +758,7 @@ const Sidebar = ({
               <SubLink to="/attendance/my-leaves" label="My Leave" />
             </SidebarGroup>
           )}
+          <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           {canSee("employees") && (
             <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
           )}

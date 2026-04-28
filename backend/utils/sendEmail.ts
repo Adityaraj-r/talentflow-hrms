@@ -321,3 +321,132 @@ export const sendInterviewScheduleEmail = async (
         return { sent: false, reason: error?.message || 'Email send failed' };
     }
 };
+
+export const sendTerminationEmail = async (
+    personalEmail: string,
+    payload: {
+        name: string;
+        exitDate: string;
+        reason: string;
+        companyName: string;
+    }
+) => {
+    try {
+        const mailer = await createHrTransporter();
+        if (!mailer) {
+            console.error('SMTP is not configured. Skipping termination email.');
+            return { sent: false, reason: 'SMTP not configured' };
+        }
+        const fromEmail = mailer.cfg.user;
+
+        const mailOptions = {
+            from: `"HR Administration - ${payload.companyName}" <${fromEmail}>`,
+            to: personalEmail,
+            subject: 'Important Notice Regarding Your Employment',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                    <div style="background-color: #ef4444; padding: 20px; text-align: center;">
+                        <h2 style="color: #ffffff; margin: 0; font-size: 20px;">Notice of Employment Separation</h2>
+                    </div>
+                    <div style="padding: 24px; background-color: #ffffff;">
+                        <p style="color: #334155; font-size: 16px; margin-top: 0;">Dear ${payload.name},</p>
+                        <p style="color: #334155; font-size: 16px; line-height: 1.6;">
+                            This email serves as formal notification that your employment with <strong>${payload.companyName}</strong> has been concluded.
+                        </p>
+                        
+                        <div style="background-color: #f8fafc; padding: 16px; border-radius: 6px; margin: 24px 0; border: 1px solid #e2e8f0;">
+                            <p style="margin: 0 0 12px 0; color: #0f172a;"><strong>Effective Date of Separation:</strong> <span style="color: #ef4444;">${payload.exitDate}</span></p>
+                            <p style="margin: 0; color: #0f172a;"><strong>Reason for Separation:</strong><br/>
+                            <span style="color: #475569; display: inline-block; margin-top: 4px;">${payload.reason}</span></p>
+                        </div>
+
+                        <p style="color: #334155; font-size: 15px; line-height: 1.6;">
+                            Your system access has been revoked. If you are in possession of any company assets (laptops, ID badges, etc.), please coordinate with the HR department for their immediate return. Information regarding your final settlement and offboarding documents will be communicated to you shortly.
+                        </p>
+                        
+                        <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                            <p style="color: #64748b; font-size: 14px; margin: 0;">
+                                Sincerely,<br/>
+                                <strong style="color: #334155;">Human Resources Department</strong><br/>
+                                ${payload.companyName}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `,
+        };
+
+        await mailer.transporter.sendMail(mailOptions);
+        console.log(`Termination email successfully sent to ${personalEmail}`);
+        return { sent: true };
+    } catch (error: any) {
+        console.error('Error sending termination email:', error);
+        return { sent: false, reason: error?.message || 'Email send failed' };
+    }
+};
+
+export const sendApplicationStatusEmail = async (
+    candidateEmail: string,
+    candidateName: string,
+    status: "Shortlisted" | "Rejected" | "Selected"
+) => {
+    try {
+        const mailer = await createHrTransporter();
+
+        if (!mailer) {
+            console.error("SMTP not configured. Skipping status email.");
+            return;
+        }
+
+        let subject = "";
+        let html = "";
+
+        if (status === "Shortlisted") {
+            subject = "You are Shortlisted 🎉";
+            html = `
+                <h2>Hi ${candidateName},</h2>
+                <p>Congratulations! You have been <b>shortlisted</b> for the next round.</p>
+                <p>We will contact you soon with further details.</p>
+                <br/>
+                <p>Best regards,<br/>HR Team</p>
+            `;
+        }
+
+        if (status === "Rejected") {
+            subject = "Application Update";
+            html = `
+                <h2>Hi ${candidateName},</h2>
+                <p>Thank you for applying.</p>
+                <p>We regret to inform you that you were not selected.</p>
+                <br/>
+                <p>We wish you all the best for your future.</p>
+                <p>Regards,<br/>HR Team</p>
+            `;
+        }
+
+        if (status === "Selected") {
+            subject = "You are Selected 🎉";
+            html = `
+                <h2>Hi ${candidateName},</h2>
+                <p>Congratulations! 🎉</p>
+                <p>You have been <b>selected</b> for the position.</p>
+                <p>HR team will contact you with onboarding details.</p>
+                <br/>
+                <p>Best regards,<br/>HR Team</p>
+            `;
+        }
+
+        const fromEmail = mailer.cfg.user;
+
+        await mailer.transporter.sendMail({
+            from: `"InternsLand HR" <${fromEmail}>`,
+            to: candidateEmail,
+            subject,
+            html,
+        });
+
+        console.log(`Status email sent to ${candidateEmail}`);
+    } catch (error) {
+        console.error("Error sending status email:", error);
+    }
+};

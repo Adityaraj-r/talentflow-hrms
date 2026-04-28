@@ -368,8 +368,24 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
       ];
     }
 
-    if (req.user?.role === 'DEPARTMENT_MANAGER') {
-      query.department = req.user.department;
+    const requestingUser = req.user;
+
+    if (requestingUser?.role === 'DIRECT_MANAGER') {
+      const managerEmployee = await Employee.findOne({
+        $or: [{ userId: requestingUser.id }, { email: requestingUser.email }]
+      });
+
+      if (managerEmployee && managerEmployee.employeeCode) {
+        const directReports = await Employee.find({ reportingManagerId: managerEmployee.employeeCode }).select('employeeCode');
+        const reportCodes = directReports.map(emp => emp.employeeCode).filter(Boolean);
+        query.employeeCode = { $in: reportCodes };
+        query.role = "EMPLOYEE"; 
+      } else {
+        query.employeeCode = { $in: [] };
+      }
+    } 
+    else if (requestingUser?.role === 'DEPARTMENT_MANAGER') {
+      query.department = requestingUser.department;
     }
 
     if (scope === 'payroll') {

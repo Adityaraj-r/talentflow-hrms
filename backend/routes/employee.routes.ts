@@ -48,7 +48,15 @@ router.get(
 router.get(
   "/:id",
   protect,
-  allowRoles("ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "EMPLOYEE"),
+  allowRoles("ADMIN", 
+    "HR_MANAGER", 
+    "HR_OFFICER", 
+    "CEO", 
+    "COUNTRY_MANAGER", 
+    "DEPARTMENT_MANAGER", 
+    "DIRECT_MANAGER", 
+    "PROJECT_MANAGER", 
+    "EMPLOYEE"),
   getEmployeeById
 );
 

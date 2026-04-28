@@ -14,7 +14,18 @@ export interface IPromotion extends Document {
     effectiveDate: Date;
     justification: string;
     nominatedBy: string;
-    status: 'Pending Verification' | 'Pending CEO' | 'Re-verify' | 'Approved' | 'Rejected';
+    status: {
+        type: String,
+        enum: [
+            'Pending HR Review', 
+            'Pending Country Manager', 
+            'Pending CEO', 
+            'Re-verify', 
+            'Approved', 
+            'Rejected'
+        ],
+        default: 'Pending HR Review'
+    },
     adminRemarks?: string;
     actionedBy?: string;
     actionedAt?: Date;
@@ -40,11 +51,17 @@ const PromotionSchema: Schema = new Schema({
     effectiveDate: { type: Date, required: true },
     justification: { type: String, required: true },
     nominatedBy: { type: String, required: true },
-    status: { 
-        type: String, 
-        enum: ['Pending Verification', 'Pending CEO', 'Re-verify', 'Approved', 'Rejected'], 
-        default: 'Pending Verification',
-        index: true
+    status: {
+        type: String,
+        enum: [
+            'Pending HR Review', 
+            'Pending Country Manager', 
+            'Pending CEO', 
+            'Re-verify', 
+            'Approved', 
+            'Rejected'
+        ],
+        default: 'Pending HR Review'
     },
     adminRemarks: { type: String, default: "" },
     actionedBy: { type: String },

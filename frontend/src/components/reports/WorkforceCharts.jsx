@@ -232,9 +232,6 @@ export default function WorkforceCharts({
     }
   };
 
-  /* ===============================
-     LOADING STATE
-  =============================== */
   if (loading) {
     return (
       <Card className="rounded-2xl">
@@ -256,9 +253,6 @@ export default function WorkforceCharts({
     );
   }
 
-  /* ===============================
-     MONTH GENERATION
-  =============================== */
   const months =
     filters?.startDate && filters?.endDate
       ? getMonthsBetween(filters.startDate, filters.endDate)
@@ -280,9 +274,6 @@ export default function WorkforceCharts({
     };
   });
 
-  /* ===============================
-     FORECAST LOGIC
-  =============================== */
   const headcounts = finalData.map((d) => d.headcount);
   const first = headcounts[0] || 0;
   const last = headcounts[headcounts.length - 1] || 0;
@@ -307,9 +298,6 @@ export default function WorkforceCharts({
     return { ...item, forecast: null };
   });
 
-  /* ===============================
-     MODAL DATA
-  =============================== */
   const selectedIndex = finalData.findIndex(
     (d) => d.month === selectedMonth
   );
@@ -339,8 +327,8 @@ export default function WorkforceCharts({
               Workforce Analytics
             </h2>
 
-            <div className="w-full h-[320px]">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="w-full min-h-[320px]">
+              <ResponsiveContainer width="99%" height={320}>
                 <AreaChart
                   data={forecastData}
                   onClick={handleMonthClick}
@@ -374,9 +362,6 @@ export default function WorkforceCharts({
         </Card>
       </motion.div>
 
-      {/* ===============================
-         MODAL (Using Dialog)
-      =============================== */}
       <Dialog
         open={!!selectedMonth}
         onOpenChange={() => setSelectedMonth(null)}

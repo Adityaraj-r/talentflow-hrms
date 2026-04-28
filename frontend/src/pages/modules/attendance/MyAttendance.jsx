@@ -312,13 +312,10 @@ const MyAttendance = () => {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
-        {/* Left Column */}
         <div className="xl:col-span-2 space-y-6">
 
-          {/* Clock Widget — Hero */}
           <AttendanceWidget employeeName={user?.firstName || "Employee"} />
 
-          {/* Attendance History */}
           <Card className="border-slate-200 dark:border-slate-800 overflow-hidden">
             <CardHeader className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
               <div className="flex items-center justify-between">
@@ -381,7 +378,7 @@ const MyAttendance = () => {
                               isToday && "bg-blue-50/40 dark:bg-blue-900/10"
                             )}
                           >
-                            {/* Date */}
+                          
                             <td className="px-4 py-3.5 whitespace-nowrap">
                               <div className="flex items-center gap-2">
                                 {isToday && (
@@ -407,7 +404,6 @@ const MyAttendance = () => {
                               </div>
                             </td>
 
-                            {/* Status */}
                             <td className="px-4 py-3.5 whitespace-nowrap">
                               <div className="flex items-center gap-1.5">
                                 <span className={cn("w-2 h-2 rounded-full shrink-0", sc.dot)} />
@@ -420,7 +416,6 @@ const MyAttendance = () => {
                               </div>
                             </td>
 
-                            {/* Clock In */}
                             <td className="px-4 py-3.5 whitespace-nowrap">
                               <span
                                 className={cn(
@@ -434,7 +429,6 @@ const MyAttendance = () => {
                               </span>
                             </td>
 
-                            {/* Clock Out */}
                             <td className="px-4 py-3.5 whitespace-nowrap">
                               <span
                                 className={cn(
@@ -448,21 +442,18 @@ const MyAttendance = () => {
                               </span>
                             </td>
 
-                            {/* Break */}
                             <td className="px-4 py-3.5 whitespace-nowrap">
                               <span className="text-sm text-slate-500 dark:text-slate-400 tabular-nums">
                                 {formatBreakTime(day.totalBreakMinutes)}
                               </span>
                             </td>
 
-                            {/* Total Hours */}
                             <td className="px-4 py-3.5 whitespace-nowrap text-right">
                               <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 tabular-nums">
                                 {calculateTotalHours(day.clockIn, day.clockOut, day.totalBreakMinutes)}
                               </span>
                             </td>
 
-                            {/* OT */}
                             <td className="px-4 py-3.5 whitespace-nowrap text-right">
                               {otFmt ? (
                                 <div className="flex flex-col items-end gap-0.5">
@@ -484,7 +475,6 @@ const MyAttendance = () => {
                               )}
                             </td>
 
-                            {/* Action */}
                             <td className="px-4 py-3.5 whitespace-nowrap text-right">
                               {day.isLocked ? (
                                 <span className="inline-flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
@@ -514,10 +504,8 @@ const MyAttendance = () => {
           </Card>
         </div>
 
-        {/* Right Column — Sidebar */}
         <div className="space-y-5">
 
-          {/* Shift Card */}
           <div className="rounded-2xl border border-blue-100 dark:border-blue-900/50 bg-gradient-to-br from-blue-50 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20 p-5">
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
@@ -556,7 +544,6 @@ const MyAttendance = () => {
             )}
           </div>
 
-          {/* This Month Summary */}
           <Card className="border-slate-200 dark:border-slate-800">
             <CardHeader className="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
               <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">

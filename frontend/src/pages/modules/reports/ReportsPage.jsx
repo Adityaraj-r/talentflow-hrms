@@ -1,78 +1,3 @@
-// import { useState, useEffect } from "react";
-
-// import FiltersSection from "@/components/reports/FiltersSection";
-// import DepartmentWorkingHours from "@/components/reports/DepartmentWorkingHours";
-// import DashboardSection from "@/components/reports/DashboardSection";
-// import PerformanceSection from "@/components/reports/PerformanceSection";
-
-// import useReports from "@/hooks/useReports";
-// import useEmployeePerformance from "@/hooks/useEmployeePerformance";
-
-// import ReportsHeader from "@/components/reports/ReportsHeader";
-// import KPISection from "@/components/reports/KPISection";
-// import WorkforceCharts from "@/components/reports/WorkforceCharts";
-// import AttendanceCharts from "@/components/reports/AttendanceCharts";
-// import DepartmentChart from "@/components/reports/DepartmentChart";
-// import LeavePieChart from "@/components/reports/LeavePieChart";
-// import ExecutiveInsights from "@/components/reports/ExecutiveInsights";
-// import WorkforceHealthMeter from "@/components/reports/WorkforceHealthMeter";
-
-// export default function ReportsPage() {
-//   /* ================= GLOBAL FILTERS ================= */
-//   const [filters, setFilters] = useState({
-//     startDate: "",
-//     endDate: "",
-//     department: "all",
-//     role: "all",
-//   });
-
-//   const {
-//     data: reportsData,
-//     loading: reportsLoading,
-//     error: reportsError,
-//   } = useReports(filters);
-
-//   /* ================= PERFORMANCE FILTERS ================= */
-//   const [performanceFilters, setPerformanceFilters] = useState({
-//     role: "all",
-//     department: "all",
-//     search: "",
-//     page: 1,
-//     limit: 10,
-//   });
-
-//   useEffect(() => {
-//     setPerformanceFilters((prev) => ({
-//       ...prev,
-//       role: filters.role,
-//       department: filters.department,
-//       page: 1,
-//     }));
-//   }, [filters.role, filters.department]);
-
-//   const performanceHook = useEmployeePerformance(performanceFilters);
-
-//   return (
-//     <div className="p-6 space-y-8">
-//       <h1 className="text-3xl font-bold">Reports & Analytics</h1>
-
-//       <ReportsHeader filters={filters} setFilters={setFilters} />
-
-//       <DashboardSection
-//         data={reportsData}
-//         loading={reportsLoading}
-//         error={reportsError}
-//         filters={filters}
-//       />
-    
-//       <PerformanceSection
-//         hook={performanceHook}
-//         filters={performanceFilters}
-//         setFilters={setPerformanceFilters}
-//       />
-//     </div>
-//   );
-// }
 
 import { useState, useEffect } from "react";
 import api from "@/services/apiClient";
@@ -80,32 +5,53 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 import DashboardSection from "@/components/reports/DashboardSection";
-import PerformanceSection from "@/components/reports/PerformanceSection";
 import ReportsHeader from "@/components/reports/ReportsHeader";
 
 import useReports from "@/hooks/useReports";
 import useEmployeePerformance from "@/hooks/useEmployeePerformance";
+import { useAuth } from "@/contexts/AuthContext";
+
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+
 export default function ReportsPage() {
+  const { user } = useAuth();
 
-  /* ================= GLOBAL FILTERS ================= */
-  const [filters, setFilters] = useState({
-    period: "3m",
-    startDate: "",
-    endDate: "",
-    department: "all",
-    role: "all",
-  });
+  const role =
+    typeof user?.role === "string"
+      ? user.role
+      : user?.role?.name || "";
 
-  /* ================= REPORTS DATA ================= */
-  const {
-    data: reportsData,
-    loading: reportsLoading,
-    error: reportsError,
-  } = useReports(filters);
+  const isDept =
+    role === "DEPARTMENT_MANAGER";
 
-  /* ================= PERFORMANCE FILTERS ================= */
-  const [performanceFilters, setPerformanceFilters] = useState({
+  const canExport = [
+    "ADMIN",
+    "CEO",
+    "HR_MANAGER",
+  ].includes(role);
+
+  const showPerformance = [
+    "CEO",
+    "ADMIN",
+    "HR_MANAGER",
+    "DEPARTMENT_MANAGER",
+    "DIRECT_MANAGER",
+  ].includes(role);
+
+  const [filters, setFilters] =
+    useState({
+      period: "3m",
+      startDate: "",
+      endDate: "",
+      department: "all",
+      role: "all",
+    });
+
+  const [
+    performanceFilters,
+    setPerformanceFilters,
+  ] = useState({
     role: "all",
     department: "all",
     search: "",
@@ -113,105 +59,324 @@ export default function ReportsPage() {
     limit: 10,
   });
 
+  const {
+    data: reportsData,
+    loading: reportsLoading,
+    error: reportsError,
+  } = useReports(filters);
+
+  const performanceHook =
+    useEmployeePerformance(
+      performanceFilters
+    );
+
   useEffect(() => {
-    setPerformanceFilters((prev) => ({
-      ...prev,
-      role: filters.role,
-      department: filters.department,
-      page: 1,
-    }));
-  }, [filters.role, filters.department]);
-
-  const performanceHook = useEmployeePerformance(performanceFilters);
-
-  /* ================= EXPORT CSV ================= */
-  const handleExportCSV = async () => {
-    const res = await api.get("/reports/export", { params: filters });
-    const data = res.data.data;
-
-    if (!data.length) return;
-
-    const headers = Object.keys(data[0]);
-    const csvRows = [];
-
-    csvRows.push(headers.join(","));
-
-    for (const row of data) {
-      csvRows.push(
-        headers.map(h => `"${row[h]}"`).join(",")
-      );
+    if (isDept) {
+      setFilters((prev) => ({
+        ...prev,
+        department: "all",
+        role: "all",
+      }));
     }
+  }, [isDept]);
 
-    const blob = new Blob([csvRows.join("\n")], {
-      type: "text/csv",
-    });
+  useEffect(() => {
+    setPerformanceFilters(
+      (prev) => ({
+        ...prev,
+        role: filters.role,
+        department:
+          filters.department,
+        page: 1,
+      })
+    );
+  }, [
+    filters.role,
+    filters.department,
+  ]);
 
-    const url = window.URL.createObjectURL(blob);
+  const [
+    productivityData,
+    setProductivityData,
+  ] = useState(null);
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "HRMS_Report.csv";
-    a.click();
-  };
+  useEffect(() => {
+    if (role ==="OPERATIONS_MANAGER") {
+      api
+        .get(
+          "/reports/productivity",
+          {
+            params: filters,
+          }
+        )
+        .then((res) =>
+          setProductivityData(
+            res.data.data
+          )
+        )
+        .catch(
+          console.error
+        );
+    }
+  }, [filters, role]);
 
-  /* ================= EXPORT PDF ================= */
-  const handleExportPDF = async () => {
-    const res = await api.get("/reports/export", { params: filters });
-    const data = res.data.data;
+  const [
+    ceoInsights,
+    setCeoInsights,
+  ] = useState(null);
 
-    if (!data.length) return;
+  useEffect(() => {
+    if ( role === "CEO" || role === "ADMIN" ) {
+      api
+        .get(
+          "/reports/ceo-insights"
+        )
+        .then((res) =>
+          setCeoInsights(
+            res.data.data
+          )
+        )
+        .catch(
+          console.error
+        );
+    }
+  }, [role]);
 
-    const doc = new jsPDF();
+  const handleExportCSV =
+    async () => {
+      const res =
+        await api.get(
+          "/reports/export",
+          {
+            params: filters,
+          }
+        );
 
-    doc.setFontSize(16);
-    doc.text("HRMS Report", 14, 15);
+      const rows = res.data?.data ||
+        [];
 
-    autoTable(doc, {
-      head: [Object.keys(data[0])],
-      body: data.map(row => Object.values(row)),
-      startY: 20,
-    });
+      if (!rows.length)
+        return;
 
-    doc.save("HRMS_Report.pdf");
-  };
+      const headers =
+        Object.keys(
+          rows[0]
+        );
+
+      const csv = [
+        headers.join(","),
+        ...rows.map(
+          (row) =>
+            headers
+              .map(
+                (h) =>
+                  `"${row[h]}"`
+              )
+              .join(",")
+        ),
+      ].join("\n");
+
+      const blob =
+        new Blob(
+          [csv],
+          {
+            type: "text/csv",
+          }
+        );
+
+      const url =
+        URL.createObjectURL(
+          blob
+        );
+
+      const a =
+        document.createElement(
+          "a"
+        );
+
+      a.href = url;
+      a.download =
+        "HRMS_Report.csv";
+      a.click();
+    };
+
+  const handleExportPDF =
+    async () => {
+      const res =
+        await api.get(
+          "/reports/export",
+          {
+            params: filters,
+          }
+        );
+
+      const rows =
+        res.data?.data ||
+        [];
+
+      if (!rows.length)
+        return;
+
+      const doc =
+        new jsPDF();
+
+      doc.setFontSize(16);
+
+      doc.text(
+        "HRMS Report",
+        14,
+        15
+      );
+
+      autoTable(doc, {
+        head: [
+          Object.keys(
+            rows[0]
+          ),
+        ],
+        body: rows.map(
+          (r) =>
+            Object.values(
+              r
+            )
+        ),
+        startY: 22,
+      });
+
+      doc.save(
+        "HRMS_Report.pdf"
+      );
+    };
 
   return (
-    <div className="p-6 space-y-8">
-      <h1 className="text-3xl font-bold">
-        Reports & Analytics
-      </h1>
+    <div className="p-6 space-y-6">
 
-      <ReportsHeader filters={filters} setFilters={setFilters} />
-
-      {/* EXPORT BUTTONS */}
-      <div className="flex gap-4">
-        <button
-          onClick={handleExportCSV}
-          className="px-4 py-2 bg-emerald-600 text-white rounded-lg"
-        >
-          Export CSV
-        </button>
-
-        <button
-          onClick={handleExportPDF}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg"
-        >
-          Export PDF
-        </button>
-      </div>
+      <ReportsHeader
+        filters={filters}
+        setFilters={
+          setFilters
+        }
+      />
 
       <DashboardSection
         data={reportsData}
         loading={reportsLoading}
         error={reportsError}
         filters={filters}
+        setFilters={setFilters}
+        performanceHook={performanceHook}
       />
 
-      <PerformanceSection
-        hook={performanceHook}
-        filters={performanceFilters}
-        setFilters={setPerformanceFilters}
-      />
+      {role ===
+        "OPERATIONS_MANAGER" &&
+        productivityData && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+
+            {[
+              {
+                label:"Avg Working Hours",
+                value:productivityData.avgWorkingHours,
+              },
+              {
+                label:"Break Hours",
+                value: productivityData.avgBreakHours,
+              },
+              {
+                label:"Efficiency",
+                value: `${productivityData.efficiency}%`,
+              },
+              {
+                label:"Productivity",
+                value: `${productivityData.productivity}%`,
+              },
+            ].map(
+              (
+                item,i
+              ) => (
+                <Card
+                  key={i}
+                  className="rounded-2xl shadow-sm"
+                >
+                  <CardContent className="p-5">
+                    <p className="text-sm text-muted-foreground">
+                      {
+                        item.label
+                      }
+                    </p>
+
+                    <h3 className="text-2xl font-bold mt-2">
+                      {
+                        item.value
+                      }
+                    </h3>
+                  </CardContent>
+                </Card>
+              )
+            )}
+
+          </div>
+        )}
+
+      {(role === "CEO" ||
+        role === "ADMIN") &&
+        ceoInsights && (
+          <div className="grid md:grid-cols-2 gap-6">
+
+            <Card className="rounded-2xl shadow-sm">
+              <CardContent className="p-5">
+                <h2 className="font-semibold mb-4">
+                  Top Performers
+                </h2>
+
+                {ceoInsights.topPerformers.map(
+                  (
+                    p,
+                    i
+                  ) => (
+                    <div
+                      key={i}
+                      className="py-2 border-b last:border-0"
+                    >
+                      {p.name} —{" "}
+                      {
+                        p.performance
+                      }
+                      %
+                    </div>
+                  )
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl shadow-sm">
+              <CardContent className="p-5">
+                <h2 className="font-semibold mb-4">
+                  Low Performers
+                </h2>
+
+                {ceoInsights.lowPerformers.map(
+                  (
+                    p,
+                    i
+                  ) => (
+                    <div
+                      key={i}
+                      className="py-2 border-b last:border-0"
+                    >
+                      {p.name} —{" "}
+                      {
+                        p.performance
+                      }
+                      %
+                    </div>
+                  )
+                )}
+              </CardContent>
+            </Card>
+
+          </div>
+        )}
+
     </div>
   );
 }

@@ -3,20 +3,18 @@ import { useParams, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import {
   ArrowLeft, Mail, Building, Phone, Calendar,
   User, Shield, CheckCircle2, XCircle, DollarSign,
   Loader2, Save, TrendingUp, TrendingDown, Hash,
-  UserMinus, AlertTriangle,
+  UserMinus
 } from "lucide-react"
 import adminService from "@/services/adminService"
 import apiClient from "@/services/apiClient"
 import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import InitiateSeparationModal from "@/components/modals/InitiateSeparationModal" // <-- IMPORTED HERE
 
 const HR_ROLES = ["HRMANAGER", "HR_MANAGER", "HROFFICER", "HR_OFFICER", "PAYROLLOFFICER", "PAYROLL_OFFICER", "ADMIN", "SUPER ADMIN", "SUPERADMIN"]
 const INITIATOR_ROLES = ["HR_MANAGER"]
@@ -148,7 +146,6 @@ const EmployeeProfileView = () => {
                 </div>
               </div>
             </div>
-
             {canInitiateOffboarding && isActive && (
               <Button 
                 variant="destructive" 
@@ -156,7 +153,7 @@ const EmployeeProfileView = () => {
                 onClick={() => setShowOffboardModal(true)}
               >
                 <UserMinus className="h-4 w-4 mr-2" />
-                Request Offboarding
+                Initiate Separation
               </Button>
             )}
           </div>
@@ -229,17 +226,15 @@ const EmployeeProfileView = () => {
         )}
 
       </div>
-
-      <OffboardEmployeeModal 
+      <InitiateSeparationModal 
         isOpen={showOffboardModal} 
         onClose={() => setShowOffboardModal(false)} 
-        employee={employee}
-        fullName={fullName}
+        preSelectedEmployee={employee} 
         onSuccess={() => {
-          setShowOffboardModal(false)
-          navigate("/employee-center/all-employees")
+          navigate("/employee-center/all-employees") 
         }}
       />
+
     </div>
   )
 }
@@ -463,112 +458,5 @@ const InfoRow = ({ icon: Icon, label, value, valueClassName }) => (
     </div>
   </div>
 )
-
-const OffboardEmployeeModal = ({ isOpen, onClose, employee, fullName, onSuccess }) => {
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({ 
-    type: "", 
-    proposedExitDate: "", 
-    reason: "" 
-  })
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!formData.type || !formData.proposedExitDate || !formData.reason) {
-      toast.error("Please fill in all required fields.")
-      return
-    }
-
-    setLoading(true)
-    try {
-      const payload = {
-        employeeId: employee.employeeCode || employee._id,
-        employeeName: fullName,
-        department: employee.department || "N/A",
-        designation: employee.designation || employee.role || "N/A",
-        type: formData.type,
-        proposedExitDate: formData.proposedExitDate,
-        reason: formData.reason
-      }
-
-      await apiClient.post(`/offboarding/initiate`, payload)
-      toast.success(`Separation pipeline initiated for ${fullName}.`)
-      onSuccess()
-    } catch (error) {
-      toast.error(error?.response?.data?.error || "Failed to initiate separation.")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (!employee) return null
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md border-red-200 dark:border-red-900">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-500">
-            <AlertTriangle className="h-5 w-5" />
-            Initiate Employee Offboarding
-          </DialogTitle>
-          <DialogDescription>
-            This will push an official offboarding request to the Country Manager and CEO for review. System access will remain active until final approval.
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">Separation Type <span className="text-red-500">*</span></Label>
-            <Select 
-              value={formData.type} 
-              onValueChange={(val) => setFormData(prev => ({ ...prev, type: val }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select off-board type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Resignation">Resignation</SelectItem>
-                <SelectItem value="Termination">Termination (For Cause)</SelectItem>
-                <SelectItem value="Layoff">Layoff / Redundancy</SelectItem>
-                <SelectItem value="Retirement">Retirement</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-       <div className="space-y-2">
-            <Label className="text-sm font-semibold">Proposed Last Working Day <span className="text-red-500">*</span></Label>
-            <Input 
-              type="date" 
-              required
-              value={formData.proposedExitDate}
-              onChange={(e) => setFormData({ ...formData, proposedExitDate: e.target.value })}
-              className="w-full relative pr-10 dark:[color-scheme:dark] [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">Justification / Reason <span className="text-red-500">*</span></Label>
-            <Textarea 
-              placeholder="Provide context for the executive team..." 
-              required
-              className="min-h-[100px]"
-              value={formData.reason}
-              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-            />
-          </div>
-
-          <DialogFooter className="pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="destructive" disabled={loading}>
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Submit to Proceed"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 export default EmployeeProfileView

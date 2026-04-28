@@ -364,18 +364,27 @@ const TaskDetailDrawer = ({ task, onClose, onStatusChange, onDelete }) => {
             <div>
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Move to</p>
               <div className="flex flex-wrap gap-2">
-                {Object.entries(STATUS_CONFIG)
-                  .filter(([k]) => k !== task.status)
-                  .map(([k, v]) => (
+                {(() => {
+                  const ALLOWED = {
+                    TO_DO:       [TASK_STATUS.IN_PROGRESS],
+                    IN_PROGRESS: [TASK_STATUS.DONE],
+                    DONE:        [TASK_STATUS.IN_PROGRESS], 
+                  }
+                  const allowed = ALLOWED[task.status] ?? []
+                  return allowed.map(k => (
                     <button
                       key={k}
                       onClick={() => onStatusChange(task._id, k)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-foreground hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     >
                       <ArrowRight className="w-3 h-3" />
-                      {v.label}
+                      {STATUS_CONFIG[k].label}
+                      {task.status === TASK_STATUS.DONE && (
+                        <span className="text-[9px] text-muted-foreground ml-0.5">(reopen)</span>
+                      )}
                     </button>
-                  ))}
+                  ))
+                })()}
               </div>
             </div>
 
@@ -580,11 +589,20 @@ const TaskBoard = () => {
   }
 
   const handleCreate = async (payload) => {
-    const res     = await taskService.createTask(payload)
-    const created = res?.data ?? res
-    setTasks(prev => [created, ...prev])
-    setIsCreateOpen(false)
-    toast.success("Task created")
+    try {
+      const res     = await taskService.createTask(payload)
+      const created = res?.data ?? res
+      setTasks(prev => [created, ...prev])
+      setIsCreateOpen(false)
+      toast.success("Task created and assigned")
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to create task. Please try again."
+      toast.error(msg)
+    }
   }
 
   const handleDeleteConfirm = async (task) => {

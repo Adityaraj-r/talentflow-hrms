@@ -23,6 +23,12 @@ export class AuthController {
 
       if (user.isActive === false) {
         await createLog(user._id.toString(), `${user.firstName} ${user.lastName}`, 'Login Attempt', 'Auth', 'Deactivated account access attempt', String(ip), 'Failed');
+        if (user.isDeleted) {
+            return res.status(403).json({ 
+              success: false, 
+              error: 'Your account has been terminated. Please contact the HR department for further assistance.' 
+            });
+        }
         return res.status(403).json({ success: false, error: 'Your account has been deactivated.' });
       }
 
@@ -53,6 +59,7 @@ export class AuthController {
           role: user.role,
           department: user.department,
           phoneNumber: user.phoneNumber,
+          gender: user.gender, // <-- ADD THIS LINE
           isActive: user.isActive
         }
       });
@@ -80,7 +87,7 @@ export class AuthController {
         return res.status(404).json({ success: false, error: 'User not found' });
       }
 
-      return res.json({
+     return res.json({
         success: true,
         data: {
           id: user._id,
@@ -91,6 +98,7 @@ export class AuthController {
           role: user.role,
           department: user.department,
           phoneNumber: user.phoneNumber,
+          gender: user.gender,
           isActive: user.isActive,
           currentShift: user.currentShift,
           isEmailVerified: user.isEmailVerified,

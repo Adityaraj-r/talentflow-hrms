@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { toast } from "sonner"
+import { CalendarClock } from "lucide-react"
 
 const CandidateApplications = () => {
   const { user } = useUser()
@@ -62,7 +63,15 @@ const CandidateApplications = () => {
     }
 
   }
-
+  
+const handleSelected = async (id) => {
+  try {
+    await apiClient.put(`/applications/${id}/status`, { status: "Selected" })
+    fetchApplications()
+  } catch (err) {
+    toast.error(err?.response?.data?.error || "Failed to select")
+  }
+}
   const handleReject = async (id) => {
 
     try{
@@ -98,6 +107,11 @@ const CandidateApplications = () => {
     if(status === "Rejected")
       return "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
 
+    if(status === "Interview")
+      return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
+
+    if(status === "Selected")
+      return "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
     return ""
   }
 
@@ -106,10 +120,12 @@ const CandidateApplications = () => {
     const shortlisted = applications.filter(a => a.status === "Shortlisted").length
     const rejected = applications.filter(a => a.status === "Rejected").length
     const applied = applications.filter(a => a.status === "Applied").length
-    return { total, shortlisted, rejected, applied }
+    const selected = applications.filter(a => a.status === "Selected").length
+    const interview = applications.filter(a => a.status === "Interview").length
+    return { total, shortlisted, rejected, applied, selected, interview }
   }, [applications])
 
-  const { total, shortlisted, rejected, applied } = stats
+  const { total, shortlisted, rejected, applied, selected ,interview} = stats
 
   return (
 
@@ -204,6 +220,44 @@ const CandidateApplications = () => {
           <UserX className="text-red-600"/>
 
         </div>
+        
+
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-6 flex justify-between items-center">
+
+          <div>
+
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Selected
+            </p>
+
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {selected}
+            </h2>
+
+          </div>
+
+          <UserCheck className="text-yellow-600"/>
+
+        </div>
+<div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-2xl p-6 flex justify-between items-center">
+
+          <div>
+
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              interview
+            </p>
+
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {interview}
+            </h2>
+
+          </div>
+
+          <UserCheck className="text-green-600"/>
+
+        </div>
+
+        
 
       </div>
 
@@ -283,7 +337,7 @@ const CandidateApplications = () => {
                   <Button
                     onClick={()=>handleShortlist(app._id)}
                     disabled={app.status !== "Applied"}
-                    className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-40"
+                    className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-40"
                   >
                     Shortlist
                   </Button>
@@ -295,6 +349,13 @@ const CandidateApplications = () => {
                   >
                     Reject
                   </Button>
+                  <Button
+  onClick={()=>handleSelected(app._id)}
+  disabled={app.status !== "Interview"}
+  className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-40"
+>
+  Selected
+</Button>
                 </>
               )}
 
