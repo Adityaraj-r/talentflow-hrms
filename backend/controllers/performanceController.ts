@@ -243,8 +243,7 @@ export class PerformanceController {
         reviews.length > 0
           ? reviews.reduce((sum, r) => sum + (r.overallRating || 0), 0) / reviews.length
           : 0;
-      const UserModel = (await import('../models/User.model.js')).default as unknown as typeof import('../models/User.model').default;
-      const totalEmployees = await UserModel.countDocuments({ role: 'EMPLOYEE', isActive: true });
+      const totalEmployees = await User.countDocuments({ role: 'EMPLOYEE', isActive: true });
       res.json({
         success: true,
         data: {

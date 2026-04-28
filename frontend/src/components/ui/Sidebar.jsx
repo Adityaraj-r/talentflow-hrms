@@ -19,7 +19,7 @@ const Sidebar = ({
   companyName,
 }) => {
   const location = useLocation()
-  const { user } = useAuth() 
+  const { user } = useUser()
 
   const [localIsCollapsed, setLocalIsCollapsed] = useState(false)
   const isCollapsed = propIsCollapsed !== undefined ? propIsCollapsed : localIsCollapsed
@@ -671,6 +671,7 @@ const Sidebar = ({
               <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" />
               <SubLink to="/attendance/holidays" label="Holiday List" />
             </SidebarGroup>
+          )}
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           <FullPayrollSidebarGroup label={getPayrollLabel()} />
           
