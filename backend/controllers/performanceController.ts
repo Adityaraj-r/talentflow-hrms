@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
 import User from '../models/User.model';
+import Employee from '../models/Employee.model';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { PerformanceCycleModel, CycleStatus } from '../models/PerformanceCycle';
 import { PerformanceReviewModel } from '../models/PerformanceReview';
@@ -71,6 +72,107 @@ function viewerFromReq(req: AuthRequest) {
 
 async function loadUserLean(id: string) {
   return User.findById(id).select('firstName lastName email role department').lean();
+}
+
+type DisplayPerson = {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  department?: string;
+  designation?: string;
+  profilePhoto?: string;
+  employeeCode?: string;
+};
+
+type ReviewWithEmployeeRef = {
+  employeeId?: unknown;
+};
+
+function extractObjectIdString(value: unknown): string | null {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  if (value instanceof mongoose.Types.ObjectId) return value.toString();
+  if (typeof value === 'object' && value && '_id' in value) {
+    const nested = (value as { _id?: unknown })._id;
+    if (!nested) return null;
+    if (typeof nested === 'string') return nested;
+    if (nested instanceof mongoose.Types.ObjectId) return nested.toString();
+  }
+  return null;
+}
+
+function hasDisplayPersonFields(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const p = value as {
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    email?: string;
+    department?: string;
+    designation?: string;
+  };
+  return Boolean(
+    (p.firstName && p.firstName.trim()) ||
+      (p.lastName && p.lastName.trim()) ||
+      (p.name && p.name.trim()) ||
+      (p.email && p.email.trim()) ||
+      (p.department && p.department.trim()) ||
+      (p.designation && p.designation.trim())
+  );
+}
+
+async function hydrateEmployeeRefs(reviews: ReviewWithEmployeeRef[]): Promise<void> {
+  const unresolved = new Set<string>();
+  for (const review of reviews) {
+    if (hasDisplayPersonFields(review.employeeId)) continue;
+    const id = extractObjectIdString(review.employeeId);
+    if (id) unresolved.add(id);
+  }
+  if (unresolved.size === 0) return;
+
+  const objectIds = Array.from(unresolved)
+    .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+  if (objectIds.length === 0) return;
+
+  const employees = await Employee.find({
+    $or: [{ _id: { $in: objectIds } }, { userId: { $in: objectIds } }],
+  })
+    .select('userId firstName lastName email workEmail department designation employeeCode')
+    .lean();
+
+  const byEmployeeId = new Map<string, DisplayPerson>();
+  const byUserId = new Map<string, DisplayPerson>();
+
+  for (const emp of employees) {
+    const empId = extractObjectIdString(emp._id);
+    const userId = extractObjectIdString(emp.userId);
+    const display: DisplayPerson = {
+      _id: empId ?? userId ?? '',
+      firstName: typeof emp.firstName === 'string' ? emp.firstName : undefined,
+      lastName: typeof emp.lastName === 'string' ? emp.lastName : undefined,
+      email:
+        typeof emp.workEmail === 'string' && emp.workEmail.trim()
+          ? emp.workEmail
+          : typeof emp.email === 'string'
+            ? emp.email
+            : undefined,
+      department: typeof emp.department === 'string' ? emp.department : undefined,
+      designation: typeof emp.designation === 'string' ? emp.designation : undefined,
+      employeeCode: typeof emp.employeeCode === 'string' ? emp.employeeCode : undefined,
+    };
+    if (empId) byEmployeeId.set(empId, display);
+    if (userId) byUserId.set(userId, display);
+  }
+
+  for (const review of reviews) {
+    if (hasDisplayPersonFields(review.employeeId)) continue;
+    const rawId = extractObjectIdString(review.employeeId);
+    if (!rawId) continue;
+    const display = byEmployeeId.get(rawId) ?? byUserId.get(rawId);
+    if (display) review.employeeId = display;
+  }
 }
 
 async function overlapExists(startDate: Date, endDate: Date, excludeId?: string): Promise<boolean> {
@@ -331,7 +433,7 @@ export class PerformanceController {
       const c = canonicalStatus(review.status);
       if (c !== WorkflowStage.GOALS_PENDING)
         return res.status(400).json({ success: false, error: 'Goals already confirmed or workflow started' });
-      const { GoalModel } = await import('../models/Goal.js');
+      const { GoalModel } = await import('../models/Goal');
       const gc = await GoalModel.countDocuments({ employeeId: review.employeeId, cycleId: review.cycleId });
       if (gc < 1)
         return res.status(400).json({ success: false, error: 'Add at least one goal before confirming.' });
@@ -372,6 +474,7 @@ export class PerformanceController {
         .populate('reviewerId', POP_REVIEWER_PUBLIC)
         .populate('cycleId', POP_CYCLE_FULL)
         .sort({ createdAt: -1 });
+      await hydrateEmployeeRefs(reviews as unknown as ReviewWithEmployeeRef[]);
 
       if (scope === 'department') {
         const vd = req.user?.department || '';
@@ -408,6 +511,7 @@ export class PerformanceController {
         .populate('reviewerId', POP_REVIEWER_PUBLIC)
         .populate('cycleId', POP_CYCLE_FULL)
         .sort({ createdAt: -1 });
+      await hydrateEmployeeRefs(reviews as unknown as ReviewWithEmployeeRef[]);
 
       if (scope === 'department') {
         const vd = req.user?.department || '';
@@ -438,6 +542,7 @@ export class PerformanceController {
         .populate('cycleId', POP_CYCLE_FULL)
         .populate('reviewerId', POP_REVIEWER_PUBLIC)
         .sort({ createdAt: -1 });
+      await hydrateEmployeeRefs(reviews as unknown as ReviewWithEmployeeRef[]);
       res.json({ success: true, data: reviews });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Error';
@@ -457,6 +562,7 @@ export class PerformanceController {
         .populate('calibratedBy', POP_REVIEWER_PUBLIC)
         .populate('ceoReviewerId', POP_REVIEWER_PUBLIC);
       if (!review) return res.status(404).json({ success: false, error: 'Review not found' });
+      await hydrateEmployeeRefs([review as unknown as ReviewWithEmployeeRef]);
       const emp = review.employeeId as { department?: string } | null;
       await assertCanViewReview({
         viewer: viewerFromReq(req),
@@ -486,7 +592,7 @@ export class PerformanceController {
         reviewerId: review.reviewerId as mongoose.Types.ObjectId,
         employeeDepartment: (emp?.department as string) || null,
       });
-      const { GoalModel } = await import('../models/Goal.js');
+      const { GoalModel } = await import('../models/Goal');
       const goals = await GoalModel.find({
         cycleId: review.cycleId,
         employeeId: review.employeeId,
@@ -859,6 +965,7 @@ export class PerformanceController {
         .populate('cycleId', POP_CYCLE_FULL)
         .populate('reviewerId', POP_REVIEWER_PUBLIC);
       if (!review) return res.status(404).json({ success: false, error: 'No review found for this cycle' });
+      await hydrateEmployeeRefs([review as unknown as ReviewWithEmployeeRef]);
       res.json({ success: true, data: review });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Error';
