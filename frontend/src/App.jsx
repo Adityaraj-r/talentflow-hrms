@@ -1,15 +1,11 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import { Toaster } from "sonner"
-import { ThemeProvider } from "./contexts/ThemeContext"
-import { AuthProvider, useAuth } from "./contexts/AuthContext"
+import { useAuth } from "./contexts/AuthContext"
 import { RoleProvider } from "./contexts/RoleContext"
 import { SettingsProvider } from "./contexts/SettingsContext"
-import { UserProvider } from "./contexts/UserContext"
 import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import { getMyPermissions, can } from "./services/permissionService"
-
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 // Auth Pages
 import Login from "./pages/auth/Login"
@@ -136,17 +132,6 @@ import EmployeeResignation from "./pages/role/EMPLOYEE/EmployeeResignation"
 import MyDocuments from "./pages/modules/documents/MyDocuments"
 
 const CEOLeaveManagement = LeaveManagement
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-})
-
-const ADMIN_ROLES = ["ADMIN", "SUPER ADMIN"]
 
 const ProtectedRoute = ({ children, allowedRoles, requiredPermission, requiredPermissionAny }) => {
   const { user, isAuthenticated, loading } = useAuth()
@@ -281,14 +266,11 @@ const DashboardRouter = () => {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <SettingsProvider>
-            <RoleProvider>
-                <Router>
-                  <Toaster position="top-right" richColors />
-                  <Routes>
+    <SettingsProvider>
+      <RoleProvider>
+        <Router>
+          <Toaster position="top-right" richColors />
+          <Routes>
 
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
@@ -805,13 +787,10 @@ function App() {
                     <Route path="/" element={<Navigate to="/dashboard-redirect" />} />
                     <Route path="*" element={<Navigate to="/dashboard-redirect" />} />
 
-                  </Routes>
-                </Router>
-            </RoleProvider>
-          </SettingsProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+          </Routes>
+        </Router>
+      </RoleProvider>
+    </SettingsProvider>
   )
 }
 
