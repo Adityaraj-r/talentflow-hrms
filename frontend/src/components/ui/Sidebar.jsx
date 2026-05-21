@@ -536,7 +536,7 @@ const Sidebar = ({
         </>
       )
     }
-
+//hr
    if (isRole(ROLES.CEO, ROLES.COUNTRY_MANAGER)) {
       return (
         <>
@@ -821,6 +821,8 @@ const Sidebar = ({
             : <ChevronLeft className="h-4 w-4" />
           }
         </button>
+
+
 
         <div className={cn(
           "flex h-16 items-center px-4 border-b transition-all",
