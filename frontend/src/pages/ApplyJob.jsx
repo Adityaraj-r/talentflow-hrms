@@ -14,10 +14,17 @@ const ApplyJob = () => {
   const [success,setSuccess] = useState(false)
   const [applicationId,setApplicationId] = useState(null)
   const [resume,setResume] = useState(null)
+  const [error,setError] = useState("")
 
   const handleSubmit = async (e) => {
 
     e.preventDefault()
+    setError("")
+
+    if (!resume) {
+      setError("Please upload your resume before submitting the application.")
+      return
+    }
 
     try{
 
@@ -46,10 +53,11 @@ const ApplyJob = () => {
 
       setName("")
       setEmail("")
+      setResume(null)
 
     }catch(error){
 
-      console.log("ERROR:",error.response?.data)
+      setError(error.response?.data?.message || "Could not submit your application. Please try again.")
 
     }
 
@@ -85,6 +93,12 @@ const ApplyJob = () => {
             </p>
           </div>
 
+        )}
+
+        {error && (
+          <div className="mb-6 rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -131,7 +145,9 @@ const ApplyJob = () => {
 
             <input
               type="file"
+              accept=".pdf,.doc,.docx,.txt"
               onChange={(e)=>setResume(e.target.files[0])}
+              required
               className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50 cursor-pointer"
             />
 

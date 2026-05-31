@@ -49,6 +49,7 @@ const UserSchema = new Schema<IUser>(
         'COUNTRY_MANAGER',
         'HR_MANAGER',
         'HR_OFFICER',
+        'INTERVIEWER',
         'DEPARTMENT_MANAGER',
         'DIRECT_MANAGER',
         'PAYROLL_OFFICER',

@@ -4,6 +4,7 @@ export const ROLES = {
   COUNTRY_MANAGER: "COUNTRY_MANAGER",
   HR_MANAGER: "HR_MANAGER",
   HR_OFFICER: "HR_OFFICER",
+  INTERVIEWER: "INTERVIEWER",
   DEPARTMENT_MANAGER: "DEPARTMENT_MANAGER",
   DIRECT_MANAGER: "DIRECT_MANAGER",
   PAYROLL_OFFICER: "PAYROLL_OFFICER",
@@ -55,8 +56,8 @@ export const PERMISSIONS = {
   [ROLES.COUNTRY_MANAGER]: {
     dashboard: true,
     recruitment: {
-      recruitmentProcess: true,
-      staffRequisition: true,
+      recruitmentProcess: false,
+      staffRequisition: false,
       onboarding: false,
     },
     leaveManagement: true,
@@ -139,6 +140,24 @@ export const PERMISSIONS = {
       indemnityCalculation: false,
     },
     appraisal: true,
+    disciplinaryActions: false,
+    documentRequests: false,
+  },
+  [ROLES.INTERVIEWER]: {
+    dashboard: true,
+    recruitment: {
+      recruitmentProcess: false,
+      staffRequisition: false,
+      onboarding: false,
+    },
+    leaveManagement: false,
+    employeeTransfer: false,
+    payroll: {
+      payrollProcessing: false,
+      ticketsAndAdvances: false,
+      indemnityCalculation: false,
+    },
+    appraisal: false,
     disciplinaryActions: false,
     documentRequests: false,
   },

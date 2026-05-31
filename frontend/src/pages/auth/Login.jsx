@@ -41,7 +41,7 @@ const Login = () => {
   }, []);
 
   const floatingCircles = useMemo(() => {
-    return [...Array(30)].map((_, i) => ({
+    return Array.from({ length: 30 }, () => ({
       size: Math.random() * 400 + 100,
       top: Math.random() * 100,
       left: Math.random() * 100,
@@ -254,7 +254,6 @@ const Login = () => {
 
               {/* Login Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
-                
                 {/* Error Alert */}
                 {error && (
                   <Alert variant="destructive" className="animate-shake bg-red-50 dark:bg-red-950/50 border-red-200 dark:border-red-900">
@@ -340,7 +339,7 @@ const Login = () => {
                   disabled={loading}
                   className="w-full h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 relative overflow-hidden group mt-2"
                 >
-                  <span className="absolute inset-0 w-full h-full bg-linear-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
+                  <span className="absolute inset-0 w-full h-full pointer-events-none bg-linear-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
 
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">

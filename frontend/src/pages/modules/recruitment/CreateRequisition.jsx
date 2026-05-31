@@ -15,9 +15,6 @@ import { FileText, Check, X, Search } from "lucide-react"
 import { toast } from "sonner"
 
 
-import axios from "axios"
-
-
 const CreateRequisition = () => {
 
 
@@ -25,8 +22,8 @@ const CreateRequisition = () => {
   const { user } = useUser()
   const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
   const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
-  const isOperationsManager = role === "OPERATIONS_MANAGER"
-  const canCreateRequisition = user?.can?.("recruitment", "write") && !isOperationsManager
+  const isRecruitmentOperator = role === "HR_OFFICER" || role === "HR_MANAGER"
+  const canCreateRequisition = user?.can?.("recruitment", "write") && isRecruitmentOperator
 
   return (
     <div className="space-y-6">
@@ -91,11 +88,9 @@ const RequisitionForm = () => {
     e.preventDefault()
 
     if (!formData.position || !formData.department) {
-      alert("Required fields missing")
+      toast.error("Position and department are required")
       return
     }
-
-    const token = localStorage.getItem("token")
 
     try {
       setLoading(true)
@@ -109,13 +104,9 @@ const RequisitionForm = () => {
   urgency: formData.urgency
 }
 
-      await axios.post("http://localhost:5001/api/requisitions", payload, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
+      await apiClient.post("/requisitions", payload)
 
-      alert("Requisition created.")
+      toast.success("Requisition created")
 
       setFormData({
         position: "",
@@ -133,7 +124,7 @@ const RequisitionForm = () => {
 
     } catch (err) {
       console.error(err)
-      alert("Error creating requisition")
+      toast.error(err?.message || "Error creating requisition")
     } finally {
       setLoading(false)
     }
@@ -306,9 +297,8 @@ const RequisitionHistory = () => {
   const { user } = useUser()
   const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
   const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
-  const isOperationsManager = role === "OPERATIONS_MANAGER"
   const canWriteRecruitment = user?.can?.("recruitment", "write")
-  const canRecommend = canWriteRecruitment && isOperationsManager
+  const canRecommend = canWriteRecruitment && (role === "HR_OFFICER" || role === "HR_MANAGER")
   const [recommendation, setRecommendation] = useState("")
   const [savingRecommendation, setSavingRecommendation] = useState(false)
 

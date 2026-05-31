@@ -22,7 +22,7 @@ const enterpriseRoles = [
     permissions: {
       dashboard: { read: true, write: true, delete: true },
       employees: { read: true, write: true, delete: true },
-      recruitment: { read: true, write: true, delete: true },
+      recruitment: { read: true, write: false, delete: false },
       payroll: { read: true, write: true, delete: true },
       attendance: { read: true, write: true, delete: true },
       settings: { read: true, write: true, delete: true },
@@ -37,7 +37,7 @@ const enterpriseRoles = [
     permissions: {
       dashboard: { read: true, write: false, delete: false },
       employees: { read: true, write: false, delete: false },
-      recruitment: { read: true, write: true, delete: false },
+      recruitment: { read: true, write: false, delete: false },
       payroll: { read: true, write: false, delete: false },
       attendance: { read: true, write: false, delete: false },
       settings: { read: false, write: false, delete: false },
@@ -52,7 +52,7 @@ const enterpriseRoles = [
     permissions: {
       dashboard: { read: true, write: false, delete: false },
       employees: { read: true, write: false, delete: false },
-      recruitment: { read: true, write: true, delete: false },
+      recruitment: { read: false, write: false, delete: false },
       attendance: { read: true, write: false, delete: false },
       payroll: { read: true, write: false, delete: false },
       settings: { read: false, write: false, delete: false },
@@ -67,7 +67,7 @@ const enterpriseRoles = [
     permissions: {
       dashboard: { read: true, write: false, delete: false },
       employees: { read: true, write: false, delete: false },
-      recruitment: { read: true, write: true, delete: false },
+      recruitment: { read: false, write: false, delete: false },
       attendance: { read: true, write: true, delete: false },
       payroll: { read: true, write: false, delete: false },
       settings: { read: true, write: false, delete: false },
@@ -122,6 +122,21 @@ const enterpriseRoles = [
     }
   },
   {
+    name: "INTERVIEWER",
+    isSystemRole: false,
+    permissions: {
+      dashboard: { read: true, write: false, delete: false },
+      employees: { read: false, write: false, delete: false },
+      recruitment: { read: false, write: false, delete: false },
+      attendance: { read: true, write: false, delete: false },
+      payroll: { read: false, write: false, delete: false },
+      settings: { read: false, write: false, delete: false },
+      roles: { read: false, write: false, delete: false },
+      audit: { read: false, write: false, delete: false },
+      performance: { read: false, write: false, delete: false },
+    }
+  },
+  {
     name: "PAYROLL_OFFICER",
     isSystemRole: false,
     permissions: {
@@ -142,7 +157,7 @@ const enterpriseRoles = [
     permissions: {
       dashboard: { read: true, write: false, delete: false },
       employees: { read: true, write: false, delete: false },
-      recruitment: { read: true, write: false, delete: false },
+      recruitment: { read: false, write: false, delete: false },
       attendance: { read: true, write: true, delete: false },
       payroll: { read: true, write: false, delete: false },
       settings: { read: false, write: false, delete: false },
@@ -223,6 +238,14 @@ export const seedRoles = async () => {
         }
       }
     }
+
+    for (const roleDef of enterpriseRoles) {
+      const recruitment = (roleDef.permissions as { recruitment?: { read: boolean; write: boolean; delete: boolean } }).recruitment;
+      if (recruitment) {
+        await Role.updateOne({ name: roleDef.name }, { $set: { "permissions.recruitment": recruitment } });
+      }
+    }
+    console.log("Recruitment permissions synced on system roles.");
 
     for (const roleDef of enterpriseRoles) {
       const p = (roleDef.permissions as { payroll?: { read: boolean; write: boolean; delete: boolean } }).payroll;

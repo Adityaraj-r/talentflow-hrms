@@ -127,7 +127,6 @@ export const approveRequisition = async (
   try {
     const { id } = req.params;
     const role = normalizeRole((req as any).user?.role);
-    const isCeo = role === "CEO";
 
     const requisition = await Requisition.findById(id);
 
@@ -135,20 +134,14 @@ export const approveRequisition = async (
       return res.status(404).json({ message: "Requisition not found" });
     }
 
-    const requiresCeo = needsCeoFinalApproval(requisition);
-    if (requiresCeo && !isCeo) {
-      return res.status(403).json({
-        message:
-          "Final approval required from CEO for executive/high-value requisitions",
-      });
-    }
+    const requiresFinalApproval = needsCeoFinalApproval(requisition);
 
     requisition.status = "Approved";
     requisition.approvalDate = new Date();
     requisition.approvedBy = (req as any).user?.id;
-    requisition.finalApprovalRequired = requiresCeo;
-    requisition.finalApprovedBy = isCeo ? (req as any).user?.id : undefined;
-    requisition.finalApprovalDate = isCeo ? new Date() : undefined;
+    requisition.finalApprovalRequired = requiresFinalApproval;
+    requisition.finalApprovedBy = role === "HR_MANAGER" ? (req as any).user?.id : undefined;
+    requisition.finalApprovalDate = role === "HR_MANAGER" ? new Date() : undefined;
 
     requisition.approvalHistory = requisition.approvalHistory || [];
     requisition.approvalHistory.push({

@@ -5,7 +5,7 @@ import {
   FileCheck, Home, ChevronDown, ChevronRight, ChevronLeft,
   Briefcase, Plane, Calculator, LogOut, Clock, Settings,
   FileText, ArrowLeftRight, TrendingUp, Shield, Layers, Database, Building,
-  LayoutDashboard, CircleDollarSign, Target, Network, FileBadge, BarChart2
+  LayoutDashboard, CircleDollarSign, Target, Network, FileBadge, BarChart2, FileSignature
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ROLES } from "@/constants/roles"
@@ -108,8 +108,10 @@ const Sidebar = ({
         path.startsWith("/dashboard/applications") ||
         path.startsWith("/dashboard/interview-scheduling") ||
         path.startsWith("/dashboard/recruitment-pipeline") ||
+        path.startsWith("/recruitment/analytics") ||
         path.startsWith("/dashboard/job-openings") ||
         path.startsWith("/dashboard/offer-management") ||
+        path.startsWith("/recruitment/offers") ||
         path.startsWith("/dashboard/onboarding"),
 
       documentRequests: path.includes("document-requests"),
@@ -138,10 +140,9 @@ const Sidebar = ({
 
   const getRecruitmentLabel = () => {
     if ([ROLES.HR_MANAGER, ROLES.HR_OFFICER].includes(userRole)) return "Manage Recruitment"
-    if ([ROLES.CEO, ROLES.COUNTRY_MANAGER].includes(userRole)) return "View Recruitment"
-    if (userRole === ROLES.OPERATIONS_MANAGER) return "Recruitment Oversight"
+    if (userRole === ROLES.CEO) return "View Recruitment"
     if (userRole === ROLES.DEPARTMENT_MANAGER) return "Staff Requisition"
-    if (userRole === "ADMIN") return "Recruitment & Staffing (view only)"
+    if (userRole === "ADMIN") return "Recruitment & Staffing"
     return "Recruitment"
   }
 
@@ -350,7 +351,9 @@ const Sidebar = ({
               <SubLink to="/dashboard/job-openings" label="Job Openings" />
               <SubLink to="/dashboard/applications" label="Applications" />
               <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
+              <SubLink to="/recruitment/analytics" label="Recruitment Analytics" icon={BarChart2} />
               <SubLink to="/dashboard/offer-management" label="Offer Management" />
+              <SubLink to="/recruitment/offers" label="Offer Operations" icon={FileSignature} />
               <SubLink to="/admin/recruitment-suggestions" label="Suggest to HR Manager" />
             </SidebarGroup>
           )}
@@ -436,7 +439,9 @@ const Sidebar = ({
               <SubLink to="/dashboard/applications" label="Applications" />
               <SubLink to="/dashboard/interview-scheduling" label="Interview Scheduling" />
               <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
+              <SubLink to="/recruitment/analytics" label="Recruitment Analytics" icon={BarChart2} />
               <SubLink to="/dashboard/offer-management" label="Offer Management" />
+              <SubLink to="/recruitment/offers" label="Offer Operations" icon={FileSignature} />
             </SidebarGroup>
           )}
 
@@ -495,7 +500,9 @@ const Sidebar = ({
               <SubLink to="/dashboard/applications" label="Applications" />
               <SubLink to="/dashboard/interview-scheduling" label="Interview Scheduling" />
               <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
+              <SubLink to="/recruitment/analytics" label="Recruitment Analytics" icon={BarChart2} />
               <SubLink to="/dashboard/offer-management" label="Offer Management" />
+              <SubLink to="/recruitment/offers" label="Offer Operations" icon={FileSignature} />
             </SidebarGroup>
           )}
           {canSee('attendance') && (
@@ -585,11 +592,12 @@ const Sidebar = ({
             </SidebarGroup>
           )}
 
-          {canSee("recruitment") && (
+          {isRole(ROLES.CEO) && canSee("recruitment") && (
             <SidebarGroup id="recruitment" icon={Briefcase} label="View Recruitment">
               <SubLink to="/ceo/recruitment/briefing" label="CEO Briefing" />
               <SubLink to="/ceo/recruitment/executive-pipeline" label="Executive Pipeline" />
               <SubLink to="/ceo/recruitment/strategic-analytics" label="Strategic Analytics" />
+              <SubLink to="/recruitment/analytics" label="Recruitment Intelligence" icon={BarChart2} />
               <SubLink to="/ceo/recruitment/workforce-planning" label="Workforce Planning" />
               <SubLink to="/ceo/recruitment/executive-approvals" label="Executive Approvals" />
               <SubLink to="/ceo/recruitment/employer-brand-health" label="Employer Brand Health" />
@@ -751,16 +759,6 @@ const Sidebar = ({
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
           <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
-          {canSee("recruitment") && (
-            <SidebarGroup id="recruitment" icon={Briefcase} label={getRecruitmentLabel()}>
-              <SubLink to="/staff-requisition" label="Staff Requisition" />
-              <SubLink to="/dashboard/job-openings" label="Job Openings" />
-              <SubLink to="/dashboard/applications" label="Applications" />
-              <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
-              <SubLink to="/dashboard/offer-management" label="Offer Management" />
-              <SubLink to="/employee-center/onboarding" label="Onboarding & KYC" />
-            </SidebarGroup>
-          )}
           {canSee("attendance") && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
@@ -806,8 +804,8 @@ const Sidebar = ({
       )}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 flex h-screen flex-col border-r bg-background transition-all duration-300 ease-in-out shadow-lg",
-          isCollapsed ? "w-20" : "w-72",
+          "fixed left-0 top-0 z-50 flex h-screen flex-col border-r bg-background/95 backdrop-blur transition-all duration-300 ease-in-out shadow-xl shadow-black/10",
+          isCollapsed ? "w-20" : "w-80",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >

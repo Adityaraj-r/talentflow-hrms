@@ -39,6 +39,7 @@ import Onboarding from "./pages/modules/recruitment/Onboarding"
 import StaffRequisition from "./pages/modules/recruitment/StaffRequisition"
 import Careers from "./pages/Careers"
 import OfferManagement from "./pages/modules/recruitment/OfferManagement"
+import OfferOperations from "./pages/modules/recruitment/OfferOperations"
 import JobOpenings from "./pages/modules/recruitment/JobOpenings"
 import ApplyJob from "./pages/ApplyJob"
 import CandidateApplications from "./pages/modules/recruitment/CandidateApplications"
@@ -47,6 +48,7 @@ import InterviewScheduling from "./pages/modules/recruitment/InterviewScheduling
 import ApplicationStatus from "./pages/ApplicationStatus"
 import AdminRecruitmentSuggestions from "./pages/modules/recruitment/AdminRecruitmentSuggestions"
 import RecruitmentSuggestionsInbox from "./pages/modules/recruitment/RecruitmentSuggestionsInbox"
+import RecruitmentAnalytics from "./pages/modules/recruitment/RecruitmentAnalytics"
 
 // Payroll Module
 import Payroll from "./pages/modules/payroll/Payroll"
@@ -420,22 +422,22 @@ function App() {
 
                      {/* ── Recruitment — MATRIX ENFORCED ────────────────── */}
                     <Route path="/create-requisition" element={
-                      <ProtectedRoute allowedRoles={["HR_OFFICER"]}>
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER"]}>
                         <DashboardLayout><CreateRequisition /></DashboardLayout>  
                       </ProtectedRoute>
                     } />
                     <Route path="/staff-requisition" element={
-                      <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "CEO", "ADMIN", "SUPER ADMIN"]}>
                         <DashboardLayout><StaffRequisition /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/applications" element={
-                      <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
                         <DashboardLayout><CandidateApplications /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/recruitment-pipeline" element={
-                      <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
                         <DashboardLayout><RecruitmentPipeline /></DashboardLayout>
                       </ProtectedRoute>
                     } />
@@ -445,28 +447,78 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/job-openings" element={
-                      <ProtectedRoute requiredPermission={{ module: "recruitment", action: "read" }}>
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
                         <DashboardLayout><JobOpenings /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/offer-management" element={
-                      <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
                         <DashboardLayout><OfferManagement /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/generate-offer" element={
-                      <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER"]}>
                         <DashboardLayout><OfferManagement /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/offer/:offerId" element={
-                      <ProtectedRoute requiredPermission={{ module: "recruitment", action: "write" }}>
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
                         <DashboardLayout><OfferManagement /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/recruitment/offers" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
+                        <DashboardLayout><OfferOperations /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/recruitment/offers/analytics" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
+                        <DashboardLayout><OfferOperations /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/recruitment/offers/approvals" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
+                        <DashboardLayout><OfferOperations /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/recruitment/offers/templates" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
+                        <DashboardLayout><OfferOperations /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/recruitment/offers/operations" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
+                        <DashboardLayout><OfferOperations /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/dashboard/recruitment-suggestions" element={
                       <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
                         <DashboardLayout><RecruitmentSuggestionsInbox /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/recruitment/analytics" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
+                        <DashboardLayout><RecruitmentAnalytics /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/recruitment/analytics/funnel" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
+                        <DashboardLayout><RecruitmentAnalytics /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/recruitment/analytics/recruiters" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
+                        <DashboardLayout><RecruitmentAnalytics /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/recruitment/analytics/sources" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
+                        <DashboardLayout><RecruitmentAnalytics /></DashboardLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/recruitment/analytics/insights" element={
+                      <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
+                        <DashboardLayout><RecruitmentAnalytics /></DashboardLayout>
                       </ProtectedRoute>
                     } />
 
@@ -725,37 +777,37 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="/ceo/recruitment" element={
-                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["CEO"]}>
                         <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/ceo/recruitment/briefing" element={
-                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["CEO"]}>
                         <DashboardLayout><CEORecruitmentBriefing /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/ceo/recruitment/executive-pipeline" element={
-                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["CEO"]}>
                         <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/ceo/recruitment/strategic-analytics" element={
-                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["CEO"]}>
                         <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/ceo/recruitment/workforce-planning" element={
-                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["CEO"]}>
                         <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/ceo/recruitment/executive-approvals" element={
-                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["CEO"]}>
                         <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/ceo/recruitment/employer-brand-health" element={
-                      <ProtectedRoute allowedRoles={["CEO", "COUNTRY_MANAGER"]}>
+                      <ProtectedRoute allowedRoles={["CEO"]}>
                         <DashboardLayout><CEORecruitmentModule /></DashboardLayout>
                       </ProtectedRoute>
                     } />

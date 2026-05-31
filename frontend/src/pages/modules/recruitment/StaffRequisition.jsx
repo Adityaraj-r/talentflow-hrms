@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useUser } from "@/contexts/UserContext"
 import apiClient from "@/services/apiClient"
@@ -12,25 +12,61 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { FileText, Check, X, Search } from "lucide-react"
+import { CheckCircle2, Clock3, PlusCircle, XCircle } from "lucide-react"
 import { toast } from "sonner"
+import {
+  RecruitmentEmptyState,
+  RecruitmentKpiCard,
+  RecruitmentPageHeader,
+  RecruitmentStatusBadge,
+} from "@/components/recruitment/RecruitmentUI"
 
 const StaffRequisition = () => {
   const { user } = useUser()
   const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
   const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
-  const isOperationsManager = role === "OPERATIONS_MANAGER"
-  const canCreateRequisition = user?.can?.("recruitment", "write") && !isOperationsManager
+  const isRecruitmentOperator = role === "HR_OFFICER" || role === "HR_MANAGER"
+  const canCreateRequisition = user?.can?.("recruitment", "write") && isRecruitmentOperator
+  const [stats, setStats] = useState({ totalOpen: 0, pending: 0, approved: 0, rejected: 0 })
+
+  const totalRequisitions = stats.totalOpen + stats.rejected
+  const percentOfTotal = (count) => totalRequisitions ? Math.round((count / totalRequisitions) * 100) : 0
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const data = await apiClient.get("/requisitions/stats")
+      setStats({
+        totalOpen: Number(data?.totalOpen) || 0,
+        pending: Number(data?.pending) || 0,
+        approved: Number(data?.approved) || 0,
+        rejected: Number(data?.rejected) || 0,
+      })
+    } catch {
+      setStats({ totalOpen: 0, pending: 0, approved: 0, rejected: 0 })
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchStats()
+  }, [fetchStats])
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Staff Requisition</h1>
-        <p className="text-muted-foreground">Request and manage staff requisitions</p>
+      <RecruitmentPageHeader
+        title="Staff Requisition"
+        subtitle="Request staffing needs, review approvals, and keep hiring demand visible."
+        summary={canCreateRequisition ? "Create requisitions and monitor approval movement" : "Approval queue and requisition history"}
+      />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <RecruitmentKpiCard title="New Requests" value={totalRequisitions} icon={PlusCircle} trend={percentOfTotal(totalRequisitions)} trendLabel="of requisitions" helper={`${totalRequisitions} total requests`} updated="Live data" accent="sky" />
+        <RecruitmentKpiCard title="Pending" value={stats.pending} icon={Clock3} trend={percentOfTotal(stats.pending)} trendLabel="of requisitions" helper={`${stats.pending} awaiting approval`} updated="Live data" accent="amber" />
+        <RecruitmentKpiCard title="Approved" value={stats.approved} icon={CheckCircle2} trend={percentOfTotal(stats.approved)} trendLabel="of requisitions" helper={`${stats.approved} ready for hiring`} updated="Live data" accent="emerald" />
+        <RecruitmentKpiCard title="Rejected" value={stats.rejected} icon={XCircle} trend={-percentOfTotal(stats.rejected)} trendLabel="of requisitions" helper={`${stats.rejected} returned with decision`} updated="Live data" accent="rose" />
       </div>
 
       <Tabs defaultValue={canCreateRequisition ? "create" : "pending"}>
-        <TabsList>
+        <TabsList className="h-auto w-full flex-wrap justify-start gap-1 sm:w-fit">
           {canCreateRequisition && <TabsTrigger value="create">Create Requisition</TabsTrigger>}
           <TabsTrigger value="pending" className="cursor-pointer">Pending Approvals</TabsTrigger>
           <TabsTrigger value="history" className="cursor-pointer">Requisition History</TabsTrigger>
@@ -38,12 +74,12 @@ const StaffRequisition = () => {
 
         {canCreateRequisition && (
           <TabsContent value="create">
-            <RequisitionForm />
+            <RequisitionForm onSubmitted={fetchStats} />
           </TabsContent>
         )}
 
         <TabsContent value="pending">
-          <PendingRequisitions />
+          <PendingRequisitions onChanged={fetchStats} />
         </TabsContent>
 
         <TabsContent value="history">
@@ -54,7 +90,7 @@ const StaffRequisition = () => {
   )
 }
 
-const RequisitionForm = () => {
+const RequisitionForm = ({ onSubmitted }) => {
   const [formData, setFormData] = useState({
     position: "",
     department: "",
@@ -104,6 +140,7 @@ const RequisitionForm = () => {
     });
 
     toast.success("Requisition submitted successfully");
+    onSubmitted?.()
 
     setFormData({
       position: "",
@@ -299,16 +336,15 @@ const RequisitionForm = () => {
   )
 }
 
-const PendingRequisitions = () => {
+const PendingRequisitions = ({ onChanged }) => {
   const [searchParams] = useSearchParams()
   const deptFilter = searchParams.get("department")
   const { user } = useUser()
   const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
   const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
-  const isOperationsManager = role === "OPERATIONS_MANAGER"
   const canWriteRecruitment = user?.can?.("recruitment", "write")
-  const canApproveRecruitment = canWriteRecruitment && !isOperationsManager
-  const canRecommend = canWriteRecruitment && isOperationsManager
+  const canApproveRecruitment = canWriteRecruitment && role === "HR_MANAGER"
+  const canRecommend = canWriteRecruitment && (role === "HR_OFFICER" || role === "HR_MANAGER")
   const [pendingRequisitions, setPendingRequisitions] = useState([]);
   const [selectedReq, setSelectedReq] = useState(null)
   const [viewOpen, setViewOpen] = useState(false)
@@ -338,6 +374,7 @@ const PendingRequisitions = () => {
       await apiClient.put(`/requisitions/${id}/approve`);
       toast.success("Requisition approved successfully");
       fetchPending();
+      onChanged?.()
     } catch {
       toast.error("Approval failed");
     }
@@ -348,6 +385,7 @@ const PendingRequisitions = () => {
       await apiClient.put(`/requisitions/${id}/reject`);
       toast.success("Requisition rejected successfully");
       fetchPending();
+      onChanged?.()
     } catch {
       toast.error("Rejection failed");
     }
@@ -388,14 +426,15 @@ const PendingRequisitions = () => {
 
       <CardContent className="space-y-4">
           {visiblePending.length === 0 ? (
-        <div className="text-center py-10 text-muted-foreground">
-          No pending requisitions
-        </div>
+        <RecruitmentEmptyState
+          title="No pending requisitions"
+          description="Approved requisitions and new staffing requests will appear here when they need review."
+        />
         ) : (
           visiblePending.map((req) => (
             <div
               key={req._id}
-              className="p-4 border rounded-lg hover:shadow-md transition bg-white dark:bg-gray-900">           
+              className="rounded-lg border border-white/10 bg-card/80 p-4 transition-all hover:-translate-y-0.5 hover:border-white/20 hover:shadow-lg">           
             <div className="flex justify-between items-start">
             <div className="space-y-1">
             <h3 className="font-semibold text-lg">
@@ -405,16 +444,14 @@ const PendingRequisitions = () => {
               {req.department} • {new Date(req.createdAt).toLocaleDateString()}
             </p>
             <div className="flex gap-2 mt-2">
-              <span className="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700">
-                {req.status}
-              </span>
+              <RecruitmentStatusBadge status={req.status} />
               <span
-                className={`px-2 py-1 text-xs rounded ${
+                className={`px-2 py-1 text-xs rounded-full border ${
                   req.urgency === "High"
-                    ? "bg-red-100 text-red-700"
+                    ? "border-red-400/30 bg-red-500/10 text-red-300"
                     : req.urgency === "Normal"
-                    ? "bg-blue-100 text-blue-700"
-                    : "bg-green-100 text-green-700"
+                    ? "border-blue-400/30 bg-blue-500/10 text-blue-300"
+                    : "border-green-400/30 bg-green-500/10 text-green-300"
                 }`}
               >
                 {req.urgency}
@@ -596,9 +633,8 @@ const RequisitionHistory = () => {
   const { user } = useUser()
   const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
   const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
-  const isOperationsManager = role === "OPERATIONS_MANAGER"
   const canWriteRecruitment = user?.can?.("recruitment", "write")
-  const canRecommend = canWriteRecruitment && isOperationsManager
+  const canRecommend = canWriteRecruitment && (role === "HR_OFFICER" || role === "HR_MANAGER")
   const [recommendation, setRecommendation] = useState("")
   const [savingRecommendation, setSavingRecommendation] = useState(false)
 
@@ -641,8 +677,13 @@ const RequisitionHistory = () => {
         <CardTitle>Requisition History</CardTitle>
       </CardHeader>
       <CardContent>
-        {history.map((req) => (
-          <div key={req._id} className="flex justify-between p-3 border-b">
+        {history.length === 0 ? (
+          <RecruitmentEmptyState
+            title="No requisition history"
+            description="Completed approvals and rejected requests will be listed here with decision context."
+          />
+        ) : history.map((req) => (
+          <div key={req._id} className="flex justify-between gap-3 rounded-lg border border-white/10 bg-card/70 p-3 transition-colors hover:bg-muted/20">
             <div>
               <p className="font-medium">{req.position}</p>
               <p className="text-sm text-muted-foreground">
@@ -650,15 +691,7 @@ const RequisitionHistory = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <span
-                className={`px-2 py-1 text-xs rounded ${
-                  req.status === "Approved"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-700"
-                }`}
-              >
-                {req.status}
-              </span>
+              <RecruitmentStatusBadge status={req.status} />
               <Button
                 size="sm"
                 variant="outline"
