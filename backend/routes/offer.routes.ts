@@ -5,46 +5,72 @@ import {
   createOffer,
   updateOfferStatus,
   ceoApproveOffer,
+  getOfferDashboard,
+  getOfferAnalytics,
+  getOfferApprovals,
+  approveOffer,
+  rejectOffer,
+  negotiateOffer,
+  sendOffer,
 } from '../controllers/offer.controller';
 import { protect } from '../middleware/auth.middleware';
 import { authorizeByMatrix, MODULE_KEYS } from '../middleware/role.middleware';
+import {
+  requireRecruitmentApprover,
+  requireRecruitmentOperator,
+  requireRecruitmentReadRole,
+} from '../middleware/recruitmentRbac.middleware';
 
 const router = express.Router();
 
 router.use(protect as any);
 
-const denyOperationsManager = (req: any, res: any, next: any) => {
-  const role = (req.user?.role || '').toString().toUpperCase().replace(/\s+/g, '_');
-  if (role === 'OPERATIONS_MANAGER') {
-    return res.status(403).json({ message: 'Access denied' });
-  }
-  next();
-};
-
-const denyExecutiveReadOnly = (req: any, res: any, next: any) => {
-  const role = (req.user?.role || '').toString().toUpperCase().replace(/\s+/g, '_');
-  if (role === 'CEO' || role === 'COUNTRY_MANAGER') {
-    return res.status(403).json({ message: 'Read-only access for this operation' });
-  }
-  next();
-};
-
-router.get('/', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read'), getOffers);
-router.get('/:id', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read'), getOfferById);
+router.get('/dashboard', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read'), requireRecruitmentReadRole, getOfferDashboard);
+router.get('/analytics', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read'), requireRecruitmentReadRole, getOfferAnalytics);
+router.get('/approvals', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read'), requireRecruitmentReadRole, getOfferApprovals);
+router.get('/', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read'), requireRecruitmentReadRole, getOffers);
+router.get('/:id', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read'), requireRecruitmentReadRole, getOfferById);
 router.post(
   '/',
   authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'write'),
-  denyOperationsManager,
-  denyExecutiveReadOnly,
+  requireRecruitmentOperator,
   createOffer
 );
 router.patch(
   '/:id/status',
   authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'write'),
-  denyOperationsManager,
-  denyExecutiveReadOnly,
+  requireRecruitmentOperator,
   updateOfferStatus
 );
-router.put('/:id/ceo-approve', ceoApproveOffer);
+router.patch(
+  '/:id/approve',
+  authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'write'),
+  requireRecruitmentApprover,
+  approveOffer
+);
+router.patch(
+  '/:id/reject',
+  authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'write'),
+  requireRecruitmentApprover,
+  rejectOffer
+);
+router.patch(
+  '/:id/negotiate',
+  authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'write'),
+  requireRecruitmentApprover,
+  negotiateOffer
+);
+router.patch(
+  '/:id/send',
+  authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'write'),
+  requireRecruitmentOperator,
+  sendOffer
+);
+router.put(
+  '/:id/ceo-approve',
+  authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'write'),
+  requireRecruitmentApprover,
+  ceoApproveOffer
+);
 
 export default router;

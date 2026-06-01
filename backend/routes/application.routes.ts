@@ -3,6 +3,7 @@ import { applyJob, getApplications, updateApplicationStatus, getPublicApplicatio
 import upload from "../middleware/upload"
 import { protect } from "../middleware/auth.middleware"
 import { authorizeByMatrix, MODULE_KEYS } from "../middleware/role.middleware"
+import { requireApplicationStatusRole, requireRecruitmentOperator, requireRecruitmentReadRole } from "../middleware/recruitmentRbac.middleware"
 
 const router = express.Router()
 
@@ -16,25 +17,17 @@ router.get("/public-status/:id", getPublicApplicationStatus)
 
 router.use(protect as any)
 
-router.get("/", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "read"), getApplications)
+router.get("/", requireRecruitmentReadRole, getApplications)
 router.put(
   "/:id/status",
   authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"),
-  (req: any, res: any, next: any) => {
-    const role = (req.user?.role || "").toString().toUpperCase().replace(/\s+/g, "_")
-    if (role === "OPERATIONS_MANAGER") return res.status(403).json({ message: "Access denied" })
-    next()
-  },
+  requireApplicationStatusRole,
   updateApplicationStatus
 )
 router.post(
   "/:id/schedule-interview",
   authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"),
-  (req: any, res: any, next: any) => {
-    const role = (req.user?.role || "").toString().toUpperCase().replace(/\s+/g, "_")
-    if (role === "OPERATIONS_MANAGER") return res.status(403).json({ message: "Access denied" })
-    next()
-  },
+  requireRecruitmentOperator,
   scheduleInterviewAndSendMail
 )
 

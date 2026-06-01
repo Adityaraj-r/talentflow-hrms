@@ -61,8 +61,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
+    console.log('Auth login called', { email, password });
     // apiClient returns response.data → { success, token, data: { user } }
     const res = await apiClient.post('/auth/login', { email, password });
+    console.log('Auth login response', res);
 
     // Backend shape: { success: true, token: "...", data: { id, email, role, ... } }
     const userData = res.data ?? res;

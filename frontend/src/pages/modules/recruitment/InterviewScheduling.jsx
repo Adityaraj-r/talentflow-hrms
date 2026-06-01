@@ -17,7 +17,10 @@ import { toast } from "sonner"
 
 const InterviewScheduling = () => {
   const { user } = useUser()
-  const canWrite = user?.can?.("recruitment", "write")
+  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
+  const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
+  const isRecruitmentOperator = role === "HR_OFFICER" || role === "HR_MANAGER"
+  const canWrite = user?.can?.("recruitment", "write") && isRecruitmentOperator
   const [applications, setApplications] = useState([])
   const [search, setSearch] = useState("")
   const [selected, setSelected] = useState(null)
@@ -260,33 +263,34 @@ const InterviewScheduling = () => {
                       {c.jobId?.jobTitle || "Role"} · {c.status}
                     </div>
                   </div>
-                  <Button
-                    disabled={!canWrite}
-                    onClick={() => {
-                      setSelected(c)
-                      setForm({
-                        interviewDate: "",
-                        startHour: "",
-                        startMinute: "",
-                        startPeriod: "AM",
-                        endHour: "",
-                        endMinute: "",
-                        endPeriod: "AM",
-                        mode: "",
-                        location: "",
-                        meetingLink: "",
-                        instructionsText: "",
-                        interviewerName: "",
-                        interviewerDesignation: "",
-                        officeAddress: "",
-                        customAddress: "",
-                      })
-                      setOpen(true)
-                    }}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Schedule
-                  </Button>
+                  {canWrite && (
+                    <Button
+                      onClick={() => {
+                        setSelected(c)
+                        setForm({
+                          interviewDate: "",
+                          startHour: "",
+                          startMinute: "",
+                          startPeriod: "AM",
+                          endHour: "",
+                          endMinute: "",
+                          endPeriod: "AM",
+                          mode: "",
+                          location: "",
+                          meetingLink: "",
+                          instructionsText: "",
+                          interviewerName: "",
+                          interviewerDesignation: "",
+                          officeAddress: "",
+                          customAddress: "",
+                        })
+                        setOpen(true)
+                      }}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Schedule
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>

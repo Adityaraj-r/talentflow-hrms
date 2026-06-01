@@ -1,8 +1,10 @@
 import { Request, Response } from "express"
 import mongoose from "mongoose"
 import Application from "../models/application.model"
+import Job from "../models/job.model"
 import { getHrSenderEmail, sendInterviewScheduleEmail } from "../utils/sendEmail"
 import { sendApplicationStatusEmail } from "../utils/sendEmail";
+import { calculateResumeFit } from "../utils/resumeFit"
 export const applyJob = async (req: Request, res: Response) => {
 
   try {
@@ -10,12 +12,22 @@ export const applyJob = async (req: Request, res: Response) => {
     const { jobId, name, email } = req.body
 
     const resume = (req as any).file?.filename
+    const job = jobId && mongoose.Types.ObjectId.isValid(jobId)
+      ? await Job.findById(jobId).lean()
+      : null
+    const fit = await calculateResumeFit({
+      resume,
+      candidateName: name,
+      candidateEmail: email,
+      job: job as any,
+    })
 
     const application = await Application.create({
       jobId,
       name,
       email,
-      resume
+      resume,
+      ...fit,
     })
 
     res.status(201).json(application)
@@ -39,7 +51,51 @@ export const getApplications = async (req: Request, res: Response) => {
       .find()
       .populate("jobId") 
 
-    res.json(applications)
+    await Promise.all(
+      applications.map(async (application: any) => {
+        const needsFitRefresh =
+          !Number(application.aiFitScore) ||
+          !application.aiRecommendationLabel ||
+          !Number(application.resumeQualityScore) ||
+          !application.suggestedNextAction ||
+          ["Interview", "Screening", "Review"].includes(String(application.recommendationStage || "")) ||
+          (
+            ["Interview", "Offer", "Hired", "Selected"].includes(String(application.status || "")) &&
+            Number(application.matchScore || application.aiFitScore || 0) < 60
+          )
+
+        if (!needsFitRefresh) return
+
+        const fit = await calculateResumeFit({
+          resume: application.resume,
+          candidateName: application.name,
+          candidateEmail: application.email,
+          job: application.jobId,
+          status: application.status,
+        })
+        Object.assign(application, fit)
+        await application.save()
+      })
+    )
+
+    const ranked = [...applications].sort((a: any, b: any) => {
+      const scoreDelta = Number(b.aiFitScore || b.matchScore || 0) - Number(a.aiFitScore || a.matchScore || 0)
+      if (scoreDelta) return scoreDelta
+      const experienceDelta = Number(b.experienceScore || 0) - Number(a.experienceScore || 0)
+      if (experienceDelta) return experienceDelta
+      return Number(b.skillsScore || 0) - Number(a.skillsScore || 0)
+    })
+
+    await Promise.all(
+      ranked.map(async (application: any, index) => {
+        const nextRank = index + 1
+        if (application.aiRank === nextRank) return
+        application.aiRank = nextRank
+        await application.save()
+      })
+    )
+
+    res.json(ranked)
 
   } catch (error:any) {
 
