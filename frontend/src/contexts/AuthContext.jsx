@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import apiClient from '@/services/apiClient';
 
 const AuthContext = createContext();
@@ -15,11 +15,12 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading]             = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const setAuthState = (userData, token) => {
+  const setAuthState = (userData, accessToken, refreshToken) => {
     setUser(userData);
     setUserData(userData);
     setIsAuthenticated(true);
-    localStorage.setItem('token', token);
+    localStorage.setItem('accessToken', accessToken);
+    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
     // Only store role string — NOT full userData object (XSS risk)
     localStorage.setItem('userRole', typeof userData.role === 'string'
       ? userData.role
@@ -30,14 +31,15 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setUserData(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('token');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('userRole');
   };
 
   // On mount: validate token by fetching profile
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
       setLoading(false);
       return;
     }
@@ -61,25 +63,35 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    console.log('Auth login called', { email, password });
-    // apiClient returns response.data → { success, token, data: { user } }
+    // apiClient returns response.data → { success, token, accessToken, refreshToken, data: { user } }
     const res = await apiClient.post('/auth/login', { email, password });
-    console.log('Auth login response', res);
 
-    // Backend shape: { success: true, token: "...", data: { id, email, role, ... } }
-    const userData = res.data ?? res;
-    const token    = res.token;
+    const userData     = res.data ?? res;
+    const accessToken  = res.accessToken;
+    const refreshToken = res.refreshToken;
 
-    if (!token) throw new Error('Login failed — no token received');
+    if (!accessToken) throw new Error('Login failed — no access token received');
 
-    setAuthState(userData, token);
+    setAuthState(userData, accessToken, refreshToken);
     return { success: true, user: userData };
   };
 
-  const logout = () => {
-    clearAuthState();
-    window.location.href = '/login';
-  };
+  // Now revokes the refresh token server-side before clearing local state,
+  // so a "logged out" session can't still be used to mint new access tokens.
+  const logout = useCallback(async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    try {
+      if (refreshToken) {
+        await apiClient.post('/auth/logout', { refreshToken });
+      }
+    } catch (err) {
+      // Don't block the user from leaving just because the revoke call failed
+      console.error('Logout revoke failed:', err);
+    } finally {
+      clearAuthState();
+      window.location.href = '/login';
+    }
+  }, []);
 
   // userRole derived from user — never stale
   const userRole = user
