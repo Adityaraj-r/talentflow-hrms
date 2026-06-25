@@ -14,40 +14,54 @@ export interface AuthRequest extends Request {
 }
 
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  let token;
+  // Accept either a Bearer header (legacy / non-browser clients) or the
+  // httpOnly `accessToken` cookie set by login/refresh (browser clients).
+  // Header is checked first so any non-browser consumer that still sends
+  // Authorization: Bearer keeps working unchanged.
+  let token: string | undefined;
 
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
+    token = req.headers.authorization.split(' ')[1];
+  } else if (req.cookies?.accessToken) {
+    token = req.cookies.accessToken;
+  }
 
-      const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+  if (!token) {
+    return res.status(401).json({ success: false, error: 'Not authorized, no token' });
+  }
 
-      const user = await User.findById(decoded.id).select('firstName lastName email role isActive department');
+  try {
+    // Must match the exact same secret resolution order used to SIGN the
+    // token in generateAccessToken (token.utils.ts) — ACCESS_TOKEN_SECRET
+    // first, then JWT_SECRET. A mismatch here rejects every access token,
+    // including ones issued seconds ago, since it's a wrong-secret failure
+    // not an expiry/staleness one.
+    const secret = process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET || 'secret';
+    const decoded: any = jwt.verify(token, secret);
 
-      if (!user) {
-        return res.status(401).json({ success: false, error: 'User not found' });
-      }
+    const user = await User.findById(decoded.id).select('firstName lastName email role isActive department');
 
-      if (user.isActive === false) {
-        return res.status(403).json({ success: false, error: 'Account deactivated' });
-      }
-
-      req.user = {
-        id: user._id.toString(),
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        department: user.department
-      };
-
-      next();
-    } catch (error) {
-      console.error('Auth Error:', error);
-      res.status(401).json({ success: false, error: 'Not authorized, token failed' });
+    if (!user) {
+      return res.status(401).json({ success: false, error: 'User not found' });
     }
-  } else {
-    res.status(401).json({ success: false, error: 'Not authorized, no token' });
+
+    if (user.isActive === false) {
+      return res.status(403).json({ success: false, error: 'Account deactivated' });
+    }
+
+    req.user = {
+      id: user._id.toString(),
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      department: user.department
+    };
+
+    next();
+  } catch (error) {
+    console.error('Auth Error:', error);
+    res.status(401).json({ success: false, error: 'Not authorized, token failed' });
   }
 };
 

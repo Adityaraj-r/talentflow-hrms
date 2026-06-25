@@ -15,13 +15,15 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading]             = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const setAuthState = (userData, accessToken, refreshToken) => {
+  // Tokens are no longer handled here at all — the server sets them as
+  // httpOnly cookies via Set-Cookie, which the browser stores and sends
+  // automatically. JS can't read or write them, by design.
+  const setAuthState = (userData) => {
     setUser(userData);
     setUserData(userData);
     setIsAuthenticated(true);
-    localStorage.setItem('accessToken', accessToken);
-    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
-    // Only store role string — NOT full userData object (XSS risk)
+    // Only store role string — NOT full userData object (XSS risk).
+    // This is fine to keep in localStorage: a role name isn't a credential.
     localStorage.setItem('userRole', typeof userData.role === 'string'
       ? userData.role
       : userData.role?.name || '');
@@ -31,19 +33,14 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setUserData(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
     localStorage.removeItem('userRole');
   };
 
-  // On mount: validate token by fetching profile
+  // On mount: we can't check for an accessToken cookie in JS (it's
+  // httpOnly — that's the point), so we just attempt the profile fetch.
+  // The browser attaches the cookie automatically if one exists; a 401
+  // here just means "not logged in."
   useEffect(() => {
-    const accessToken = localStorage.getItem('accessToken');
-    if (!accessToken) {
-      setLoading(false);
-      return;
-    }
-
     apiClient.get('/auth/profile')
       .then((res) => {
         // apiClient interceptor returns response.data
@@ -63,27 +60,21 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    // apiClient returns response.data → { success, token, accessToken, refreshToken, data: { user } }
+    // apiClient returns response.data → { success, message, data: { user } }
+    // accessToken/refreshToken are no longer in the body — the server sets
+    // them as httpOnly cookies directly on this response.
     const res = await apiClient.post('/auth/login', { email, password });
 
-    const userData     = res.data ?? res;
-    const accessToken  = res.accessToken;
-    const refreshToken = res.refreshToken;
-
-    if (!accessToken) throw new Error('Login failed — no access token received');
-
-    setAuthState(userData, accessToken, refreshToken);
+    const userData = res.data ?? res;
+    setAuthState(userData);
     return { success: true, user: userData };
   };
 
-  // Now revokes the refresh token server-side before clearing local state,
-  // so a "logged out" session can't still be used to mint new access tokens.
+  // refreshToken is sent automatically via its httpOnly cookie — nothing
+  // for this function to read or pass along manually anymore.
   const logout = useCallback(async () => {
-    const refreshToken = localStorage.getItem('refreshToken');
     try {
-      if (refreshToken) {
-        await apiClient.post('/auth/logout', { refreshToken });
-      }
+      await apiClient.post('/auth/logout');
     } catch (err) {
       // Don't block the user from leaving just because the revoke call failed
       console.error('Logout revoke failed:', err);
