@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import path from 'path';
 import fs from 'fs';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
@@ -63,6 +64,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
