@@ -11,6 +11,13 @@ import {
   hashToken,
   expiryToDate,
 } from '../utils/token.util';
+import {
+  forgotPasswordGenericMessage,
+  PasswordResetError,
+  requestPasswordResetOtp,
+  resetPasswordWithOtp,
+  verifyPasswordResetOtp,
+} from '../services/passwordReset.service';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const FIFTEEN_MIN_MS = 15 * 60 * 1000;
@@ -55,6 +62,15 @@ const clearAuthCookies = (res: Response) => {
 };
 
 export class AuthController {
+  private static handlePasswordResetError(res: Response, error: any, fallback: string) {
+    if (error instanceof PasswordResetError) {
+      return res.status(error.statusCode).json({ success: false, error: error.message, code: error.code });
+    }
+
+    console.error(fallback, error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+
   static async login(req: Request, res: Response) {
     try {
       const { email, password } = req.body;
@@ -234,6 +250,70 @@ export class AuthController {
 
   static async register(req: Request, res: Response) {
     return res.status(403).json({ success: false, error: 'Registration is disabled. Please contact admin.' });
+  }
+
+  static async forgotPassword(req: Request, res: Response) {
+    try {
+      await requestPasswordResetOtp(req.body?.email);
+
+      return res.json({
+        success: true,
+        message: forgotPasswordGenericMessage,
+      });
+    } catch (error: any) {
+      if (error instanceof PasswordResetError && error.code === 'OTP_RATE_LIMITED') {
+        return res.json({
+          success: true,
+          message: forgotPasswordGenericMessage,
+        });
+      }
+
+      return AuthController.handlePasswordResetError(res, error, 'Forgot password error:');
+    }
+  }
+
+  static async verifyResetOtp(req: Request, res: Response) {
+    try {
+      await verifyPasswordResetOtp(req.body?.email, req.body?.otp);
+
+      return res.json({
+        success: true,
+        message: 'OTP verified successfully.',
+      });
+    } catch (error: any) {
+      return AuthController.handlePasswordResetError(res, error, 'Verify reset OTP error:');
+    }
+  }
+
+  static async resendResetOtp(req: Request, res: Response) {
+    try {
+      await requestPasswordResetOtp(req.body?.email, true);
+
+      return res.json({
+        success: true,
+        message: 'A new OTP has been sent if the account exists.',
+      });
+    } catch (error: any) {
+      return AuthController.handlePasswordResetError(res, error, 'Resend reset OTP error:');
+    }
+  }
+
+  static async resetPassword(req: Request, res: Response) {
+    try {
+      await resetPasswordWithOtp(
+        req.body?.email,
+        req.body?.otp,
+        req.body?.password,
+        req.body?.confirmPassword
+      );
+
+      return res.json({
+        success: true,
+        message: 'Password reset successfully. Please log in with your new password.',
+      });
+    } catch (error: any) {
+      return AuthController.handlePasswordResetError(res, error, 'Reset password error:');
+    }
   }
 
   static async getProfile(req: AuthRequest, res: Response) {
