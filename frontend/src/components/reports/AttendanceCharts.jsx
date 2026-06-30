@@ -64,6 +64,8 @@ export default function AttendanceCharts({
     );
   }
 
+
+
   const months =
     filters?.startDate &&
     filters?.endDate

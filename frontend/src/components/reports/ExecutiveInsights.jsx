@@ -40,10 +40,10 @@ export default function ExecutiveInsights({
 
   if (!data) return null;
 
-  const headcount = data.headcount ?? 0;
-  const attritionRate = data.attritionRate ?? 0;
-  const totalPayroll = data.totalPayroll ?? 0;
-  const openPositions = data.openPositions ?? 0;
+  const headcount = data.headcount ;
+  const attritionRate = data.attritionRate ;
+  const totalPayroll = data.totalPayroll ;
+  const openPositions = data.openPositions ;
 
   const attritionRisk =
     attritionRate > 8

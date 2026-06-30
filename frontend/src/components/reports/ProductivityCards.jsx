@@ -18,12 +18,12 @@ export default function ProductivityCards({
 
   const totalHours =
     Number(
-      first?.totalHours || 0
+      first?.totalHours 
     );
 
   const avgHours =
     Number(
-      first?.avgHoursPerDay || 0
+      first?.avgHoursPerDay 
     );
 
   const efficiency =
@@ -116,7 +116,7 @@ export default function ProductivityCards({
                       </h3>
                     </div>
 
-                    <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white flex items-center justify-center">
                       <Icon
                         size={
                           18

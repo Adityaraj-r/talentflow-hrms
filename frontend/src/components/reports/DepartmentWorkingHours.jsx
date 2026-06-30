@@ -77,7 +77,7 @@ export default function DepartmentWorkingHours({ data }) {
                   </p>
                   <p className="text-2xl font-bold">
                     <CountUp
-                      end={item.totalHours || 0}
+                      end={item.totalHours }
                       duration={1.5}
                       separator=","
                     />{" "}
@@ -91,7 +91,7 @@ export default function DepartmentWorkingHours({ data }) {
                   </p>
                   <p className="text-xl font-semibold">
                     <CountUp
-                      end={item.avgHoursPerDay || 0}
+                      end={item.avgHoursPerDay }
                       duration={1.5}
                       decimals={1}
                     />{" "}

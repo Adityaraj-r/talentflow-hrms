@@ -73,8 +73,8 @@
 //      Forecast Logic
 //   =============================== */
 //   const headcounts = finalData.map((d) => d.headcount);
-//   const first = headcounts[0] || 0;
-//   const last = headcounts[headcounts.length - 1] || 0;
+//   const first = headcounts[0] ;
+//   const last = headcounts[headcounts.length - 1] ;
 //   const monthsCount = headcounts.length;
 
 //   const avgGrowth =
@@ -275,8 +275,8 @@ export default function WorkforceCharts({
   });
 
   const headcounts = finalData.map((d) => d.headcount);
-  const first = headcounts[0] || 0;
-  const last = headcounts[headcounts.length - 1] || 0;
+  const first = headcounts[0] ;
+  const last = headcounts[headcounts.length - 1] ;
   const monthsCount = headcounts.length;
 
   const avgGrowth =

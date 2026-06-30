@@ -9,6 +9,7 @@ import {
   getLeaves,
   getEmployeePerformance,
   getDepartmentWorkingHours,
+  getCEOInsights,
 } from "@/services/reports.service";
 
 export default function useReports(filters) {
@@ -27,6 +28,7 @@ export default function useReports(filters) {
     leaveBreakdown: [],
     departmentWorkingHours: [],
     performance: [],
+    ceoInsights: null,
   });
 
   const [loading, setLoading] =
@@ -61,13 +63,14 @@ export default function useReports(filters) {
               ]);
 
             setData({
-              summary:summaryRes?.data?.data || {},
+              summary:summaryRes?.data || {},
               workforceTrend:[],
-              attendanceTrend:attendanceRes?.data?.data || [],
+              attendanceTrend:attendanceRes?.data || [],
               departmentDistribution: [],
-              leaveBreakdown:leavesRes?.data?.data || [],
-              departmentWorkingHours:hoursRes?.data?.data || [],
-              performance: performanceRes?.data?.data || [],
+              leaveBreakdown:leavesRes?.data || [],
+              departmentWorkingHours:hoursRes?.data || [],
+              performance: performanceRes?.data || [],
+              ceoInsights: null,
             });
 
             return;
@@ -85,13 +88,14 @@ export default function useReports(filters) {
             ]);
 
             setData({
-              summary: summaryRes?.data?.data || {},
+              summary: summaryRes?.data || {},
               workforceTrend: [],
-              attendanceTrend: attendanceRes?.data?.data || [],
+              attendanceTrend: attendanceRes?.data || [],
               departmentDistribution: [],
-              leaveBreakdown: leavesRes?.data?.data || [],
+              leaveBreakdown: leavesRes?.data || [],
               departmentWorkingHours: [],
               performance: [],
+              ceoInsights: null,
             });
 
             return;
@@ -109,13 +113,14 @@ export default function useReports(filters) {
             ]);
 
             setData({
-              summary: summaryRes?.data?.data || {},
+              summary: summaryRes?.data || {},
               workforceTrend: [],
-              attendanceTrend: attendanceRes?.data?.data || [],
+              attendanceTrend: attendanceRes?.data || [],
               departmentDistribution: [],
-              leaveBreakdown: leavesRes?.data?.data || [],
+              leaveBreakdown: leavesRes?.data || [],
               departmentWorkingHours: [],
               performance: [],
+              ceoInsights: null,
             });
 
             return;
@@ -129,6 +134,7 @@ export default function useReports(filters) {
             leavesRes,
             hoursRes,
             performanceRes,
+            ceoInsightsRes,
           ] =
             await Promise.all([getSummary(filters),
               getWorkforce(filters),
@@ -136,17 +142,19 @@ export default function useReports(filters) {
               getDepartments(filters),
               getLeaves(filters),
               getDepartmentWorkingHours(filters),
-              getEmployeePerformance(filters),
+              getEmployeePerformance({ ...filters, limit: 1000 }),
+              getCEOInsights(filters),
             ]);
 
           setData({
-            summary:summaryRes?.data?.data || {},
-            workforceTrend:workforceRes?.data?.data || [],
-            attendanceTrend:attendanceRes?.data?.data || [],
-            departmentDistribution:departmentsRes?.data?.data || [],
-            leaveBreakdown:leavesRes?.data?.data || [],
-            departmentWorkingHours:hoursRes?.data?.data || [],
-            performance:performanceRes?.data?.data || [],
+            summary:summaryRes?.data || {},
+            workforceTrend:workforceRes?.data || [],
+            attendanceTrend:attendanceRes?.data || [],
+            departmentDistribution:departmentsRes?.data || [],
+            leaveBreakdown:leavesRes?.data || [],
+            departmentWorkingHours:hoursRes?.data || [],
+            performance:performanceRes?.data || [],
+            ceoInsights:ceoInsightsRes?.data || null,
           });
         } catch (err) {
           console.error("Reports fetch failed:",err);
