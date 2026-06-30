@@ -23,8 +23,8 @@ export default function WorkforceHealthMeter({
 
   if (!data) return null;
 
-  const attendanceScore = data.avgAttendance || 0;
-  const attritionScore = 100 - (data.attritionRate || 0);
+  const attendanceScore = data.avgAttendance ;
+  const attritionScore = 100 - (data.attritionRate );
 
   const activeRatio =
     data.headcount > 0

@@ -118,18 +118,18 @@ export default function DepartmentChart({
 
               <p>
                 Avg Salary: ₹
-                {selectedData.avgSalary?.toLocaleString() || 0}
+                {selectedData.avgSalary?.toLocaleString() }
               </p>
 
               <p>
                 Total Salary: ₹
-                {selectedData.totalSalary?.toLocaleString() || 0}
+                {selectedData.totalSalary?.toLocaleString() }
               </p>
 
               <p>
                 Percentage:{" "}
                 <Badge variant="outline">
-                  {selectedData.percentage || 0}%
+                  {selectedData.percentage }%
                 </Badge>
               </p>
 

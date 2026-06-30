@@ -4,6 +4,7 @@ import Employee from "../models/Employee.model";
 import Attendance from "../models/Attendance.model";
 import Leave from "../models/leave.model";
 import { PerformanceReviewModel } from "../models/PerformanceReview";
+import Job from "../models/job.model";
 
 const buildEmployeeFilter = (
   query: any,
@@ -20,6 +21,19 @@ const buildEmployeeFilter = (
   const roleValue = String(
     role || ""
   ).trim();
+
+  const empIdValue = String(
+    query.employeeId || ""
+  ).trim();
+
+  if (
+    empIdValue &&
+    empIdValue.toLowerCase() !== "all"
+  ) {
+    if (mongoose.Types.ObjectId.isValid(empIdValue)) {
+      filter.userId = new mongoose.Types.ObjectId(empIdValue);
+    }
+  }
 
   if (
     user?.role === "DEPARTMENT_MANAGER"
@@ -49,7 +63,7 @@ const buildEmployeeFilter = (
     roleValue.toLowerCase() !== "all" &&
     roleValue.toLowerCase() !== "all roles"
   ) {
-    filter.designation = roleValue;
+    filter.role = roleValue;
   }
 
   return filter;
@@ -68,7 +82,7 @@ const getFilteredEmployees = async (
     filter
   )
     .select(
-      "userId department status salary.basic joiningDate firstName lastName designation"
+      "userId department status salary.basic joiningDate firstName lastName designation role"
     )
     .lean();
 
@@ -90,7 +104,7 @@ export const getSummary = async (req: Request, res: Response) => {
 
     const totalEmployees = employees.length;
     const activeEmployees = employees.filter(e => e.status === "Active").length;
-    const inactiveEmployees = employees.filter(e => e.status === "Inactive").length;
+    const inactiveEmployees = employees.filter(e => ["Inactive", "Terminated"].includes(e.status)).length;
 
     const attritionRate =
       totalEmployees > 0
@@ -164,6 +178,8 @@ export const getSummary = async (req: Request, res: Response) => {
       ((avgAttendance + avgPerformance + productivityScore) / 3).toFixed(1)
     );
 
+    const openPositions = await Job.countDocuments({ status: "Published" });
+
     res.json({
       success: true,
       data: {
@@ -175,7 +191,7 @@ export const getSummary = async (req: Request, res: Response) => {
         totalWorkingHours: Number(totalHours.toFixed(1)),
         avgWorkingHours,
         workforceHealthScore,
-        openPositions: 5,
+        openPositions,
       },
     });
 
@@ -243,8 +259,8 @@ export const getAttendanceData = async (
 
     if (startDate && endDate) {
       match.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
+        $gte: new Date(startDate).toISOString().split("T")[0],
+        $lte: new Date(endDate).toISOString().split("T")[0],
       };
     }
 
@@ -254,8 +270,8 @@ export const getAttendanceData = async (
       {
         $group: {
           _id: {
-            year: { $year: "$date" },
-            month: { $month: "$date" },
+            year: { $year: { $toDate: "$date" } },
+            month: { $month: { $toDate: "$date" } },
           },
 
           totalDays: { $sum: 1 },
@@ -272,6 +288,18 @@ export const getAttendanceData = async (
                 1,
                 0,
               ],
+            },
+          },
+
+          lateMarks: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "Late"] }, 1, 0],
+            },
+          },
+
+          leavesTaken: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "Leave"] }, 1, 0],
             },
           },
         },
@@ -293,6 +321,10 @@ export const getAttendanceData = async (
 
     const formatted = attendance.map((item: any) => ({
       month: `${monthNames[item._id.month - 1]} ${item._id.year}`,
+      totalDays: item.totalDays,
+      presentDays: item.presentDays,
+      lateMarks: item.lateMarks,
+      leavesTaken: item.leavesTaken,
 
       attendance:
         item.totalDays > 0
@@ -418,19 +450,70 @@ export const getEmployeePerformance = async (req: Request, res: Response) => {
       performanceMap[review.employeeId].push(score);
     });
 
+    const userIds = paginated.map((e: any) => e.userId);
+
+    // Get attendance stats per employee
+    const attendanceStats = await Attendance.aggregate([
+      { $match: { userId: { $in: userIds } } },
+      {
+        $group: {
+          _id: "$userId",
+          totalDays: { $sum: 1 },
+          presentDays: {
+            $sum: {
+              $cond: [{ $in: ["$status", ["Present", "Half Day", "Late"]] }, 1, 0]
+            }
+          },
+          lateMarks: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "Late"] }, 1, 0]
+            }
+          }
+        }
+      }
+    ]);
+
+    const attendanceMap: any = {};
+    attendanceStats.forEach(stat => {
+      attendanceMap[stat._id.toString()] = {
+        attendancePercent: stat.totalDays > 0 ? Math.round((stat.presentDays / stat.totalDays) * 100) : 0,
+        lateMarks: stat.lateMarks
+      };
+    });
+
+    // Get leave stats per employee
+    const leaveStats = await Leave.aggregate([
+      { $match: { userId: { $in: userIds }, status: "Approved" } },
+      {
+        $group: {
+          _id: "$userId",
+          totalLeaves: { $sum: "$totalDays" }
+        }
+      }
+    ]);
+
+    const leaveMap: any = {};
+    leaveStats.forEach(stat => {
+      leaveMap[stat._id.toString()] = stat.totalLeaves;
+    });
+
     const formatted = paginated.map((emp: any) => {
       const scores = performanceMap[emp.userId] || [];
+      const userIdStr = emp.userId?.toString() || "";
 
       const avgPerformance =
         scores.length > 0
           ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length)
           : 0;
+          
+      const attStats = attendanceMap[userIdStr] || { attendancePercent: 0, lateMarks: 0 };
+      const totalLeaves = leaveMap[userIdStr] || 0;
 
       return {
         ...emp,
-        attendance: 0,
-        leaves: 0,
-        lateMarks: 0,
+        attendance: attStats.attendancePercent,
+        leaves: totalLeaves,
+        lateMarks: attStats.lateMarks,
         compliance: avgPerformance,
         performanceScore: avgPerformance,
         grade:

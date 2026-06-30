@@ -36,6 +36,9 @@ export default function PerformanceSection({
     error = "",
   } = hook || {};
 
+  // Debug: Log API response in console
+  console.log("Employee Performance API Response:", data);
+
   return (
     <div className="space-y-5">
 
@@ -70,6 +73,7 @@ export default function PerformanceSection({
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Department</TableHead>
+                  <TableHead>Role</TableHead>
                   <TableHead>Attendance</TableHead>
                   <TableHead>Leaves</TableHead>
                   <TableHead>Late</TableHead>
@@ -85,7 +89,7 @@ export default function PerformanceSection({
                 {loading ? (
                   [...Array(5)].map((_, i) => (
                     <TableRow key={i}>
-                      {[...Array(8)].map((_, j) => (
+                      {[...Array(9)].map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-4 w-full" />
                         </TableCell>
@@ -97,7 +101,7 @@ export default function PerformanceSection({
                   /* Error */
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={9}
                       className="text-center text-red-500 py-10"
                     >
                       {error}
@@ -109,7 +113,7 @@ export default function PerformanceSection({
                   /* Empty */
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={9}
                       className="text-center text-muted-foreground py-12"
                     >
                       {isDept
@@ -134,23 +138,27 @@ export default function PerformanceSection({
                       </TableCell>
 
                       <TableCell>
-                        {emp?.attendance ?? 0}%
+                        <span className="capitalize">{emp?.role ? emp.role.replace(/_/g, ' ').toLowerCase() : "-"}</span>
                       </TableCell>
 
                       <TableCell>
-                        {emp?.leaves ?? 0}
+                        {emp?.attendance}%
                       </TableCell>
 
                       <TableCell>
-                        {emp?.lateMarks ?? 0}
+                        {emp?.leaves}
                       </TableCell>
 
                       <TableCell>
-                        {emp?.compliance ?? 0}%
+                        {emp?.lateMarks}
                       </TableCell>
 
                       <TableCell>
-                        {emp?.performanceScore ?? 0}
+                        {emp?.compliance}%
+                      </TableCell>
+
+                      <TableCell>
+                        {emp?.performanceScore}
                       </TableCell>
 
                       <TableCell>

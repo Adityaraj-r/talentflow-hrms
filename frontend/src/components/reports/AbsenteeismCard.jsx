@@ -26,8 +26,7 @@ export default function AbsenteeismCard({
       (sum, item) =>
         sum +
         Number(
-          item?.lateMarks ||
-            0
+          item?.lateMarks 
         ),
       0
     );
@@ -37,8 +36,7 @@ export default function AbsenteeismCard({
       (sum, item) =>
         sum +
         Number(
-          item?.value ||
-            0
+          item?.value 
         ),
       0
     );
@@ -48,8 +46,7 @@ export default function AbsenteeismCard({
       (sum, item) =>
         sum +
         Number(
-          item?.absentDays ||
-            0
+          item?.absentDays 
         ),
       0
     );
@@ -145,7 +142,7 @@ export default function AbsenteeismCard({
                       </h3>
                     </div>
 
-                    <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white flex items-center justify-center">
                       <Icon
                         size={
                           18

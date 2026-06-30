@@ -27,7 +27,7 @@ export default function LeavePieChart({
 }) {
   const totalLeaves = data.reduce(
     (acc, item) =>
-      acc + (item.value || 0),
+      acc + (item.value ),
     0
   );
 

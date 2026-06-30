@@ -56,7 +56,7 @@ export default function KPISection({
     {
       label: "Headcount",
       value:
-        data.headcount ?? 0,
+        data.headcount ,
       icon: Users,
     },
 
@@ -64,8 +64,7 @@ export default function KPISection({
       label:
         "Active Employees",
       value:
-        data.activeEmployees ??
-        0,
+        data.activeEmployees ,
       icon: UserCheck,
     },
 
@@ -73,8 +72,7 @@ export default function KPISection({
       label:
         "Attrition Rate",
       value:
-        data.attritionRate ??
-        0,
+        data.attritionRate ,
       suffix: "%",
       icon: TrendingDown,
     },
@@ -83,8 +81,7 @@ export default function KPISection({
       label:
         "Avg Attendance",
       value:
-        data.avgAttendance ??
-        0,
+        data.avgAttendance ,
       suffix: "%",
       icon: CalendarCheck,
     },
@@ -93,8 +90,7 @@ export default function KPISection({
       label:
         "Total Payroll",
       value:
-        data.totalPayroll ??
-        0,
+        data.totalPayroll ,
       prefix: "₹",
       icon: Wallet,
     },
@@ -103,8 +99,7 @@ export default function KPISection({
       label:
         "Total Working Hours",
       value:
-        data.totalWorkingHours ??
-        0,
+        data.totalWorkingHours ,
       suffix: " hrs",
       icon: Clock3,
     },
@@ -113,8 +108,7 @@ export default function KPISection({
       label:
         "Avg Working Hours",
       value:
-        data.avgWorkingHours ??
-        0,
+        data.avgWorkingHours ,
       suffix: " hrs",
       icon: Timer,
     },
@@ -123,8 +117,7 @@ export default function KPISection({
       label:
         "Open Positions",
       value:
-        data.openPositions ??
-        0,
+        data.openPositions ,
       icon: Briefcase,
     },
   ];
@@ -173,7 +166,7 @@ export default function KPISection({
                           end={
                             Number(
                               card.value
-                            ) || 0
+                            ) 
                           }
                           duration={
                             1.3
@@ -191,7 +184,7 @@ export default function KPISection({
                       </h3>
                     </div>
 
-                    <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white flex items-center justify-center">
                       <Icon
                         size={
                           18

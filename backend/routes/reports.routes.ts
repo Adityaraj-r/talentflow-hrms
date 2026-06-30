@@ -80,7 +80,7 @@ router.get(
 
 router.get(
   "/ceo-insights",
-  authorize("ADMIN", "CEO"),
+  authorize("ADMIN", "CEO", "HR_MANAGER", "OPERATIONS_MANAGER"),
   getCEOInsights
 );
 

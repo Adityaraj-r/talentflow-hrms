@@ -30,3 +30,6 @@ export const getEmployeePerformance = (filters) =>
 
 export const getDepartmentWorkingHours = (filters) =>
   handleRequest(api.get("/reports/department-hours", { params: filters }));
+
+export const getCEOInsights = (filters) =>
+  handleRequest(api.get("/reports/ceo-insights", { params: filters }));

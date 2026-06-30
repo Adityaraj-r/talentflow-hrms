@@ -111,7 +111,7 @@ export default function ReportsPage() {
         )
         .then((res) =>
           setProductivityData(
-            res.data.data
+            res.data
           )
         )
         .catch(
@@ -120,27 +120,7 @@ export default function ReportsPage() {
     }
   }, [filters, role]);
 
-  const [
-    ceoInsights,
-    setCeoInsights,
-  ] = useState(null);
 
-  useEffect(() => {
-    if ( role === "CEO" || role === "ADMIN" ) {
-      api
-        .get(
-          "/reports/ceo-insights"
-        )
-        .then((res) =>
-          setCeoInsights(
-            res.data.data
-          )
-        )
-        .catch(
-          console.error
-        );
-    }
-  }, [role]);
 
   const handleExportCSV =
     async () => {
@@ -264,6 +244,8 @@ export default function ReportsPage() {
         error={reportsError}
         filters={filters}
         setFilters={setFilters}
+        performanceFilters={performanceFilters}
+        setPerformanceFilters={setPerformanceFilters}
         performanceHook={performanceHook}
       />
 
@@ -317,65 +299,7 @@ export default function ReportsPage() {
           </div>
         )}
 
-      {(role === "CEO" ||
-        role === "ADMIN") &&
-        ceoInsights && (
-          <div className="grid md:grid-cols-2 gap-6">
 
-            <Card className="rounded-2xl shadow-sm">
-              <CardContent className="p-5">
-                <h2 className="font-semibold mb-4">
-                  Top Performers
-                </h2>
-
-                {ceoInsights.topPerformers.map(
-                  (
-                    p,
-                    i
-                  ) => (
-                    <div
-                      key={i}
-                      className="py-2 border-b last:border-0"
-                    >
-                      {p.name} —{" "}
-                      {
-                        p.performance
-                      }
-                      %
-                    </div>
-                  )
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-2xl shadow-sm">
-              <CardContent className="p-5">
-                <h2 className="font-semibold mb-4">
-                  Low Performers
-                </h2>
-
-                {ceoInsights.lowPerformers.map(
-                  (
-                    p,
-                    i
-                  ) => (
-                    <div
-                      key={i}
-                      className="py-2 border-b last:border-0"
-                    >
-                      {p.name} —{" "}
-                      {
-                        p.performance
-                      }
-                      %
-                    </div>
-                  )
-                )}
-              </CardContent>
-            </Card>
-
-          </div>
-        )}
 
     </div>
   );

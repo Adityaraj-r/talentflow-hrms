@@ -16,7 +16,7 @@ export default function useEmployeePerformance(filters) {
         const res = await getEmployeePerformance(filters);
 
         setData(res.data || []);
-        setPagination(null);
+        setPagination(res.pagination || null);
 
       } catch (err) {
         console.error("Employee Performance Error:", err);

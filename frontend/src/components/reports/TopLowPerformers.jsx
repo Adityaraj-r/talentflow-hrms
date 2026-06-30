@@ -17,13 +17,11 @@ export default function TopLowPerformers({
       (a, b) =>
         Number(
           b?.performanceScore ||
-            b?.score ||
-            0
+            b?.score 
         ) -
         Number(
           a?.performanceScore ||
-            a?.score ||
-            0
+            a?.score 
         )
     );
 
@@ -49,8 +47,7 @@ export default function TopLowPerformers({
   ) =>
     Number(
       emp?.performanceScore ||
-        emp?.score ||
-        0
+        emp?.score 
     );
 
   const ListCard = ({
@@ -62,7 +59,7 @@ export default function TopLowPerformers({
       <CardContent className="p-5">
 
         <div className="flex items-center gap-3 mb-5">
-          <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white flex items-center justify-center">
             <Icon size={18} />
           </div>
 
