@@ -13,7 +13,7 @@
     "moduleResolution": "node16",
     "allowSyntheticDefaultImports": true
   },
-  "include": ["/**/*", "config", "controllers", "middleware", "models", "routes", "scripts", "types", "utils", "server.ts"],
+  "include": ["/**/*", "config", "controllers", "middleware", "models", "routes", "scripts", "services", "templates", "types", "utils", "server.ts"],
   "exclude": ["node_modules", "dist"]
 }
 

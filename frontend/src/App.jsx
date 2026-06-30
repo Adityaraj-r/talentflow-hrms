@@ -12,6 +12,7 @@ import Login from "./pages/auth/Login"
 import Signup from "./pages/auth/Signup"
 import ForgotPassword from "./pages/auth/ForgotPassword"
 import OtpVerification from "./pages/auth/OtpVerification"
+import ResetPassword from "./pages/auth/ResetPassword"
 
 // Layout
 import DashboardLayout from "./components/layouts/DashboardLayout"
@@ -278,6 +279,7 @@ function App() {
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/otp-verification" element={<OtpVerification />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/unauthorized" element={<Unauthorized />} />
                     <Route path="/dashboard-redirect" element={<DashboardRouter />} />
 

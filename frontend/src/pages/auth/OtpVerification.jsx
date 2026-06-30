@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Link, useNavigate, useLocation } from "react-router-dom"
-import { useAuth } from "@/contexts/AuthContext"
 import { useTheme } from "@/contexts/ThemeContext"
+import apiClient from "@/services/apiClient"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,14 +13,18 @@ import { toast } from "sonner"
 const OtpVerification = () => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""])
   const [isLoading, setIsLoading] = useState(false)
+  const [isResending, setIsResending] = useState(false)
   const [timeLeft, setTimeLeft] = useState(60)
   const inputRefs = useRef([])
 
-  const { verifyOtp } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
   const email = location.state?.email || ""
+
+  useEffect(() => {
+    if (!email) navigate("/forgot-password", { replace: true })
+  }, [email, navigate])
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -30,6 +34,8 @@ const OtpVerification = () => {
   }, [timeLeft])
 
   const handleChange = (index, value) => {
+    if (value && !/^\d$/.test(value)) return
+
     if (value.length > 1) {
       value = value.charAt(0)
     }
@@ -76,9 +82,21 @@ const OtpVerification = () => {
     }
   }
 
-  const handleResendOtp = () => {
-    toast.success("OTP resent successfully")
-    setTimeLeft(60)
+  const handleResendOtp = async () => {
+    if (!email) return
+
+    setIsResending(true)
+    try {
+      const response = await apiClient.post("/auth/resend-reset-otp", { email })
+      toast.success(response.message || "OTP resent successfully")
+      setOtp(["", "", "", "", "", ""])
+      setTimeLeft(60)
+      inputRefs.current[0]?.focus()
+    } catch (error) {
+      toast.error(error?.error || error?.message || "Unable to resend OTP")
+    } finally {
+      setIsResending(false)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -86,7 +104,7 @@ const OtpVerification = () => {
 
     const otpValue = otp.join("")
 
-    if (otpValue.length !== 6) {
+    if (!/^\d{6}$/.test(otpValue)) {
       toast.error("Please enter a valid 6-digit OTP")
       return
     }
@@ -94,13 +112,11 @@ const OtpVerification = () => {
     setIsLoading(true)
 
     try {
-      const success = await verifyOtp(otpValue)
-      if (success) {
-        toast.success("OTP verified successfully")
-        navigate("/login")
-      }
+      await apiClient.post("/auth/verify-reset-otp", { email, otp: otpValue })
+      toast.success("OTP verified successfully")
+      navigate("/reset-password", { state: { email, otp: otpValue } })
     } catch (error) {
-      toast.error("OTP verification failed: " + error.message)
+      toast.error(error?.error || error?.message || "OTP verification failed")
     } finally {
       setIsLoading(false)
     }
@@ -151,8 +167,13 @@ const OtpVerification = () => {
               {timeLeft > 0 ? (
                 <span>Resend in {timeLeft}s</span>
               ) : (
-                <button type="button" onClick={handleResendOtp} className="text-primary hover:underline">
-                  Resend OTP
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={isResending}
+                  className="text-primary hover:underline disabled:opacity-60"
+                >
+                  {isResending ? "Resending..." : "Resend OTP"}
                 </button>
               )}
             </p>

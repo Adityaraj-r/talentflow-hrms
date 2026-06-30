@@ -326,12 +326,13 @@ const Login = () => {
                       Remember me
                     </span>
                   </label>
-                  <a
-                    href="#"
+                  <button
+                    type="button"
+                    onClick={() => navigate('/forgot-password')}
                     className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline transition-colors"
                   >
                     Forgot password?
-                  </a>
+                  </button>
                 </div>
 
                 <Button
