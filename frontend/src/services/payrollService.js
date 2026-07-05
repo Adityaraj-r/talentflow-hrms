@@ -47,6 +47,7 @@ export async function downloadPayslipWithFilename(payrollId, employeeId) {
     `${API_BASE}/payroll/${payrollId}/download/${employeeId}`,
     {
       responseType: "blob",
+      withCredentials: true,
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     }
   );
