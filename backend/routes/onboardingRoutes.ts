@@ -1,7 +1,8 @@
 import express, { Router } from 'express';
 import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import {
   saveOnboardingProgress,
   getOnboardingDetails,
@@ -19,24 +20,33 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: async (req, file) => {
-    const emailPrefix = req.body.email
-      ? req.body.email.split('@')[0].toLowerCase()
-      : 'unknown_candidate';
-    return {
-      folder:          `hrms_onboarding/${emailPrefix}`,
-      resource_type:   'auto',
-      allowed_formats: ['jpeg', 'jpg', 'png', 'pdf'],
-      public_id:       `${emailPrefix}-${file.fieldname}-${Date.now()}`,
-    };
+
+const uploadDir = 'uploads/onboarding';
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
   },
 });
 
 const upload = multer({
   storage: storage,
   limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+      return;
+    }
+    cb(new Error('Only PDF, JPG, and PNG files are allowed.'));
+  },
 });
 
 router.use(protect);
