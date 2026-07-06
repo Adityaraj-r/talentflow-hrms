@@ -310,7 +310,7 @@ const EmployeeSlipView = ({ userId }) => {
                 <TableRow key={String(r.payrollId)}>
                   <TableCell className="font-medium">{r.month} {r.year}</TableCell>
                   <TableCell className="font-bold text-green-600">
-                    ₹ {Number(r.netPay || 0).toLocaleString()}
+                    Rs. {Number(r.netPay || 0).toLocaleString()}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={STATUS_COLORS[r.status] || ""}>
@@ -441,39 +441,39 @@ const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
             <div className="space-y-2">
               <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
                 <span className="text-muted-foreground shrink-0">Basic Salary</span>
-                <span className="font-medium font-mono tabular-nums text-right">₹ {eg.basic.toLocaleString()}</span>
+                <span className="font-medium font-mono tabular-nums text-right">Rs. {eg.basic.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
                 <span className="text-muted-foreground shrink-0">HRA</span>
-                <span className="font-medium font-mono tabular-nums text-right">₹ {eg.hra.toLocaleString()}</span>
+                <span className="font-medium font-mono tabular-nums text-right">Rs. {eg.hra.toLocaleString()}</span>
               </div>
               {eg.allowances > 0 && (
                 <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
                   <span className="text-muted-foreground shrink-0">Other Allowances</span>
-                  <span className="font-medium font-mono tabular-nums text-right">₹ {eg.allowances.toLocaleString()}</span>
+                  <span className="font-medium font-mono tabular-nums text-right">Rs. {eg.allowances.toLocaleString()}</span>
                 </div>
               )}
               {eg.bonus > 0 && (
                 <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem] text-green-600">
                   <span className="shrink-0">Bonus</span>
-                  <span className="font-medium font-mono tabular-nums text-right">₹ {eg.bonus.toLocaleString()}</span>
+                  <span className="font-medium font-mono tabular-nums text-right">Rs. {eg.bonus.toLocaleString()}</span>
                 </div>
               )}
               {eg.overtime > 0 && (
                 <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
                   <span className="text-muted-foreground shrink-0">Overtime</span>
-                  <span className="font-medium font-mono tabular-nums text-right">₹ {eg.overtime.toLocaleString()}</span>
+                  <span className="font-medium font-mono tabular-nums text-right">Rs. {eg.overtime.toLocaleString()}</span>
                 </div>
               )}
               {(eg.reimbursement + eg.performanceBonus) > 0 && (
                 <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
                   <span className="text-muted-foreground shrink-0">Reimbursement / performance</span>
-                  <span className="font-medium font-mono tabular-nums text-right">₹ {(eg.reimbursement + eg.performanceBonus).toLocaleString()}</span>
+                  <span className="font-medium font-mono tabular-nums text-right">Rs. {(eg.reimbursement + eg.performanceBonus).toLocaleString()}</span>
                 </div>
               )}
               <div className="border-t pt-2 flex justify-between items-center gap-4 text-sm font-bold min-h-[1.5rem]">
                 <span>Gross Salary</span>
-                <span className="font-mono tabular-nums text-right">₹ {Math.round(gross).toLocaleString()}</span>
+                <span className="font-mono tabular-nums text-right">Rs. {Math.round(gross).toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -487,7 +487,7 @@ const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
                 <div key={r.label} className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
                   <span className="text-muted-foreground shrink-0">{r.label}</span>
                   <span className="font-medium font-mono tabular-nums text-right text-red-600/90">
-                    − ₹ {r.amount.toLocaleString()}
+                    − Rs. {r.amount.toLocaleString()}
                   </span>
                 </div>
               ))}
@@ -495,13 +495,13 @@ const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
                 <div key={r.label} className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
                   <span className="text-muted-foreground shrink-0">{r.label}</span>
                   <span className="font-medium font-mono tabular-nums text-right text-red-600/90">
-                    − ₹ {Number(r.amount).toLocaleString()}
+                    − Rs. {Number(r.amount).toLocaleString()}
                   </span>
                 </div>
               ))}
               <div className="border-t pt-2 flex justify-between items-center gap-4 text-sm font-bold text-red-600 min-h-[1.5rem]">
                 <span>Total</span>
-                <span className="font-mono tabular-nums text-right">− ₹ {deductions.toLocaleString()}</span>
+                <span className="font-mono tabular-nums text-right">− Rs. {deductions.toLocaleString()}</span>
               </div>
               {slip.lopDays > 0 && (
                 <div className="flex justify-between items-center gap-4 text-sm text-orange-600 min-h-[1.5rem]">
@@ -515,7 +515,7 @@ const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
 
         <div className="mt-6 p-6 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl text-white text-center">
           <p className="text-sm uppercase tracking-widest opacity-80">Net Pay</p>
-          <h2 className="text-4xl font-bold mt-1">₹ {Number(slip.netPay || 0).toLocaleString()}</h2>
+          <h2 className="text-4xl font-bold mt-1">Rs. {Number(slip.netPay || 0).toLocaleString()}</h2>
           <p className="text-sm opacity-70 mt-1">{slip.month} {slip.year}</p>
         </div>
       </CardContent>

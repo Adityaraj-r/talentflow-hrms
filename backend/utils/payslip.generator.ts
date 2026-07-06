@@ -19,7 +19,7 @@ const MONTHS_ORDER = [
 
 const TEXT = "#0f172a"
 const MUTED = "#64748b"
-const BORDER = "#1e293b"
+const BORDER = "#000000"
 const HEADER_BLUE = "#1e40af"
 const SECTION_BG = "#dbeafe"
 
@@ -191,7 +191,7 @@ function paymentDateAfterPeriod(endIso: string): string {
 }
 
 function money(sym: string, n: number): string {
-  return `${sym}${Math.round(n).toLocaleString("en-IN")}`
+  return `Rs. ${Math.round(n).toLocaleString("en-IN")}`
 }
 
 export type PayslipContext = {
@@ -270,10 +270,10 @@ function amountToWordsIndian(num: number): string {
 /** Builds salary slip PDF; attachment filename `{employeeCode}.pdf`. */
 export const generatePayslip = (res: any, ctx: PayslipContext) => {
   const snap = normalizeSlip(ctx.slip)
-  const doc = new PDFDocument({ margin: 36, size: "A4" })
+  const doc = new PDFDocument({ margin: 50, size: "A4" })
   const pageW = 595.28
-  const left = 36
-  const right = pageW - 36
+  const left = 50
+  const right = pageW - 50
   const contentW = right - left
 
   const chunks: Buffer[] = []
@@ -293,7 +293,7 @@ export const generatePayslip = (res: any, ctx: PayslipContext) => {
     }
   })
 
-  const sym = ctx.currencySymbol
+  const sym = "Rs. " // Enforce strict currency symbol
   const otherCurrent =
     (snap.earnings.hra || 0) +
     (snap.earnings.allowances || 0) +
@@ -328,96 +328,118 @@ export const generatePayslip = (res: any, ctx: PayslipContext) => {
     : paymentDateAfterPeriod(ctx.period.endStr)
 
   const companyName = ctx.employerName || "Indux Tech.Pvt. Ltd."
-  let cy = 28
 
-  doc.font("Helvetica-Bold").fontSize(17).fillColor(HEADER_BLUE).text(companyName, left, cy, {
+  // --- Outer Border & Scaling ---
+  const pageH = 841.89
+  const outerMargin = 22
+  doc.lineWidth(1.5).strokeColor(BORDER).rect(outerMargin, outerMargin, pageW - outerMargin * 2, pageH - outerMargin * 2).stroke()
+  doc.lineWidth(1)
+  
+  doc.save()
+  doc.translate(24, 24)
+  doc.scale(0.92)
+
+  let cy = 50
+
+  doc.font("Helvetica-Bold").fontSize(18).fillColor(HEADER_BLUE).text(companyName, left, cy, {
     width: contentW,
     align: "center",
   })
-  cy = doc.y + 4
+  cy += 20
+  
   doc.font("Helvetica").fontSize(9).fillColor(MUTED).text(
     `${ctx.payroll.month} ${ctx.payroll.year} · Confidential`,
     left,
     cy,
     { width: contentW, align: "center" }
   )
-  cy = doc.y + 10
+  cy += 14
 
-  doc.rect(left, cy, contentW, 30).fill(HEADER_BLUE)
-  doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(16).text("Salary Slip", left, cy + 6, {
+  doc.rect(left, cy, contentW, 24).fill(HEADER_BLUE)
+  doc.strokeColor(BORDER).rect(left, cy, contentW, 24).stroke()
+  doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(12).text("Salary Slip", left, cy + 6, {
     width: contentW,
     align: "center",
   })
   cy += 30
 
-  const sectionBar = (title: string) => {
-    doc.rect(left, cy, contentW, 22).fill(SECTION_BG)
-    doc.strokeColor(BORDER).rect(left, cy, contentW, 22).stroke()
-    doc.fillColor(TEXT).font("Helvetica-Bold").fontSize(10).text(title, left, cy + 6, {
+  const sectionBar = (title: string, yPos: number) => {
+    doc.rect(left, yPos, contentW, 20).fill(SECTION_BG)
+    doc.strokeColor(BORDER).rect(left, yPos, contentW, 20).stroke()
+    doc.fillColor(TEXT).font("Helvetica-Bold").fontSize(10).text(title, left, yPos + 6, {
       width: contentW,
       align: "center",
     })
-    cy += 22
   }
 
-  const fieldLine = (label: string, value: string, y: number, labelW: number) => {
-    doc.font("Helvetica-Bold").fontSize(9).fillColor(TEXT).text(`${label}:`, left + 10, y, { width: labelW })
-    doc.font("Helvetica").fontSize(9).text(value || "—", left + 10 + labelW, y, {
-      width: contentW - labelW - 20,
+  const fieldLine = (label: string, value: string, xPos: number, yPos: number, labelW: number, valW: number) => {
+    doc.font("Helvetica-Bold").fontSize(9).fillColor(TEXT).text(`${label}:`, xPos, yPos, { width: labelW })
+    doc.font("Helvetica").fontSize(9).text(value || "—", xPos + labelW, yPos, {
+      width: valW,
     })
   }
 
-  sectionBar("Company Information")
-  const companyH = 86
-  doc.rect(left, cy, contentW, companyH).stroke(BORDER)
+  sectionBar("Company Information", cy)
+  cy += 20
+  
+  const compH = 46
+  doc.rect(left, cy, contentW, compH).stroke(BORDER)
   let ly = cy + 10
-  const lw = 140
-  fieldLine("Company Name", companyName, ly, lw)
-  ly += 18
-  fieldLine("Address", ctx.employerAddress || "—", ly, lw)
-  ly += 18
-  fieldLine("Phone", ctx.companyPhone || "—", ly, lw)
-  ly += 18
-  fieldLine("Email", ctx.companyEmail || "—", ly, lw)
-  cy += companyH
+  fieldLine("Company Name", companyName, left + 10, ly, 90, 160)
+  fieldLine("Address", ctx.employerAddress || "—", left + 270, ly, 60, 180)
+  ly += 16
+  fieldLine("Phone", ctx.companyPhone || "—", left + 10, ly, 90, 160)
+  fieldLine("Email", ctx.companyEmail || "—", left + 270, ly, 60, 180)
+  
+  cy += compH + 8
 
-  sectionBar("Employee Information")
-  const empH = 104
+  sectionBar("Employee Information", cy)
+  cy += 20
+  
+  const empH = 62
   doc.rect(left, cy, contentW, empH).stroke(BORDER)
   ly = cy + 10
-  fieldLine("Name", ctx.employeeName || "—", ly, lw)
-  ly += 18
-  fieldLine("Address", ctx.employeeAddress || "—", ly, lw)
-  ly += 18
-  fieldLine("Phone", ctx.employeePhone || "—", ly, lw)
-  ly += 18
-  fieldLine("Email", ctx.employeeEmail || "—", ly, lw)
-  ly += 18
-  fieldLine("Employee Code", ctx.employeeCode || "—", ly, lw)
-  cy += empH
+  fieldLine("Name", ctx.employeeName || "—", left + 10, ly, 90, 160)
+  fieldLine("Employee Code", ctx.employeeCode || "—", left + 270, ly, 90, 160)
+  ly += 16
+  fieldLine("Phone", ctx.employeePhone || "—", left + 10, ly, 90, 160)
+  fieldLine("Email", ctx.employeeEmail || "—", left + 270, ly, 90, 160)
+  ly += 16
+  fieldLine("Address", ctx.employeeAddress || "—", left + 10, ly, 90, 400)
 
-  const rowH = 24
-  const colW = [contentW * 0.34, contentW * 0.16, contentW * 0.34, contentW * 0.16]
+  cy += empH + 10
+
+  // --- Salary Table ---
+  const rowH = 38
+  const colW = [contentW * 0.35, contentW * 0.15, contentW * 0.35, contentW * 0.15]
   const colX = [left, left + colW[0], left + colW[0] + colW[1], left + colW[0] + colW[1] + colW[2]]
-  const textY = (y: number) => y + (rowH - 9) / 2 + 1
 
-  const drawRow = (cells: [string, string, string, string], opts: { header?: boolean; bold?: boolean } = {}) => {
-    const { header, bold } = opts
-    if (header) {
-      doc.rect(left, cy, contentW, rowH).fill(SECTION_BG).stroke(BORDER)
+  const drawCellText = (text: string, x: number, y: number, w: number, h: number, align: "left" | "center" | "right", isHeader: boolean, bold: boolean) => {
+    const font = bold || isHeader ? "Helvetica-Bold" : "Helvetica"
+    doc.font(font).fontSize(9)
+    const textH = doc.heightOfString(text, { width: w - 20 })
+    const textY = y + (h - textH) / 2
+    doc.fillColor(TEXT).text(text, x + 10, textY, { width: w - 20, align: align })
+  }
+
+  const drawRow = (cells: [string, string, string, string], opts: { header?: boolean; bold?: boolean; isTotal?: boolean } = {}) => {
+    const { header, bold, isTotal } = opts
+    
+    if (header || isTotal) {
+      doc.rect(left, cy, contentW, rowH).fillAndStroke(SECTION_BG, BORDER)
     } else {
       doc.rect(left, cy, contentW, rowH).stroke(BORDER)
     }
+    
     for (let i = 1; i < 4; i += 1) {
       doc.moveTo(colX[i], cy).lineTo(colX[i], cy + rowH).stroke(BORDER)
     }
-    const font = bold ? "Helvetica-Bold" : "Helvetica"
-    doc.fillColor(TEXT).font(font).fontSize(9)
-    const y0 = textY(cy)
-    doc.text(cells[0], colX[0] + 6, y0, { width: colW[0] - 12, align: "left" })
-    doc.text(cells[1], colX[1] + 4, y0, { width: colW[1] - 8, align: "right" })
-    doc.text(cells[2], colX[2] + 6, y0, { width: colW[2] - 12, align: "left" })
-    doc.text(cells[3], colX[3] + 4, y0, { width: colW[3] - 8, align: "right" })
+
+    drawCellText(cells[0], colX[0], cy, colW[0], rowH, "left", !!header, !!bold)
+    drawCellText(cells[1], colX[1], cy, colW[1], rowH, "center", !!header, !!bold)
+    drawCellText(cells[2], colX[2], cy, colW[2], rowH, "left", !!header, !!bold)
+    drawCellText(cells[3], colX[3], cy, colW[3], rowH, "center", !!header, !!bold)
+    
     cy += rowH
   }
 
@@ -425,65 +447,81 @@ export const generatePayslip = (res: any, ctx: PayslipContext) => {
   drawRow(["Basic", money(sym, snap.earnings.basic || 0), "Provident Fund", money(sym, pf)])
   drawRow(["HRA", money(sym, snap.earnings.hra || 0), "ESI", money(sym, esi)])
   drawRow(["Special Allowance", money(sym, snap.earnings.allowances || 0), "Professional Tax", money(sym, pt)])
-  drawRow(["Gross Salary", money(sym, snap.grossPay), "Salary Advance", money(sym, advAmt)], { bold: true })
-  drawRow(["Other Earnings", money(sym, otherCurrent), "TDS", money(sym, tds)])
+  
   if (isLegacyDed) {
+    drawRow(["Other Earnings", money(sym, otherCurrent), "Salary Advance", money(sym, advAmt)])
     drawRow([
       "Incentives",
       money(sym, snap.earnings.performanceBonus || 0),
       "Other Deduction",
       money(sym, legacyOtherBundle),
     ])
-    drawRow(["Bonus", money(sym, snap.earnings.bonus || 0), "", ""])
+    drawRow(["Bonus", money(sym, snap.earnings.bonus || 0), "TDS", money(sym, tds)])
     drawRow(["Over Time Pay", money(sym, snap.earnings.overtime || 0), "", ""])
   } else {
+    drawRow(["Other Earnings", money(sym, otherCurrent), "Salary Advance", money(sym, advAmt)])
     drawRow([
       "Incentives",
       money(sym, snap.earnings.performanceBonus || 0),
       "Insurance & Other",
       money(sym, insOther),
     ])
-    drawRow(["Bonus", money(sym, snap.earnings.bonus || 0), "LOP", money(sym, lopAmt)])
-    drawRow(["Over Time Pay", money(sym, snap.earnings.overtime || 0), "", ""])
+    drawRow(["Bonus", money(sym, snap.earnings.bonus || 0), "TDS", money(sym, tds)])
+    drawRow(["Over Time Pay", money(sym, snap.earnings.overtime || 0), "LOP", money(sym, lopAmt)])
   }
+  
   drawRow(
     ["Total Earnings", money(sym, snap.grossPay), "Total Deductions", money(sym, snap.totalDeductions || 0)],
-    { bold: true }
+    { isTotal: true, bold: true }
   )
 
+  cy += 10
+
+  // --- Net Pay Block ---
   const wordsLine = `In words: ${amountToWordsIndian(snap.netPay)}`
-  doc.font("Helvetica").fontSize(9)
-  const wordsH = doc.heightOfString(wordsLine, { width: contentW - 24 })
-  const netTop = cy
-  const netLine1 = 28
-  const netBlockH = netLine1 + Math.max(28, wordsH + 16)
-
-  doc.rect(left, netTop, contentW, netBlockH).fill("#eff6ff").stroke(BORDER)
-  doc.moveTo(left + colW[0], netTop).lineTo(left + colW[0], netTop + netLine1).stroke(BORDER)
-  doc.moveTo(left + colW[0] + colW[1], netTop).lineTo(left + colW[0] + colW[1], netTop + netLine1).stroke(BORDER)
-  doc.fillColor(TEXT).font("Helvetica-Bold").fontSize(11)
-  doc.text("Net Pay", left + 8, netTop + 8, { width: colW[0] - 12, align: "center" })
-  doc.text(money(sym, snap.netPay), left + colW[0] + 8, netTop + 8, { width: colW[1] - 12, align: "right" })
-  doc.moveTo(left, netTop + netLine1).lineTo(left + contentW, netTop + netLine1).stroke(BORDER)
+  const netBlockH = 40
+  doc.rect(left, cy, contentW, netBlockH).fillAndStroke("#eff6ff", BORDER)
+  
+  const netLeftW = contentW * 0.65
+  const netRightW = contentW * 0.35
+  
+  doc.moveTo(left + netLeftW, cy).lineTo(left + netLeftW, cy + netBlockH).stroke(BORDER)
+  
   doc.font("Helvetica").fontSize(9).fillColor(TEXT)
-  doc.text(wordsLine, left + 12, netTop + netLine1 + 8, { width: contentW - 24 })
-  cy = netTop + netBlockH + 14
+  const wordsTextH = doc.heightOfString(wordsLine, { width: netLeftW - 20 })
+  doc.text(wordsLine, left + 10, cy + (netBlockH - wordsTextH) / 2, { width: netLeftW - 20 })
+  
+  const netLabelW = netRightW * 0.4
+  const netAmountW = netRightW * 0.6
+  doc.moveTo(left + netLeftW + netLabelW, cy).lineTo(left + netLeftW + netLabelW, cy + netBlockH).stroke(BORDER)
+  
+  const netLabelStr = "Net Pay"
+  const netAmountStr = money(sym, snap.netPay)
+  
+  doc.font("Helvetica-Bold").fontSize(10).fillColor(TEXT)
+  const netLabelTextH = doc.heightOfString(netLabelStr, { width: netLabelW - 10 })
+  doc.text(netLabelStr, left + netLeftW + 5, cy + (netBlockH - netLabelTextH) / 2, { width: netLabelW - 10, align: "center" })
+     
+  const netAmountTextH = doc.heightOfString(netAmountStr, { width: netAmountW - 10 })
+  doc.text(netAmountStr, left + netLeftW + netLabelW + 5, cy + (netBlockH - netAmountTextH) / 2, { width: netAmountW - 10, align: "center" })
 
-  const footH = 52
-  doc.rect(left, cy, contentW / 2, footH).fill(SECTION_BG).stroke(BORDER)
-  doc.rect(left + contentW / 2, cy, contentW / 2, footH).fill(SECTION_BG).stroke(BORDER)
-  doc.fillColor(TEXT).font("Helvetica-Bold").fontSize(10)
-  doc.text("Prepared By:", left + 12, cy + 32)
-  doc.text("Received By:", left + contentW / 2 + 12, cy + 32)
+  cy += netBlockH + 12
 
+  // --- Signature Block ---
+  const footH = 60
+  doc.rect(left, cy, contentW / 2, footH).fillAndStroke(SECTION_BG, BORDER)
+  doc.rect(left + contentW / 2, cy, contentW / 2, footH).fillAndStroke(SECTION_BG, BORDER)
+  
+  doc.fillColor(TEXT).font("Helvetica-Bold").fontSize(9)
+  doc.text("Prepared By", left + 10, cy + 10)
   doc.font("Helvetica").fontSize(8).fillColor(MUTED)
-  doc.text(`Pay period: ${fmtUSDate(ctx.period.startStr)} – ${fmtUSDate(ctx.period.endStr)}`, left, cy + footH + 8, {
-    width: contentW * 0.55,
-  })
-  doc.text(`Payment date: ${payDt}  ·  ${ctx.paymentMethod || "—"}`, left + contentW * 0.45, cy + footH + 8, {
-    width: contentW * 0.55,
-    align: "right",
-  })
+  doc.text(`Pay period: ${fmtUSDate(ctx.period.startStr)} – ${fmtUSDate(ctx.period.endStr)}`, left + 10, cy + footH - 16)
 
+  doc.fillColor(TEXT).font("Helvetica-Bold").fontSize(9)
+  doc.text("Received By", left + contentW / 2 + 10, cy + 10)
+  doc.font("Helvetica").fontSize(8).fillColor(MUTED)
+  doc.text(`Payment date: ${payDt}  ·  ${ctx.paymentMethod || "—"}`, left + contentW / 2 + 10, cy + footH - 16)
+
+  doc.restore()
   doc.end()
 }
