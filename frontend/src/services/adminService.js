@@ -36,6 +36,9 @@ const adminService = {
   getDepartmentStats: async () =>
     await apiClient.get('/admin/department-stats'),
 
+  getDashboardStats: async () =>
+  await apiClient.get('/admin/dashboard-stats'),
+
   getSettings: async () =>
     await apiClient.get('/admin/settings'),
 
