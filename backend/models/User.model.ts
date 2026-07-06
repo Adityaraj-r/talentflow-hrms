@@ -7,7 +7,7 @@ export interface IUser extends Document {
   password: string;
   role: string;
   firstName: string;
-  lastName: string;
+  lastName?: string;
   department?: string;
   designation?: string;
   profilePhoto?: string;
@@ -68,8 +68,8 @@ const UserSchema = new Schema<IUser>(
     },
     lastName: {
       type: String,
-      required: [true, 'Last name is required'],
       trim: true,
+      default: '',
     },
     phoneNumber: {
       type: String,

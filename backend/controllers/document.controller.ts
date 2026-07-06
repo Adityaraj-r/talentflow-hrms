@@ -5,6 +5,16 @@ import Document from '../models/Document.model';
 import { v2 as cloudinary } from 'cloudinary';
 import Employee from '../models/Employee.model';
 
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const getLocalDocumentPath = (filePath: string): string => {
+  return `/uploads/documents/${path.basename(filePath)}`;
+};
+
 export const uploadDocument = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.file) {
@@ -45,14 +55,29 @@ export const uploadDocument = async (req: Request, res: Response): Promise<void>
     const safeDocName   = (documentTitle || "doc").replace(/[^a-zA-Z0-9]/g, '');
     const customPublicId = `${category === "Onboarding" && emailPrefix !== "unknown" ? emailPrefix : safeEmployeeId}-${safeDocName}-${Date.now()}`;
 
-    const cloudResult = await cloudinary.uploader.upload(req.file.path, {
-      folder:        cloudFolder,
-      resource_type: 'auto',
-      public_id:     customPublicId,
-    });
+    let savedFilePath = getLocalDocumentPath(req.file.path);
+    let savedFileSize = fileSizeMB;
 
-    if (fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
+    try {
+      const cloudResult = await cloudinary.uploader.upload(req.file.path, {
+        folder:        cloudFolder,
+        resource_type: 'auto',
+        public_id:     customPublicId,
+      });
+
+      savedFilePath = cloudResult.secure_url;
+      savedFileSize = cloudResult.bytes
+        ? (cloudResult.bytes / (1024 * 1024)).toFixed(2) + " MB"
+        : fileSizeMB;
+
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+    } catch (cloudError: any) {
+      console.warn(
+        "Cloudinary document upload failed; saving local upload instead:",
+        cloudError.message || cloudError
+      );
     }
 
     const newDoc = new Document({
@@ -61,19 +86,19 @@ export const uploadDocument = async (req: Request, res: Response): Promise<void>
       fileName:     req.file.filename,
       originalName: documentTitle || req.file.originalname,
       fileType:     req.file.mimetype,
-      fileSize:     fileSizeMB,
-      filePath:     cloudResult.secure_url,
+      fileSize:     savedFileSize,
+      filePath:     savedFilePath,
       category:     category || "Uncategorized",
       status:       "Pending",
     });
 
     await newDoc.save();
     res.status(201).json(newDoc);
-  } catch (error) {
+  } catch (error: any) {
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
-    res.status(500).json({ message: "Server error during cloud upload", error });
+    res.status(500).json({ message: error.message || "Server error during document upload", error });
   }
 };
 

@@ -1,11 +1,67 @@
 import { Request, Response } from 'express';
+import fs from 'fs';
+import path from 'path';
+import { v2 as cloudinary } from 'cloudinary';
 import Employee from '../models/Employee.model';
 import Document from '../models/Document.model';
-import User from '../models/User.model';
+
+const getLocalDocumentPath = (file: Express.Multer.File): string => {
+  return `/uploads/onboarding/${path.basename(file.path)}`;
+};
+
+const uploadOnboardingFile = async (
+  file: Express.Multer.File,
+  emailPrefix: string
+): Promise<Express.Multer.File> => {
+  try {
+    const cloudResult = await cloudinary.uploader.upload(file.path, {
+      folder:        `hrms_onboarding/${emailPrefix}`,
+      resource_type: 'auto',
+      public_id:     `${emailPrefix}-${file.fieldname}-${Date.now()}`,
+    });
+
+    fs.unlink(file.path, (err) => {
+      if (err) console.warn("Could not remove local onboarding upload:", err.message);
+    });
+
+    return {
+      ...file,
+      path: cloudResult.secure_url,
+      size: cloudResult.bytes || file.size,
+    };
+  } catch (error: any) {
+    console.warn(
+      `Cloudinary onboarding upload failed for ${file.originalname}; using local file instead:`,
+      error.message || error
+    );
+    return {
+      ...file,
+      path: getLocalDocumentPath(file),
+    };
+  }
+};
 
 export const saveOnboardingProgress = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, onboardingStatus, ...updateData } = req.body;
+   
+    if (!email || typeof email !== 'string') {
+      res.status(400).json({ success: false, message: "Email is required." });
+      return;
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    delete updateData._id;
+    delete updateData.id;
+    delete updateData.__v;
+    delete updateData.createdAt;
+    delete updateData.updatedAt;
+    delete updateData.userId;
+
+    if (onboardingStatus) {
+      updateData.onboardingStatus = onboardingStatus;
+    }
 
     if (typeof updateData.bankDetails === 'string') {
       updateData.bankDetails = JSON.parse(updateData.bankDetails);
@@ -14,18 +70,27 @@ export const saveOnboardingProgress = async (req: Request, res: Response): Promi
       updateData.kycDetails = JSON.parse(updateData.kycDetails);
     }
 
-    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-    if (files) {
-      updateData.Documents = updateData.Documents || {};
-      if (files['aadharCard'])      updateData.Documents.aadharCardPath      = files['aadharCard'][0].path;
-      if (files['panCard'])         updateData.Documents.panCardPath         = files['panCard'][0].path;
-      if (files['resume'])          updateData.Documents.resumePath          = files['resume'][0].path;
-      if (files['educationDocs'])   updateData.Documents.educationDocsPath   = files['educationDocs'][0].path;
-      if (files['passportPhoto'])   updateData.Documents.passportPhotoPath   = files['passportPhoto'][0].path;
-      if (files['relievingLetter']) updateData.Documents.relievingLetterPath = files['relievingLetter'][0].path;
-    }
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+    const emailPrefix = normalizedEmail.split('@')[0].replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'unknown_candidate';
+    const uploadedFiles: { [fieldname: string]: Express.Multer.File[] } = {};
 
-    const existingEmployee = await Employee.findOne({ email: email.toLowerCase().trim() });
+    if (files) {
+      for (const [fieldName, fileArr] of Object.entries(files)) {
+        uploadedFiles[fieldName] = await Promise.all(
+          fileArr.map((file) => uploadOnboardingFile(file, emailPrefix))
+        );
+      }
+
+      updateData.Documents = updateData.Documents || {};
+      if (uploadedFiles['aadharCard'])      updateData.Documents.aadharCardPath      = uploadedFiles['aadharCard'][0].path;
+      if (uploadedFiles['panCard'])         updateData.Documents.panCardPath         = uploadedFiles['panCard'][0].path;
+      if (uploadedFiles['resume'])          updateData.Documents.resumePath          = uploadedFiles['resume'][0].path;
+      if (uploadedFiles['educationDocs'])   updateData.Documents.educationDocsPath   = uploadedFiles['educationDocs'][0].path;
+      if (uploadedFiles['passportPhoto'])   updateData.Documents.passportPhotoPath   = uploadedFiles['passportPhoto'][0].path;
+      if (uploadedFiles['relievingLetter']) updateData.Documents.relievingLetterPath = uploadedFiles['relievingLetter'][0].path;
+    }
+console.log("STEP 1 - Checking employee");
+    const existingEmployee = await Employee.findOne({ email: normalizedEmail });
 
     if (!existingEmployee) {
       const lastEmployee = await Employee.findOne({
@@ -47,14 +112,14 @@ export const saveOnboardingProgress = async (req: Request, res: Response): Promi
     } else {
       delete updateData.employeeCode;
     }
-
+console.log("STEP 2 - Saving employee");
     const employee = await Employee.findOneAndUpdate(
-      { email: email.toLowerCase().trim() },
+      { email: normalizedEmail },
       { $set: updateData },
       { new: true, upsert: true, runValidators: true }
     );
 
-    if (files && employee) {
+    if (Object.keys(uploadedFiles).length > 0 && employee) {
       const targetId = employee.employeeCode || employee._id.toString();
 
       const docNames: any = {
@@ -66,10 +131,11 @@ export const saveOnboardingProgress = async (req: Request, res: Response): Promi
         relievingLetter: 'Previous Relieving Letter',
       };
 
-      for (const key of Object.keys(files)) {
-        const fileArr = files[key];
+      for (const key of Object.keys(uploadedFiles)) {
+        const fileArr = uploadedFiles[key];
         if (fileArr && fileArr.length > 0) {
           const file = fileArr[0];
+          console.log("STEP 3 - Saving document:", key);
           await new Document({
             employeeId:   targetId,
             uploadedBy:   'Onboarding System',
@@ -84,26 +150,65 @@ export const saveOnboardingProgress = async (req: Request, res: Response): Promi
         }
       }
     }
-
+console.log("STEP 4 - Save completed");
     res.status(200).json({ success: true, data: employee });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+  }  catch (error: any) {
+  console.log("=======================================");
+  console.log("ONBOARDING SAVE ERROR");
+  console.dir(error, { depth: null });
+  console.log("=======================================");
 
-export const getOnboardingDetails = async (req: Request, res: Response): Promise<void> => {
+  console.error("Message:", error.message);
+  console.error("Stack:", error.stack);
+
+  if (error.http_code) {
+    console.error("HTTP Code:", error.http_code);
+  }
+
+  if (error.storageErrors) {
+    console.error("Storage Errors:", error.storageErrors);
+  }
+
+  res.status(500).json({
+    success: false,
+    message: error.message || "Failed to save onboarding data",
+    error: error.message,
+    stack:
+      process.env.NODE_ENV === "development"
+        ? error.stack
+        : undefined,
+  });
+}
+} 
+
+export const getOnboardingDetails = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const employee = await Employee.findOne({ email: req.params.email });
+    const employee = await Employee.findOne({
+      email: req.params.email,
+    });
+
     if (!employee) {
-      res.status(404).json({ success: false, message: 'Employee not found' });
+      res.status(404).json({
+        success: false,
+        message: "Employee not found",
+      });
       return;
     }
-    res.status(200).json({ success: true, data: employee });
+
+    res.status(200).json({
+      success: true,
+      data: employee,
+    });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
-
 export const getAllOnboardingEmployees = async (req: Request, res: Response): Promise<void> => {
   try {
     const { unenrolled } = req.query;

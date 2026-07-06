@@ -133,7 +133,7 @@ const DigitalLocker = () => {
       fetchDocuments();
     } catch (error) {
       console.error(error);
-      toast.error("Upload failed");
+      toast.error(error?.message || error?.error || "Upload failed");
     }
   };
 

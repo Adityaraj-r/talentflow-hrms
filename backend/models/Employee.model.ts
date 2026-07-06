@@ -4,7 +4,7 @@ export interface IEmployee extends Document {
   userId?: mongoose.Types.ObjectId;
   firstName: string;
   MiddleName?: string;
-  lastName: string;
+  lastName?: string;
   workEmail?: string;
   email: string;
   phoneNumber: string;
@@ -82,7 +82,7 @@ const EmployeeSchema = new Schema<IEmployee>(
 
     firstName: { type: String, required: true, trim: true },
     MiddleName: { type: String, trim: true },
-    lastName: { type: String, required: true, trim: true },
+    lastName: { type: String, trim: true, default: '' },
     workEmail: { type: String, lowercase: true },
     email: { type: String, required: true, unique: true, lowercase: true },
     phoneNumber: { type: String, required: true },

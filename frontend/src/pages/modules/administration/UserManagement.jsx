@@ -138,7 +138,6 @@ const UserManagement = () => {
 
   const validateForm = () => {
     if (!formData.firstName.trim()) return "First name is required"
-    if (!formData.lastName.trim()) return "Last name is required"
     if (!formData.email.includes("@")) return "Valid work email is required"
     if (formData.password.length < 6) return "Password must be at least 6 characters"
     if (!formData.role) return "Please assign a user role"
@@ -418,7 +417,7 @@ const UserManagement = () => {
 
                           return (
                             <SelectItem key={safeValue} value={safeValue}>
-                              {displayCode} - {emp.firstName} {emp.lastName}
+                              {[displayCode, "-", emp.firstName, emp.lastName].filter(Boolean).join(" ")}
                             </SelectItem>
                           );
                         })

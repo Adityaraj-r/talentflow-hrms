@@ -24,10 +24,10 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
     const { email, password, firstName, lastName, role, phoneNumber, department, gender, employeeCode, salary } = req.body;
     const ip = String(req.headers['x-forwarded-for'] || req.ip || 'unknown');
 
-    if (!email || !password || !firstName || !lastName || !role) {
+    if (!email || !password || !firstName || !role) {
       res.status(400).json({
         success: false,
-        message: 'Email, password, first name, last name and role are required',
+        message: 'Email, password, first name and role are required',
       });
       return;
     }
@@ -73,8 +73,8 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
     const user = await User.create({
       email: email.toLowerCase(),
       password: hashedPassword,
-      firstName,
-      lastName,
+      firstName: firstName.trim(),
+      lastName: lastName?.trim() || '',
       role: resolvedRole,
       phoneNumber: phoneNumber || null,
       department: department || null,
@@ -313,7 +313,7 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
     };
 
     if (firstName) user.firstName = firstName;
-    if (lastName) user.lastName = lastName;
+    if (lastName !== undefined) user.lastName = lastName;
     if (email) user.email = email;
     if (department) user.department = department;
     user.role = resolvedRole;
