@@ -9,6 +9,17 @@ export interface ITask extends Document {
   priority: "HIGH" | "MEDIUM" | "LOW";
   dueDate: Date;
   createdBy: mongoose.Types.ObjectId;
+  interviewDetails?: {
+    candidateName: string;
+    interviewerName: string;
+    interviewDate: string;
+    startTime: string;
+    endTime: string;
+    mode: string;
+    meetingLink: string;
+    instructions: string[];
+    interviewStatus: string;
+  };
 }
 
 const TaskSchema = new Schema<ITask>(
@@ -33,6 +44,18 @@ const TaskSchema = new Schema<ITask>(
     },
 
     dueDate: { type: Date, required: true },
+
+    interviewDetails: {
+      candidateName: { type: String },
+      interviewerName: { type: String },
+      interviewDate: { type: String },
+      startTime: { type: String },
+      endTime: { type: String },
+      mode: { type: String },
+      meetingLink: { type: String },
+      instructions: { type: [String], default: [] },
+      interviewStatus: { type: String }
+    },
   },
   {
     timestamps: true,

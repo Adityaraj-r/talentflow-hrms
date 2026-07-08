@@ -2,6 +2,8 @@ import { Request, Response } from "express"
 import mongoose from "mongoose"
 import Application from "../models/application.model"
 import Job from "../models/job.model"
+import Task from "../models/task.model"
+import Employee from "../models/Employee.model"
 import { getHrSenderEmail, sendInterviewScheduleEmail } from "../utils/sendEmail"
 import { sendApplicationStatusEmail } from "../utils/sendEmail";
 import { calculateResumeFit } from "../utils/resumeFit"
@@ -129,6 +131,15 @@ export const updateApplicationStatus = async (req: Request, res: Response) => {
       )
     }
 
+    // Task Cancellation
+    if (application && ["Rejected", "Cancelled"].includes(status)) {
+      if ((application as any).taskId) {
+        await Task.findByIdAndDelete((application as any).taskId);
+        (application as any).taskId = null;
+        await application.save();
+      }
+    }
+
     res.json(application)
 
   } catch (error:any) {
@@ -210,7 +221,12 @@ export const scheduleInterviewAndSendMail = async (req: Request, res: Response) 
       return
     }
 
-    const user = (req as any).user || {}
+    const user = (req as any).user;
+    if (!user || !user.id) {
+      res.status(401).json({ success: false, message: "Unauthorized: User not found in request" });
+      return;
+    }
+
     const hrName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || "HR Team"
     const configuredSenderEmail = await getHrSenderEmail()
     const hrEmail = user.email || configuredSenderEmail || ""
@@ -243,10 +259,84 @@ export const scheduleInterviewAndSendMail = async (req: Request, res: Response) 
     const mailResult = await sendInterviewScheduleEmail((application as any).email, payload as any)
 
     const appDoc: any = application
+
+    // Prevent duplicate interviews
+    if (
+      appDoc.interviewDetails &&
+      appDoc.interviewDetails.date === payload.interviewDate &&
+      appDoc.interviewDetails.startTime === payload.startTime
+    ) {
+      res.status(400).json({ success: false, message: "An interview is already scheduled for this candidate at this exact date and time." })
+      return
+    }
+
     if (appDoc.status !== "Interview") {
       appDoc.status = "Interview"
-      await appDoc.save()
     }
+
+    if (interviewers.length > 0 && interviewers[0].id) {
+      const empId = interviewers[0].id;
+      const employeeQuery = mongoose.Types.ObjectId.isValid(empId) ? { _id: empId } : { employeeCode: empId };
+      const employee = await Employee.findOne(employeeQuery);
+      
+      if (employee && employee.userId) {
+        const description = `Interview scheduled with candidate.`;
+        const interviewerName = interviewers.length > 0 && interviewers[0].name 
+          ? interviewers[0].name 
+          : employee.firstName + " " + (employee.lastName || "");
+          
+        const interviewDetailsForTask = {
+          candidateName: payload.candidateName,
+          interviewerName: interviewerName.trim(),
+          interviewDate: payload.interviewDate,
+          startTime: payload.startTime,
+          endTime: payload.endTime,
+          mode: payload.mode,
+          meetingLink: payload.mode === 'Online' ? payload.meetingLink : 'N/A',
+          instructions: payload.instructions,
+          interviewStatus: "Upcoming"
+        };
+
+        if (appDoc.taskId) {
+          await Task.findByIdAndUpdate(appDoc.taskId, {
+            title: `Interview: ${payload.candidateName}`,
+            description,
+            dueDate: new Date(payload.interviewDate),
+            assignedTo: employee.userId,
+            assignedBy: user.id,
+            interviewDetails: interviewDetailsForTask
+          });
+        } else {
+          const newTask = await Task.create({
+            title: `Interview: ${payload.candidateName}`,
+            description,
+            assignedTo: employee.userId,
+            assignedBy: user.id,
+            createdBy: user.id,
+            status: "TO_DO",
+            priority: "HIGH",
+            dueDate: new Date(payload.interviewDate),
+            interviewDetails: interviewDetailsForTask
+          });
+          appDoc.taskId = newTask._id;
+        }
+
+        // Save interview details in the database natively
+        appDoc.interviewDetails = {
+          interviewerId: employee._id,
+          date: payload.interviewDate,
+          startTime: payload.startTime,
+          endTime: payload.endTime,
+          mode: payload.mode,
+          meetingLink: payload.mode === 'Online' ? payload.meetingLink : "",
+          location: payload.mode === 'Offline' ? payload.location : "",
+          instructions: payload.instructions,
+          status: "Upcoming"
+        }
+      }
+    }
+
+    await appDoc.save()
 
     res.status(200).json({
       success: true,
