@@ -22,6 +22,8 @@ const InterviewScheduling = () => {
   const isRecruitmentOperator = role === "HR_OFFICER" || role === "HR_MANAGER"
   const canWrite = user?.can?.("recruitment", "write") && isRecruitmentOperator
   const [applications, setApplications] = useState([])
+  const [employees, setEmployees] = useState([])
+  const [fetchingEmployees, setFetchingEmployees] = useState(false)
   const [search, setSearch] = useState("")
   const [selected, setSelected] = useState(null)
   const [open, setOpen] = useState(false)
@@ -38,6 +40,7 @@ const InterviewScheduling = () => {
     location: "",
     meetingLink: "",
     instructionsText: "",
+    interviewerId: "",
     interviewerName: "",
     interviewerDesignation: "",
     officeAddress: "",
@@ -55,8 +58,40 @@ const InterviewScheduling = () => {
     }
   }
 
+  const fetchEmployees = async () => {
+    setFetchingEmployees(true)
+    try {
+      const data = await apiClient.get("/employees")
+      const allEmps = Array.isArray(data) ? data : []
+      // Do not include ADMIN, SUPER ADMIN, or test/demo users
+      const filtered = allEmps.filter((emp) => {
+        const r = String(emp.role || "").toUpperCase().replace(/\s+/g, "_")
+        const email = String(emp.email || "").toLowerCase()
+        const name = `${emp.firstName || ""} ${emp.lastName || ""}`.toLowerCase()
+        const isDemo = email.includes("demo") || email.includes("test") || name.includes("test")
+        return r !== "ADMIN" && r !== "SUPER_ADMIN" && !isDemo
+      })
+
+      const uniqueEmpsMap = new Map()
+      filtered.forEach(emp => {
+        const fullName = `${emp.firstName || ""} ${emp.lastName || ""}`.trim().toLowerCase()
+        if (fullName && !uniqueEmpsMap.has(fullName)) {
+          uniqueEmpsMap.set(fullName, emp)
+        }
+      })
+
+      setEmployees(Array.from(uniqueEmpsMap.values()))
+    } catch (e) {
+      console.error("Failed to load interviewers", e)
+      toast.error(e?.message || "Failed to load interviewers")
+    } finally {
+      setFetchingEmployees(false)
+    }
+  }
+
   useEffect(() => {
     fetchApplications()
+    fetchEmployees()
   }, [])
 
   const candidates = useMemo(() => {
@@ -192,7 +227,11 @@ const InterviewScheduling = () => {
         location: form.location,
         meetingLink: form.meetingLink,
         interviewers: form.interviewerName
-          ? [{ name: form.interviewerName, designation: form.interviewerDesignation || "Interviewer" }]
+          ? [{ 
+              name: form.interviewerName, 
+              designation: form.interviewerDesignation || "Interviewer",
+              id: form.interviewerId 
+            }]
           : [],
         instructions: form.instructionsText
           .split("\n")
@@ -214,6 +253,7 @@ const InterviewScheduling = () => {
         location: "",
         meetingLink: "",
         instructionsText: "",
+        interviewerId: "",
         interviewerName: "",
         interviewerDesignation: "",
         officeAddress: "",
@@ -343,14 +383,36 @@ const InterviewScheduling = () => {
                     Select Hour / Min / AM-PM
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <Select value={form.startHour} onValueChange={(value) => setField("startHour", value)}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="HH" /></SelectTrigger>
-                      <SelectContent>{hourOptions.map((h) => <SelectItem key={`sh-${h}`} value={h}>{h}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <Select value={form.startMinute} onValueChange={(value) => setField("startMinute", value)}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="MM" /></SelectTrigger>
-                      <SelectContent>{minuteOptions.map((m) => <SelectItem key={`sm-${m}`} value={m}>{m}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <Input 
+                      type="number" 
+                      min="1" 
+                      max="12" 
+                      placeholder="HH" 
+                      value={form.startHour} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "" || (Number(val) >= 1 && Number(val) <= 12)) setField("startHour", val);
+                      }} 
+                      onBlur={(e) => {
+                        if (e.target.value) setField("startHour", String(Number(e.target.value)).padStart(2, '0'));
+                      }}
+                      className="w-full"
+                    />
+                    <Input 
+                      type="number" 
+                      min="0" 
+                      max="59" 
+                      placeholder="MM" 
+                      value={form.startMinute} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "" || (Number(val) >= 0 && Number(val) <= 59)) setField("startMinute", val);
+                      }} 
+                      onBlur={(e) => {
+                        if (e.target.value) setField("startMinute", String(Number(e.target.value)).padStart(2, '0'));
+                      }}
+                      className="w-full"
+                    />
                     <Select value={form.startPeriod} onValueChange={(value) => setField("startPeriod", value)}>
                       <SelectTrigger className="w-full"><SelectValue placeholder="AM/PM" /></SelectTrigger>
                       <SelectContent>
@@ -369,14 +431,36 @@ const InterviewScheduling = () => {
                     Select Hour / Min / AM-PM
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <Select value={form.endHour} onValueChange={(value) => setField("endHour", value)}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="HH" /></SelectTrigger>
-                      <SelectContent>{hourOptions.map((h) => <SelectItem key={`eh-${h}`} value={h}>{h}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <Select value={form.endMinute} onValueChange={(value) => setField("endMinute", value)}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="MM" /></SelectTrigger>
-                      <SelectContent>{minuteOptions.map((m) => <SelectItem key={`em-${m}`} value={m}>{m}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <Input 
+                      type="number" 
+                      min="1" 
+                      max="12" 
+                      placeholder="HH" 
+                      value={form.endHour} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "" || (Number(val) >= 1 && Number(val) <= 12)) setField("endHour", val);
+                      }} 
+                      onBlur={(e) => {
+                        if (e.target.value) setField("endHour", String(Number(e.target.value)).padStart(2, '0'));
+                      }}
+                      className="w-full"
+                    />
+                    <Input 
+                      type="number" 
+                      min="0" 
+                      max="59" 
+                      placeholder="MM" 
+                      value={form.endMinute} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "" || (Number(val) >= 0 && Number(val) <= 59)) setField("endMinute", val);
+                      }} 
+                      onBlur={(e) => {
+                        if (e.target.value) setField("endMinute", String(Number(e.target.value)).padStart(2, '0'));
+                      }}
+                      className="w-full"
+                    />
                     <Select value={form.endPeriod} onValueChange={(value) => setField("endPeriod", value)}>
                       <SelectTrigger className="w-full"><SelectValue placeholder="AM/PM" /></SelectTrigger>
                       <SelectContent>
@@ -447,23 +531,71 @@ const InterviewScheduling = () => {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
+              <div className="space-y-1.5">
                 <Label>Interviewer name</Label>
-                <Input value={form.interviewerName} onChange={(e) => setField("interviewerName", e.target.value)} />
+                <Select
+                  value={form.interviewerId}
+                  onValueChange={(val) => {
+                    const emp = employees.find(e => (e._id || e.employeeCode) === val)
+                    if (emp) {
+                      setField("interviewerId", val)
+                      setField("interviewerName", `${emp.firstName} ${emp.lastName || ""}`.trim())
+                      
+                      const formatRole = (roleStr) => {
+                        if (!roleStr) return ""
+                        return roleStr.toLowerCase().split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+                      }
+                      const actualDesignation = formatRole(emp.role) || "Interviewer"
+                      setField("interviewerDesignation", actualDesignation)
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Interviewer Name" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fetchingEmployees ? (
+                      <div className="p-4 text-center text-sm text-muted-foreground flex items-center justify-center">
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...
+                      </div>
+                    ) : (
+                      (() => {
+                        if (employees.length === 0) {
+                          return <div className="p-4 text-center text-sm text-muted-foreground">No interviewers available</div>
+                        }
+                        return employees.map((emp) => {
+                          const fullName = `${emp.firstName} ${emp.lastName || ""}`.trim()
+                          const empId = emp._id || emp.employeeCode
+                          return (
+                            <SelectItem key={empId} value={empId}>
+                              {fullName}
+                            </SelectItem>
+                          )
+                        })
+                      })()
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
-              <div>
+              <div className="space-y-1.5">
                 <Label>Interviewer designation</Label>
-                <Input value={form.interviewerDesignation} onChange={(e) => setField("interviewerDesignation", e.target.value)} />
+                <Input 
+                  value={form.interviewerDesignation} 
+                  readOnly 
+                  className="bg-muted text-muted-foreground cursor-not-allowed w-full" 
+                  placeholder="Auto-filled"
+                />
               </div>
             </div>
 
-            <div>
+            <div className="space-y-1.5">
               <Label>Instructions (one per line)</Label>
               <Textarea
                 rows={4}
                 value={form.instructionsText}
                 onChange={(e) => setField("instructionsText", e.target.value)}
                 placeholder="Bring valid ID card"
+                className="w-full"
               />
             </div>
 

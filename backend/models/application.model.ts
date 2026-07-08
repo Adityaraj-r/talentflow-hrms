@@ -135,6 +135,24 @@ const applicationSchema = new mongoose.Schema(
   status: {
     type: String,
     default: "Applied"
+  },
+
+  taskId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Task",
+    default: null
+  },
+
+  interviewDetails: {
+    interviewerId: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },
+    date: { type: String },
+    startTime: { type: String },
+    endTime: { type: String },
+    mode: { type: String, enum: ["Online", "Offline"] },
+    meetingLink: { type: String },
+    location: { type: String },
+    instructions: { type: [String], default: [] },
+    status: { type: String, enum: ["Upcoming", "In Progress", "Completed", "Cancelled"], default: "Upcoming" }
   }
 
 },

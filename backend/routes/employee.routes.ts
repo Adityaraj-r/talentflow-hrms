@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  getAllEmployees,
   getRecentHires,
   getActiveOnboarding,
   getEmployeeById,
@@ -17,6 +18,13 @@ const allowRoles =
     if (roles.includes(req.user?.role)) return next();
     return res.status(403).json({ success: false, error: "Access denied" });
   };
+
+router.get(
+  "/",
+  protect,
+  allowRoles("ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"),
+  getAllEmployees
+);
 
 router.get(
   "/recent-hires",

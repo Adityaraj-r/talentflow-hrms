@@ -74,6 +74,7 @@ const MyTasks = () => {
   const [sortBy, setSortBy]             = useState("dueDate")
 
   const [statusDialog, setStatusDialog] = useState({ open: false, task: null, newStatus: null })
+  const [detailsDialog, setDetailsDialog] = useState({ open: false, task: null, intData: null })
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -199,20 +200,61 @@ const MyTasks = () => {
 
   const getStatusStyle = (status) => {
     switch (status) {
-      case TASK_STATUS.DONE:        return "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400"
-      case TASK_STATUS.IN_PROGRESS: return "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400"
-      case TASK_STATUS.TO_DO:       return "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300"
-      default:                       return "bg-gray-100 text-gray-700"
+      case TASK_STATUS.DONE:        return "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800/50"
+      case TASK_STATUS.IN_PROGRESS: return "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800/50"
+      case TASK_STATUS.TO_DO:       return "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+      default:                       return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
     }
   }
 
   const getPriorityStyle = (priority) => {
     switch (priority?.toUpperCase()) {
-      case "HIGH":   return "text-red-600 bg-red-50 border-red-100"
-      case "MEDIUM": return "text-yellow-600 bg-yellow-50 border-yellow-100"
-      case "LOW":    return "text-blue-600 bg-blue-50 border-blue-100"
-      default:        return "text-gray-600"
+      case "HIGH":   return "text-red-600 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800/50"
+      case "MEDIUM": return "text-yellow-700 bg-yellow-50 border-yellow-200 dark:text-yellow-400 dark:bg-yellow-900/30 dark:border-yellow-800/50"
+      case "LOW":    return "text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-900/30 dark:border-blue-800/50"
+      default:        return "text-slate-600 bg-slate-50 border-slate-200 dark:text-slate-400 dark:bg-slate-900/30 dark:border-slate-800/50"
     }
+  }
+
+  const getInterviewData = (task) => {
+    if (task.interviewDetails?.candidateName) {
+      return task.interviewDetails;
+    }
+    
+    if (task.title?.startsWith("Interview:") || task.description?.includes("Candidate Name:")) {
+      const desc = task.description || "";
+      const extract = (label) => {
+        const regex = new RegExp(`${label}:\\s*(.*)`);
+        const match = desc.match(regex);
+        return match ? match[1].trim() : null;
+      };
+      
+      const candidateName = extract("Candidate Name") || task.title.replace("Interview: ", "").trim();
+      const interviewDate = extract("Interview Date");
+      const startTime = extract("Start Time");
+      const endTime = extract("End Time");
+      const mode = extract("Interview Mode");
+      const meetingLink = extract("Meeting Link");
+      const rawInst = extract("Interview Instructions");
+      const instructions = rawInst && rawInst !== "None" ? rawInst.split(',').map(s => s.trim()) : [];
+      const interviewStatus = extract("Interview Status") || "Upcoming";
+      
+      if (interviewDate && startTime) {
+        return {
+          candidateName,
+          interviewDate,
+          startTime,
+          endTime,
+          mode,
+          meetingLink,
+          instructions,
+          interviewStatus,
+          interviewerName: null, 
+        };
+      }
+    }
+    
+    return null;
   }
 
   if (loading) {
@@ -390,38 +432,48 @@ const MyTasks = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px]">
+              <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-slate-800">
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Task</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Priority</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Assigned By</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Due Date</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Status</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right"></th>
+                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Task</th>
+                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Priority</th>
+                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Assigner / Interviewer</th>
+                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Due Date</th>
+                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Int. Date</th>
+                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Int. Time</th>
+                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Int. Mode</th>
+                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Status</th>
+                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
                   {filteredTasks.map((task) => {
                     const overdue = isOverdue(task)
                     const availableTransitions = STATUS_TRANSITIONS[task.status] ?? []
+                    const intData = getInterviewData(task)
 
                     return (
                       <tr
                         key={task._id}
                         className="group transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/30"
                       >
-                        <td className="px-4 py-3.5 whitespace-nowrap">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-tight">{task.title}</span>
-                            <span className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{task.description}</span>
+                        <td className="px-2 py-3.5 align-top">
+                          <div className="flex flex-col gap-0.5 max-w-[200px]">
+                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-tight whitespace-normal break-words">
+                              {intData?.candidateName 
+                                ? `Interview with ${intData.candidateName}`
+                                : task.title}
+                            </span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                              {task.description}
+                            </span>
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 bg-slate-100 dark:bg-slate-800 w-fit px-1.5 py-0.5 rounded font-mono">
                               {task._id?.slice(-6).toUpperCase()}
                             </span>
                           </div>
                         </td>
 
-                        <td className="px-4 py-3.5 whitespace-nowrap">
+                        <td className="px-2 py-3.5 align-top">
                           <div className="flex items-center gap-1.5">
                             <span className={cn("w-2 h-2 rounded-full shrink-0", {
                               "bg-red-500":    task.priority?.toUpperCase() === "HIGH",
@@ -436,16 +488,22 @@ const MyTasks = () => {
                           </div>
                         </td>
 
-                        <td className="px-4 py-3.5 whitespace-nowrap">
+                        <td className="px-3 py-3.5 align-top">
                           <div className="flex items-center gap-2">
                             <div className="h-6 w-6 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 flex items-center justify-center text-[10px] font-bold text-blue-600 dark:text-blue-400 shrink-0">
-                              {getAssignerName(task.assignedBy).charAt(0).toUpperCase()}
+                              {(intData?.interviewerName 
+                                ? intData.interviewerName 
+                                : getAssignerName(task.assignedBy)).charAt(0).toUpperCase()}
                             </div>
-                            <span className="text-sm text-slate-700 dark:text-slate-300">{getAssignerName(task.assignedBy)}</span>
+                            <span className="text-sm text-slate-700 dark:text-slate-300">
+                              {intData?.interviewerName 
+                                ? intData.interviewerName 
+                                : getAssignerName(task.assignedBy)}
+                            </span>
                           </div>
                         </td>
 
-                        <td className="px-4 py-3.5 whitespace-nowrap">
+                        <td className="px-3 py-3.5 align-top">
                           <div className={cn("flex items-center gap-1.5 text-sm", overdue ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-400")}>
                             <Calendar className="h-3.5 w-3.5 shrink-0" />
                             <span className="tabular-nums font-medium">{formatDate(task.dueDate)}</span>
@@ -457,7 +515,31 @@ const MyTasks = () => {
                           </div>
                         </td>
 
-                        <td className="px-4 py-3.5 whitespace-nowrap">
+                        <td className="px-3 py-3.5 align-top">
+                          {intData?.candidateName ? (
+                            <span className="text-sm font-medium">{formatDate(intData.interviewDate)}</span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3.5 align-top">
+                          {intData?.candidateName ? (
+                            <span className="text-sm">{intData.startTime} - {intData.endTime}</span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3.5 align-top">
+                          {intData?.candidateName ? (
+                            <Badge variant="outline" className="bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                              {intData.mode}
+                            </Badge>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
+                        </td>
+
+                        <td className="px-2 py-3.5 align-top">
                           <div className="flex items-center gap-1.5">
                             <span className={cn("w-2 h-2 rounded-full shrink-0", {
                               "bg-emerald-500": task.status === TASK_STATUS.DONE,
@@ -470,7 +552,7 @@ const MyTasks = () => {
                           </div>
                         </td>
 
-                        <td className="px-4 py-3.5 whitespace-nowrap text-right">
+                        <td className="px-2 py-3.5 whitespace-nowrap text-right">
                           {updating === task._id ? (
                             <div className="w-5 h-5 rounded-full border-2 border-blue-600 border-t-transparent animate-spin ml-auto" />
                           ) : (
@@ -481,6 +563,14 @@ const MyTasks = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                {intData?.candidateName && (
+                                  <>
+                                    <DropdownMenuItem onClick={() => setDetailsDialog({ open: true, task, intData })}>
+                                      View Details
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                  </>
+                                )}
                                 {availableTransitions.length > 0 ? (
                                   <>
                                     <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
@@ -545,6 +635,58 @@ const MyTasks = () => {
             </Button>
             <Button onClick={handleStatusUpdate}>
               Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={detailsDialog.open}
+        onOpenChange={(open) => !open && setDetailsDialog({ open: false, task: null, intData: null })}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Task Details</DialogTitle>
+          </DialogHeader>
+          {detailsDialog.intData?.candidateName ? (
+            <div className="space-y-4 text-sm">
+              <div>
+                <strong className="block text-muted-foreground mb-1">Meeting Link</strong>
+                {detailsDialog.intData.mode === 'Online' && detailsDialog.intData.meetingLink !== 'N/A' ? (
+                  <a href={detailsDialog.intData.meetingLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate block">
+                    {detailsDialog.intData.meetingLink}
+                  </a>
+                ) : (
+                  <span className="text-muted-foreground">N/A</span>
+                )}
+              </div>
+              <div>
+                <strong className="block text-muted-foreground mb-1">Instructions</strong>
+                {detailsDialog.intData.instructions?.length > 0 ? (
+                  <ul className="list-disc pl-5">
+                    {detailsDialog.intData.instructions.map((inst, i) => (
+                      <li key={i}>{inst}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span className="text-muted-foreground">None</span>
+                )}
+              </div>
+              <div>
+                <strong className="block text-muted-foreground mb-1">Interview Status</strong>
+                <Badge variant="outline" className="bg-slate-50 dark:bg-slate-800 dark:border-slate-700 text-slate-800 dark:text-slate-200">
+                  {detailsDialog.intData.interviewStatus || "Upcoming"}
+                </Badge>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm">
+              <p>{detailsDialog.task?.description || "No additional details."}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailsDialog({ open: false, task: null, intData: null })}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
