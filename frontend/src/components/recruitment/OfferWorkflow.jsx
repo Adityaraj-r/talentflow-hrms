@@ -160,7 +160,7 @@ export function OfferDashboardAnalytics({ offers }) {
   }).length
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-7">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       <OfferAnalyticsCard title="Total Offers" value={total} icon={FileSignature} trend={11} helper="All active offer records" accent="sky" />
       <OfferAnalyticsCard title="Pending Approvals" value={pending} icon={Clock3} trend={4} helper="Waiting approval action" accent="amber" />
       <OfferAnalyticsCard title="Accepted Offers" value={accepted} icon={CheckCircle2} trend={18} helper="Confirmed candidates" accent="emerald" />
@@ -408,43 +408,95 @@ export function OfferFilters({ filters, onChange, options, onSave, savedFilters,
 
   return (
     <section className="rounded-lg border border-white/10 bg-card/80 p-4">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input value={filters.search} onChange={(e) => set("search", e.target.value)} placeholder="Search offer, candidate, recruiter..." className="pl-9" />
-        </div>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:flex">
-          <FilterSelect label="Status" value={filters.status} onChange={(value) => set("status", value)} options={["Offered", "Accepted", "Declined", "Pending HR Manager Approval", "Pending CEO Approval"]} />
-          <FilterSelect label="Department" value={filters.department} onChange={(value) => set("department", value)} options={options.departments} />
-          <FilterSelect label="Recruiter" value={filters.recruiter} onChange={(value) => set("recruiter", value)} options={options.recruiters} />
-          <FilterSelect label="Approval" value={filters.approvalStage} onChange={(value) => set("approvalStage", value)} options={["Released", "HR Manager Approval", "Completed"]} />
-          <FilterSelect label="Salary" value={filters.salaryRange} onChange={(value) => set("salaryRange", value)} options={["Below 100k", "100k-250k", "250k+"]} />
-          <FilterSelect label="Expiry" value={filters.expiry} onChange={(value) => set("expiry", value)} options={["Due soon", "Expired", "Healthy"]} />
-        </div>
-        <Button variant="outline" onClick={onSave}>
-          <Filter className="mr-2 h-4 w-4" />
-          Save
-        </Button>
-      </div>
-      {savedFilters.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-          <span className="py-1">Saved:</span>
-          {savedFilters.map((saved, index) => (
-            <button key={`${saved.label}-${index}`} type="button" onClick={() => onApply(saved.filters)} className="rounded-full border border-white/10 px-3 py-1 hover:bg-muted">
-              {saved.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </section>
+  <div className="grid gap-3 xl:grid-cols-4">
+
+    {/* Search */}
+    <div className="relative">
+      <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+      <Input
+        value={filters.search}
+        onChange={(e) => set("search", e.target.value)}
+        placeholder="Search offer, candidate, recruiter..."
+        className="pl-9"
+      />
+    </div>
+
+    <FilterSelect
+      label="Status"
+      value={filters.status}
+      onChange={(value) => set("status", value)}
+      options={["Offered", "Accepted", "Declined", "Pending HR Manager Approval", "Pending CEO Approval"]}
+    />
+
+    <FilterSelect
+      label="Department"
+      value={filters.department}
+      onChange={(value) => set("department", value)}
+      options={options.departments}
+    />
+
+    <FilterSelect
+      label="Recruiter"
+      value={filters.recruiter}
+      onChange={(value) => set("recruiter", value)}
+      options={options.recruiters}
+    />
+
+    <FilterSelect
+      label="Approval"
+      value={filters.approvalStage}
+      onChange={(value) => set("approvalStage", value)}
+      options={["Released", "HR Manager Approval", "Completed"]}
+    />
+
+    <FilterSelect
+      label="Salary"
+      value={filters.salaryRange}
+      onChange={(value) => set("salaryRange", value)}
+      options={["Below 100k", "100k-250k", "250k+"]}
+    />
+
+    <FilterSelect
+      label="Expiry"
+      value={filters.expiry}
+      onChange={(value) => set("expiry", value)}
+      options={["Due soon", "Expired", "Healthy"]}
+    />
+
+    <Button variant="outline" onClick={onSave} className="w-full">
+      <Filter className="mr-2 h-4 w-4" />
+      Save
+    </Button>
+
+  </div>
+
+  {savedFilters.length > 0 && (
+    <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+      <span className="py-1">Saved:</span>
+      {savedFilters.map((saved, index) => (
+        <button
+          key={`${saved.label}-${index}`}
+          type="button"
+          onClick={() => onApply(saved.filters)}
+          className="rounded-full border border-white/10 px-3 py-1 hover:bg-muted"
+        >
+          {saved.label}
+        </button>
+      ))}
+    </div>
+  )}
+</section>
   )
 }
 
 function FilterSelect({ label, value, onChange, options = [] }) {
   return (
     <label className="relative min-w-[140px]">
-      <span className="sr-only">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-3 pr-8 text-sm outline-none focus:border-ring focus:ring-[3px] focus:ring-ring/50">
+     <select
+  value={value}
+  onChange={(e) => onChange(e.target.value)}
+  className="appearance-none h-9 w-full rounded-md border border-input bg-background px-3 pr-8 text-sm outline-none focus:border-ring focus:ring-[3px] focus:ring-ring/50"
+>
         <option value="All">{label}</option>
         {options.map((option) => <option key={option} value={option}>{option}</option>)}
       </select>
