@@ -18,13 +18,13 @@ import { Button } from "@/components/ui/button"
 const statusConfig = {
   pending: { icon: Clock3, className: "border-amber-400/30 bg-amber-500/10 text-amber-300 shadow-amber-500/10" },
   approved: { icon: CheckCircle2, className: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10" },
-  draft: { icon: FileText, className: "border-slate-400/30 bg-slate-500/10 text-slate-300 shadow-slate-500/10" },
+  draft: { icon: FileText, className: "border-slate-400/30 bg-slate-500/10 text-slate-700 dark:text-slate-300 shadow-slate-500/10" },
   published: { icon: Sparkles, className: "border-sky-400/30 bg-sky-500/10 text-sky-300 shadow-sky-500/10" },
   rejected: { icon: XCircle, className: "border-rose-400/30 bg-rose-500/10 text-rose-300 shadow-rose-500/10" },
   interview: { icon: Clock3, className: "border-violet-400/30 bg-violet-500/10 text-violet-300 shadow-violet-500/10" },
   shortlisted: { icon: CircleDashed, className: "border-indigo-400/30 bg-indigo-500/10 text-indigo-300 shadow-indigo-500/10" },
   selected: { icon: CheckCircle2, className: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10" },
-  offered: { icon: FileText, className: "border-cyan-400/30 bg-cyan-500/10 text-cyan-300 shadow-cyan-500/10" },
+  offered: { icon: FileText, className: "border-cyan-400/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 shadow-cyan-500/10" },
   accepted: { icon: CheckCircle2, className: "border-lime-400/30 bg-lime-500/10 text-lime-300 shadow-lime-500/10" },
   declined: { icon: XCircle, className: "border-rose-400/30 bg-rose-500/10 text-rose-300 shadow-rose-500/10" },
   closed: { icon: Minus, className: "border-zinc-400/30 bg-zinc-500/10 text-zinc-300 shadow-zinc-500/10" },
@@ -59,7 +59,7 @@ export function RecruitmentStatusBadge({ status, className }) {
 
 export function RecruitmentPageHeader({ title, subtitle, summary, actions }) {
   return (
-    <div className="sticky top-0 z-20 -mx-6 border-b border-white/10 bg-background/90 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+    <div className="sticky top-0 z-20 -mx-6 border-b border-slate-200 dark:border-white/10 bg-background/90 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/75">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{title}</h1>
@@ -92,8 +92,8 @@ export function RecruitmentKpiCard({
     amber: "from-amber-500/20 text-amber-300 ring-amber-400/20",
     rose: "from-rose-500/20 text-rose-300 ring-rose-400/20",
     violet: "from-violet-500/20 text-violet-300 ring-violet-400/20",
-    cyan: "from-cyan-500/20 text-cyan-300 ring-cyan-400/20",
-    slate: "from-slate-500/20 text-slate-300 ring-slate-400/20",
+    cyan: "from-cyan-500/20 text-cyan-600 dark:text-cyan-300 ring-cyan-400/20",
+    slate: "from-slate-500/20 text-slate-700 dark:text-slate-300 ring-slate-400/20",
   }[accent] || "from-sky-500/20 text-sky-300 ring-sky-400/20"
 
   return (
@@ -104,7 +104,7 @@ export function RecruitmentKpiCard({
       whileHover={{ y: -3 }}
       transition={{ duration: 0.18 }}
       className={cn(
-        "group relative min-h-[138px] min-w-0 overflow-hidden rounded-lg border border-white/10 bg-card/80 p-4 text-left shadow-sm transition-all",
+        "group relative min-h-[138px] min-w-0 overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 bg-card/80 p-4 text-left shadow-sm transition-all",
         "hover:border-white/20 hover:bg-card hover:shadow-lg hover:shadow-black/10",
         active && "border-primary/40 ring-1 ring-primary/30",
         !onClick && "cursor-default"
@@ -170,8 +170,8 @@ export function RecruitmentEmptyState({ title, description, actionLabel, onActio
 export function RecruitmentSkeleton({ type = "cards", rows = 5 }) {
   if (type === "table") {
     return (
-      <div className="overflow-hidden rounded-lg border border-white/10 bg-card/70">
-        <div className="grid grid-cols-5 gap-4 border-b border-white/10 p-4">
+      <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 bg-card/70">
+        <div className="grid grid-cols-5 gap-4 border-b border-slate-200 dark:border-white/10 p-4">
           {Array.from({ length: 5 }).map((_, index) => (
             <div key={index} className="dark-shimmer h-4 rounded" />
           ))}
@@ -190,7 +190,7 @@ export function RecruitmentSkeleton({ type = "cards", rows = 5 }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="h-[138px] rounded-lg border border-white/10 bg-card/70 p-4">
+        <div key={index} className="h-[138px] rounded-lg border border-slate-200 dark:border-white/10 bg-card/70 p-4">
           <div className="dark-shimmer h-4 w-28 rounded" />
           <div className="dark-shimmer mt-4 h-8 w-16 rounded" />
           <div className="dark-shimmer mt-5 h-5 rounded" />
@@ -203,7 +203,7 @@ export function RecruitmentSkeleton({ type = "cards", rows = 5 }) {
 
 export function RecruitmentTable({ columns, children, className }) {
   return (
-    <div className={cn("overflow-hidden rounded-lg border border-white/10 bg-card/80 shadow-sm", className)}>
+    <div className={cn("overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 bg-card/80 shadow-sm", className)}>
       <div className="overflow-x-auto custom-scrollbar">
         <table className="min-w-full text-sm">
           <thead className="sticky top-0 z-10 bg-muted/80 text-xs uppercase tracking-wide text-muted-foreground backdrop-blur">
@@ -235,7 +235,7 @@ export function CandidateAvatar({ name = "Candidate" }) {
     .toUpperCase() || "C"
 
   return (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-muted text-xs font-semibold text-foreground">
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 dark:border-white/10 bg-muted text-xs font-semibold text-foreground">
       {initials}
     </span>
   )
