@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Loader2, Star } from "lucide-react";
 import { toast } from "sonner";
 import { reviewApi } from "@/services/reviewApi";
@@ -13,10 +14,10 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
 
   useEffect(() => {
     if (review?.competencies?.length > 0) {
-      setCompetencies(review.competencies.map(c => ({ 
-        ...c, 
-        rating: c.rating || 1, 
-        comments: c.comments || '' 
+      setCompetencies(review.competencies.map(c => ({
+        ...c,
+        rating: c.rating || 1,
+        comments: c.comments || ''
       })));
       setStrengths(review.strengths || '');
       setImprovements(review.areasForImprovement || '');
@@ -36,6 +37,17 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
   };
 
   const handleSubmit = async () => {
+    const allowedStatuses = [
+      "self_assessment_done",
+      "manager_review_pending",
+      "department_review_pending",
+    ];
+
+    if (!allowedStatuses.includes(review.status)) {
+      return toast.error(
+        "Employee must complete the self-assessment before you can submit a review."
+      );
+    }
     if (!strengths.trim()) return toast.error('Please enter strengths');
     if (!improvements.trim()) return toast.error('Please enter areas for improvement');
 
@@ -58,10 +70,10 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
 
   if (!isOpen || !review) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto">
-        
+
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 z-10">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Submit Review</h2>
@@ -71,9 +83,9 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
               </span>
             </p>
           </div>
-          <button 
-            type="button" 
-            onClick={onClose} 
+          <button
+            type="button"
+            onClick={onClose}
             disabled={submitting}
             className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
           >
@@ -87,7 +99,7 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Overall Rating (auto-calculated)</span>
 
             <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                {competencies.length > 0 ? `${overallRating}/5` : '—'}
+              {competencies.length > 0 ? `${overallRating}/5` : '—'}
             </span>
           </div>
 
@@ -102,9 +114,9 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
                     <span className="font-medium text-gray-900 dark:text-white text-sm">{comp.name}</span>
                     <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map(star => (
-                        <button 
-                          key={star} 
-                          type="button" 
+                        <button
+                          key={star}
+                          type="button"
                           onClick={() => handleRatingChange(index, star)}
                           className={`transition-colors ${star <= comp.rating ? 'text-orange-400' : 'text-gray-300 dark:text-gray-600'}`}
                         >
@@ -153,17 +165,17 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
         </div>
 
         <div className="flex justify-end gap-2 p-6 border-t border-gray-200 dark:border-gray-800">
-          <button 
-            type="button" 
-            onClick={onClose} 
+          <button
+            type="button"
+            onClick={onClose}
             disabled={submitting}
             className="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white rounded-lg transition-colors"
           >
             Cancel
           </button>
-          <button 
-            type="button" 
-            onClick={handleSubmit} 
+          <button
+            type="button"
+            onClick={handleSubmit}
             disabled={submitting}
             className="px-4 py-2 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-lg transition-colors font-medium flex items-center gap-2"
           >
@@ -171,7 +183,8 @@ const SubmitReviewModal = ({ isOpen, onClose, review, onSuccess }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

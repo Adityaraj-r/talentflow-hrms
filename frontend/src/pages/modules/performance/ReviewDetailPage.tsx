@@ -11,7 +11,7 @@ import {
   UserCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { reviewApi } from "@/services/reviewApi";
+import { reviewApi, goalApi } from "@/services/reviewApi";
 import { useUser } from "@/contexts/UserContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -232,64 +232,93 @@ function stepAuditLine(
 }
 
 export default function ReviewDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
-  const { user } = useUser();
 
-  const canWrite = user?.can?.("performance", "write") === true;
-  const canDelete = user?.can?.("performance", "delete") === true;
+  // Logged-in user
+  const { user } = useUser();
 
   const roleUpper = String(user?.role || "")
     .toUpperCase()
     .replace(/\s+/g, "_");
-  const isCeo = roleUpper === "CEO";
 
-  const [review, setReview] = useState<Record<string, unknown> | null>(null);
+  const isEmployee = roleUpper === "EMPLOYEE";
+  const isCeo = roleUpper === "CEO";
+  const isHr =
+    roleUpper === "HR_MANAGER" ||
+    roleUpper === "HR_OFFICER";
+
+  const canWrite =
+    user?.can?.("performance", "write") === true;
+
+  const canDelete =
+    user?.can?.("performance", "delete") === true;
+
+  const [review, setReview] =
+    useState<Record<string, unknown> | null>(null);
+
   const [loading, setLoading] = useState(true);
-  const [goals, setGoals] = useState<Record<string, unknown>[]>([]);
+
+  const [goals, setGoals] =
+    useState<Record<string, unknown>[]>([]);
+
   const [goalsLoading, setGoalsLoading] = useState(false);
+
+  const [goalTitle, setGoalTitle] = useState("");
+  const [goalDescription, setGoalDescription] = useState("");
+  const [goalWeight, setGoalWeight] = useState("10");
+  const [creatingGoal, setCreatingGoal] = useState(false);
 
   const [hrFeedback, setHrFeedback] = useState("");
   const [ceoComments, setCeoComments] = useState("");
   const [calibrationNotes, setCalibrationNotes] = useState("");
   const [finalizeNotes, setFinalizeNotes] = useState("");
-  const [pending, setPending] = useState<string | null>(null);
 
-  const loadReview = useCallback(async () => {
-    if (!id) return;
-    try {
-      setLoading(true);
-      const res = await reviewApi.getReviewById(id);
-      const reviewData = parseReviewPayload(res);
-      if (reviewData && reviewData._id) {
-        setReview(reviewData);
-      } else {
-        toast.error("Review not found");
-        setReview(null);
-      }
-    } catch (error: unknown) {
-      const err = error as { error?: string; message?: string };
-      toast.error(err?.error || err?.message || "Failed to load review");
+  const [pending, setPending] =
+    useState<string | null>(null);
+
+ const loadReview = useCallback(async () => {
+  if (!id) return;
+
+  try {
+    setLoading(true);
+
+    const res = await reviewApi.getReviewById(id!);
+
+    const reviewData = parseReviewPayload(res);
+
+    if (reviewData && reviewData._id) {
+      setReview(reviewData);
+    } else {
+      toast.error("Review not found");
       setReview(null);
-    } finally {
-      setLoading(false);
     }
-  }, [id]);
+  } catch (error: unknown) {
+    const err = error as { error?: string; message?: string };
+    toast.error(err?.error || err?.message || "Failed to load review");
+    setReview(null);
+  } finally {
+    setLoading(false);
+  }
+}, [id, isEmployee]);
 
-  const loadGoals = useCallback(async () => {
-    if (!id) return;
-    try {
-      setGoalsLoading(true);
-      const res = await reviewApi.getGoalsForReview(id);
-      setGoals(parseGoalsPayload(res));
-    } catch (error: unknown) {
-      const err = error as { error?: string; message?: string };
-      toast.error(err?.error || err?.message || "Could not load goals");
-      setGoals([]);
-    } finally {
-      setGoalsLoading(false);
-    }
-  }, [id]);
+const loadGoals = useCallback(async () => {
+  if (!id) return;
+
+  try {
+    setGoalsLoading(true);
+
+    const res = await reviewApi.getGoalsForReview(id);
+
+    setGoals(parseGoalsPayload(res));
+  } catch (error: unknown) {
+    const err = error as { error?: string; message?: string };
+    toast.error(err?.error || err?.message || "Could not load goals");
+    setGoals([]);
+  } finally {
+    setGoalsLoading(false);
+  }
+}, [id]);
 
   useEffect(() => {
     loadReview();
@@ -350,6 +379,41 @@ export default function ReviewDetailPage() {
 
   const handleRelease = () => run("rel", () => reviewApi.releaseFeedback(id!));
 
+  const handleCreateGoal = async () => {
+    if (!goalTitle.trim()) {
+      toast.error("Please enter a goal title");
+      return;
+    }
+    const emp = review?.employeeId as PersonLike | undefined;
+    const cyc = review?.cycleId as Record<string, string> | undefined;
+    const employeeId = emp?._id;
+    const cycleId = cyc?._id;
+    if (!employeeId || !cycleId) {
+      toast.error("Missing employee or cycle reference");
+      return;
+    }
+    try {
+      setCreatingGoal(true);
+      await goalApi.createGoal({
+        employeeId,
+        cycleId,
+        title: goalTitle.trim(),
+        description: goalDescription.trim() || undefined,
+        weight: Number(goalWeight) || 10,
+      });
+      toast.success("Goal added");
+      setGoalTitle("");
+      setGoalDescription("");
+      setGoalWeight("10");
+      await loadGoals();
+    } catch (error: unknown) {
+      const err = error as { error?: string; message?: string };
+      toast.error(err?.error || err?.message || "Failed to add goal");
+    } finally {
+      setCreatingGoal(false);
+    }
+  };
+
   const renderStepPanel = (step: StepDef, stepIndex: number) => {
     const isDone = stepIndex < activeStepIndex;
     const isCurrent = stepIndex === activeStepIndex;
@@ -361,6 +425,7 @@ export default function ReviewDetailPage() {
       isCurrent &&
       step.key === "hr_reviewed" &&
       statusKey === "manager_review_done" &&
+      isHr &&
       canWrite
     ) {
       panel = (
@@ -661,6 +726,47 @@ export default function ReviewDetailPage() {
             <CardTitle className="text-base">Goals</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {canWrite && statusKey === "goals_pending" ? (
+              <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+                <Label htmlFor={`goal-title-${id}`}>New goal title</Label>
+                <Textarea
+                  id={`goal-title-${id}`}
+                  rows={1}
+                  value={goalTitle}
+                  onChange={(e) => setGoalTitle(e.target.value)}
+                  placeholder="e.g. Improve client communication"
+                />
+                <Label htmlFor={`goal-desc-${id}`}>Description (optional)</Label>
+                <Textarea
+                  id={`goal-desc-${id}`}
+                  rows={2}
+                  value={goalDescription}
+                  onChange={(e) => setGoalDescription(e.target.value)}
+                  placeholder="Details or success criteria"
+                />
+                <div className="flex items-end gap-3">
+                  <div className="w-24 space-y-1">
+                    <Label htmlFor={`goal-weight-${id}`}>Weight %</Label>
+                    <input
+                      id={`goal-weight-${id}`}
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={goalWeight}
+                      onChange={(e) => setGoalWeight(e.target.value)}
+                      className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                    />
+                  </div>
+                  <Button size="sm" disabled={creatingGoal} onClick={handleCreateGoal}>
+                    {creatingGoal ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Add goal"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
             {goalsLoading ? (
               <Skeleton className="h-24 w-full" />
             ) : goals.length === 0 ? (
@@ -770,7 +876,7 @@ export default function ReviewDetailPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {Array.isArray(review.competencies) &&
-            (review.competencies as object[]).length > 0 ? (
+              (review.competencies as object[]).length > 0 ? (
               (
                 review.competencies as {
                   name?: string;

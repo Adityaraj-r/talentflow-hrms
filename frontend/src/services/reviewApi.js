@@ -1,5 +1,10 @@
 import apiClient from "./apiClient";
 
+export const goalApi = {
+  createGoal: (data) =>
+    apiClient.post("/performance/goals", data),
+};
+
 export const reviewApi = {
   assignReview: (data) =>
     apiClient.post("/performance/reviews/assign", data),
@@ -15,6 +20,9 @@ export const reviewApi = {
 
   getReviewById: (reviewId) =>
     apiClient.get(`/performance/reviews/${reviewId}`),
+
+  getMyReview: (cycleId) =>
+    apiClient.get(`/performance/my-review/${cycleId}`),
 
   getGoalsForReview: (reviewId) =>
     apiClient.get(`/performance/reviews/${reviewId}/goals`),

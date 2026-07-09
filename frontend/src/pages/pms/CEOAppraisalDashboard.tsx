@@ -18,13 +18,30 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+
+import {
+  Users,
+  Award,
+  IndianRupee,
+  ClipboardCheck,
+} from "lucide-react";
+
 import {
   formatRatingBandLabel,
   mapOverallRatingToBand,
 } from "@/constants/appraisalRatingBands";
 
-type DeptRow = { department: string; avgRating: number; count: number };
-type TopRow = { name: string; department: string; rating: number };
+type DeptRow = {
+  department: string;
+  avgRating: number;
+  count: number;
+};
+
+type TopRow = {
+  name: string;
+  department: string;
+  rating: number;
+};
 
 interface DashboardPayload {
   departmentAvgRating?: DeptRow[];
@@ -57,15 +74,20 @@ export default function CEOAppraisalDashboardSection() {
   );
 
   const poolQuery = useQuery({
-    queryKey: ["pmsBonusPool", processedCycles.map((c) => c._id).join(",")],
+    queryKey: ["bonusPool", processedCycles.map((c) => c._id).join(",")],
     queryFn: async () => {
       let total = 0;
-      for (const c of processedCycles) {
-        const rows = await fetchBonusPreview(c._id);
-        for (const row of rows) {
-          if (!row.skippedReason) total += Number(row.bonusAmount) || 0;
-        }
+
+      for (const cycle of processedCycles) {
+        const rows = await fetchBonusPreview(cycle._id);
+
+        rows.forEach((r) => {
+          if (!r.skippedReason) {
+            total += Number(r.bonusAmount) || 0;
+          }
+        });
       }
+
       return total;
     },
     enabled: processedCycles.length > 0,
@@ -79,10 +101,9 @@ export default function CEOAppraisalDashboardSection() {
     return (
       <Card className="border-dashed">
         <CardHeader>
-          <CardTitle>Appraisal insights</CardTitle>
+          <CardTitle>CEO Performance Overview</CardTitle>
           <CardDescription>
-            No processed appraisal cycles yet. When HR closes the cycle and runs payroll bonuses, executive
-            benchmarks will appear here.
+            No processed appraisal cycles are available yet.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -93,108 +114,251 @@ export default function CEOAppraisalDashboardSection() {
   const top = analyticsQuery.data?.topPerformers ?? [];
 
   const chartData = dept.map((d) => ({
-    name: d.department.length > 16 ? `${d.department.slice(0, 14)}…` : d.department,
+    name:
+      d.department.length > 15
+        ? `${d.department.slice(0, 13)}...`
+        : d.department,
     full: d.department,
     avg: d.avgRating,
   }));
 
+  const avgOrgRating =
+    dept.length === 0
+      ? 0
+      : dept.reduce((sum, d) => sum + d.avgRating, 0) / dept.length;
+
   return (
-    <div className="space-y-6 pt-8 border-t border-slate-200 dark:border-slate-800">
+    <div className="space-y-8">
+
+      {/* Header */}
+
       <div>
-        <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
-          Performance &amp; appraisal (processed cycles)
-        </h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Benchmarks from org performance analytics; bonus pool sums appraisal previews for processed cycles.
+        <h1 className="text-3xl font-bold tracking-tight">
+          CEO Executive Overview
+        </h1>
+
+        <p className="text-muted-foreground">
+          High-level performance insights, appraisal progress and organizational
+          bonus overview.
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2 dark:bg-slate-900 dark:border-slate-800">
-          <CardHeader>
-            <CardTitle className="text-base">Avg rating by department</CardTitle>
-            <CardDescription>Organization-wide snapshot (performance module)</CardDescription>
+      {/* KPI Cards */}
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-5 w-5 text-blue-600" />
+              Departments
+            </CardTitle>
           </CardHeader>
-          <CardContent className="h-72 w-full">
-            {analyticsQuery.isLoading ? (
-              <Skeleton className="h-full w-full" />
-            ) : chartData.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No department averages available.</p>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} layout="vertical" margin={{ left: 8, right: 16 }}>
-                  <XAxis type="number" domain={[0, 5]} tickLine={false} />
-                  <YAxis type="category" dataKey="name" width={88} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    formatter={(v: number) => [`${v.toFixed(2)} / 5`, "Avg"]}
-                    labelFormatter={(_, payload) =>
-                      payload?.[0]?.payload?.full ? String(payload[0].payload.full) : ""
-                    }
-                  />
-                  <Bar dataKey="avg" fill="rgb(59 130 246)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+
+          <CardContent>
+            <p className="text-3xl font-bold">
+              {dept.length}
+            </p>
+
+            <p className="text-sm text-muted-foreground">
+              Participating departments
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="dark:bg-slate-900 dark:border-slate-800">
-          <CardHeader>
-            <CardTitle className="text-base">Total bonus pool</CardTitle>
-            <CardDescription>Sum of appraisal bonus previews</CardDescription>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Award className="h-5 w-5 text-amber-500" />
+              Avg Rating
+            </CardTitle>
           </CardHeader>
+
+          <CardContent>
+            <p className="text-3xl font-bold">
+              {avgOrgRating.toFixed(2)}
+            </p>
+
+            <p className="text-sm text-muted-foreground">
+              Overall organization rating
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <IndianRupee className="h-5 w-5 text-green-600" />
+              Bonus Pool
+            </CardTitle>
+          </CardHeader>
+
           <CardContent>
             {poolQuery.isLoading ? (
-              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-8 w-full" />
             ) : (
-              <p className="text-3xl font-bold tabular-nums">
-                {poolQuery.data != null
-                  ? poolQuery.data.toLocaleString(undefined, {
-                      style: "currency",
-                      currency: "INR",
-                      maximumFractionDigits: 0,
-                    })
-                  : "—"}
+              <p className="text-3xl font-bold">
+                {poolQuery.data?.toLocaleString("en-IN", {
+                  style: "currency",
+                  currency: "INR",
+                  maximumFractionDigits: 0,
+                }) ?? "—"}
               </p>
             )}
+
+            <p className="text-sm text-muted-foreground">
+              Estimated appraisal payout
+            </p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ClipboardCheck className="h-5 w-5 text-purple-600" />
+              Processed Cycles
+            </CardTitle>
+          </CardHeader>
+
+          <CardContent>
+            <p className="text-3xl font-bold">
+              {processedCycles.length}
+            </p>
+
+            <p className="text-sm text-muted-foreground">
+              Completed appraisal cycles
+            </p>
+          </CardContent>
+        </Card>
+
       </div>
 
-      <Card className="dark:bg-slate-900 dark:border-slate-800">
+      {/* Department Chart */}
+
+      <Card>
         <CardHeader>
-          <CardTitle className="text-base">Top 5 performers</CardTitle>
-          <CardDescription>By overall rating (org-wide)</CardDescription>
+          <CardTitle>Average Rating by Department</CardTitle>
+
+          <CardDescription>
+            Organization-wide department performance.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+
+        <CardContent className="h-80">
+
           {analyticsQuery.isLoading ? (
-            <Skeleton className="h-32 w-full" />
-          ) : top.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No rated reviews yet.</p>
+            <Skeleton className="h-full w-full" />
+          ) : chartData.length === 0 ? (
+            <p className="text-muted-foreground">
+              No department data available.
+            </p>
           ) : (
-            <table className="w-full min-w-[520px] text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="pb-2 font-medium">Name</th>
-                  <th className="pb-2 font-medium">Department</th>
-                  <th className="pb-2 font-medium">Rating band</th>
-                  <th className="pb-2 font-medium tabular-nums">Rating</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {top.slice(0, 5).map((row) => (
-                  <tr key={`${row.name}-${row.rating}`}>
-                    <td className="py-2 font-medium">{row.name}</td>
-                    <td className="py-2 text-muted-foreground">{row.department}</td>
-                    <td className="py-2">{formatRatingBandLabel(mapOverallRatingToBand(row.rating))}</td>
-                    <td className="py-2 tabular-nums">{row.rating.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                layout="vertical"
+                margin={{ left: 10, right: 20 }}
+              >
+                <XAxis
+                  type="number"
+                  domain={[0, 5]}
+                />
+
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={100}
+                />
+
+                <Tooltip
+                  formatter={(v: number) => [
+                    `${v.toFixed(2)} / 5`,
+                    "Average Rating",
+                  ]}
+                  labelFormatter={(_, payload) =>
+                    payload?.[0]?.payload?.full ?? ""
+                  }
+                />
+
+                <Bar
+                  dataKey="avg"
+                  fill="#3b82f6"
+                  radius={[0, 5, 5, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           )}
+
         </CardContent>
       </Card>
+
+      {/* Top Performers */}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Top Performers</CardTitle>
+
+          <CardDescription>
+            Highest rated employees across the organization.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+
+          {analyticsQuery.isLoading ? (
+            <Skeleton className="h-40 w-full" />
+          ) : top.length === 0 ? (
+            <p className="text-muted-foreground">
+              No performance reviews available.
+            </p>
+          ) : (
+            <table className="w-full text-sm">
+
+              <thead>
+                <tr className="border-b">
+                  <th className="py-3 text-left">Employee</th>
+                  <th className="py-3 text-left">Department</th>
+                  <th className="py-3 text-left">Rating Band</th>
+                  <th className="py-3 text-left">Rating</th>
+                </tr>
+              </thead>
+
+              <tbody>
+
+                {top.slice(0, 5).map((row) => (
+
+                  <tr
+                    key={`${row.name}-${row.rating}`}
+                    className="border-b"
+                  >
+                    <td className="py-3 font-medium">
+                      {row.name}
+                    </td>
+
+                    <td>{row.department}</td>
+
+                    <td>
+                      {formatRatingBandLabel(
+                        mapOverallRatingToBand(row.rating)
+                      )}
+                    </td>
+
+                    <td>
+                      {row.rating.toFixed(2)}
+                    </td>
+
+                  </tr>
+
+                ))}
+
+              </tbody>
+
+            </table>
+          )}
+
+        </CardContent>
+      </Card>
+
     </div>
   );
 }

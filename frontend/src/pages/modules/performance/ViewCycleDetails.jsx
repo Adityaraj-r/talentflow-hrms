@@ -55,10 +55,10 @@ const ViewCycleDetails = () => {
           : cycleRes;
       const cycleDoc =
         cyclePayload &&
-        typeof cyclePayload === "object" &&
-        cyclePayload !== null &&
-        "data" in cyclePayload &&
-        typeof cyclePayload.data === "object"
+          typeof cyclePayload === "object" &&
+          cyclePayload !== null &&
+          "data" in cyclePayload &&
+          typeof cyclePayload.data === "object"
           ? cyclePayload.data
           : cyclePayload;
       setCycle(cycleDoc);
@@ -74,9 +74,9 @@ const ViewCycleDetails = () => {
           : [];
       setReviews(
         allReviews.filter((r) => {
-              const cId = typeof r.cycleId === "object" ? r.cycleId?._id : r.cycleId;
-              return String(cId) === String(id);
-            })
+          const cId = typeof r.cycleId === "object" ? r.cycleId?._id : r.cycleId;
+          return String(cId) === String(id);
+        })
       );
 
     } catch (error) {
@@ -86,30 +86,30 @@ const ViewCycleDetails = () => {
     }
   };
 
-  const totalReviews     = reviews.length;
+  const totalReviews = reviews.length;
   const completedReviews = reviews.filter(r => r.status === "completed").length;
-  const inProgressReviews= reviews.filter(r => r.status === "in-progress").length;
-  const pendingReviews   = reviews.filter(r => r.status === "pending").length;
-  const completionRate   = totalReviews > 0
+  const inProgressReviews = reviews.filter(r => r.status === "in-progress").length;
+  const pendingReviews = reviews.filter(r => r.status === "pending").length;
+  const completionRate = totalReviews > 0
     ? Math.round((completedReviews / totalReviews) * 100)
     : 0;
   const avgRating = completedReviews > 0
     ? reviews
-        .filter(r => r.overallRating > 0)
-        .reduce((sum, r) => sum + r.overallRating, 0) / completedReviews
+      .filter(r => r.overallRating > 0)
+      .reduce((sum, r) => sum + r.overallRating, 0) / completedReviews
     : 0;
 
   const getStatusStyle = (status) => {
     const styles = {
-      completed:    "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/30",
-      "in-progress":"bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-500/30",
-      pending:      "bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400 border border-gray-200 dark:border-gray-500/30"
+      completed: "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/30",
+      "in-progress": "bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-500/30",
+      pending: "bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400 border border-gray-200 dark:border-gray-500/30"
     };
     return styles[status] || styles.pending;
   };
 
   const getStatusIcon = (status) => {
-    if (status === "completed")   return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+    if (status === "completed") return <CheckCircle2 className="h-4 w-4 text-green-600" />;
     if (status === "in-progress") return <Clock className="h-4 w-4 text-yellow-600" />;
     return <Clock className="h-4 w-4 text-gray-400" />;
   };
@@ -194,13 +194,12 @@ const ViewCycleDetails = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-              cycle.status === "active"
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${cycle.status === "active"
                 ? "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/30"
                 : cycle.status === "completed"
-                ? "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30"
-                : "bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400 border border-gray-200 dark:border-gray-500/30"
-            }`}>
+                  ? "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30"
+                  : "bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400 border border-gray-200 dark:border-gray-500/30"
+              }`}>
               {cycle.status?.toUpperCase()}
             </span>
 
@@ -372,34 +371,30 @@ const ViewCycleDetails = () => {
                       <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                         {review.submittedAt
                           ? new Date(review.submittedAt).toLocaleDateString("en-US", {
-                              month: "short", day: "numeric", year: "numeric"
-                            })
+                            month: "short", day: "numeric", year: "numeric"
+                          })
                           : "—"
                         }
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {review.status === "pending" && (
+                        {review.status === "pending" ? (
                           <button
                             className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium transition-colors"
-                            onClick={() => { setSelectedReview(review); setShowSubmitModal(true); }}
+                            onClick={() => {
+                              setSelectedReview(review);
+                              setShowSubmitModal(true);
+                            }}
                           >
                             Start Review
                           </button>
-                        )}
-                        {review.status === "completed" && (
+                        ) : (
                           <button
                             className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm font-medium transition-colors"
-                            onClick={() => navigate(`/role/hr_manager/review/${review._id}`)}
+                            onClick={() =>
+                              navigate(`/role/hr_manager/review/${review._id}`)
+                            }
                           >
                             View Details
-                          </button>
-                        )}
-                        {review.status === "approved" && (
-                          <button
-                            className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 text-sm font-medium transition-colors"
-                            onClick={() => navigate(`/role/hr_manager/review/${review._id}`)}
-                          >
-                            View Approved
                           </button>
                         )}
                       </td>
