@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton" 
-import { FileText, Search, Plus } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { FileText, Search } from "lucide-react"
 import { toast } from "sonner"
 import SubmitReviewModal from "@/components/performance/SubmitReviewModal"
 
@@ -41,6 +41,7 @@ const AppraisalHistory = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedReview, setSelectedReview] = useState(null)
 
   const LoadingSkeleton = () => (
     Array(5).fill(0).map((_, i) => (
@@ -56,27 +57,31 @@ const AppraisalHistory = () => {
     ))
   )
 
-  useEffect(() => {
-    const fetchReviews = async () => {
-      try {
-        setIsLoading(true)
-        const res = await reviewApi.getAllReviews({ reviewerId: user.id })
-        setReviews(res.data || [])
-      } catch (error) {
-        toast.error("Failed to load appraisal history")
-        console.error(error)
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchReviews = async () => {
+    try {
+      setIsLoading(true)
+      const res = await reviewApi.getAllReviews({ reviewerId: user.id })
+      setReviews(res.data || [])
+    } catch (error) {
+      toast.error("Failed to load appraisal history")
+      console.error(error)
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
     if (user?.id) fetchReviews()
   }, [user?.id])
 
-  const filteredReviews = reviews.filter((review) =>
-    review.employeeName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    review.employeeId?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredReviews = reviews.filter((review) => {
+    const emp = review.employeeId || {}
+    const employeeName = [emp.firstName, emp.lastName].filter(Boolean).join(" ")
+    return (
+      employeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      emp.employeeCode?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  })
 
   return (
     <Card>
@@ -85,20 +90,15 @@ const AppraisalHistory = () => {
           <CardTitle>Appraisal History</CardTitle>
           <CardDescription>View and manage performance appraisals</CardDescription>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search by name or ID..."
-              className="pl-8 w-[200px] md:w-[300px]"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Button onClick={() => setIsModalOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Submit Review
-          </Button>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search by name or ID..."
+            className="pl-8 w-[200px] md:w-[300px]"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
       </CardHeader>
       <CardContent>
@@ -120,48 +120,83 @@ const AppraisalHistory = () => {
                 No appraisals found.
               </div>
             ) : (
-              filteredReviews.map((review) => (
-                <div key={review._id} className="grid grid-cols-7 p-3 text-sm items-center hover:bg-muted/50 transition-colors">
-                  <div className="font-medium">{review.employeeName}</div>
-                  <div>{review.employeeId}</div>
-                  <div>{review.department}</div>
-                  <div>{review.appraisalPeriod}</div>
-                  <div className="capitalize">{review.performanceRating}</div>
-                  <div>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                        review.status === "Approved"
+              filteredReviews.map((review) => {
+                const emp = review.employeeId || {}
+                const cycle = review.cycleId || {}
+                const employeeName = [emp.firstName, emp.lastName].filter(Boolean).join(" ") || "—"
+                const isTerminal = [
+                  "final_approved",
+                  "feedback_released",
+                  "approved",
+                  "completed",
+                ].includes(review.status);
+
+                // Department Manager can review only after employee
+                // has completed the self-assessment.
+                const canSubmit =
+                  review.status === "self_assessment_done";
+                return (
+                  <div key={review._id} className="grid grid-cols-7 p-3 text-sm items-center hover:bg-muted/50 transition-colors">
+                    <div className="font-medium">{employeeName}</div>
+                    <div>{emp.employeeCode || "—"}</div>
+                    <div>{emp.department || "—"}</div>
+                    <div>{cycle.name || "—"}</div>
+                    <div className="capitalize">{review.overallRating ? `${review.overallRating}/5` : "—"}</div>
+                    <div>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${isTerminal
                           ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                          : review.status === "Rejected"
-                          ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
                           : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
-                      }`}
-                    >
-                      {review.status || "Pending"}
-                    </span>
+                          }`}
+                      >
+                        {review.status?.replace(/_/g, " ") || "Pending"}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => navigate(`/role/department_manager/review/${review._id}`)}
+                          title="View details"
+                        >
+                          <FileText className="h-4 w-4" />
+                          <span className="sr-only">View details</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={!canSubmit}
+                        >
+                          {review.status === "goals_locked"
+                            ? "Waiting"
+                            : review.status === "self_assessment_done"
+                              ? "Submit"
+                              : "Completed"}
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => navigate(`/role/DEPARTMENT_MANAGER/review/${review._id}`)}
-                    >
-                      <FileText className="h-4 w-4" />
-                      <span className="sr-only">View details</span>
-                    </Button>
-                  </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         </div>
       </CardContent>
 
-      <SubmitReviewModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <SubmitReviewModal
+        isOpen={isModalOpen}
+        review={selectedReview}
+        onClose={() => {
+          setIsModalOpen(false)
+          setSelectedReview(null)
+        }}
         onSuccess={() => {
           setIsModalOpen(false)
+          setSelectedReview(null)
+          // refetch reviews so the table updates with new status
+          setSearchQuery(q => q) // harmless no-op trigger, or better: call your fetch function again
+          fetchReviews()
         }}
       />
     </Card>

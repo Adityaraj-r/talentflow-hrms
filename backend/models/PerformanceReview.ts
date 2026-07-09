@@ -119,12 +119,11 @@ PerformanceReviewSchema.index({ reviewerId: 1 });
 
 // Pre-save hook: auto-calculate overallRating from competency average
 // NOTE: this only runs on .save() not findByIdAndUpdate — controller manually recalculates for updates
-PerformanceReviewSchema.pre('save', function (next) {
+PerformanceReviewSchema.pre('save', function () {
   if (this.competencies && this.competencies.length > 0) {
     const sum = this.competencies.reduce((acc, comp) => acc + comp.rating, 0);
     this.overallRating = parseFloat((sum / this.competencies.length).toFixed(2));
   }
-  next();
 });
 
 export const PerformanceReviewModel = mongoose.model<IPerformanceReview>(

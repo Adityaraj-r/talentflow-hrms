@@ -11,7 +11,7 @@ const perfDelete = authorizeByMatrixStrict(MODULE_KEYS.PERFORMANCE, 'delete');
 
 router.use(protect as any);
 
-router.post('/cycles', perfDelete, PerformanceController.createCycle);
+router.post('/cycles', perfWrite, PerformanceController.createCycle);
 router.get('/cycles', perfRead, PerformanceController.getCycles);
 router.get('/cycles/:id', perfRead, PerformanceController.getCycleById);
 router.put('/cycles/:id', perfWrite, PerformanceController.updateCycle);
@@ -42,5 +42,10 @@ router.get('/reviews/:id', perfRead, PerformanceController.getReviewById);
 
 router.put('/reviews/:id/submit', perfWrite, PerformanceController.submitReview);
 router.put('/reviews/:id/approve', perfDelete, PerformanceController.approveReview);
+router.get(
+    "/employee-overview",
+    perfRead,
+    PerformanceController.getEmployeeOverview
+);
 
 export default router;
