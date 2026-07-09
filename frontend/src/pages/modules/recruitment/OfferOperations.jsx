@@ -133,36 +133,36 @@ const OfferOperations = () => {
   const showTemplatesOnly = section === "templates";
 
   return (
-    <div className="min-h-screen space-y-6 bg-slate-950 p-4 text-slate-100 md:p-6">
+    <div className="min-h-screen space-y-6 bg-slate-50 dark:bg-slate-950 p-4 text-slate-900 dark:text-slate-100 md:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-200">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-700 dark:text-cyan-200">
             <BriefcaseBusiness className="h-3.5 w-3.5" />
             Enterprise Hiring Operations
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">Offer Workflow & Hiring Operations</h1>
-          <p className="mt-2 max-w-3xl text-sm text-slate-400">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white md:text-4xl">Offer Workflow & Hiring Operations</h1>
+          <p className="mt-2 max-w-3xl text-sm text-slate-500 dark:text-slate-400">
             Manage selection, offer creation, approvals, release, negotiation, acceptance, and pre-onboarding from a single enterprise command center.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link to="/dashboard/offer-management">
-            <Button variant="outline" className="border-white/10 bg-white/5 text-slate-100 hover:bg-white/10"><ArrowLeft className="mr-2 h-4 w-4" />Classic Offers</Button>
+            <Button variant="outline" className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"><ArrowLeft className="mr-2 h-4 w-4" />Classic Offers</Button>
           </Link>
-          <Button onClick={loadDashboard} variant="outline" className="border-white/10 bg-white/5 text-slate-100 hover:bg-white/10"><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
+          <Button onClick={loadDashboard} variant="outline" className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
           <ExportCenter onExport={handleExport} />
         </div>
       </div>
 
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, index) => <div key={index} className="dark-shimmer h-40 rounded-lg border border-white/10 bg-slate-950/70" />)}
+          {Array.from({ length: 8 }).map((_, index) => <div key={index} className="dark-shimmer h-40 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70" />)}
         </div>
       ) : error ? (
         <div className="rounded-lg border border-rose-400/20 bg-rose-500/10 p-6 text-center">
-          <p className="font-semibold text-white">Offer operations could not be loaded</p>
-          <p className="mt-2 text-sm text-slate-300">{error}</p>
-          <Button onClick={loadDashboard} className="mt-4 bg-cyan-300 text-slate-950 hover:bg-cyan-200">Retry</Button>
+          <p className="font-semibold text-slate-900 dark:text-white">Offer operations could not be loaded</p>
+          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">{error}</p>
+          <Button onClick={loadDashboard} className="mt-4 bg-cyan-600 dark:bg-cyan-300 text-white dark:text-slate-950 hover:bg-cyan-700 dark:hover:bg-cyan-200">Retry</Button>
         </div>
       ) : (
         <>
@@ -173,16 +173,16 @@ const OfferOperations = () => {
           )}
 
           {offers.length > 0 && (
-            <section className="rounded-lg border border-white/10 bg-slate-950/75 p-4">
+            <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-4">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <h2 className="font-semibold text-white">Active Offer Work Queue</h2>
-                {selectedOffer && canApproveOffers && <Button onClick={() => handleAction("send", selectedOffer)} className="bg-cyan-300 text-slate-950 hover:bg-cyan-200"><Send className="mr-2 h-4 w-4" />Send Selected Offer</Button>}
+                <h2 className="font-semibold text-slate-900 dark:text-white">Active Offer Work Queue</h2>
+                {selectedOffer && canApproveOffers && <Button onClick={() => handleAction("send", selectedOffer)} className="bg-cyan-600 dark:bg-cyan-300 text-white dark:text-slate-950 hover:bg-cyan-700 dark:hover:bg-cyan-200"><Send className="mr-2 h-4 w-4" />Send Selected Offer</Button>}
               </div>
               <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-1">
                 {offers.map((offer) => (
-                  <button key={offer._id || offer.offerId} onClick={() => setSelectedOfferId(offer._id)} className={`min-w-64 rounded-md border p-3 text-left ${selectedOffer?._id === offer._id ? "border-cyan-300/40 bg-cyan-500/10" : "border-white/10 bg-white/[0.03]"}`}>
-                    <p className="truncate font-semibold text-white">{offer.candidateName}</p>
-                    <p className="text-xs text-slate-400">{offer.offerId} · {offer.status}</p>
+                  <button key={offer._id || offer.offerId} onClick={() => setSelectedOfferId(offer._id)} className={`min-w-64 rounded-md border p-3 text-left ${selectedOffer?._id === offer._id ? "border-cyan-300/40 bg-cyan-500/10" : "border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03]"}`}>
+                    <p className="truncate font-semibold text-slate-900 dark:text-white">{offer.candidateName}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{offer.offerId} · {offer.status}</p>
                   </button>
                 ))}
               </div>
@@ -217,13 +217,13 @@ const OfferOperations = () => {
               <TemplatesPanel offers={offers} />
               <PreOnboardingWorkflow offer={selectedOffer} />
               {selectedOffer && (
-                <section className="rounded-lg border border-white/10 bg-slate-950/75 p-5">
+                <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h2 className="text-lg font-semibold text-white">Offer Letter Preview</h2>
-                      <p className="text-sm text-slate-400">Professional offer letter with compensation, terms, and digital signature placeholders.</p>
+                      <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Offer Letter Preview</h2>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Professional offer letter with compensation, terms, and digital signature placeholders.</p>
                     </div>
-                    <Button onClick={() => setPreviewOffer(selectedOffer)} className="bg-cyan-300 text-slate-950 hover:bg-cyan-200">Preview Offer</Button>
+                    <Button onClick={() => setPreviewOffer(selectedOffer)} className="bg-cyan-600 dark:bg-cyan-300 text-white dark:text-slate-950 hover:bg-cyan-700 dark:hover:bg-cyan-200">Preview Offer</Button>
                   </div>
                 </section>
               )}

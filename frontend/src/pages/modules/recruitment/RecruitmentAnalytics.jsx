@@ -161,20 +161,20 @@ const RecruitmentAnalytics = () => {
   };
 
   return (
-    <div id="report-container" className="min-h-screen space-y-6 bg-slate-950 p-4 text-slate-100 md:p-6">
+    <div id="report-container" className="min-h-screen space-y-6 bg-slate-50 dark:bg-slate-950 p-4 text-slate-900 dark:text-slate-100 md:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-200">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-700 dark:text-cyan-200">
             <Brain className="h-3.5 w-3.5" />
             Recruitment Business Intelligence
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">Recruitment Analytics & Intelligence</h1>
-          <p className="mt-2 max-w-3xl text-sm text-slate-400">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white md:text-4xl">Recruitment Analytics & Intelligence</h1>
+          <p className="mt-2 max-w-3xl text-sm text-slate-500 dark:text-slate-400">
             Executive hiring intelligence across funnel health, recruiter productivity, source quality, hiring velocity, and staffing demand.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button onClick={fetchAnalytics} variant="outline" className="border-white/10 bg-white/5 text-slate-100 hover:bg-white/10">
+          <Button onClick={fetchAnalytics} variant="outline" className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10">
             <RefreshCw className="mr-2 h-4 w-4" /> Refresh
           </Button>
           <ExportCenter onExport={handleExport} />
@@ -192,9 +192,9 @@ const RecruitmentAnalytics = () => {
         <AnalyticsLoading />
       ) : error ? (
         <div className="rounded-lg border border-rose-400/20 bg-rose-500/10 p-6 text-center">
-          <p className="font-semibold text-white">Recruitment analytics could not be loaded</p>
-          <p className="mt-2 text-sm text-slate-300">{error}</p>
-          <Button onClick={fetchAnalytics} className="mt-4 bg-cyan-300 text-slate-950 hover:bg-cyan-200">
+          <p className="font-semibold text-slate-900 dark:text-white">Recruitment analytics could not be loaded</p>
+          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">{error}</p>
+          <Button onClick={fetchAnalytics} className="mt-4 bg-cyan-600 dark:bg-cyan-300 text-slate-900 dark:text-white dark:text-slate-950 hover:bg-cyan-700 dark:hover:bg-cyan-200">
             Retry
           </Button>
         </div>
@@ -231,10 +231,10 @@ const RecruitmentAnalytics = () => {
           <TrendChart data={analytics?.monthly || []} />
           <InsightsPanel insights={analytics?.insights || []} />
 
-          <section className="rounded-lg border border-white/10 bg-slate-950/70 p-5 shadow-xl shadow-black/10">
+          <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 p-5 shadow-xl shadow-black/10">
             <div className="mb-5 flex items-center gap-2">
-              <Activity className="h-5 w-5 text-cyan-300" />
-              <h2 className="text-lg font-semibold text-white">Analytics Tables</h2>
+              <Activity className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Analytics Tables</h2>
             </div>
             <div className="grid gap-6">
               <AnalyticsTable title="Recruiter Performance Table" rows={analytics?.tables?.recruiters || []} columns={tableColumns.recruiters} />
