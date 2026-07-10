@@ -217,9 +217,9 @@ export class PerformanceController {
         startDate: s,
         endDate: e,
         status: CycleStatus.DRAFT,
-        createdBy: req.user?.id,
+        createdBy: req.user?.id as any,
       });
-      await auditPms(req, 'CREATE_CYCLE', `Created cycle ${name}`, null, cycle.toJSON());
+      await auditPms(req, 'CREATE_CYCLE', `Created cycle ${name}`, null, (cycle as any).toJSON());
       res.status(201).json({ success: true, data: cycle });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Error';
@@ -561,7 +561,7 @@ export class PerformanceController {
       res.status(500).json({ success: false, error: 'Failed to fetch employee reviews', details: msg });
     }
   }
-  static async getEmployeeOverview(req, res) {
+  static async getEmployeeOverview(req: AuthRequest, res: Response) {
     try {
       const employees = await PerformanceReviewModel.aggregate([
         {

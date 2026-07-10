@@ -40,7 +40,7 @@ export const initiateOffboarding = async (req: AuthRequest, res: Response) => {
             targetEmployee = await Employee.findOne(query);
             if (!targetEmployee) return res.status(404).json({ success: false, error: 'Target employee not found.' });
 
-            initialStatus = req.user.role === 'DIRECT_MANAGER' ? 'Pending HR Clearance' : 'Pending Country Manager';
+            initialStatus = req.user.role === 'DIRECT_MANAGER' ? 'Pending HR Approval' : 'Pending Country Manager Approval';
             actionRemarks = `Involuntary ${type} Initiated by ${req.user.role.replace('_', ' ')}`;
         }
 
@@ -62,6 +62,11 @@ export const initiateOffboarding = async (req: AuthRequest, res: Response) => {
         });
 
         const savedRequest = await offboardingData.save();
+
+        if (type === 'Resignation') {
+            await Employee.findByIdAndUpdate(targetEmployee._id, { status: initialStatus });
+        }
+
         res.status(201).json({ success: true, data: savedRequest });
     } catch (error: any) {
         console.error("Initiate Offboarding Error:", error); 
@@ -130,10 +135,10 @@ export const updateOffboardingStatus = async (req: AuthRequest, res: Response) =
         const role = req.user.role;
         let isAuthorizedTransition = false;
 
-        if (role === 'DIRECT_MANAGER' && request.status === 'Pending Manager Approval' && status === 'Pending HR Clearance') isAuthorizedTransition = true;
-        if (role === 'HR_MANAGER' && request.status === 'Pending HR Clearance' && status === 'Pending Country Manager') isAuthorizedTransition = true;
-        if (role === 'COUNTRY_MANAGER' && request.status === 'Pending Country Manager' && status === 'Pending CEO') isAuthorizedTransition = true;
-        if (role === 'CEO' && request.status === 'Pending CEO' && ['Approved', 'Rejected'].includes(status)) isAuthorizedTransition = true;
+        if (role === 'DIRECT_MANAGER' && request.status === 'Pending Manager Approval' && status === 'Pending HR Approval') isAuthorizedTransition = true;
+        if (role === 'HR_MANAGER' && request.status === 'Pending HR Approval' && status === 'Pending Country Manager Approval') isAuthorizedTransition = true;
+        if (role === 'COUNTRY_MANAGER' && request.status === 'Pending Country Manager Approval' && status === 'Pending CEO Approval') isAuthorizedTransition = true;
+        if (role === 'CEO' && request.status === 'Pending CEO Approval' && ['Approved', 'Rejected'].includes(status)) isAuthorizedTransition = true;
 
         if (!isAuthorizedTransition && !['Rejected'].includes(status)) {
              return res.status(403).json({ success: false, error: `Role ${role} cannot change status from ${request.status} to ${status}.` });
@@ -156,42 +161,29 @@ export const updateOffboardingStatus = async (req: AuthRequest, res: Response) =
             { new: true }
         );
 
+       const employeeQuery = mongoose.Types.ObjectId.isValid(request.employeeId) 
+            ? { _id: request.employeeId } 
+            : { employeeCode: request.employeeId };
+
        if (status === 'Approved' && role === 'CEO') {
             await Employee.findOneAndUpdate(
-                { employeeCode: request.employeeId },
-                { status: 'Terminated', exitDate: request.proposedExitDate, exitReason: request.reason }
+                employeeQuery,
+                { status: 'On Notice Period', exitDate: request.proposedExitDate, exitReason: request.reason }
             );
             
-            const employeeRecord = await Employee.findOne({ employeeCode: request.employeeId });
-            
-            if (employeeRecord) {
-                if (employeeRecord.userId) {
-                    await User.findByIdAndUpdate(
-                        employeeRecord.userId,
-                        { isActive: false, isDeleted: true }
-                    );
-                }
-
-                let targetEmail = '';
-                if ((employeeRecord as any).personalEmail) {
-                    targetEmail = (employeeRecord as any).personalEmail;
-                } else if (employeeRecord.email && (employeeRecord.email.includes('@gmail.com') || employeeRecord.email.includes('@yahoo.com'))) {
-                    targetEmail = employeeRecord.email;
-                }
-
-                if (targetEmail) {
-                    try {
-                        await sendTerminationEmail(targetEmail, {
-                            name: employeeRecord.firstName,
-                            exitDate: new Date(request.proposedExitDate).toLocaleDateString('en-GB'),
-                            reason: request.reason,
-                            companyName: "InternsLand" 
-                        });
-                    } catch (emailError) {
-                        console.error("Failed to trigger termination email:", emailError);
-                    }
-                }
-            }
+            // Note: We do NOT immediately disable the user account or send a termination email here.
+            // The daily cron job will handle transitioning 'On Notice Period' to 'Terminated/Exited' 
+            // and revoking access on their Last Working Day (exitDate).
+        } else if (status === 'Rejected') {
+            await Employee.findOneAndUpdate(
+                employeeQuery,
+                { status: 'Active' }
+            );
+        } else {
+            await Employee.findOneAndUpdate(
+                employeeQuery,
+                { status }
+            );
         }
 
         res.status(200).json({ success: true, data: updatedRequest });
