@@ -77,13 +77,13 @@ async function lwpAndPendingLeaveDays(
   const pending = await Leave.find({
     userId,
     status: "Pending",
+    leaveType: "LWP",
     startDate: { $lte: periodEnd },
     endDate: { $gte: periodStart },
   })
   let pendingUnpaid = 0
   for (const lv of pending) {
-    if (lv.leaveType === "LWP") pendingUnpaid += overlapDays(new Date(lv.startDate), new Date(lv.endDate))
-    else pendingUnpaid += overlapDays(new Date(lv.startDate), new Date(lv.endDate))
+    pendingUnpaid += overlapDays(new Date(lv.startDate), new Date(lv.endDate))
   }
 
   return { lwp, pendingUnpaid }

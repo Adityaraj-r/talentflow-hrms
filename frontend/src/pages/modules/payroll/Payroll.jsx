@@ -559,6 +559,14 @@ const PayrollProcessing = () => {
                           <div className="border-t pt-2">
                             <PreviewRow label="Gross" value={serverPreview.grossPay} bold />
                           </div>
+                          {Number(serverPreview.deductions?.lopAmount) > 0 && (
+                            <PreviewRow
+                              label={`LOP deduction (${serverPreview.lopDays} day${serverPreview.lopDays > 1 ? "s" : ""})`}
+                              value={serverPreview.deductions.lopAmount}
+                              color="text-red-500"
+                              prefix="-"
+                            />
+                          )}
                           <PreviewRow label="Total deductions" value={serverPreview.totalDeductions} color="text-red-500" prefix="-" />
                           <div className="mt-4 p-4 bg-blue-600 rounded-xl text-white text-center">
                             <p className="text-xs uppercase tracking-widest opacity-80">Net Payable</p>
