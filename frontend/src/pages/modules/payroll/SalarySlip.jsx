@@ -370,6 +370,7 @@ function slipEarnings(slip) {
     bonus: Number(e.bonus ?? slip.bonus ?? 0),
     bonusReason: e.bonusReason || "",
     overtime: Number(e.overtime ?? 0),
+    overtimeAuto: Number(e.overtimeAuto ?? 0),
     reimbursement: Number(e.reimbursement ?? 0),
     performanceBonus: Number(e.performanceBonus ?? 0),
   }
@@ -467,7 +468,15 @@ const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
               )}
               {eg.overtime > 0 && (
                 <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
-                  <span className="text-muted-foreground shrink-0">Overtime</span>
+                  <span className="text-muted-foreground shrink-0">
+                    Overtime
+                    {eg.overtimeAuto > 0 && (
+                      <span className="block text-[11px] text-muted-foreground font-normal">
+                        Rs. {eg.overtimeAuto.toLocaleString()} from approved hours
+                        {eg.overtime > eg.overtimeAuto && ` + Rs. ${(eg.overtime - eg.overtimeAuto).toLocaleString()} extra`}
+                      </span>
+                    )}
+                  </span>
                   <span className="font-medium font-mono tabular-nums text-right">Rs. {eg.overtime.toLocaleString()}</span>
                 </div>
               )}

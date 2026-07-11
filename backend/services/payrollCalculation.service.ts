@@ -304,6 +304,7 @@ const earnings = {
     bonus,
     bonusReason,
     overtime,
+    overtimeAuto: overtimeFromHours,
     reimbursement,
     performanceBonus: perfBonus,
   }

@@ -491,7 +491,7 @@ const PayrollProcessing = () => {
                         value={bonus} onChange={e => setBonus(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-blue-600">Overtime (₹)</label>
+                      <label className="text-sm font-medium text-blue-600">Extra Overtime (₹)</label>
                       <input type="number" min="0"
                         className="w-full p-2 border rounded-md bg-transparent"
                         value={overtime} onChange={e => setOvertime(e.target.value)} />
@@ -515,6 +515,17 @@ const PayrollProcessing = () => {
                       </span>
                       <span className="font-bold text-green-700 dark:text-green-400">
                         ₹ {Number(serverPreview.earnings.performanceBonus).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+
+                  {Number(serverPreview?.earnings?.overtimeAuto) > 0 && (
+                    <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-500/10 dark:border-blue-500/30 px-3 py-2 text-sm">
+                      <span className="font-medium text-blue-700 dark:text-blue-400">
+                        Auto overtime (from approved attendance hours):
+                      </span>
+                      <span className="font-bold text-blue-700 dark:text-blue-400">
+                        ₹ {Number(serverPreview.earnings.overtimeAuto).toLocaleString()}
                       </span>
                     </div>
                   )}
