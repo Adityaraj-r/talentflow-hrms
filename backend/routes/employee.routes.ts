@@ -56,6 +56,8 @@ router.get(
     "DEPARTMENT_MANAGER", 
     "DIRECT_MANAGER", 
     "PROJECT_MANAGER", 
+    "PAYROLL_OFFICER",
+    "FINANCE_MANAGER",
     "EMPLOYEE"),
   getEmployeeById
 );

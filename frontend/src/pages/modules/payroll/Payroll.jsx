@@ -66,7 +66,9 @@ const PayrollProcessing = () => {
   const [month, setMonth]                   = useState(MONTHS[new Date().getMonth()])
   const [year, setYear]                     = useState(new Date().getFullYear())
   const [lopDays, setLopDays]               = useState(0)
+  const [lopAuto, setLopAuto]               = useState(true)
   const [bonus, setBonus]                   = useState(0)
+  const [bonusReason, setBonusReason]       = useState("")
   const [overtime, setOvertime]             = useState(0)
   const [activeTab, setActiveTab]           = useState("run")
   const [serverPreview, setServerPreview]   = useState(null)
@@ -182,7 +184,11 @@ const PayrollProcessing = () => {
     }
     fetchSalary()
   }, [selectedEmp, employees])
-
+  useEffect(() => {
+    setLopAuto(true)
+    setBonus(0)
+    setBonusReason("")
+  }, [selectedEmp])
   useEffect(() => {
     if (!selectedEmp || !month || !year) {
       setServerPreview(null)
@@ -196,18 +202,23 @@ const PayrollProcessing = () => {
           userId: selectedEmp,
           adjustments: {
             bonus: Number(bonus) || 0,
+            bonusReason: bonusReason || "",
             overtime: Number(overtime) || 0,
-            useLopOverride: Number(lopDays) > 0,
+            useLopOverride: !lopAuto,
             lopDaysOverride: Number(lopDays) || 0,
           },
         })
-        setServerPreview(res?.data?.line || null)
+        const line = res?.data?.line || null
+        setServerPreview(line)
+        if (line && lopAuto) {
+          setLopDays(line.lopDays ?? 0)
+        }
       } catch {
         setServerPreview(null)
       }
     }, 350)
     return () => clearTimeout(t)
-  }, [selectedEmp, month, year, bonus, overtime, lopDays])
+  }, [selectedEmp, month, year, bonus, bonusReason, overtime, lopDays, lopAuto])
 
   const calculatePreview = () => {
     if (!salaryData) return { gross: 0, net: 0, deductions: 0 }
@@ -252,8 +263,9 @@ const PayrollProcessing = () => {
         adjustments: {
           [selectedEmp]: {
             bonus: Number(bonus) || 0,
+            bonusReason: bonusReason || "",
             overtime: Number(overtime) || 0,
-            useLopOverride: Number(lopDays) > 0,
+            useLopOverride: !lopAuto,
             lopDaysOverride: Number(lopDays) || 0,
           },
         },
@@ -262,6 +274,7 @@ const PayrollProcessing = () => {
       })
       toast.success("Payroll generated successfully!")
       setBonus(0); setOvertime(0); setLopDays(0); setSelectedEmp("")
+      setBonusReason(""); setLopAuto(true)
       await refreshPayrollTables()
     } catch (err) {
       toast.error(payrollLockToast(err, "Failed to generate payroll"))
@@ -454,13 +467,25 @@ const PayrollProcessing = () => {
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-red-500">LOP Days</label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium text-red-500">LOP Days</label>
+                        {!lopAuto && (
+                          <button type="button" onClick={() => setLopAuto(true)}
+                            className="text-[11px] text-blue-600 hover:underline">
+                            Reset to auto
+                          </button>
+                        )}
+                      </div>
                       <input type="number" min="0"
                         className="w-full p-2 border rounded-md bg-transparent"
-                        value={lopDays} onChange={e => setLopDays(e.target.value)} />
+                        value={lopDays}
+                        onChange={e => { setLopDays(e.target.value); setLopAuto(false) }} />
+                      {lopAuto && (
+                        <p className="text-[11px] text-muted-foreground">Auto-calculated from attendance</p>
+                      )}
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-green-600">Bonus (₹)</label>
+                      <label className="text-sm font-medium text-green-600">Extra Bonus (₹)</label>
                       <input type="number" min="0"
                         className="w-full p-2 border rounded-md bg-transparent"
                         value={bonus} onChange={e => setBonus(e.target.value)} />
@@ -472,6 +497,27 @@ const PayrollProcessing = () => {
                         value={overtime} onChange={e => setOvertime(e.target.value)} />
                     </div>
                   </div>
+
+                  {Number(bonus) > 0 && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Reason for extra bonus</label>
+                      <input type="text" maxLength={300}
+                        placeholder="e.g. Diwali bonus, spot award, project completion..."
+                        className="w-full p-2 border rounded-md bg-transparent text-sm"
+                        value={bonusReason} onChange={e => setBonusReason(e.target.value)} />
+                    </div>
+                  )}
+
+                  {Number(serverPreview?.earnings?.performanceBonus) > 0 && (
+                    <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 dark:bg-green-500/10 dark:border-green-500/30 px-3 py-2 text-sm">
+                      <span className="font-medium text-green-700 dark:text-green-400">
+                        Performance bonus (auto, already included in gross):
+                      </span>
+                      <span className="font-bold text-green-700 dark:text-green-400">
+                        ₹ {Number(serverPreview.earnings.performanceBonus).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
                   <Button
                     onClick={handleGenerate}
                     disabled={processing || !selectedEmp || !salaryData}

@@ -16,7 +16,6 @@ export interface BonusRunResult {
   skipped: number;
   errors: string[];
 }
-
 export interface BonusPreviewRow {
   userId: string;
   reviewId: string;

@@ -3,9 +3,9 @@ import Attendance from "../models/Attendance.model"
 import Leave from "../models/leave.model"
 import Ticket from "../models/ticket.model"
 import Employee from "../models/Employee.model"
-import { PerformanceReviewModel } from "../models/PerformanceReview"
 import type { IPayrollCompanySettings } from "../models/payrollCompanySettings.model"
 import { applyStatutoryDeductions } from "./payrollStatutory.service"
+import SalaryStructure from "../models/salaryStructure.model"
 import type { IAdvanceAllocation, IEmployeePayroll } from "../models/payroll.model"
 
 const CALC_VERSION = "v2.1"
@@ -108,29 +108,22 @@ async function approvedOvertimeHours(
   return agg[0]?.h || 0
 }
 
-async function performanceBonusForUser(
-  userOid: mongoose.Types.ObjectId,
-  month: number,
-  year: number
-): Promise<number> {
-  const start = new Date(year, month - 1, 1)
-  const end = new Date(year, month, 0, 23, 59, 59)
-  const reviews = await PerformanceReviewModel.find({
-    employeeId: userOid,
-    status: {
-      $in: [
-        "completed",
-        "approved",
-        "final_approved",
-        "feedback_released",
-      ],
-    },
-    updatedAt: { $gte: start, $lte: end },
-  }).limit(5)
-  if (!reviews.length) return 0
-  const avg =
-    reviews.reduce((s, r) => s + (r.overallRating || 0), 0) / reviews.length
-  return Math.round(Math.max(0, avg - 3) * 2000)
+async function performanceBonusForUser(userOid: mongoose.Types.ObjectId): Promise<number> {
+  const structure = await SalaryStructure.findOne({ userId: userOid }).sort({ effectiveFrom: -1 })
+  const snap = structure?.appraisalBonusSnapshot
+  if (!snap || snap.paidInPayrollId) return 0
+  return Number(structure?.performanceBonusAmount) || 0
+}
+
+/** Marks a user's currently-applied appraisal bonus as paid so it isn't reapplied in a future payroll run. Idempotent. */
+export async function markPerformanceBonusPaid(userId: string, payrollId: string): Promise<void> {
+  const uid = new mongoose.Types.ObjectId(userId)
+  const structure = await SalaryStructure.findOne({ userId: uid }).sort({ effectiveFrom: -1 })
+  if (!structure?.appraisalBonusSnapshot) return
+  if (structure.appraisalBonusSnapshot.paidInPayrollId) return
+  structure.appraisalBonusSnapshot.paidInPayrollId = payrollId
+  structure.appraisalBonusSnapshot.paidAt = new Date()
+  await structure.save()
 }
 
 async function fifoAdvanceDeductions(
@@ -168,6 +161,7 @@ async function fifoAdvanceDeductions(
 
 export type PerUserAdjustments = {
   bonus?: number
+  bonusReason?: string
   overtime?: number
   useLopOverride?: boolean
   lopDaysOverride?: number
@@ -279,7 +273,8 @@ export async function computeEmployeePayrollLine(params: {
   const overtimeExtra = Math.round(Number(adjustments.overtime) || 0)
   const overtime = overtimeFromHours + overtimeExtra
 
-  const bonus = Math.round(Number(adjustments.bonus) || 0)
+ const bonus = Math.round(Number(adjustments.bonus) || 0)
+  const bonusReason = bonus > 0 ? String(adjustments.bonusReason || "").trim().slice(0, 300) : ""
 
   const mIdx = new Date(`${period.month} 1, ${period.year}`).getMonth()
   const mStart = new Date(period.year, mIdx, 1)
@@ -300,17 +295,14 @@ export async function computeEmployeePayrollLine(params: {
   ])
   const reimbursement = Math.round(travelReimb[0]?.s || 0)
 
-  const perfBonus = await performanceBonusForUser(
-    uid,
-    new Date(`${period.month} 1, ${period.year}`).getMonth() + 1,
-    period.year
-  )
+  const perfBonus = await performanceBonusForUser(uid)
 
-  const earnings = {
+const earnings = {
     basic,
     hra,
     allowances,
     bonus,
+    bonusReason,
     overtime,
     reimbursement,
     performanceBonus: perfBonus,
