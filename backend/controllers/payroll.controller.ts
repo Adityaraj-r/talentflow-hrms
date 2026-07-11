@@ -439,6 +439,7 @@ export const getPayrollComplianceSummary = async (req: AuthRequest, res: Respons
     const runs = await Payroll.find({
       month,
       year,
+      status: { $in: ["Disbursed", "Locked", "Paid"] },
       $or: [{ runKind: "regular" }, { runKind: { $exists: false } }],
     }).lean()
 

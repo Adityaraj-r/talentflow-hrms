@@ -570,15 +570,39 @@ const PayrollProcessing = () => {
                           <div className="border-t pt-2">
                             <PreviewRow label="Gross" value={serverPreview.grossPay} bold />
                           </div>
-                          {Number(serverPreview.deductions?.lopAmount) > 0 && (
-                            <PreviewRow
-                              label={`LOP deduction (${serverPreview.lopDays} day${serverPreview.lopDays > 1 ? "s" : ""})`}
-                              value={serverPreview.deductions.lopAmount}
-                              color="text-red-500"
-                              prefix="-"
-                            />
-                          )}
-                          <PreviewRow label="Total deductions" value={serverPreview.totalDeductions} color="text-red-500" prefix="-" />
+                          <div className="border-t pt-2 space-y-1.5">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Deduction breakdown</p>
+                            {Number(serverPreview.deductions?.pf) > 0 && (
+                              <PreviewRow label="Provident Fund (PF)" value={serverPreview.deductions.pf} color="text-red-500" prefix="-" />
+                            )}
+                            {Number(serverPreview.deductions?.esi) > 0 && (
+                              <PreviewRow label="ESI" value={serverPreview.deductions.esi} color="text-red-500" prefix="-" />
+                            )}
+                            {Number(serverPreview.deductions?.pt) > 0 && (
+                              <PreviewRow label="Professional Tax" value={serverPreview.deductions.pt} color="text-red-500" prefix="-" />
+                            )}
+                            {Number(serverPreview.deductions?.tds) > 0 && (
+                              <PreviewRow label="TDS" value={serverPreview.deductions.tds} color="text-red-500" prefix="-" />
+                            )}
+                            {Number(serverPreview.deductions?.insurance) > 0 && (
+                              <PreviewRow label="Insurance" value={serverPreview.deductions.insurance} color="text-red-500" prefix="-" />
+                            )}
+                            {Number(serverPreview.deductions?.other) > 0 && (
+                              <PreviewRow label="Other" value={serverPreview.deductions.other} color="text-red-500" prefix="-" />
+                            )}
+                            {Number(serverPreview.deductions?.lopAmount) > 0 && (
+                              <PreviewRow
+                                label={`LOP deduction (${serverPreview.lopDays} day${serverPreview.lopDays > 1 ? "s" : ""})`}
+                                value={serverPreview.deductions.lopAmount}
+                                color="text-red-500"
+                                prefix="-"
+                              />
+                            )}
+                            {Number(serverPreview.deductions?.advanceTotal) > 0 && (
+                              <PreviewRow label="Salary advance recovery" value={serverPreview.deductions.advanceTotal} color="text-red-500" prefix="-" />
+                            )}
+                          </div>
+                          <PreviewRow label="Total deductions" value={serverPreview.totalDeductions} color="text-red-500" prefix="-" bold />
                           <div className="mt-4 p-4 bg-blue-600 rounded-xl text-white text-center">
                             <p className="text-xs uppercase tracking-widest opacity-80">Net Payable</p>
                             <h2 className="text-3xl font-black mt-1">₹ {Number(serverPreview.netPay).toLocaleString()}</h2>
