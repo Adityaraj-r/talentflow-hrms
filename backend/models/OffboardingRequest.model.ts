@@ -9,7 +9,7 @@ export interface IOffboardingRequest extends Document {
     reason: string;
     proposedExitDate: Date;
     initiatedBy: string;
-    status: 'Pending Manager Approval' | 'Pending HR Clearance' | 'Pending Country Manager' | 'Pending CEO' | 'Approved' | 'Rejected';
+    status: 'Pending Manager Approval' | 'Pending HR Approval' | 'Pending Country Manager Approval' | 'Pending CEO Approval' | 'Approved' | 'Rejected';
     adminRemarks?: string;
     actionedBy?: string;
     actionedAt?: Date;
@@ -38,9 +38,9 @@ const OffboardingRequestSchema: Schema = new Schema({
         type: String, 
         enum: [
             'Pending Manager Approval', 
-            'Pending HR Clearance', 
-            'Pending Country Manager', 
-            'Pending CEO', 
+            'Pending HR Approval', 
+            'Pending Country Manager Approval', 
+            'Pending CEO Approval', 
             'Approved', 
             'Rejected'
         ], 

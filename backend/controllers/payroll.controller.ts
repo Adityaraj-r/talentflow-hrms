@@ -399,7 +399,7 @@ export const getPayrollRecords = async (req: AuthRequest, res: Response) => {
       const filtered: typeof records = []
       for (const doc of records) {
         const next = filterPayrollLeanDocForTeam(doc as never, allowed)
-        if (next) filtered.push(next as (typeof records)[0])
+        if (next) filtered.push(next as unknown as (typeof records)[0])
       }
       records = filtered
     }
@@ -841,7 +841,7 @@ export const downloadPayslip = async (req: AuthRequest, res: Response) => {
       employeeCode: String(codeStr),
       position: employee?.designation || employee?.role || "—",
       employeeAddress:
-        formatEmployeeAddress(employee) ||
+        formatEmployeeAddress(employee as unknown as Record<string, unknown>) ||
         (employee?.currentAddress as string | undefined)?.trim() ||
         "—",
       employeePhone: employee?.phoneNumber || user?.phoneNumber || "",

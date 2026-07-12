@@ -49,17 +49,18 @@ const OffboardingRequests = () => {
   }
 
   const getNextStatus = (currentStatus, role) => {
-    if (role === 'DIRECT_MANAGER' && currentStatus === 'Pending Manager Approval') return 'Pending HR Clearance';
-    if (role === 'HR_MANAGER' && currentStatus === 'Pending HR Clearance') return 'Pending Country Manager';
-    if (role === 'COUNTRY_MANAGER' && currentStatus === 'Pending Country Manager') return 'Pending CEO';
-    if (role === 'CEO' && currentStatus === 'Pending CEO') return 'Approved';
+    if (role === 'DIRECT_MANAGER' && currentStatus === 'Pending Manager Approval') return 'Pending HR Approval';
+    if (role === 'HR_MANAGER' && currentStatus === 'Pending HR Approval') return 'Pending Country Manager Approval';
+    if (role === 'COUNTRY_MANAGER' && currentStatus === 'Pending Country Manager Approval') return 'Pending CEO Approval';
+    if (role === 'CEO' && currentStatus === 'Pending CEO Approval') return 'Approved';
     return null; 
   }
 
   const getDisplayStatus = (status) => {
     if (status === "Pending Manager Approval") return "Pending Manager";
-    if (status === "Pending Country Manager") return "Pending Country Mgr";
-    if (status === "Pending HR Clearance") return "Pending HR";
+    if (status === "Pending Country Manager Approval") return "Pending Country Mgr";
+    if (status === "Pending HR Approval") return "Pending HR";
+    if (status === "Pending CEO Approval") return "Pending CEO";
     return status;
   }
 
@@ -169,7 +170,7 @@ const OffboardingRequests = () => {
                             "px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border whitespace-nowrap",
                             req.status === "Approved" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400" :
                             req.status === "Rejected" ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400" :
-                            req.status === "Pending Manager Approval" ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400" :
+                            req.status?.startsWith("Pending") ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400" :
                             "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400"
                           )}>
                             {getDisplayStatus(req.status)}

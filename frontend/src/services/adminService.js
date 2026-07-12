@@ -8,7 +8,7 @@ const adminService = {
     await apiClient.get('/admin/users', { params }),
 
   getAllEmployees: async (params = {}) =>
-    await apiClient.get('/admin/users', { params }),
+    await apiClient.get('/employees/directory', { params }),
 
   getActivities: async (params = {}) =>
     await apiClient.get('/admin/activities', { params }),
