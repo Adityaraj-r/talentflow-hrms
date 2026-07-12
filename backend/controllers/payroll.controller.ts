@@ -15,6 +15,7 @@ import {
   getPeriodBounds,
   getAttendanceLockStatus,
   applyAdvanceTicketBalances,
+  markPerformanceBonusPaid,   // NEW
 } from "../services/payrollCalculation.service"
 import { logPayrollAudit } from "../utils/payrollAudit.util"
 import PayrollAuditLog from "../models/payrollAuditLog.model"
@@ -280,6 +281,11 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
       await payroll.save()
     }
 
+    for(const line of employeesPayroll) {
+      if (Number(line.earnings?.performanceBonus) > 0) {
+        await markPerformanceBonusPaid(line.employeeId, payroll._id.toString())
+      }
+    }
     await logPayrollAudit({
       req,
       action: "payroll_generate",
@@ -433,6 +439,7 @@ export const getPayrollComplianceSummary = async (req: AuthRequest, res: Respons
     const runs = await Payroll.find({
       month,
       year,
+      status: { $in: ["Disbursed", "Locked", "Paid"] },
       $or: [{ runKind: "regular" }, { runKind: { $exists: false } }],
     }).lean()
 

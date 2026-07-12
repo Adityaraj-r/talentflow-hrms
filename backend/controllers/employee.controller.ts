@@ -88,7 +88,7 @@ export const getEmployeeById = async (req: Request, res: Response) => {
 
     const data = employee.toObject() as Record<string, any>;
 
-    if (!["ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER"].includes(requestingUser?.role)) {
+    if (!["ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER", "PAYROLL_OFFICER", "FINANCE_MANAGER"].includes(requestingUser?.role)) {
       delete data.bankDetails;
       delete data.kycDetails;
     }

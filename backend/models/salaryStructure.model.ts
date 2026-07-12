@@ -12,6 +12,9 @@ export interface IAppraisalBonusSnapshot {
   /** Must match AppraisalCycle.bonusRunId for this processing run */
   bonusRunId: string
   appliedAt: Date
+  /** Set once this bonus has been included in a generated payroll run — prevents double payment */
+  paidInPayrollId?: string
+  paidAt?: Date
 }
 
 export interface ISalaryStructure extends Document {
@@ -53,6 +56,8 @@ const AppraisalBonusSnapshotSchema = new Schema<IAppraisalBonusSnapshot>(
     bonusAmount: { type: Number, required: true, min: 0 },
     bonusRunId: { type: String, required: true, trim: true },
     appliedAt: { type: Date, required: true },
+    paidInPayrollId: { type: String, default: undefined },
+    paidAt: { type: Date, default: undefined },
   },
   { _id: false }
 )

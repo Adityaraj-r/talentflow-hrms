@@ -21,7 +21,9 @@ export interface IPayrollEarningsSnapshot {
   hra: number
   allowances: number
   bonus: number
+  bonusReason?: string
   overtime: number
+  overtimeAuto: number
   reimbursement: number
   performanceBonus: number
 }
@@ -94,7 +96,9 @@ const EarningsSnapshotSchema = new Schema<IPayrollEarningsSnapshot>(
     hra:               { type: Number, default: 0 },
     allowances:        { type: Number, default: 0 },
     bonus:             { type: Number, default: 0 },
+    bonusReason:       { type: String, default: "" },
     overtime:          { type: Number, default: 0 },
+    overtimeAuto:      { type: Number, default: 0 },
     reimbursement:     { type: Number, default: 0 },
     performanceBonus:  { type: Number, default: 0 },
   },
