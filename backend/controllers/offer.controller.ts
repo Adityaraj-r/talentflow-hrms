@@ -166,13 +166,54 @@ export const getOfferById = async (req: AuthRequest, res: Response) => {
 export const createOffer = async (req: AuthRequest, res: Response) => {
   try {
     const { candidateName, salary, joiningDate, position, department, noticeBuyout, benefits, probationDetails, reportingManager, templateId } = req.body;
+    if (
+       !candidateName ||
+      !position ||
+      !department ||
+      !salary ||
+      !joiningDate ||
+      !reportingManager
+    ){
+      return res.status(400).json({
+        success: false,
+        error: "All offer fields are required."
+      });
+     }
     const numSalary = Number(salary);
     const offerId = `OFF-${Date.now()}`;
     const needsCeo = Number.isFinite(numSalary) && numSalary >= CEO_OFFER_THRESHOLD();
     const status = needsCeo ? 'Pending HR Manager Approval' : 'Offered';
     const expiryDate = req.body.expiryDate ? new Date(req.body.expiryDate) : new Date(Date.now() + 7 * dayMs);
     const compensation = compensationFor(numSalary, req.body);
+   const existingOffer = await Offer.findOne({
+  candidateName,
+});
 
+if (existingOffer) {
+  existingOffer.position = position;
+  existingOffer.department = department;
+  existingOffer.salary = numSalary;
+  existingOffer.joiningDate = joiningDate;
+  existingOffer.reportingManager = reportingManager;
+  existingOffer.expiryDate = expiryDate;
+  existingOffer.noticeBuyout = Number(noticeBuyout || 0);
+  existingOffer.bonus = Number(req.body.bonus || compensation.bonus);
+  existingOffer.benefits = Array.isArray(benefits)
+    ? benefits
+    : typeof benefits === 'string'
+    ? benefits.split(',').map((item: string) => item.trim()).filter(Boolean)
+    : [];
+  existingOffer.probationDetails = probationDetails;
+  existingOffer.templateId = templateId;
+  existingOffer.compensation = compensation;
+
+  await existingOffer.save();
+
+  return res.status(200).json({
+    success: true,
+    data: existingOffer,
+  });
+}
     const offer = await Offer.create({
       offerId,
       candidateName,

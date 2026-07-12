@@ -49,6 +49,7 @@ import appraisalCycleRoutes from './routes/appraisalCycle.routes';
 import bonusRoutes from './routes/bonus.routes';
 import notificationRoutes from './routes/notification.routes';
 import offerRoutes from './routes/offer.routes';
+import disciplinaryRoutes from './routes/disciplinary.routes';
 import User from './models/User.model';
 
 dotenv.config();
@@ -165,6 +166,7 @@ app.use('/api/pms/cycles', appraisalCycleRoutes);
 app.use('/api/pms/bonus', bonusRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/offers', offerRoutes);
+app.use('/api/disciplinary', disciplinaryRoutes);
 
 app.use((req, res) => {
   console.warn(`\x1b[33m[404] Route not found: ${req.method} ${req.path}\x1b[0m`);

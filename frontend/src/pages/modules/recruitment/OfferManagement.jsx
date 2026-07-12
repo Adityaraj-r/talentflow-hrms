@@ -271,6 +271,10 @@ const OfferManagement = () => {
                       candidateName: form.candidateName.value,
                       salary: Number(form.salary.value),
                       joiningDate: form.joiningDate.value,
+                      position: form.position?.value ,
+                      department: form.department?.value ,
+                      
+                     
                     })
                     toast.success("Offer created")
                     await loadOffers()
@@ -282,8 +286,12 @@ const OfferManagement = () => {
                 className="grid gap-4 md:grid-cols-3"
               >
                 <Input name="candidateName" placeholder="Candidate Name" required />
+                <Input name="position" placeholder="Position" />
+                <Input name="department" placeholder="Department" />
                 <Input name="salary" type="number" placeholder="Final Salary" required />
                 <Input name="joiningDate" type="date" required />
+               
+                
                 <p className="md:col-span-3 text-xs text-muted-foreground">
                   Offers at or above the CEO salary threshold require CEO approval before release.
                 </p>

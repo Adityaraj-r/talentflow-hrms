@@ -410,6 +410,10 @@ const Sidebar = ({
             <SubLink to="/employee/appraisal-result" label="Published results" />
           </SidebarGroup>
 
+          <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
+            <SubLink to="/role/employee/disciplinary-actions" label="Report Incident" />
+          </SidebarGroup>
+
           <SidebarGroup id="documentRequests" icon={FileCheck} label="Documents">
             <SubLink to="/role/employee/my-documents" label="View my Documents" />
             <SubLink to="/role/employee/document-requests" label="Request Document" />

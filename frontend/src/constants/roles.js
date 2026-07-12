@@ -140,7 +140,7 @@ export const PERMISSIONS = {
       indemnityCalculation: false,
     },
     appraisal: true,
-    disciplinaryActions: false,
+    disciplinaryActions: true,
     documentRequests: false,
   },
   [ROLES.INTERVIEWER]: {
@@ -266,7 +266,7 @@ export const PERMISSIONS = {
       indemnityCalculation: false,
     },
     appraisal: true,
-    disciplinaryActions: false,
+    disciplinaryActions: true,
     documentRequests: true,
   },
 };

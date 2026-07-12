@@ -97,7 +97,7 @@ export const RoleProvider = ({ children }) => {
       baseModules.push("appraisal")
     }
 
-    if (["HR Manager", "HR Officer", "Department Manager"].includes(role)) {
+    if (["HR Manager", "HR Officer", "Department Manager", "Direct Manager", "Employee", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "EMPLOYEE"].includes(role)) {
       baseModules.push("disciplinary")
     }
 
