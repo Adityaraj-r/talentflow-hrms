@@ -6,6 +6,7 @@ import { AuthRequest } from '../middleware/auth.middleware';
 import { PerformanceCycleModel, CycleStatus } from '../models/PerformanceCycle';
 import { PerformanceReviewModel } from '../models/PerformanceReview';
 import { createLog } from './audit.controller';
+import { GoalModel } from '../models/Goal';
 import {
   WorkflowStage,
   canonicalStatus,
@@ -114,11 +115,11 @@ function hasDisplayPersonFields(value: unknown): boolean {
   };
   return Boolean(
     (p.firstName && p.firstName.trim()) ||
-      (p.lastName && p.lastName.trim()) ||
-      (p.name && p.name.trim()) ||
-      (p.email && p.email.trim()) ||
-      (p.department && p.department.trim()) ||
-      (p.designation && p.designation.trim())
+    (p.lastName && p.lastName.trim()) ||
+    (p.name && p.name.trim()) ||
+    (p.email && p.email.trim()) ||
+    (p.department && p.department.trim()) ||
+    (p.designation && p.designation.trim())
   );
 }
 
@@ -197,7 +198,6 @@ function allowedOrgAnalytics(role?: string): boolean {
     r === 'PAYROLLOFFICER'
   );
 }
-
 export class PerformanceController {
   static async createCycle(req: AuthRequest, res: Response) {
     try {
@@ -217,9 +217,9 @@ export class PerformanceController {
         startDate: s,
         endDate: e,
         status: CycleStatus.DRAFT,
-        createdBy: req.user?.id,
+        createdBy: req.user?.id as any,
       });
-      await auditPms(req, 'CREATE_CYCLE', `Created cycle ${name}`, null, cycle.toJSON());
+      await auditPms(req, 'CREATE_CYCLE', `Created cycle ${name}`, null, (cycle as any).toJSON());
       res.status(201).json({ success: true, data: cycle });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Error';
@@ -433,7 +433,6 @@ export class PerformanceController {
       const c = canonicalStatus(review.status);
       if (c !== WorkflowStage.GOALS_PENDING)
         return res.status(400).json({ success: false, error: 'Goals already confirmed or workflow started' });
-      const { GoalModel } = await import('../models/Goal');
       const gc = await GoalModel.countDocuments({ employeeId: review.employeeId, cycleId: review.cycleId });
       if (gc < 1)
         return res.status(400).json({ success: false, error: 'Add at least one goal before confirming.' });
@@ -478,9 +477,16 @@ export class PerformanceController {
 
       if (scope === 'department') {
         const vd = req.user?.department || '';
+        const uid = req.user!.id;
         reviews = reviews.filter((r) => {
           const emp = r.employeeId as { department?: string } | null;
-          return emp?.department && vd && emp.department === vd;
+          const reviewer = r.reviewerId as { _id?: unknown } | null;
+          const reviewerIdStr = reviewer && typeof reviewer === 'object' && '_id' in reviewer
+            ? String(reviewer._id)
+            : String(r.reviewerId);
+          const sameDept = Boolean(emp?.department && vd && emp.department === vd);
+          const isAssignedReviewer = reviewerIdStr === uid;
+          return sameDept || isAssignedReviewer;
         });
       }
 
@@ -515,12 +521,18 @@ export class PerformanceController {
 
       if (scope === 'department') {
         const vd = req.user?.department || '';
+        const uid = req.user!.id;
         reviews = reviews.filter((r) => {
           const emp = r.employeeId as { department?: string } | null;
-          return emp?.department && vd && emp.department === vd;
+          const reviewer = r.reviewerId as { _id?: unknown } | null;
+          const reviewerIdStr = reviewer && typeof reviewer === 'object' && '_id' in reviewer
+            ? String(reviewer._id)
+            : String(r.reviewerId);
+          const sameDept = Boolean(emp?.department && vd && emp.department === vd);
+          const isAssignedReviewer = reviewerIdStr === uid;
+          return sameDept || isAssignedReviewer;
         });
       }
-
       res.json({ success: true, data: reviews });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Error';
@@ -549,6 +561,71 @@ export class PerformanceController {
       res.status(500).json({ success: false, error: 'Failed to fetch employee reviews', details: msg });
     }
   }
+  static async getEmployeeOverview(req: AuthRequest, res: Response) {
+    try {
+      const employees = await PerformanceReviewModel.aggregate([
+        {
+          $group: {
+            _id: "$employeeId",
+
+            avgRating: {
+              $avg: "$overallRating"
+            },
+
+            totalReviews: {
+              $sum: 1
+            },
+
+            lastReview: {
+              $max: "$createdAt"
+            }
+          }
+        },
+
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "employee"
+          }
+        },
+
+        {
+          $unwind: "$employee"
+        },
+
+        {
+          $project: {
+            employeeId: "$_id",
+
+            name: "$employee.name",
+
+            email: "$employee.email",
+
+            department: "$employee.department",
+
+            position: "$employee.position",
+
+            avgRating: {
+              $round: ["$avgRating", 1]
+            },
+
+            totalReviews: 1,
+
+            lastReview: 1
+          }
+        }
+      ]);
+
+      res.json(employees);
+
+    } catch (err) {
+      res.status(500).json({
+        message: "Failed to load employee overview"
+      });
+    }
+  }
 
   static async getReviewById(req: AuthRequest, res: Response) {
     try {
@@ -564,10 +641,15 @@ export class PerformanceController {
       if (!review) return res.status(404).json({ success: false, error: 'Review not found' });
       await hydrateEmployeeRefs([review as unknown as ReviewWithEmployeeRef]);
       const emp = review.employeeId as { department?: string } | null;
+      const reviewerDoc = review.reviewerId as { _id?: unknown } | null;
+      const reviewerObjectId =
+        reviewerDoc && typeof reviewerDoc === 'object' && '_id' in reviewerDoc
+          ? new mongoose.Types.ObjectId(String(reviewerDoc._id))
+          : (review.reviewerId as mongoose.Types.ObjectId);
       await assertCanViewReview({
         viewer: viewerFromReq(req),
         reviewEmployeeId: review.employeeId as mongoose.Types.ObjectId,
-        reviewerId: review.reviewerId as mongoose.Types.ObjectId,
+        reviewerId: reviewerObjectId,
         employeeDepartment: emp?.department ?? null,
       });
       res.json({ success: true, data: review });
@@ -592,7 +674,6 @@ export class PerformanceController {
         reviewerId: review.reviewerId as mongoose.Types.ObjectId,
         employeeDepartment: (emp?.department as string) || null,
       });
-      const { GoalModel } = await import('../models/Goal');
       const goals = await GoalModel.find({
         cycleId: review.cycleId,
         employeeId: review.employeeId,
@@ -692,6 +773,16 @@ export class PerformanceController {
       if (!review) return res.status(404).json({ success: false, error: 'No review assigned for this employee in this cycle' });
 
       const st = canonicalStatus(review.status);
+
+      assertReadyForSelfAssessment(
+        review.status,
+        review.employeeId,
+        review.cycleId
+      );
+
+      review.selfRating = selfRating;
+      review.selfComments = selfComments;
+      review.status = WorkflowStage.SELF_ASSESSMENT_DONE;
       if (isTerminalImmutable(st))
         return res.status(403).json({ success: false, error: 'Review is immutable after approval.' });
 

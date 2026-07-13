@@ -15,6 +15,7 @@ import {
   getPeriodBounds,
   getAttendanceLockStatus,
   applyAdvanceTicketBalances,
+  markPerformanceBonusPaid,   // NEW
 } from "../services/payrollCalculation.service"
 import { logPayrollAudit } from "../utils/payrollAudit.util"
 import PayrollAuditLog from "../models/payrollAuditLog.model"
@@ -280,6 +281,11 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
       await payroll.save()
     }
 
+    for(const line of employeesPayroll) {
+      if (Number(line.earnings?.performanceBonus) > 0) {
+        await markPerformanceBonusPaid(line.employeeId, payroll._id.toString())
+      }
+    }
     await logPayrollAudit({
       req,
       action: "payroll_generate",
@@ -399,7 +405,7 @@ export const getPayrollRecords = async (req: AuthRequest, res: Response) => {
       const filtered: typeof records = []
       for (const doc of records) {
         const next = filterPayrollLeanDocForTeam(doc as never, allowed)
-        if (next) filtered.push(next as (typeof records)[0])
+        if (next) filtered.push(next as unknown as (typeof records)[0])
       }
       records = filtered
     }
@@ -433,6 +439,7 @@ export const getPayrollComplianceSummary = async (req: AuthRequest, res: Respons
     const runs = await Payroll.find({
       month,
       year,
+      status: { $in: ["Disbursed", "Locked", "Paid"] },
       $or: [{ runKind: "regular" }, { runKind: { $exists: false } }],
     }).lean()
 
@@ -841,7 +848,7 @@ export const downloadPayslip = async (req: AuthRequest, res: Response) => {
       employeeCode: String(codeStr),
       position: employee?.designation || employee?.role || "—",
       employeeAddress:
-        formatEmployeeAddress(employee) ||
+        formatEmployeeAddress(employee as unknown as Record<string, unknown>) ||
         (employee?.currentAddress as string | undefined)?.trim() ||
         "—",
       employeePhone: employee?.phoneNumber || user?.phoneNumber || "",

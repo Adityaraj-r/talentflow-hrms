@@ -51,12 +51,15 @@ import notificationRoutes from './routes/notification.routes';
 import offerRoutes from './routes/offer.routes';
 import disciplinaryRoutes from './routes/disciplinary.routes';
 import User from './models/User.model';
+import { initCronJobs } from './scripts/cronJobs';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 const MONGODB_URI = process.env.MONGODB_URI || '';
+
+initCronJobs();
 
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:3000'],

@@ -88,7 +88,7 @@ export const getEmployeeById = async (req: Request, res: Response) => {
 
     const data = employee.toObject() as Record<string, any>;
 
-    if (!["ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER"].includes(requestingUser?.role)) {
+    if (!["ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER", "PAYROLL_OFFICER", "FINANCE_MANAGER"].includes(requestingUser?.role)) {
       delete data.bankDetails;
       delete data.kycDetails;
     }
@@ -167,5 +167,96 @@ export const offboardEmployee = async (req: Request, res: Response) => {
 
     } catch (error: any) {
         res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+export const getEmployeeDirectory = async (req: Request, res: Response) => {
+    try {
+        const { role, search, statusFilter, page = 1, limit = 10 } = req.query;
+        const skipNum = (Number(page) - 1) * Number(limit);
+        const limitNum = Number(limit);
+
+        // Compute base query respecting role access (like getAllEmployees)
+        const requestingUser = (req as any).user;
+        let baseQuery: any = {};
+
+        if (requestingUser?.role === "DIRECT_MANAGER") {
+            baseQuery = { 
+                reportingManagerId: requestingUser.employeeCode,
+                role: "EMPLOYEE" 
+            };
+        } else if (requestingUser?.role === "DEPARTMENT_MANAGER") {
+            baseQuery = { department: requestingUser.department };
+        }
+
+        // Dashboard Stats calculation
+        const [totalStaffCount, activeCount, onNoticeCount, exitedCount, rolesAssignedCount] = await Promise.all([
+            Employee.countDocuments({ ...baseQuery, status: { $in: ['Active', 'On Notice Period', 'Pending Manager Approval', 'Pending HR Approval', 'Pending Country Manager Approval', 'Pending CEO Approval'] } }),
+            Employee.countDocuments({ ...baseQuery, status: { $in: ['Active', 'Pending Manager Approval', 'Pending HR Approval', 'Pending Country Manager Approval', 'Pending CEO Approval'] } }),
+            Employee.countDocuments({ ...baseQuery, status: 'On Notice Period' }),
+            Employee.countDocuments({ ...baseQuery, status: { $in: ['Exited', 'Terminated'] } }),
+            Employee.countDocuments({ 
+                ...baseQuery, 
+                role: { $nin: [null, ''] }, 
+                status: 'Active' 
+            })
+        ]);
+
+        const stats = {
+            total: totalStaffCount,
+            active: activeCount,
+            onNotice: onNoticeCount,
+            inactive: exitedCount, // We'll map inactive to Exited on frontend or keep it as inactive for stats
+            rolesAssigned: rolesAssignedCount
+        };
+
+        // Filter based on statusFilter (from frontend dashboard cards)
+        let query = { ...baseQuery };
+        if (statusFilter === 'total' || !statusFilter) {
+            query.status = { $in: ['Active', 'On Notice Period', 'Pending Manager Approval', 'Pending HR Approval', 'Pending Country Manager Approval', 'Pending CEO Approval'] };
+        } else if (statusFilter === 'active') {
+            query.status = { $in: ['Active', 'Pending Manager Approval', 'Pending HR Approval', 'Pending Country Manager Approval', 'Pending CEO Approval'] };
+        } else if (statusFilter === 'onNotice') {
+            query.status = 'On Notice Period';
+        } else if (statusFilter === 'exited') {
+            query.status = { $in: ['Exited', 'Terminated'] };
+        } else if (statusFilter === 'rolesAssigned') {
+            query.role = { $nin: [null, ''] };
+            query.status = 'Active';
+        }
+
+        // Apply role filter from dropdown
+        if (role && role !== 'all') {
+            query.role = role;
+        }
+
+        // Apply search
+        if (search) {
+            query.$or = [
+                { firstName: { $regex: search, $options: 'i' } },
+                { lastName:  { $regex: search, $options: 'i' } },
+                { email:     { $regex: search, $options: 'i' } },
+                { employeeCode: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const [employees, totalCount] = await Promise.all([
+            Employee.find(query).sort({ createdAt: -1 }).skip(skipNum).limit(limitNum).lean(),
+            Employee.countDocuments(query)
+        ]);
+
+        res.status(200).json({ 
+            success: true, 
+            data: employees,
+            pagination: {
+                currentPage: Number(page),
+                totalPages: Math.ceil(totalCount / limitNum),
+                totalItems: totalCount,
+                itemsPerPage: limitNum
+            },
+            stats
+        });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: 'Failed to fetch directory', error: error.message });
     }
 };

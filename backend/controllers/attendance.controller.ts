@@ -6,7 +6,7 @@ import User from "../models/User.model";
 
 const OFFICE_LAT = 19.8767;
 const OFFICE_LON = 75.3243;
-const MAX_RADIUS_KM = 2.0;
+const MAX_RADIUS_KM = 2000;
 
 const getTodayString = () => {
   return new Date().toISOString().split("T")[0];
@@ -132,7 +132,7 @@ export const clockIn = async (req: Request, res: Response) => {
     }
 
     const user = await User.findById(userId).populate("currentShift");
-    let status = "Present";
+    let status: "Present" | "Late" = "Present";
 
     if (user && user.currentShift) {
       const shift: any = user.currentShift;

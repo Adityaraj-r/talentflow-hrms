@@ -852,9 +852,9 @@ const Onboarding = () => {
                     className="border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-slate-50 transition-colors relative"
                     onClick={() => document.getElementById(doc.id).click()}
                   >
-                    <Upload className="h-8 w-8 text-slate-400" />
+                    <Upload className="h-8 w-8 text-slate-500 dark:text-slate-400" />
                     <span className="font-medium text-sm">{doc.label}</span>
-                    <span className="text-xs text-slate-400">Click to upload or drag file</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Click to upload or drag file</span>
                     <input type="file" id={doc.id} className="hidden" onChange={(e) => handleFileChange(doc.id, e.target.files[0])} />
                     {formData[doc.id] && (
                       <div className="absolute top-2 right-2 flex items-center gap-1 text-green-600 text-xs font-bold bg-white px-2 py-1 rounded-full border">
@@ -873,7 +873,7 @@ const Onboarding = () => {
               <div className="flex justify-between mt-6">
                 <Button variant="outline" onClick={() => setActiveTab("banking")}>Back</Button>
                 <Button
-                  className={`${isConfirmed ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400'} text-white`}
+                  className={`${isConfirmed ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400'} text-slate-900 dark:text-white`}
                   onClick={handleSubmit}
                   disabled={loading || !isConfirmed}
                 >

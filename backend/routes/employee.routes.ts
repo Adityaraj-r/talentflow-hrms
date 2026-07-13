@@ -1,11 +1,13 @@
 import express from "express";
 import {
+  getAllEmployees,
   getRecentHires,
   getActiveOnboarding,
   getEmployeeById,
   getManageOnboarding,
   offboardEmployee,
-  getMyDocuments
+  getMyDocuments,
+  getEmployeeDirectory
 } from "../controllers/employee.controller";
 import { protect } from "../middleware/auth.middleware";
 
@@ -17,6 +19,20 @@ const allowRoles =
     if (roles.includes(req.user?.role)) return next();
     return res.status(403).json({ success: false, error: "Access denied" });
   };
+
+router.get(
+  "/directory",
+  protect,
+  allowRoles("ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "COUNTRY_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"),
+  getEmployeeDirectory
+);
+
+router.get(
+  "/",
+  protect,
+  allowRoles("ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "COUNTRY_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"),
+  getAllEmployees
+);
 
 router.get(
   "/recent-hires",
@@ -56,6 +72,8 @@ router.get(
     "DEPARTMENT_MANAGER", 
     "DIRECT_MANAGER", 
     "PROJECT_MANAGER", 
+    "PAYROLL_OFFICER",
+    "FINANCE_MANAGER",
     "EMPLOYEE"),
   getEmployeeById
 );

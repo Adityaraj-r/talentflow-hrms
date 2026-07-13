@@ -115,7 +115,7 @@ export const getMyUploadedDocuments = async (req: Request, res: Response): Promi
 
     if (requestingUser.role === 'DEPARTMENT_MANAGER') {
       const deptEmployees = await Employee.find({ department: requestingUser.department }).select('employeeCode');
-      const empIds = deptEmployees.map(emp => emp.employeeCode);
+      const empIds = deptEmployees.map(emp => emp.employeeCode).filter(Boolean) as string[];
       
       const managerDocs = await Document.find({
         employeeId: { $in: empIds },

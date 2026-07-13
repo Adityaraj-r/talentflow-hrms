@@ -12,6 +12,8 @@ export const performanceApi = {
     const params = status ? { status } : {};
     return api.get('/performance/cycles', { params });
   },
+  getEmployeeOverview: () =>
+    api.get("/performance/employee-overview"),
 
   getCycleById: (id) => api.get(`/performance/cycles/${id}`),
 

@@ -434,7 +434,7 @@ export const getEmployeePerformance = async (req: Request, res: Response) => {
     const paginated = filtered.slice(skip, skip + Number(limit));
 
     const reviews = await PerformanceReviewModel.find({
-      employeeId: { $in: employees.map(e => e.userId) },
+      employeeId: { $in: employees.map(e => e.userId).filter(Boolean) as mongoose.Types.ObjectId[] },
       status: { $in: ["completed", "approved"] },
     }).lean();
 
@@ -761,7 +761,7 @@ export const getCEOInsights = async (req: Request, res: Response) => {
     const { employees } = await getFilteredEmployees( req.query, req.user );
 
     const reviews = await PerformanceReviewModel.find({
-      employeeId: { $in: employees.map(e => e.userId) },
+      employeeId: { $in: employees.map(e => e.userId).filter(Boolean) as mongoose.Types.ObjectId[] },
       status: { $in: ["completed", "approved"] },
     }).lean();
 

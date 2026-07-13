@@ -33,7 +33,67 @@ function normalizeStatus(status) {
     .replace(/\s+/g, "_")
 }
 
+/** Shared cycle + review-for-cycle state, used by both "My goals" and "Self-assessment" tabs. */
+function useMyReviewForCycle() {
+  const [cycles, setCycles] = useState([])
+  const [loadingCycles, setLoadingCycles] = useState(true)
+  const [selectedCycleId, setSelectedCycleId] = useState("")
+  const [myReview, setMyReview] = useState(null)
+  const [loadingReview, setLoadingReview] = useState(false)
+
+  useEffect(() => {
+    const fetchCycles = async () => {
+      try {
+        setLoadingCycles(true)
+        const res = await apiClient.get("/performance/cycles")
+        const inner = unwrap(res)
+        const list = Array.isArray(inner) ? inner : Array.isArray(inner?.data) ? inner.data : []
+        setCycles(list.filter((c) => c.status === "active"))
+      } catch (e) {
+        toast.error(e?.error || e?.message || "Failed to load performance cycles")
+      } finally {
+        setLoadingCycles(false)
+      }
+    }
+    fetchCycles()
+  }, [])
+
+  const refetchReview = async () => {
+    if (!selectedCycleId) {
+      setMyReview(null)
+      return
+    }
+    try {
+      setLoadingReview(true)
+      const res = await apiClient.get(`/performance/my-review/${selectedCycleId}`)
+      setMyReview(unwrap(res))
+    } catch (e) {
+      setMyReview(null)
+      toast.error(e?.error || e?.message || "No review assigned for this cycle yet.")
+    } finally {
+      setLoadingReview(false)
+    }
+  }
+
+  useEffect(() => {
+    refetchReview()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCycleId])
+
+  return {
+    cycles,
+    loadingCycles,
+    selectedCycleId,
+    setSelectedCycleId,
+    myReview,
+    loadingReview,
+    refetchReview,
+  }
+}
+
 const Appraisal = () => {
+  const shared = useMyReviewForCycle()
+
   return (
     <div className="space-y-6">
       <div>
@@ -52,10 +112,10 @@ const Appraisal = () => {
           <AppraisalHistory />
         </TabsContent>
         <TabsContent value="goals">
-          <GoalsTab />
+          <GoalsTab shared={shared} />
         </TabsContent>
         <TabsContent value="self">
-          <SelfAssessmentForm />
+          <SelfAssessmentForm shared={shared} />
         </TabsContent>
       </Tabs>
     </div>
@@ -128,7 +188,6 @@ const AppraisalHistory = () => {
             <div>Rating</div>
             <div>Reviewer</div>
             <div>Status</div>
-            <div className="text-right">Actions</div>
           </div>
           <div className="divide-y">
             {loading ? (
@@ -169,16 +228,6 @@ const AppraisalHistory = () => {
                       {formatWorkflowStageLabel(review.status)}
                     </span>
                   </div>
-                  <div className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => navigate(`/role/employee/review/${review._id}`)}
-                    >
-                      <FileText className="h-4 w-4" />
-                      <span className="sr-only">View details</span>
-                    </Button>
-                  </div>
                 </div>
               ))
             )}
@@ -189,13 +238,52 @@ const AppraisalHistory = () => {
   )
 }
 
-const GoalsTab = () => {
-  const [goals, setGoals] = useState([])
-  const [loading, setLoading] = useState(true)
+const CycleSelect = ({ cycles, loadingCycles, selectedCycleId, setSelectedCycleId }) => (
+  <div className="space-y-2">
+    <Label>
+      Review cycle <span className="text-red-500">*</span>
+    </Label>
+    {loadingCycles ? (
+      <Skeleton className="h-10 w-full" />
+    ) : (
+      <select
+        value={selectedCycleId}
+        onChange={(e) => setSelectedCycleId(e.target.value)}
+        className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900"
+      >
+        <option value="">— Select active cycle —</option>
+        {cycles.length === 0 ? (
+          <option disabled>No active cycles found</option>
+        ) : (
+          cycles.map((c) => (
+            <option key={c._id} value={c._id}>
+              {c.name}
+            </option>
+          ))
+        )}
+      </select>
+    )}
+  </div>
+)
 
-  const load = async () => {
+const GoalsTab = ({ shared }) => {
+  const {
+    cycles,
+    loadingCycles,
+    selectedCycleId,
+    setSelectedCycleId,
+    myReview,
+    loadingReview,
+    refetchReview,
+  } = shared
+
+  const [goals, setGoals] = useState([])
+  const [loadingGoals, setLoadingGoals] = useState(true)
+  const [confirmingGoals, setConfirmingGoals] = useState(false)
+
+  const loadGoals = async () => {
     try {
-      setLoading(true)
+      setLoadingGoals(true)
       const res = await performanceApi.getMyGoals()
       const raw = unwrap(res)
       setGoals(Array.isArray(raw) ? raw : [])
@@ -203,13 +291,30 @@ const GoalsTab = () => {
       toast.error(e?.error || e?.message || "Could not load goals")
       setGoals([])
     } finally {
-      setLoading(false)
+      setLoadingGoals(false)
     }
   }
 
   useEffect(() => {
-    load()
+    loadGoals()
   }, [])
+
+  const statusNorm = normalizeStatus(myReview?.status)
+  const canConfirmGoals = myReview && statusNorm === "goals_pending"
+
+  const handleConfirmGoals = async () => {
+    if (!myReview?._id) return
+    try {
+      setConfirmingGoals(true)
+      await reviewApi.confirmGoals(myReview._id)
+      toast.success("Goals confirmed. You can now submit your self-assessment.")
+      await refetchReview()
+    } catch (error) {
+      toast.error(error?.error || error?.message || "Could not confirm goals")
+    } finally {
+      setConfirmingGoals(false)
+    }
+  }
 
   return (
     <Card>
@@ -219,93 +324,90 @@ const GoalsTab = () => {
           My goals
         </CardTitle>
         <CardDescription>
-          Goals created by HR or your manager for appraisal cycles. Edit progress when your workflow allows.
+          Goals created by HR or your manager for appraisal cycles. Confirm goals below once they're finalized for a cycle.
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-          </div>
-        ) : goals.length === 0 ? (
-          <div className="rounded-xl border border-dashed py-12 text-center text-sm text-muted-foreground">
-            No goals yet. Your manager or HR will create goals for the active cycle.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {goals.map((g) => (
-              <div key={g._id} className="rounded-lg border p-4 text-sm">
-                <p className="font-semibold">{g.title}</p>
-                {g.description ? <p className="mt-1 text-muted-foreground">{g.description}</p> : null}
-                <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                  <span>Status: {g.status ?? "—"}</span>
-                  <span>Weight: {g.weight ?? "—"}%</span>
-                  <span>Progress: {g.progress ?? 0}%</span>
-                  <span>Cycle: {g.cycleId?.name ?? "—"}</span>
-                </div>
+      <CardContent className="space-y-6">
+        <CycleSelect
+          cycles={cycles}
+          loadingCycles={loadingCycles}
+          selectedCycleId={selectedCycleId}
+          setSelectedCycleId={setSelectedCycleId}
+        />
+
+        {selectedCycleId && loadingReview && <Skeleton className="h-20 w-full" />}
+
+        {selectedCycleId && myReview && !loadingReview && (
+          <div className="space-y-3 rounded-lg border border-muted p-4 text-sm">
+            <div>
+              <span className="font-medium">Workflow: </span>
+              {formatWorkflowStageLabel(myReview.status)}
+            </div>
+            {canConfirmGoals ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-muted-foreground">
+                  Confirm your goals when they are finalized for this cycle.
+                </p>
+                <Button type="button" variant="secondary" size="sm" disabled={confirmingGoals} onClick={handleConfirmGoals}>
+                  {confirmingGoals ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm goals"}
+                </Button>
               </div>
-            ))}
+            ) : (
+              <p className="text-green-700 dark:text-green-400">Goals already confirmed for this cycle.</p>
+            )}
           </div>
         )}
+
+        <div>
+          {loadingGoals ? (
+            <div className="space-y-2">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : goals.length === 0 ? (
+            <div className="rounded-xl border border-dashed py-12 text-center text-sm text-muted-foreground">
+              No goals yet. Your manager or HR will create goals for the active cycle.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {goals.map((g) => (
+                <div key={g._id} className="rounded-lg border p-4 text-sm">
+                  <p className="font-semibold">{g.title}</p>
+                  {g.description ? <p className="mt-1 text-muted-foreground">{g.description}</p> : null}
+                  <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                    <span>Status: {g.status ?? "—"}</span>
+                    <span>Weight: {g.weight ?? "—"}%</span>
+                    <span>Progress: {g.progress ?? 0}%</span>
+                    <span>Cycle: {g.cycleId?.name ?? "—"}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
 }
 
-const SelfAssessmentForm = () => {
-  const [cycles, setCycles] = useState([])
-  const [selectedCycleId, setSelectedCycleId] = useState("")
-  const [myReview, setMyReview] = useState(null)
-  const [loadingReview, setLoadingReview] = useState(false)
-  const [confirmingGoals, setConfirmingGoals] = useState(false)
+const SelfAssessmentForm = ({ shared }) => {
+  const {
+    cycles,
+    loadingCycles,
+    selectedCycleId,
+    setSelectedCycleId,
+    myReview,
+    loadingReview,
+  } = shared
+
   const [selfRating, setSelfRating] = useState(0)
   const [hoveredRating, setHoveredRating] = useState(0)
   const [selfComments, setSelfComments] = useState("")
   const [submitting, setSubmitting] = useState(false)
-  const [loadingCycles, setLoadingCycles] = useState(true)
-
-  useEffect(() => {
-    const fetchCycles = async () => {
-      try {
-        setLoadingCycles(true)
-        const res = await apiClient.get("/performance/cycles")
-        const inner = unwrap(res)
-        const list = Array.isArray(inner) ? inner : Array.isArray(inner?.data) ? inner.data : []
-        setCycles(list.filter((c) => c.status === "active"))
-      } catch (e) {
-        toast.error(e?.error || e?.message || "Failed to load performance cycles")
-      } finally {
-        setLoadingCycles(false)
-      }
-    }
-    fetchCycles()
-  }, [])
-
-  useEffect(() => {
-    if (!selectedCycleId) {
-      setMyReview(null)
-      return
-    }
-    const load = async () => {
-      try {
-        setLoadingReview(true)
-        const res = await apiClient.get(`/performance/my-review/${selectedCycleId}`)
-        const row = unwrap(res)
-        setMyReview(row)
-      } catch (e) {
-        setMyReview(null)
-        toast.error(e?.error || e?.message || "No review assigned for this cycle yet.")
-      } finally {
-        setLoadingReview(false)
-      }
-    }
-    load()
-  }, [selectedCycleId])
 
   const statusNorm = normalizeStatus(myReview?.status)
-  const canConfirmGoals = myReview && statusNorm === "goals_pending"
   const canSubmitSelf = myReview && statusNorm === "goals_locked"
+  const goalsNotConfirmedYet = myReview && statusNorm === "goals_pending"
   const selfDone =
     !!myReview &&
     (statusNorm === "self_assessment_done" ||
@@ -321,21 +423,6 @@ const SelfAssessmentForm = () => {
     return myReview.competencies
   }, [myReview])
 
-  const handleConfirmGoals = async () => {
-    if (!myReview?._id) return
-    try {
-      setConfirmingGoals(true)
-      await reviewApi.confirmGoals(myReview._id)
-      toast.success("Goals confirmed. You can submit your self-assessment.")
-      const res = await apiClient.get(`/performance/my-review/${selectedCycleId}`)
-      setMyReview(unwrap(res))
-    } catch (error) {
-      toast.error(error?.error || error?.message || "Could not confirm goals")
-    } finally {
-      setConfirmingGoals(false)
-    }
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!selectedCycleId) {
@@ -343,7 +430,7 @@ const SelfAssessmentForm = () => {
       return
     }
     if (!canSubmitSelf) {
-      toast.error("Confirm your goals first (workflow: goals → confirm → self-assessment).")
+      toast.error("Confirm your goals first in the \"My goals\" tab.")
       return
     }
     if (selfRating < 1) {
@@ -358,10 +445,8 @@ const SelfAssessmentForm = () => {
         selfComments,
       })
       toast.success("Self assessment submitted successfully!")
-      setSelectedCycleId("")
       setSelfRating(0)
       setSelfComments("")
-      setMyReview(null)
     } catch (error) {
       toast.error(error?.error || error?.message || "Failed to submit self assessment")
     } finally {
@@ -374,37 +459,17 @@ const SelfAssessmentForm = () => {
       <CardHeader>
         <CardTitle>Self-assessment</CardTitle>
         <CardDescription>
-          Workflow: confirm goals → submit self-assessment against your competency template.
+          Confirm your goals in the "My goals" tab first, then submit your self-assessment here.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label>
-              Review cycle <span className="text-red-500">*</span>
-            </Label>
-            {loadingCycles ? (
-              <Skeleton className="h-10 w-full" />
-            ) : (
-              <select
-                value={selectedCycleId}
-                onChange={(e) => setSelectedCycleId(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900"
-                required
-              >
-                <option value="">— Select active cycle —</option>
-                {cycles.length === 0 ? (
-                  <option disabled>No active cycles found</option>
-                ) : (
-                  cycles.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            )}
-          </div>
+          <CycleSelect
+            cycles={cycles}
+            loadingCycles={loadingCycles}
+            selectedCycleId={selectedCycleId}
+            setSelectedCycleId={setSelectedCycleId}
+          />
 
           {selectedCycleId && loadingReview && (
             <div className="space-y-2">
@@ -428,15 +493,10 @@ const SelfAssessmentForm = () => {
                 <span className="font-medium">Workflow: </span>
                 {formatWorkflowStageLabel(myReview.status)}
               </div>
-              {canConfirmGoals && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-muted-foreground">
-                    Confirm your goals when they are finalized for this cycle.
-                  </p>
-                  <Button type="button" variant="secondary" size="sm" disabled={confirmingGoals} onClick={handleConfirmGoals}>
-                    {confirmingGoals ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm goals"}
-                  </Button>
-                </div>
+              {goalsNotConfirmedYet && (
+                <p className="text-muted-foreground">
+                  Confirm your goals in the "My goals" tab before submitting your self-assessment.
+                </p>
               )}
               {selfDone && !feedbackReleased && (
                 <p className="font-medium text-green-700 dark:text-green-400">
@@ -508,11 +568,10 @@ const SelfAssessmentForm = () => {
                   className="focus:outline-none"
                 >
                   <Star
-                    className={`h-8 w-8 transition-colors ${
-                      star <= (hoveredRating || selfRating)
+                    className={`h-8 w-8 transition-colors ${star <= (hoveredRating || selfRating)
                         ? "fill-orange-400 text-orange-400"
                         : "text-gray-300"
-                    }`}
+                      }`}
                   />
                 </button>
               ))}
