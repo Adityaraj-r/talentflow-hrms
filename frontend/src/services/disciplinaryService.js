@@ -1,4 +1,4 @@
-import apiClient from "./apiClient";
+import apiClient from "./apiClient"; /*comment */
 
 export const getDisciplinaryCases = (params = {}) =>
   apiClient.get("/disciplinary", { params });

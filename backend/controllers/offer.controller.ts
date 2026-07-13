@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response } from 'express'; //
 import Offer from '../models/Offer.model';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { createLog } from './audit.controller';

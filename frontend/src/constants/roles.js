@@ -1,4 +1,4 @@
-export const ROLES = {
+export const ROLES = {  /*comment*/
   SUPER_ADMIN: "SUPER_ADMIN",
   CEO: "CEO",
   COUNTRY_MANAGER: "COUNTRY_MANAGER",
