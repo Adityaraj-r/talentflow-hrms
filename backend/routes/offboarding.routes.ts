@@ -3,7 +3,9 @@ import {
     initiateOffboarding,
     getAllOffboardingRequests,
     updateOffboardingStatus,
-    getEligibleEmployees 
+    getEligibleEmployees,
+    withdrawOffboardingRequest,
+    updateClearance
 } from '../controllers/offboardingRequest.controller';
 import { protect, authorize } from '../middleware/auth.middleware';
 
@@ -18,5 +20,9 @@ router.post('/initiate', authorize('HR_MANAGER', 'DIRECT_MANAGER', 'EMPLOYEE'), 
 router.get('/all', authorize('ADMIN', 'CEO', 'COUNTRY_MANAGER', 'HR_MANAGER', 'HR_OFFICER', 'DIRECT_MANAGER', 'EMPLOYEE'), getAllOffboardingRequests);
 
 router.patch('/update/:id', authorize('ADMIN', 'CEO', 'COUNTRY_MANAGER', 'HR_MANAGER', 'DIRECT_MANAGER'), updateOffboardingStatus);
+
+router.patch('/clearance/:id', authorize('ADMIN', 'HR_MANAGER', 'DIRECT_MANAGER'), updateClearance);
+
+router.patch('/withdraw/:id', authorize('EMPLOYEE'), withdrawOffboardingRequest);
 
 export default router;
