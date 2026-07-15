@@ -34,14 +34,14 @@ const isCEO = (role: string) => norm(role) === "CEO"
 const isAdmin = (role: string) => ["ADMIN", "SUPERADMIN"].includes(norm(role))
 
 const canProcessPayroll = (role: string) =>
-  isPayrollOfficer(role) || isFinanceManager(role) || isAdmin(role)
+  isPayrollOfficer(role) || isAdmin(role)
 
 function assertAdminDualControl(
   payroll: { generatedBy?: string },
   req: AuthRequest,
   action: string
 ): string | null {
-  const dual = new Set(["verify", "hr_approve", "ceo_approve", "disburse", "lock"])
+  const dual = new Set(["verify", "hr_approve", "ceo_approve", "disburse", "lock", "reject"])
   if (!dual.has(action) || !isAdmin(req.user?.role || "")) return null
   const gen = String(payroll.generatedBy || "").trim().toLowerCase()
   const em = String(req.user?.email || "").trim().toLowerCase()
@@ -135,6 +135,7 @@ function recalcTotals(payroll: InstanceType<typeof Payroll>, settings: Awaited<R
   payroll.totalGross = payroll.employees.reduce((s, e) => s + e.grossPay, 0)
   payroll.totalNet = payroll.employees.reduce((s, e) => s + e.netPay, 0)
   payroll.ceoApprovalRequired = payroll.totalNet > (settings.ceoApprovalThresholdTotalNet || 0)
+  payroll.financeApprovalRequired = payroll.employees.length > 10   // ← NEW LINE
 }
 
 export const generatePayroll = async (req: AuthRequest, res: Response) => {
@@ -143,7 +144,7 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
     if (!canProcessPayroll(userRole))
       return res.status(403).json({
         success: false,
-        error: "Only Finance, Payroll Officers, or Admins can generate payroll",
+        error: "Only Payroll Officers or Admins can generate payroll"
       })
 
     const {
@@ -157,7 +158,16 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
       offCycleLabel,
       skipAttendanceLockCheck = false,
     } = req.body
-
+    if (
+      replaceExisting &&
+      !isPayrollOfficer(userRole) &&
+      !isAdmin(userRole)
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: "Only Payroll Officers or Admins can regenerate payroll",
+      });
+    }
     if (!month || !year || !employeeIds?.length)
       return res.status(400).json({ success: false, error: "month, year, employeeIds required" })
 
@@ -208,8 +218,17 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
           error: "replaceExisting only allowed when status is Generated",
         })
       existing.employees = existing.employees.filter(e => !employeeIds.includes(e.employeeId))
+      existing.rejectionReason = undefined
+      existing.rejectedBy = undefined
+      existing.rejectedAt = undefined
+      existing.rejectedAtStage = undefined
       await existing.save()
     } else if (existing && !replaceExisting) {
+      if (existing.status !== "Generated")
+        return res.status(400).json({
+          success: false,
+          error: `Cannot add employees to this payroll run — it has already moved to "${existing.status}". Use an off-cycle run for late additions instead.`,
+        })
       const dup = employeeIds.filter((id: string) => existing!.employees.some(e => e.employeeId === id))
       if (dup.length)
         return res.status(400).json({
@@ -258,10 +277,22 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
 
     let payroll: InstanceType<typeof Payroll>
     if (existing) {
+      // Employees selected for regeneration were already removed above.
+      // Simply append the recalculated records.
       existing.employees.push(...employeesPayroll)
+
+      existing.status = "Generated"
+
+      existing.rejectionReason = undefined
+      existing.rejectedBy = undefined
+      existing.rejectedAt = undefined
+      existing.rejectedAtStage = undefined
+
       recalcTotals(existing, settings)
-      if (!existing.generatedBy) existing.generatedBy = actor
-      if (!existing.generatedAt) existing.generatedAt = now
+
+      existing.generatedBy = actor
+      existing.generatedAt = now
+
       payroll = await existing.save()
     } else {
       payroll = await Payroll.create({
@@ -281,7 +312,7 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
       await payroll.save()
     }
 
-    for(const line of employeesPayroll) {
+    for (const line of employeesPayroll) {
       if (Number(line.earnings?.performanceBonus) > 0) {
         await markPerformanceBonusPaid(line.employeeId, payroll._id.toString())
       }
@@ -524,6 +555,12 @@ export const patchPayrollWorkflow = async (req: AuthRequest, res: Response) => {
 
     switch (action) {
       case "verify": {
+        if (payroll.rejectionReason) {
+          return res.status(400).json({
+            success: false,
+            error: "Payroll must be regenerated before verification."
+          })
+        }
         if (!isFinanceManager(role) && !isAdmin(role))
           return res.status(403).json({ success: false, error: "Finance Manager or Admin only" })
         if (payroll.status !== "Generated")
@@ -533,11 +570,14 @@ export const patchPayrollWorkflow = async (req: AuthRequest, res: Response) => {
         payroll.verifiedAt = new Date()
         break
       }
+      // NEW:
       case "hr_approve": {
         if (!isHRManager(role) && !isAdmin(role))
           return res.status(403).json({ success: false, error: "HR Manager or Admin only" })
-        if (payroll.status !== "Verified")
-          return res.status(400).json({ success: false, error: "Payroll must be Verified first" })
+        if (payroll.financeApprovalRequired && payroll.status !== "Verified")
+          return res.status(400).json({ success: false, error: "Payroll must be Verified by Finance Manager first (run has more than 10 employees)" })
+        if (!payroll.financeApprovalRequired && !["Generated", "Verified"].includes(payroll.status))
+          return res.status(400).json({ success: false, error: "Invalid state for HR approval" })
         for (const line of payroll.employees) {
           await applyAdvanceTicketBalances(line.advanceAllocations || [])
         }
@@ -591,6 +631,45 @@ export const patchPayrollWorkflow = async (req: AuthRequest, res: Response) => {
         payroll.lockedAt = new Date()
         break
       }
+      case "reject": {
+        const { reason } = req.body
+        if (payroll.rejectionReason) {
+          return res.status(400).json({
+            success: false,
+            error: "Payroll has already been rejected. Wait for Payroll Officer to regenerate it."
+          })
+        }
+        if (!reason || typeof reason !== "string" || !reason.trim())
+          return res.status(400).json({ success: false, error: "A rejection reason is required" })
+
+        let stage: string
+        if (payroll.status === "Generated") {
+          if (!isFinanceManager(role) && !isAdmin(role))
+            return res.status(403).json({ success: false, error: "Finance Manager or Admin only" })
+          stage = "verify"
+        } else if (payroll.status === "Verified") {
+          if (!isHRManager(role) && !isAdmin(role))
+            return res.status(403).json({ success: false, error: "HR Manager or Admin only" })
+          stage = "hr_approve"
+        } else if (payroll.status === "HR_Approved") {
+          if (!isCEO(role) && !isAdmin(role))
+            return res.status(403).json({ success: false, error: "CEO or Admin only" })
+          stage = "ceo_approve"
+        } else {
+          return res.status(400).json({ success: false, error: "This run cannot be rejected from its current state" })
+        }
+
+        payroll.status = "Generated"
+        payroll.verifiedBy = undefined
+        payroll.verifiedAt = undefined
+        payroll.hrApprovedBy = undefined
+        payroll.hrApprovedAt = undefined
+        payroll.rejectionReason = reason.trim()
+        payroll.rejectedBy = req.user?.email
+        payroll.rejectedAt = new Date()
+        payroll.rejectedAtStage = stage
+        break
+      }
       default:
         return res.status(400).json({ success: false, error: "Unknown workflow action" })
     }
@@ -619,6 +698,11 @@ export const updatePayrollStatus = async (req: AuthRequest, res: Response) => {
 
     if (status === "HR Approved") {
       if (payroll.status === "Generated") {
+        if (payroll.financeApprovalRequired)
+          return res.status(400).json({
+            success: false,
+            error: "This run has more than 10 employees and requires Finance Manager verification first",
+          })
         payroll.status = "Verified"
         payroll.verifiedBy = req.user?.email || "legacy"
         payroll.verifiedAt = new Date()

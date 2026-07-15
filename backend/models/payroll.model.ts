@@ -64,6 +64,11 @@ export interface IPayroll extends Document {
   totalGross: number
   totalNet: number
   ceoApprovalRequired: boolean
+  financeApprovalRequired: boolean
+  rejectionReason?: string
+  rejectedBy?: string
+  rejectedAt?: Date
+  rejectedAtStage?: string
   generatedBy?: string
   generatedAt?: Date
   verifiedBy?: string
@@ -155,6 +160,11 @@ const PayrollSchema = new Schema<IPayroll>(
     totalGross:    { type: Number, default: 0 },
     totalNet:      { type: Number, default: 0 },
     ceoApprovalRequired: { type: Boolean, default: false },
+    financeApprovalRequired: { type: Boolean, default: false },   
+    rejectionReason: String,
+    rejectedBy: String,
+    rejectedAt: Date,
+    rejectedAtStage: String,
     generatedBy:   String,
     generatedAt:   Date,
     verifiedBy:    String,
