@@ -131,14 +131,29 @@ export const calculatePayrollPreview = async (req: AuthRequest, res: Response) =
   }
 }
 
-function recalcTotals(payroll: InstanceType<typeof Payroll>, settings: Awaited<ReturnType<typeof getOrCreatePayrollSettings>>) {
-  payroll.totalGross = payroll.employees.reduce((s, e) => s + e.grossPay, 0)
-  payroll.totalNet = payroll.employees.reduce((s, e) => s + e.netPay, 0)
-  payroll.ceoApprovalRequired = payroll.totalNet > (settings.ceoApprovalThresholdTotalNet || 0)
-  payroll.financeApprovalRequired = payroll.employees.length > 10   // ← NEW LINE
+function recalcTotals(
+  payroll: InstanceType<typeof Payroll>,
+  settings: Awaited<ReturnType<typeof getOrCreatePayrollSettings>>
+) {
+  payroll.totalGross = payroll.employees.reduce(
+    (s, e) => s + e.grossPay,
+    0
+  )
+
+  payroll.totalNet = payroll.employees.reduce(
+    (s, e) => s + e.netPay,
+    0
+  )
+
+  // CEO approval is mandatory for every payroll run
+  payroll.ceoApprovalRequired = true
+
+  // Finance approval is required only when payroll has more than 10 employees
+  payroll.financeApprovalRequired = payroll.employees.length > 10
 }
 
 export const generatePayroll = async (req: AuthRequest, res: Response) => {
+  let regenerationPayroll: InstanceType<typeof Payroll> | null = null
   try {
     const userRole = req.user?.role || ""
     if (!canProcessPayroll(userRole))
@@ -200,29 +215,73 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
 
     let existing: InstanceType<typeof Payroll> | null = null
     if (runKind === "off_cycle") {
-      existing = await Payroll.findOne({ month, year, runKind: "off_cycle", offCycleLabel })
-      if (existing)
-        return res.status(400).json({ success: false, error: "Off-cycle payroll with this label already exists" })
+      existing = await Payroll.findOne({
+        month,
+        year,
+        runKind: "off_cycle",
+        offCycleLabel,
+      })
+
+      if (existing) {
+        return res.status(400).json({
+          success: false,
+          error: "Off-cycle payroll with this label already exists",
+        })
+      }
     } else {
       existing = await Payroll.findOne({
         month,
         year,
-        $or: [{ runKind: "regular" }, { runKind: { $exists: false } }],
+        $or: [
+          { runKind: "regular" },
+          { runKind: { $exists: false } },
+        ],
       })
     }
 
     if (existing && replaceExisting) {
-      if (existing.status !== "Generated")
+      if (existing.status !== "Generated") {
         return res.status(400).json({
           success: false,
           error: "replaceExisting only allowed when status is Generated",
         })
-      existing.employees = existing.employees.filter(e => !employeeIds.includes(e.employeeId))
+      }
+
+      const lockedPayroll = await Payroll.findOneAndUpdate(
+        {
+          _id: existing._id,
+          status: "Generated",
+          regenerationInProgress: { $ne: true },
+        },
+        {
+          $set: {
+            regenerationInProgress: true,
+          },
+        },
+        {
+          new: true,
+        }
+      )
+
+      if (!lockedPayroll) {
+        return res.status(409).json({
+          success: false,
+          error: "Payroll regeneration is already in progress",
+        })
+      }
+
+      existing = lockedPayroll
+      existing.employees = existing.employees.filter(
+        e => !employeeIds.includes(e.employeeId)
+      )
+
       existing.rejectionReason = undefined
       existing.rejectedBy = undefined
       existing.rejectedAt = undefined
       existing.rejectedAtStage = undefined
+
       await existing.save()
+      regenerationPayroll = existing
     } else if (existing && !replaceExisting) {
       if (existing.status !== "Generated")
         return res.status(400).json({
@@ -265,12 +324,18 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    if (!employeesPayroll.length)
+    if (!employeesPayroll.length) {
+      if (regenerationPayroll) {
+        regenerationPayroll.regenerationInProgress = false
+        await regenerationPayroll.save()
+      }
+
       return res.status(400).json({
         success: false,
         error: "No eligible employees processed",
         skippedDetails,
       })
+    }
 
     const actor = req.user?.email || req.user?.id || "system"
     const now = new Date()
@@ -278,7 +343,7 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
     let payroll: InstanceType<typeof Payroll>
     if (existing) {
       // Employees selected for regeneration were already removed above.
-      // Simply append the recalculated records.
+      // Append the newly calculated payroll records.
       existing.employees.push(...employeesPayroll)
 
       existing.status = "Generated"
@@ -292,6 +357,7 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
 
       existing.generatedBy = actor
       existing.generatedAt = now
+      existing.regenerationInProgress = false
 
       payroll = await existing.save()
     } else {
@@ -331,7 +397,15 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
       skippedDetails,
     })
   } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message })
+    if (regenerationPayroll) {
+      regenerationPayroll.regenerationInProgress = false
+      await regenerationPayroll.save()
+    }
+
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    })
   }
 }
 
@@ -573,17 +647,42 @@ export const patchPayrollWorkflow = async (req: AuthRequest, res: Response) => {
       // NEW:
       case "hr_approve": {
         if (!isHRManager(role) && !isAdmin(role))
-          return res.status(403).json({ success: false, error: "HR Manager or Admin only" })
-        if (payroll.financeApprovalRequired && payroll.status !== "Verified")
-          return res.status(400).json({ success: false, error: "Payroll must be Verified by Finance Manager first (run has more than 10 employees)" })
-        if (!payroll.financeApprovalRequired && !["Generated", "Verified"].includes(payroll.status))
-          return res.status(400).json({ success: false, error: "Invalid state for HR approval" })
+          return res.status(403).json({
+            success: false,
+            error: "HR Manager or Admin only"
+          })
+
+        if (
+          payroll.financeApprovalRequired &&
+          payroll.status !== "Verified"
+        )
+          return res.status(400).json({
+            success: false,
+            error:
+              "Payroll must be Verified by Finance Manager first (run has more than 10 employees)"
+          })
+
+        if (
+          !payroll.financeApprovalRequired &&
+          !["Generated", "Verified"].includes(payroll.status)
+        )
+          return res.status(400).json({
+            success: false,
+            error: "Invalid state for HR approval"
+          })
+
         for (const line of payroll.employees) {
-          await applyAdvanceTicketBalances(line.advanceAllocations || [])
+          await applyAdvanceTicketBalances(
+            line.advanceAllocations || []
+          )
         }
+
         payroll.hrApprovedBy = req.user?.email
         payroll.hrApprovedAt = new Date()
-        payroll.status = payroll.ceoApprovalRequired ? "HR_Approved" : "CEO_Approved"
+
+        // CEO approval is mandatory for every payroll run
+        payroll.status = "HR_Approved"
+
         break
       }
       case "ceo_approve": {

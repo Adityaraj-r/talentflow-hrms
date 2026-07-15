@@ -85,57 +85,58 @@ export interface IPayroll extends Document {
   paymentMethod?: string
   paymentStatus?: "pending" | "processing" | "completed" | "failed"
   bankExportGeneratedAt?: Date
+  regenerationInProgress?: boolean
 }
 
 const AdvanceAllocationSchema = new Schema<IAdvanceAllocation>(
   {
     ticketId: { type: String, required: true },
-    amount:   { type: Number, required: true },
+    amount: { type: Number, required: true },
   },
   { _id: false }
 )
 
 const EarningsSnapshotSchema = new Schema<IPayrollEarningsSnapshot>(
   {
-    basic:             { type: Number, default: 0 },
-    hra:               { type: Number, default: 0 },
-    allowances:        { type: Number, default: 0 },
-    bonus:             { type: Number, default: 0 },
-    bonusReason:       { type: String, default: "" },
-    overtime:          { type: Number, default: 0 },
-    overtimeAuto:      { type: Number, default: 0 },
-    reimbursement:     { type: Number, default: 0 },
-    performanceBonus:  { type: Number, default: 0 },
+    basic: { type: Number, default: 0 },
+    hra: { type: Number, default: 0 },
+    allowances: { type: Number, default: 0 },
+    bonus: { type: Number, default: 0 },
+    bonusReason: { type: String, default: "" },
+    overtime: { type: Number, default: 0 },
+    overtimeAuto: { type: Number, default: 0 },
+    reimbursement: { type: Number, default: 0 },
+    performanceBonus: { type: Number, default: 0 },
   },
   { _id: false }
 )
 
 const DeductionsSnapshotSchema = new Schema<IPayrollDeductionsSnapshot>(
   {
-    pf:           { type: Number, default: 0 },
-    esi:          { type: Number, default: 0 },
-    pt:           { type: Number, default: 0 },
-    tds:          { type: Number, default: 0 },
-    insurance:    { type: Number, default: 0 },
-    other:        { type: Number, default: 0 },
-    lopAmount:    { type: Number, default: 0 },
+    pf: { type: Number, default: 0 },
+    esi: { type: Number, default: 0 },
+    pt: { type: Number, default: 0 },
+    tds: { type: Number, default: 0 },
+    insurance: { type: Number, default: 0 },
+    other: { type: Number, default: 0 },
+    lopAmount: { type: Number, default: 0 },
     advanceTotal: { type: Number, default: 0 },
   },
   { _id: false }
 )
 
 const EmployeePayrollSchema = new Schema<IEmployeePayroll>({
-  employeeId:          { type: String, required: true },
-  earnings:            { type: EarningsSnapshotSchema, required: true },
-  deductions:          { type: DeductionsSnapshotSchema, required: true },
-  grossPay:            { type: Number, required: true },
-  totalDeductions:     { type: Number, required: true },
-  netPay:              { type: Number, required: true },
-  lopDays:             { type: Number, default: 0 },
-  prorationFactor:     { type: Number, default: 1 },
-  advanceAllocations:  { type: [AdvanceAllocationSchema], default: [] },
-  calculationVersion:  { type: String, default: "v2" },
-  computedAt:          { type: Date, default: () => new Date() },
+  employeeId: { type: String, required: true },
+  earnings: { type: EarningsSnapshotSchema, required: true },
+  deductions: { type: DeductionsSnapshotSchema, required: true },
+  grossPay: { type: Number, required: true },
+  totalDeductions: { type: Number, required: true },
+  netPay: { type: Number, required: true },
+  lopDays: { type: Number, default: 0 },
+  prorationFactor: { type: Number, default: 1 },
+  advanceAllocations: { type: [AdvanceAllocationSchema], default: [] },
+  calculationVersion: { type: String, default: "v2" },
+  computedAt: { type: Date, default: () => new Date() },
 })
 
 const STATUS_ENUM: PayrollRunStatus[] = [
@@ -151,36 +152,41 @@ const STATUS_ENUM: PayrollRunStatus[] = [
 
 const PayrollSchema = new Schema<IPayroll>(
   {
-    month:   { type: String, required: true },
-    year:    { type: Number, required: true },
+    month: { type: String, required: true },
+    year: { type: Number, required: true },
     runKind: { type: String, enum: ["regular", "off_cycle"], default: "regular" },
     offCycleLabel: String,
-    employees:     { type: [EmployeePayrollSchema], default: [] },
-    status:        { type: String, enum: STATUS_ENUM, default: "Generated" },
-    totalGross:    { type: Number, default: 0 },
-    totalNet:      { type: Number, default: 0 },
+    employees: { type: [EmployeePayrollSchema], default: [] },
+    status: { type: String, enum: STATUS_ENUM, default: "Generated" },
+    totalGross: { type: Number, default: 0 },
+    totalNet: { type: Number, default: 0 },
     ceoApprovalRequired: { type: Boolean, default: false },
-    financeApprovalRequired: { type: Boolean, default: false },   
+    financeApprovalRequired: { type: Boolean, default: false },
     rejectionReason: String,
     rejectedBy: String,
     rejectedAt: Date,
     rejectedAtStage: String,
-    generatedBy:   String,
-    generatedAt:   Date,
-    verifiedBy:    String,
-    verifiedAt:    Date,
-    hrApprovedBy:  String,
-    hrApprovedAt:  Date,
+    generatedBy: String,
+    generatedAt: Date,
+    verifiedBy: String,
+    verifiedAt: Date,
+    hrApprovedBy: String,
+    hrApprovedAt: Date,
     ceoApprovedBy: String,
     ceoApprovedAt: Date,
-    disbursedBy:   String,
-    disbursedAt:   Date,
-    lockedBy:      String,
-    lockedAt:      Date,
+    disbursedBy: String,
+    disbursedAt: Date,
+    lockedBy: String,
+    lockedAt: Date,
     paymentReference: String,
-    paymentMethod:    String,
-    paymentStatus:    { type: String, enum: ["pending", "processing", "completed", "failed"], default: "pending" },
+    paymentMethod: String,
+    paymentStatus: { type: String, enum: ["pending", "processing", "completed", "failed"], default: "pending" },
     bankExportGeneratedAt: Date,
+
+    regenerationInProgress: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 )

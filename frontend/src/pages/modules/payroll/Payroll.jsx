@@ -1063,6 +1063,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
   const [payRef, setPayRef] = useState("")
   const [confirmTok, setConfirmTok] = useState("")
   const [rejectReason, setRejectReason] = useState("")
+  const [isRegenerating, setIsRegenerating] = useState(false)
 
   const statusStyle = {
     Generated:
@@ -1100,18 +1101,30 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
     }
   }
   const handleRegenerate = async (rec) => {
+    if (isRegenerating) return
+
+    setIsRegenerating(true)
+
     try {
-      const employeeIds = rec.employees.map(emp => emp.employeeId)
+      const employeeIds = [
+        ...new Set(
+          rec.employees.map(emp => String(emp.employeeId))
+        )
+      ]
+
       await payrollService.generatePayroll({
         month: rec.month,
         year: rec.year,
         employeeIds,
         replaceExisting: true,
       })
+
       toast.success("Payroll regenerated")
       onRefresh?.()
     } catch (e) {
       toast.error(e?.error || e?.message || "Regenerate failed")
+    } finally {
+      setIsRegenerating(false)
     }
   }
   const exportBank = async (e) => {
@@ -1168,17 +1181,20 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
                   Rejected at {record.rejectedAtStage} by {record.rejectedBy}: "{record.rejectionReason}"
                 </p>
 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs h-6"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRegenerate(record);
-                  }}
-                >
-                  Regenerate
-                </Button>
+                {isPayrollOfficer(userRole) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs h-6"
+                    disabled={isRegenerating}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleRegenerate(record)
+                    }}
+                  >
+                    {isRegenerating ? "Regenerating..." : "Regenerate"}
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -1252,7 +1268,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
               )}
             {(isCEO(userRole) || isAdmin(userRole)) &&
               !record.rejectionReason &&
-              st === "HR_Approved" && record.ceoApprovalRequired && (
+              st === "HR_Approved" && (
                 <>
                   <Button size="sm" variant="outline" className="text-xs h-8" onClick={() => runWorkflow("ceo_approve")}>
                     CEO Approve
@@ -1270,7 +1286,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
                   </Button>
                 </>
               )}
-            {(isPayrollOfficer(userRole) || isFinanceManager(userRole) || isAdmin(userRole)) && st === "CEO_Approved" && (
+            {(isPayrollOfficer(userRole) || isAdmin(userRole)) && st === "CEO_Approved" && (
               <>
                 <input
                   className="h-8 w-28 px-2 text-xs border rounded"
@@ -1311,26 +1327,6 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
                   Bank CSV
                 </Button>
               )}
-            {st === "Generated" && isHRManager(userRole) && !record.financeApprovalRequired && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-xs h-8 text-purple-600"
-                onClick={() => onStatusUpdate(record._id, "HR Approved")}
-              >
-                Legacy approve
-              </Button>
-            )}
-            {(st === "HR Approved" || st === "HR_Approved") && isPayrollOfficer(userRole) && !["CEO_Approved", "Disbursed"].includes(st) && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-xs h-8 text-green-600"
-                onClick={() => onStatusUpdate(record._id, "Paid", { paymentReference: payRef })}
-              >
-                Legacy paid
-              </Button>
-            )}
           </div>
         </div>
       </div>
