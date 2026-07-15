@@ -1,4 +1,4 @@
-export const ROLES = {
+export const ROLES = {  /*comment*/
   SUPER_ADMIN: "SUPER_ADMIN",
   CEO: "CEO",
   COUNTRY_MANAGER: "COUNTRY_MANAGER",
@@ -140,7 +140,7 @@ export const PERMISSIONS = {
       indemnityCalculation: false,
     },
     appraisal: true,
-    disciplinaryActions: false,
+    disciplinaryActions: true,
     documentRequests: false,
   },
   [ROLES.INTERVIEWER]: {
@@ -266,7 +266,7 @@ export const PERMISSIONS = {
       indemnityCalculation: false,
     },
     appraisal: true,
-    disciplinaryActions: false,
+    disciplinaryActions: true,
     documentRequests: true,
   },
 };

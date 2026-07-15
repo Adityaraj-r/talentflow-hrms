@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"  /*comment*/
 import { Toaster } from "sonner"
 import { useAuth } from "./contexts/AuthContext"
 import { RoleProvider } from "./contexts/RoleContext"
@@ -102,8 +102,10 @@ import EmployeeAppraisal from "./pages/role/EMPLOYEE/Appraisal"
 
 // Role-Specific Disciplinary Actions Pages
 import HRManagerDisciplinaryActions from "./pages/role/HR_MANAGER/DisciplinaryActions"
+import HROfficerDisciplinaryActions from "./pages/role/HR_OFFICER/DisciplinaryActions"
 import DepartmentManagerDisciplinaryActions from "./pages/role/DEPARTMENT_MANAGER/DisciplinaryActions"
 import DirectManagerDisciplinaryActions from "./pages/role/DIRECT_MANAGER/DisciplinaryActions"
+import EmployeeDisciplinaryActions from "./pages/role/EMPLOYEE/DisciplinaryActions"
 
 // Role-Specific Document Requests Pages
 import DocumentRequestsHRManager from "./pages/role/HR_MANAGER/DocumentRequests"
@@ -711,6 +713,11 @@ function App() {
                 <DashboardLayout><HRManagerDisciplinaryActions /></DashboardLayout>
               </ProtectedRoute>
             } />
+            <Route path="/role/hr_officer/disciplinary-actions" element={
+              <ProtectedRoute allowedRoles={["HR_OFFICER"]}>
+                <DashboardLayout><HROfficerDisciplinaryActions /></DashboardLayout>
+              </ProtectedRoute>
+            } />
             <Route path="/role/department_manager/disciplinary-actions" element={
               <ProtectedRoute allowedRoles={["DEPARTMENT_MANAGER"]}>
                 <DashboardLayout><DepartmentManagerDisciplinaryActions /></DashboardLayout>
@@ -719,6 +726,11 @@ function App() {
             <Route path="/role/direct_manager/disciplinary-actions" element={
               <ProtectedRoute allowedRoles={["DIRECT_MANAGER"]}>
                 <DashboardLayout><DirectManagerDisciplinaryActions /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/role/employee/disciplinary-actions" element={
+              <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                <DashboardLayout><EmployeeDisciplinaryActions /></DashboardLayout>
               </ProtectedRoute>
             } />
 
