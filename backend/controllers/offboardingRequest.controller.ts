@@ -3,8 +3,6 @@ import mongoose from 'mongoose';
 import { AuthRequest } from '../middleware/auth.middleware';
 import OffboardingRequest from '../models/OffboardingRequest.model';
 import Employee from '../models/Employee.model';
-import User from '../models/User.model';
-import { sendTerminationEmail } from '../utils/sendEmail';
 
 const getEmployeeRecord = async (userEmail: string, userId: string) => {
     return await Employee.findOne({ $or: [{ email: userEmail }, { userId: userId }] });
@@ -12,13 +10,13 @@ const getEmployeeRecord = async (userEmail: string, userId: string) => {
 
 export const initiateOffboarding = async (req: AuthRequest, res: Response) => {
     try {
-        const allowedRoles = ['EMPLOYEE', 'DIRECT_MANAGER', 'HR_MANAGER'];
+        const allowedRoles = ['EMPLOYEE', 'DIRECT_MANAGER', 'HR_MANAGER', 'COUNTRY_MANAGER', 'CEO'];
         if (!req.user || !allowedRoles.includes(req.user.role)) {
             return res.status(403).json({ success: false, error: 'Unauthorized to initiate offboarding.' });
         }
 
-        let { employeeId, type, reason, proposedExitDate } = req.body;
-        let initialStatus = 'Pending Verification';
+        let { employeeId, type, reason, proposedExitDate, priority } = req.body;
+        let initialStatus = 'Pending Manager Approval';
         let actionRemarks = reason || 'Offboarding initiated';
         
         let targetEmployee; 
@@ -29,7 +27,17 @@ export const initiateOffboarding = async (req: AuthRequest, res: Response) => {
 
             employeeId = targetEmployee.employeeCode; 
             type = 'Resignation'; 
-            initialStatus = 'Pending Manager Approval'; 
+            
+            // Dynamic routing based on reporting hierarchy
+            const manager = await Employee.findOne({ employeeCode: targetEmployee.reportingManagerId });
+            if (manager && manager.role === 'CEO') {
+                initialStatus = 'Pending CEO Approval';
+            } else if (manager && manager.role === 'COUNTRY_MANAGER') {
+                initialStatus = 'Pending Country Manager Approval';
+            } else {
+                initialStatus = 'Pending Manager Approval'; 
+            }
+
             actionRemarks = 'Voluntary Resignation Submitted';
         } 
         else {
@@ -40,9 +48,22 @@ export const initiateOffboarding = async (req: AuthRequest, res: Response) => {
             targetEmployee = await Employee.findOne(query);
             if (!targetEmployee) return res.status(404).json({ success: false, error: 'Target employee not found.' });
 
-            initialStatus = req.user.role === 'DIRECT_MANAGER' ? 'Pending HR Approval' : 'Pending Country Manager Approval';
+            if (req.user.role === 'CEO') {
+                initialStatus = 'Approved'; // CEO can direct approve terminations
+            } else if (req.user.role === 'COUNTRY_MANAGER') {
+                initialStatus = 'Pending CEO Approval';
+            } else if (req.user.role === 'HR_MANAGER') {
+                initialStatus = 'Pending Country Manager Approval';
+            } else {
+                initialStatus = 'Pending HR Approval';
+            }
             actionRemarks = `Involuntary ${type} Initiated by ${req.user.role.replace('_', ' ')}`;
         }
+
+        const proposedDate = new Date(proposedExitDate);
+        const today = new Date();
+        const diffTime = Math.abs(proposedDate.getTime() - today.getTime());
+        const totalDaysRequired = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         const offboardingData = new OffboardingRequest({
             employeeId: targetEmployee.employeeCode || targetEmployee._id.toString(),
@@ -51,13 +72,18 @@ export const initiateOffboarding = async (req: AuthRequest, res: Response) => {
             designation: targetEmployee.designation || 'N/A',
             type,
             reason,
-            proposedExitDate,
+            priority: priority || 'Normal',
+            noticePeriod: {
+                proposedExitDate: proposedDate,
+                totalDaysRequired
+            },
             initiatedBy: req.user.id,
             status: initialStatus,
             auditLog: [{
                 action: 'Initiated',
                 by: req.user.id,
-                remarks: actionRemarks
+                remarks: actionRemarks,
+                timestamp: new Date()
             }]
         });
 
@@ -65,12 +91,50 @@ export const initiateOffboarding = async (req: AuthRequest, res: Response) => {
 
         if (type === 'Resignation') {
             await Employee.findByIdAndUpdate(targetEmployee._id, { status: initialStatus });
+        } else if (initialStatus === 'Approved') {
+            await Employee.findByIdAndUpdate(targetEmployee._id, { status: 'On Notice Period', exitDate: proposedDate, exitReason: reason });
         }
 
         res.status(201).json({ success: true, data: savedRequest });
     } catch (error: any) {
         console.error("Initiate Offboarding Error:", error); 
         res.status(400).json({ success: false, error: error.message });
+    }
+};
+
+export const withdrawOffboardingRequest = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const request = await OffboardingRequest.findById(id);
+        
+        if (!request) return res.status(404).json({ success: false, error: "Request not found." });
+        
+        if (!request.status.includes('Pending')) {
+            return res.status(400).json({ success: false, error: "Cannot withdraw request. It is no longer pending." });
+        }
+
+        if (request.initiatedBy.toString() !== req.user!.id.toString()) {
+            return res.status(403).json({ success: false, error: "Only the initiator can withdraw this request." });
+        }
+
+        // Verify owner for status reset
+        const targetEmployee = await Employee.findOne({ $or: [{ employeeCode: request.employeeId }, { _id: request.employeeId }] });
+        if (!targetEmployee) return res.status(404).json({ success: false, error: "Employee not found." });
+
+        request.status = 'Withdrawn';
+        request.auditLog.push({
+            action: 'Withdrawn',
+            by: req.user!.id,
+            remarks: 'Employee withdrew the resignation request.',
+            timestamp: new Date()
+        });
+
+        await request.save();
+        await Employee.findByIdAndUpdate(targetEmployee._id, { status: 'Active' });
+
+        res.status(200).json({ success: true, data: request });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
     }
 };
 
@@ -134,57 +198,70 @@ export const updateOffboardingStatus = async (req: AuthRequest, res: Response) =
 
         const role = req.user.role;
         let isAuthorizedTransition = false;
+        let approvalField = '';
 
-        if (role === 'DIRECT_MANAGER' && request.status === 'Pending Manager Approval' && status === 'Pending HR Approval') isAuthorizedTransition = true;
-        if (role === 'HR_MANAGER' && request.status === 'Pending HR Approval' && status === 'Pending Country Manager Approval') isAuthorizedTransition = true;
-        if (role === 'COUNTRY_MANAGER' && request.status === 'Pending Country Manager Approval' && status === 'Pending CEO Approval') isAuthorizedTransition = true;
-        if (role === 'CEO' && request.status === 'Pending CEO Approval' && ['Approved', 'Rejected'].includes(status)) isAuthorizedTransition = true;
+        if (role === 'DIRECT_MANAGER' && request.status === 'Pending Manager Approval' && status === 'Pending HR Approval') { isAuthorizedTransition = true; approvalField = 'manager'; }
+        if (role === 'HR_MANAGER' && request.status === 'Pending HR Approval' && status === 'Pending Country Manager Approval') { isAuthorizedTransition = true; approvalField = 'hr'; }
+        if (role === 'COUNTRY_MANAGER' && request.status === 'Pending Country Manager Approval' && status === 'Pending CEO Approval') { isAuthorizedTransition = true; approvalField = 'countryManager'; }
+        if (role === 'CEO' && request.status === 'Pending CEO Approval' && ['Approved', 'Rejected'].includes(status)) { isAuthorizedTransition = true; approvalField = 'ceo'; }
+        
+        if (['Rejected'].includes(status)) {
+            isAuthorizedTransition = true; // Any allowed role can reject at their stage
+            if (role === 'DIRECT_MANAGER') approvalField = 'manager';
+            if (role === 'HR_MANAGER') approvalField = 'hr';
+            if (role === 'COUNTRY_MANAGER') approvalField = 'countryManager';
+            if (role === 'CEO') approvalField = 'ceo';
+        }
 
-        if (!isAuthorizedTransition && !['Rejected'].includes(status)) {
+        if (!isAuthorizedTransition) {
              return res.status(403).json({ success: false, error: `Role ${role} cannot change status from ${request.status} to ${status}.` });
         }
 
         const formattedAction = `${status} by ${role.replace('_', ' ')}`;
         const finalRemarks = adminRemarks ? `${formattedAction} | Remarks: ${adminRemarks}` : formattedAction;
 
-        const updatedRequest = await OffboardingRequest.findByIdAndUpdate(
-            id,
-            {
-                status,
-                adminRemarks: finalRemarks,
-                actionedBy: req.user.id,
-                actionedAt: new Date(),
-                $push: {
-                    auditLog: { action: status, by: req.user.id, remarks: finalRemarks }
-                }
-            },
-            { new: true }
-        );
-
-       const employeeQuery = mongoose.Types.ObjectId.isValid(request.employeeId) 
-            ? { _id: request.employeeId } 
-            : { employeeCode: request.employeeId };
-
-       if (status === 'Approved' && role === 'CEO') {
-            await Employee.findOneAndUpdate(
-                employeeQuery,
-                { status: 'On Notice Period', exitDate: request.proposedExitDate, exitReason: request.reason }
-            );
-            
-            // Note: We do NOT immediately disable the user account or send a termination email here.
-            // The daily cron job will handle transitioning 'On Notice Period' to 'Terminated/Exited' 
-            // and revoking access on their Last Working Day (exitDate).
-        } else if (status === 'Rejected') {
-            await Employee.findOneAndUpdate(
-                employeeQuery,
-                { status: 'Active' }
-            );
-        } else {
-            await Employee.findOneAndUpdate(
-                employeeQuery,
-                { status }
-            );
+        request.status = status;
+        request.actionedBy = req.user.id;
+        request.actionedAt = new Date();
+        
+        if (approvalField) {
+            (request.approvals as any)[approvalField] = {
+                status: status === 'Rejected' ? 'Rejected' : 'Approved',
+                by: req.user.id,
+                date: new Date(),
+                remarks: adminRemarks || ''
+            };
         }
+
+        request.auditLog.push({ action: status, by: req.user.id, remarks: finalRemarks, timestamp: new Date() });
+
+        if (status === 'Approved') {
+            request.status = 'On Notice Period'; // Convert Approved to On Notice
+            request.noticePeriod.approvedExitDate = request.noticePeriod.proposedExitDate;
+        }
+
+        const updatedRequest = await request.save();
+
+        const employeeQuery = mongoose.Types.ObjectId.isValid(request.employeeId) 
+             ? { _id: request.employeeId } 
+             : { employeeCode: request.employeeId };
+
+        if (status === 'Approved') {
+             await Employee.findOneAndUpdate(
+                 employeeQuery,
+                 { status: 'On Notice Period', exitDate: request.noticePeriod.approvedExitDate, exitReason: request.reason }
+             );
+         } else if (status === 'Rejected') {
+             await Employee.findOneAndUpdate(
+                 employeeQuery,
+                 { status: 'Active' }
+             );
+         } else {
+             await Employee.findOneAndUpdate(
+                 employeeQuery,
+                 { status }
+             );
+         }
 
         res.status(200).json({ success: true, data: updatedRequest });
     } catch (error: any) {
@@ -201,7 +278,7 @@ export const getEligibleEmployees = async (req: AuthRequest, res: Response) => {
             const managerRecord = await Employee.findOne({ $or: [{ email: req.user?.email }, { userId: req.user?.id }] });
             if (!managerRecord) return res.status(200).json({ success: true, data: [] });
             query = { reportingManagerId: managerRecord.employeeCode, status: { $ne: 'Terminated' } };
-        } else if (role === 'HR_MANAGER') {
+        } else if (role === 'HR_MANAGER' || role === 'CEO' || role === 'COUNTRY_MANAGER') {
             query = { role: { $ne: 'CEO' }, status: { $ne: 'Terminated' } };
         } else {
             return res.status(403).json({ success: false, error: 'Unauthorized role for fetching offboarding list.' });
@@ -212,6 +289,40 @@ export const getEligibleEmployees = async (req: AuthRequest, res: Response) => {
             .sort({ firstName: 1 });
         
         res.status(200).json({ success: true, data: employees });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+export const updateClearance = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { clearanceType, status, assetUpdates, ktUpdates } = req.body;
+
+        const request = await OffboardingRequest.findById(id);
+        if (!request) return res.status(404).json({ success: false, error: "Offboarding request not found." });
+
+        if (clearanceType && ['it', 'finance', 'admin', 'manager'].includes(clearanceType)) {
+            (request.clearance as any)[clearanceType] = {
+                status,
+                by: req.user!.id,
+                date: new Date()
+            };
+            request.auditLog.push({ action: `${clearanceType.toUpperCase()} Clearance: ${status}`, by: req.user!.id, timestamp: new Date() });
+        }
+
+        if (assetUpdates) {
+            request.assets = assetUpdates;
+            request.auditLog.push({ action: 'Assets Updated', by: req.user!.id, timestamp: new Date() });
+        }
+
+        if (ktUpdates) {
+            request.knowledgeTransfer = { ...request.knowledgeTransfer, ...ktUpdates };
+            request.auditLog.push({ action: `KT Updated: ${ktUpdates.status}`, by: req.user!.id, timestamp: new Date() });
+        }
+
+        await request.save();
+        res.status(200).json({ success: true, data: request });
     } catch (error: any) {
         res.status(500).json({ success: false, error: error.message });
     }
