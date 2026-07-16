@@ -96,6 +96,26 @@ const HRSlipView = () => {
         status: inner.payroll.status,
       })
       setPayrollId(record._id)
+
+      // Trigger download immediately
+      toast.info("Downloading PDF...")
+      try {
+        const { blob, filename } = await payrollService.downloadPayslipWithFilename(
+          record._id,
+          selectedUser
+        )
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.setAttribute("download", filename)
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url)
+        toast.success("Payslip downloaded")
+      } catch (err) {
+        toast.error("Failed to download PDF")
+      }
     } catch {
       toast.error("Failed to fetch salary slip")
     } finally {
