@@ -671,11 +671,6 @@ export const patchPayrollWorkflow = async (req: AuthRequest, res: Response) => {
             error: "Invalid state for HR approval"
           })
 
-        for (const line of payroll.employees) {
-          await applyAdvanceTicketBalances(
-            line.advanceAllocations || []
-          )
-        }
 
         payroll.hrApprovedBy = req.user?.email
         payroll.hrApprovedAt = new Date()
@@ -701,23 +696,42 @@ export const patchPayrollWorkflow = async (req: AuthRequest, res: Response) => {
             success: false,
             error: "Finance Manager, Payroll Officer, or Admin only",
           })
+
         if (payroll.status !== "CEO_Approved")
-          return res.status(400).json({ success: false, error: "Must be CEO_Approved before disbursement" })
+          return res.status(400).json({
+            success: false,
+            error: "Must be CEO_Approved before disbursement"
+          })
+
         const secret = process.env.PAYROLL_DISBURSE_SECRET
+
         if (secret) {
           const token = req.headers["x-payroll-disburse-confirmation"] as string
+
           if (!token || token !== secret)
             return res.status(403).json({
               success: false,
               error: "Disbursement confirmation required (header x-payroll-disburse-confirmation)",
             })
         }
+
+        if (!payroll.advanceBalancesApplied) {
+          for (const employee of payroll.employees) {
+            if (employee.advanceAllocations?.length) {
+              await applyAdvanceTicketBalances(employee.advanceAllocations)
+            }
+          }
+
+          payroll.advanceBalancesApplied = true
+        }
+
         payroll.status = "Disbursed"
         payroll.disbursedBy = req.user?.email
         payroll.disbursedAt = new Date()
         payroll.paymentReference = paymentReference
         payroll.paymentMethod = paymentMethod || "bank_transfer"
         payroll.paymentStatus = "completed"
+
         break
       }
       case "lock": {

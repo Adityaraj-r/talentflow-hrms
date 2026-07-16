@@ -86,6 +86,7 @@ export interface IPayroll extends Document {
   paymentStatus?: "pending" | "processing" | "completed" | "failed"
   bankExportGeneratedAt?: Date
   regenerationInProgress?: boolean
+  advanceBalancesApplied?: boolean
 }
 
 const AdvanceAllocationSchema = new Schema<IAdvanceAllocation>(
@@ -182,7 +183,10 @@ const PayrollSchema = new Schema<IPayroll>(
     paymentMethod: String,
     paymentStatus: { type: String, enum: ["pending", "processing", "completed", "failed"], default: "pending" },
     bankExportGeneratedAt: Date,
-
+    advanceBalancesApplied: {
+      type: Boolean,
+      default: false,
+    },
     regenerationInProgress: {
       type: Boolean,
       default: false,

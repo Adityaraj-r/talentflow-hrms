@@ -80,8 +80,6 @@ const PayrollProcessing = () => {
   const [compliance, setCompliance] = useState(null)
   const [complianceLoading, setComplianceLoading] = useState(false)
   const [selectedPending, setSelectedPending] = useState(new Set())
-  const [showOffCycle, setShowOffCycle] = useState(false)
-
   const employeesLoadedRef = useRef(false)
   const payrollTabInitRef = useRef(false)
 
