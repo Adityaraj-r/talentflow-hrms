@@ -5,6 +5,7 @@ import {
     updateOffboardingStatus,
     getEligibleEmployees,
     withdrawOffboardingRequest,
+    requestWithdrawal,
     updateClearance
 } from '../controllers/offboardingRequest.controller';
 import { protect, authorize } from '../middleware/auth.middleware';
@@ -24,5 +25,7 @@ router.patch('/update/:id', authorize('ADMIN', 'CEO', 'COUNTRY_MANAGER', 'HR_MAN
 router.patch('/clearance/:id', authorize('ADMIN', 'HR_MANAGER', 'DIRECT_MANAGER'), updateClearance);
 
 router.patch('/withdraw/:id', authorize('EMPLOYEE'), withdrawOffboardingRequest);
+
+router.patch('/request-withdrawal/:id', authorize('EMPLOYEE'), requestWithdrawal);
 
 export default router;

@@ -5,6 +5,7 @@ export enum NotificationType {
   APPRAISAL_CYCLE_ACTIVE = 'appraisal_cycle_active',
   APPRAISAL_RESULT_PUBLISHED = 'appraisal_result_published',
   TEAM_APPRAISALS_COMPLETE = 'team_appraisals_complete',
+  RESIGNATION_WITHDRAWN = 'resignation_withdrawn',
 }
 
 export interface INotification extends Document {
