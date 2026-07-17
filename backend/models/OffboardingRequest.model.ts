@@ -10,7 +10,10 @@ export interface IOffboardingRequest extends Document {
     priority: 'Normal' | 'High';
     
     // Detailed Statuses
-    status: 'Pending Approval' | 'Pending Manager Approval' | 'Pending HR Approval' | 'Pending Country Manager Approval' | 'Pending CEO Approval' | 'On Notice Period' | 'Exit Clearance' | 'Exited' | 'Terminated' | 'Rejected' | 'Withdrawn' | 'Approved';
+    status: 'Pending Approval' | 'Pending Manager Approval' | 'Pending HR Approval' | 'Pending Country Manager Approval' | 'Pending CEO Approval' | 'On Notice Period' | 'Exit Clearance' | 'Exit Clearance Started' | 'Exited' | 'Terminated' | 'Rejected' | 'Resignation Withdrawn' | 'Withdrawal Pending' | 'Withdrawal Rejected' | 'Approved' | 'High Priority Exit Blocked';
+    previousStatus?: string;
+    withdrawalReason?: string;
+    withdrawalRequestedAt?: Date;
     
     // Notice Period Tracking
     noticePeriod: {
@@ -85,9 +88,16 @@ export interface IOffboardingRequest extends Document {
 
     initiatedBy: string;
     actionedBy?: string;
+    actionedByName?: string;
     actionedAt?: Date;
 
+    rejectionReason?: string;
+    rejectedBy?: string;
+    rejectedByName?: string;
+    rejectedAt?: Date;
+
     auditLog: Array<{ action: string, by: string, remarks?: string, timestamp: Date }>;
+    withdrawalAuditLog: Array<{ action: string, by: string, remarks?: string, timestamp: Date }>;
 }
 
 const OffboardingRequestSchema: Schema = new Schema({
@@ -114,14 +124,21 @@ const OffboardingRequestSchema: Schema = new Schema({
             'Approved', 
             'On Notice Period',
             'Exit Clearance',
+            'Exit Clearance Started',
             'Exited',
             'Terminated',
             'Rejected',
-            'Withdrawn'
+            'Resignation Withdrawn',
+            'Withdrawal Pending',
+            'Withdrawal Rejected',
+            'High Priority Exit Blocked'
         ], 
         default: 'Pending Manager Approval',
         index: true
     },
+    previousStatus: String,
+    withdrawalReason: String,
+    withdrawalRequestedAt: Date,
 
     noticePeriod: {
         proposedExitDate: { type: Date, required: true },
@@ -209,26 +226,34 @@ const OffboardingRequestSchema: Schema = new Schema({
     },
 
     documents: {
-        resignationLetterPath: { type: String },
-        relievingLetterPath: { type: String },
-        experienceLetterPath: { type: String },
-        nocPath: { type: String }
+        resignationLetterPath: String,
+        relievingLetterPath: String,
+        experienceLetterPath: String,
+        nocPath: String
     },
-
     exitInterview: {
         status: { type: String, enum: ['Pending', 'Scheduled', 'Completed'], default: 'Pending' },
-        feedbackScore: { type: Number, min: 1, max: 5 },
-        notes: { type: String }
+        feedbackScore: Number,
+        notes: String
     },
-
     initiatedBy: { type: String, required: true },
-    actionedBy: { type: String },
-    actionedAt: { type: Date },
-
+    actionedBy: String,
+    actionedByName: String,
+    actionedAt: Date,
+    rejectionReason: String,
+    rejectedBy: String,
+    rejectedByName: String,
+    rejectedAt: Date,
     auditLog: [{
-        action: { type: String, required: true },
-        by: { type: String, required: true },
-        remarks: { type: String },
+        action: String,
+        by: String,
+        remarks: String,
+        timestamp: { type: Date, default: Date.now }
+    }],
+    withdrawalAuditLog: [{
+        action: String,
+        by: String,
+        remarks: String,
         timestamp: { type: Date, default: Date.now }
     }]
 }, { timestamps: true });

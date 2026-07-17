@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { AlertTriangle, Loader2, Calendar, FileText, ArrowRight, CheckCircle2 } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { AlertTriangle, Loader2, Calendar, FileText, ArrowRight, CheckCircle2, Undo2 } from "lucide-react"
 import { toast } from "sonner"
 import apiClient from "@/services/apiClient"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
@@ -13,6 +14,8 @@ import { cn } from "@/lib/utils"
 const EmployeeResignation = () => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false)
+  const [withdrawalReason, setWithdrawalReason] = useState("")
   
   const [formData, setFormData] = useState({
     proposedExitDate: "",
@@ -24,7 +27,31 @@ const EmployeeResignation = () => {
     queryFn: () => apiClient.get('/offboarding/all'),
   })
 
-  const existingRequest = response?.data?.[0]
+  const existingRequest = response?.data?.find(req => 
+    !['Resignation Withdrawn', 'Withdrawn', 'Rejected'].includes(req.status)
+  )
+
+  const lastWithdrawnRequest = response?.data?.find(req => 
+    ['Resignation Withdrawn', 'Withdrawn', 'Rejected'].includes(req.status)
+  )
+
+  const getExitDate = (req) => {
+    if (!req) return null;
+    return req.noticePeriod?.approvedExitDate || req.noticePeriod?.proposedExitDate || req.proposedExitDate;
+  }
+
+  const getDaysUntilLWD = () => {
+    const exitDate = getExitDate(existingRequest);
+    if (!exitDate) return 0;
+    const diffTime = new Date(exitDate).getTime() - new Date().getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+  const daysUntilLWD = getDaysUntilLWD();
+  
+  const allowedWithdrawalStatuses = ['On Notice Period'];
+  const canRequestWithdrawal = allowedWithdrawalStatuses.includes(existingRequest?.status) && daysUntilLWD > 7 && !existingRequest?.withdrawalRequestedAt;
+  const isWithdrawalClosed = allowedWithdrawalStatuses.includes(existingRequest?.status) && daysUntilLWD <= 7;
+
   const submitMutation = useMutation({
     mutationFn: (payload) => apiClient.post("/offboarding/initiate", payload),
     onSuccess: () => {
@@ -33,6 +60,25 @@ const EmployeeResignation = () => {
     },
     onError: (error) => {
       toast.error(error?.response?.data?.error || error?.message || "Failed to submit request.")
+    }
+  })
+
+  const getDisplayStatus = (status) => {
+    if (['Pending HR Approval', 'Pending Country Manager Approval', 'Pending CEO Approval'].includes(status)) {
+        return "Approvals In Progress";
+    }
+    return status;
+  }
+
+  const requestWithdrawalMutation = useMutation({
+    mutationFn: () => apiClient.patch(`/offboarding/request-withdrawal/${existingRequest?._id}`, { reason: withdrawalReason }),
+    onSuccess: () => {
+      toast.success("Withdrawal request submitted successfully.")
+      setShowWithdrawModal(false)
+      queryClient.invalidateQueries(['myOffboarding'])
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.error || error?.message || "Failed to request withdrawal.")
     }
   })
 
@@ -84,8 +130,8 @@ const EmployeeResignation = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4 p-4 bg-white dark:bg-slate-900 rounded-md border">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Proposed Last Working Day</p>
-                <p className="font-medium">{new Date(existingRequest.proposedExitDate).toLocaleDateString()}</p>
+                <p className="text-xs text-muted-foreground mb-1">Last Working Day</p>
+                <p className="font-medium">{getExitDate(existingRequest) ? new Date(getExitDate(existingRequest)).toLocaleDateString() : 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Current Status</p>
@@ -95,7 +141,7 @@ const EmployeeResignation = () => {
                   existingRequest.status === "Rejected" ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400" :
                   "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400"
                 )}>
-                  {existingRequest.status}
+                  {getDisplayStatus(existingRequest.status)}
                 </span>
               </div>
             </div>
@@ -105,6 +151,54 @@ const EmployeeResignation = () => {
                 {existingRequest.reason}
               </div>
             </div>
+            {existingRequest.status === 'Withdrawal Pending' && (
+              <div className="bg-orange-50 border border-orange-200 text-orange-700 p-4 rounded-md text-sm mt-4">
+                 <strong>Withdrawal Request Submitted</strong>
+                 <p className="mt-1">Your resignation withdrawal request has been submitted successfully and is awaiting HR approval.</p>
+              </div>
+            )}
+            
+            {existingRequest.status === 'On Notice Period' && existingRequest.withdrawalRequestedAt && (
+              <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md text-sm mt-4">
+                 <strong>Withdrawal Request Rejected</strong>
+                 <p className="mt-1">Your resignation withdrawal request has been rejected by HR. Your resignation will continue as per the approved notice period.</p>
+                 <div className="mt-3 pt-3 border-t border-red-200 space-y-1">
+                    <p className="font-medium">HR Rejection Reason:</p>
+                    <p className="mb-2 opacity-90 italic">
+                      {existingRequest.rejectionReason || 'HR did not provide a rejection reason.'}
+                    </p>
+                    <p className="text-xs opacity-80">
+                      <strong>Rejected By:</strong> {existingRequest.rejectedByName || existingRequest.actionedByName || 'HR Manager'}
+                    </p>
+                    {(existingRequest.rejectedAt || existingRequest.actionedAt) && (
+                      <p className="text-xs opacity-80">
+                        <strong>Rejected On:</strong> {new Date(existingRequest.rejectedAt || existingRequest.actionedAt).toLocaleString()}
+                      </p>
+                    )}
+                 </div>
+              </div>
+            )}
+            
+            {canRequestWithdrawal && (
+              <div className="flex flex-col items-end pt-4 border-t mt-4 space-y-2">
+                <p className="text-xs text-muted-foreground">You have {daysUntilLWD} days remaining to request a withdrawal.</p>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setShowWithdrawModal(true)}
+                >
+                  <Undo2 className="mr-2 h-4 w-4" />
+                  Withdraw Resignation
+                </Button>
+              </div>
+            )}
+
+            {isWithdrawalClosed && (
+              <div className="flex justify-end pt-4 border-t mt-4">
+                <span className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-md text-sm border font-medium flex items-center">
+                  <AlertTriangle className="mr-2 h-4 w-4" /> Withdrawal Closed (Exit Clearance in progress)
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -118,6 +212,21 @@ const EmployeeResignation = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
+            {!existingRequest && lastWithdrawnRequest && (
+              <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 p-4 rounded-md text-sm flex items-start gap-3 mb-6">
+                  <Undo2 className="h-5 w-5 text-slate-500 mt-0.5" />
+                  <div>
+                      <p className="font-semibold text-slate-900 dark:text-white">
+                        {lastWithdrawnRequest.status === 'Resignation Withdrawn' ? 'Withdrawal Approved' : `Previous Request Status: ${lastWithdrawnRequest.status}`}
+                      </p>
+                      <p className="mt-1">
+                        {lastWithdrawnRequest.status === 'Resignation Withdrawn' 
+                          ? 'Your resignation withdrawal request has been approved by HR. Your resignation has been cancelled and your employment continues.' 
+                          : 'Your previous resignation request was finalized or rejected. You may submit a new formal resignation notice below if needed.'}
+                      </p>
+                  </div>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-6">
               
               <div className="space-y-2">
@@ -166,6 +275,52 @@ const EmployeeResignation = () => {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={showWithdrawModal} onOpenChange={setShowWithdrawModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>
+              Request Resignation Withdrawal
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to request a withdrawal? This will be sent to HR for approval.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold flex items-center gap-2">
+                Reason for Withdrawal <span className="text-red-500">*</span>
+              </label>
+              <Textarea 
+                placeholder="Please state why you are withdrawing your resignation (min 5 characters)..." 
+                className="min-h-[100px] resize-none" 
+                value={withdrawalReason} 
+                onChange={e => setWithdrawalReason(e.target.value)} 
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setShowWithdrawModal(false)} disabled={requestWithdrawalMutation.isLoading}>
+              Cancel
+            </Button>
+            <Button 
+                variant="destructive" 
+                onClick={() => {
+                  if (withdrawalReason.trim().length < 5) {
+                    toast.error("Please provide a valid reason (min 5 characters).");
+                    return;
+                  }
+                  requestWithdrawalMutation.mutate();
+                }} 
+                disabled={requestWithdrawalMutation.isLoading || withdrawalReason.trim().length < 5}
+            >
+              {requestWithdrawalMutation.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Submit Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

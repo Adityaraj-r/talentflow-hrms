@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
+import { Textarea } from "@/components/ui/textarea"
 import { Check, X, Loader2, Search, UserMinus, Eye, FileText, CheckCircle2, Clock, Undo2 } from "lucide-react"
 import { toast } from "sonner"
 import apiClient from "@/services/apiClient"
@@ -25,6 +26,9 @@ const OffboardingRequests = () => {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [initiateModalOpen, setInitiateModalOpen] = useState(false)
+  const [rejectMode, setRejectMode] = useState(false)
+  const [rejectReason, setRejectReason] = useState("")
+  const [rejectError, setRejectError] = useState("")
 
   const userRole = user?.role?.toUpperCase() || ""
   const canInitiatePathB = ["HR_MANAGER", "DIRECT_MANAGER"].includes(userRole)
@@ -41,7 +45,7 @@ const OffboardingRequests = () => {
   }
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, status }) => apiClient.patch(`/offboarding/update/${id}`, { status }),
+    mutationFn: ({ id, status, adminRemarks }) => apiClient.patch(`/offboarding/update/${id}`, { status, adminRemarks }),
     onSuccess: (res, variables) => {
       toast.success(`Request moved to: ${variables.status}`)
       queryClient.invalidateQueries(['offboarding'])
@@ -72,7 +76,9 @@ const OffboardingRequests = () => {
     }
   })
 
-  const handleAction = (id, status) => updateMutation.mutate({ id, status })
+  const handleAction = (id, status, reason = "") => {
+    updateMutation.mutate({ id, status, adminRemarks: reason });
+  }
   const handleWithdraw = (id) => withdrawMutation.mutate(id)
 
   const getNextStatus = (currentStatus, role) => {
@@ -101,6 +107,9 @@ const OffboardingRequests = () => {
 
   const openDetailsModal = (req) => {
     setSelectedRequest(req)
+    setRejectMode(false)
+    setRejectReason("")
+    setRejectError("")
     setDetailsModalOpen(true)
   }
 
@@ -126,9 +135,12 @@ const OffboardingRequests = () => {
                 <SelectItem value="Pending HR Approval">Pending HR</SelectItem>
                 <SelectItem value="Pending CEO Approval">Pending CEO</SelectItem>
                 <SelectItem value="On Notice Period">On Notice Period</SelectItem>
-                <SelectItem value="Exit Clearance">Exit Clearance</SelectItem>
+                <SelectItem value="Exit Clearance Started">Exit Clearance Started</SelectItem>
+                <SelectItem value="High Priority Exit Blocked">High Priority Exit Blocked</SelectItem>
                 <SelectItem value="Exited">Exited</SelectItem>
-                <SelectItem value="Withdrawn">Withdrawn</SelectItem>
+                <SelectItem value="Resignation Withdrawn">Resignation Withdrawn</SelectItem>
+                <SelectItem value="Withdrawal Pending">Withdrawal Pending</SelectItem>
+                <SelectItem value="Withdrawal Rejected">Withdrawal Rejected</SelectItem>
               </SelectContent>
             </Select>
 
@@ -202,17 +214,24 @@ const OffboardingRequests = () => {
                         </td>
                         
                         <td className="px-4 py-3 text-center">
-                          <span className={cn(
-                            "px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border whitespace-nowrap inline-flex items-center gap-1",
-                            req.status === "Exited" ? "bg-green-50 text-green-700 border-green-200" :
-                            req.status === "Withdrawn" ? "bg-gray-50 text-gray-700 border-gray-200" :
-                            req.status === "Rejected" ? "bg-red-50 text-red-700 border-red-200" :
-                            req.status?.startsWith("Pending") ? "bg-blue-50 text-blue-700 border-blue-200" :
-                            "bg-yellow-50 text-yellow-700 border-yellow-200"
-                          )}>
-                            {req.status === 'Exit Clearance' ? <Clock className="w-3 h-3"/> : null}
-                            {req.status.replace(' Approval', '')}
-                          </span>
+                            <span className={cn(
+                              "px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border whitespace-nowrap inline-flex items-center gap-1",
+                              req.status === 'Withdrawal Pending' ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400" :
+                              req.status === "Exited" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400" :
+                              req.status.includes("High Priority") ? "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/50 dark:text-red-300" :
+                              req.status.includes("Withdrawn") ? "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300" :
+                              req.status.includes("Rejected") ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400" :
+                              req.status?.includes("Pending") ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400" :
+                              req.status?.includes("Exit Clearance") ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400" :
+                              "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400"
+                            )}>
+                              {req.status === 'Withdrawal Pending' ? 'Withdrawal Pending' : (
+                                <>
+                                  {req.status?.includes('Exit Clearance') ? <Clock className="w-3 h-3"/> : null}
+                                  {req.status.replace(' Approval', '')}
+                                </>
+                              )}
+                            </span>
                         </td>
                         
                         <td className="px-4 py-3">
@@ -306,19 +325,153 @@ const OffboardingRequests = () => {
                     
                     {/* Action Buttons for Managers */}
                     {getNextStatus(selectedRequest.status, userRole) && (
-                         <div className="flex gap-2 mt-4 pt-4 border-t">
-                            <Button
-                                className="bg-green-600 hover:bg-green-700"
-                                onClick={() => handleAction(selectedRequest._id, getNextStatus(selectedRequest.status, userRole))}
-                            >
-                                <CheckCircle2 className="w-4 h-4 mr-2" /> Approve Request
-                            </Button>
-                            <Button
-                                variant="destructive"
-                                onClick={() => handleAction(selectedRequest._id, 'Rejected')}
-                            >
-                                <X className="w-4 h-4 mr-2" /> Reject
-                            </Button>
+                         <div className="mt-4 pt-4 border-t transition-all duration-300 ease-in-out">
+                            {!rejectMode ? (
+                              <div className="flex gap-2">
+                                  <Button
+                                      className="bg-green-600 hover:bg-green-700"
+                                      onClick={() => handleAction(selectedRequest._id, getNextStatus(selectedRequest.status, userRole))}
+                                  >
+                                      <CheckCircle2 className="w-4 h-4 mr-2" /> Approve Request
+                                  </Button>
+                                  <Button
+                                      variant="destructive"
+                                      onClick={() => {
+                                        setRejectMode(true)
+                                        setRejectReason("")
+                                        setRejectError("")
+                                      }}
+                                  >
+                                      <X className="w-4 h-4 mr-2" /> Reject
+                                  </Button>
+                              </div>
+                            ) : (
+                              <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div>
+                                  <label className="text-sm font-semibold flex items-center gap-2 mb-1 text-red-600">
+                                    Reason for Rejection <span className="text-red-500">*</span>
+                                  </label>
+                                  <Textarea 
+                                    placeholder="Enter the reason for rejecting this request..." 
+                                    className={cn("min-h-[100px] resize-none", rejectError ? "border-red-500 focus-visible:ring-red-500" : "")}
+                                    value={rejectReason} 
+                                    onChange={e => {
+                                      setRejectReason(e.target.value)
+                                      if (e.target.value.trim().length >= 10) setRejectError("")
+                                    }} 
+                                  />
+                                  {rejectError && <p className="text-xs text-red-500 mt-1">{rejectError}</p>}
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                      variant="destructive"
+                                      onClick={() => {
+                                        if (rejectReason.trim().length < 10) {
+                                          setRejectError("Reason must be at least 10 characters.")
+                                          return;
+                                        }
+                                        if (rejectReason.trim().length > 500) {
+                                          setRejectError("Reason must not exceed 500 characters.")
+                                          return;
+                                        }
+                                        handleAction(selectedRequest._id, 'Rejected', rejectReason)
+                                      }}
+                                  >
+                                      <CheckCircle2 className="w-4 h-4 mr-2" /> Confirm Rejection
+                                  </Button>
+                                  <Button
+                                      variant="outline"
+                                      className="bg-gray-100 hover:bg-gray-200 text-gray-700"
+                                      onClick={() => setRejectMode(false)}
+                                  >
+                                      Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                        </div>
+                    )}
+                    
+                    {/* Action Buttons for HR Withdrawal Approval */}
+                    {userRole === 'HR_MANAGER' && selectedRequest.status === 'Withdrawal Pending' && (
+                         <div className="mt-4 pt-4 border-t transition-all duration-300 ease-in-out">
+                            <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-md">
+                                <h4 className="text-sm font-semibold text-orange-800 mb-2">Withdrawal Request Details</h4>
+                                <div className="space-y-2 text-sm">
+                                    <div>
+                                        <span className="font-medium text-orange-900">Reason:</span>
+                                        <p className="text-orange-800 mt-1 italic">{selectedRequest.withdrawalReason}</p>
+                                    </div>
+                                    <div>
+                                        <span className="font-medium text-orange-900">Requested On:</span>
+                                        <p className="text-orange-800">{new Date(selectedRequest.withdrawalRequestedAt).toLocaleString('en-GB')}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {!rejectMode ? (
+                              <div className="flex gap-2">
+                                  <Button
+                                      className="bg-green-600 hover:bg-green-700"
+                                      onClick={() => handleAction(selectedRequest._id, 'Resignation Withdrawn')}
+                                  >
+                                      <CheckCircle2 className="w-4 h-4 mr-2" /> Approve Withdrawal
+                                  </Button>
+                                  <Button
+                                      variant="destructive"
+                                      onClick={() => {
+                                        setRejectMode(true)
+                                        setRejectReason("")
+                                        setRejectError("")
+                                      }}
+                                  >
+                                      <X className="w-4 h-4 mr-2" /> Reject Withdrawal
+                                  </Button>
+                              </div>
+                            ) : (
+                              <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div>
+                                  <label className="text-sm font-semibold flex items-center gap-2 mb-1 text-red-600">
+                                    Reason for Rejection <span className="text-red-500">*</span>
+                                  </label>
+                                  <Textarea 
+                                    placeholder="Enter the reason for rejecting this withdrawal request..." 
+                                    className={cn("min-h-[100px] resize-none", rejectError ? "border-red-500 focus-visible:ring-red-500" : "")}
+                                    value={rejectReason} 
+                                    onChange={e => {
+                                      setRejectReason(e.target.value)
+                                      if (e.target.value.trim().length >= 10) setRejectError("")
+                                    }} 
+                                  />
+                                  {rejectError && <p className="text-xs text-red-500 mt-1">{rejectError}</p>}
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                      variant="destructive"
+                                      onClick={() => {
+                                        if (rejectReason.trim().length < 10) {
+                                          setRejectError("Reason must be at least 10 characters.")
+                                          return;
+                                        }
+                                        if (rejectReason.trim().length > 500) {
+                                          setRejectError("Reason must not exceed 500 characters.")
+                                          return;
+                                        }
+                                        handleAction(selectedRequest._id, 'Withdrawal Rejected', rejectReason)
+                                      }}
+                                  >
+                                      <CheckCircle2 className="w-4 h-4 mr-2" /> Confirm Rejection
+                                  </Button>
+                                  <Button
+                                      variant="outline"
+                                      className="bg-gray-100 hover:bg-gray-200 text-gray-700"
+                                      onClick={() => setRejectMode(false)}
+                                  >
+                                      Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                         </div>
                     )}
                 </TabsContent>
@@ -371,17 +524,48 @@ const OffboardingRequests = () => {
                 </TabsContent>
 
                 <TabsContent value="audit" className="pt-4">
-                    <div className="space-y-4">
-                        {selectedRequest.auditLog?.slice().reverse().map((log, i) => (
-                            <div key={i} className="flex items-start gap-3 text-sm">
-                                <div className="w-2 h-2 rounded-full bg-primary mt-1.5" />
-                                <div>
-                                    <p className="font-medium">{log.action}</p>
-                                    <p className="text-muted-foreground text-xs">{log.remarks}</p>
-                                    <p className="text-xs text-muted-foreground/70 mt-1">{new Date(log.timestamp).toLocaleString()}</p>
+                    <div className="space-y-6">
+                        <div>
+                            <h3 className="text-sm font-semibold mb-3 text-slate-800 border-b pb-2">Resignation Timeline</h3>
+                            <div className="space-y-4">
+                                {selectedRequest.auditLog?.slice().reverse().map((log, i) => (
+                                    <div key={i} className="flex items-start gap-3 text-sm pb-4 border-b last:border-0 border-muted/50">
+                                        <div className="w-2 h-2 rounded-full bg-primary mt-1.5" />
+                                        <div className="space-y-1">
+                                            <p className="font-semibold text-slate-900 dark:text-white">{log.action}</p>
+                                            {log.remarks && (
+                                                <p className="text-muted-foreground text-xs">{log.remarks}</p>
+                                            )}
+                                            <p className="text-muted-foreground text-xs opacity-70">
+                                                {new Date(log.timestamp).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {selectedRequest.withdrawalAuditLog && selectedRequest.withdrawalAuditLog.length > 0 && userRole === 'HR_MANAGER' && (
+                            <div>
+                                <h3 className="text-sm font-semibold mb-3 text-slate-800 border-b pb-2">Withdrawal Timeline (Confidential)</h3>
+                                <div className="space-y-4">
+                                    {selectedRequest.withdrawalAuditLog.slice().reverse().map((log, i) => (
+                                        <div key={i} className="flex items-start gap-3 text-sm pb-4 border-b last:border-0 border-muted/50">
+                                            <div className="w-2 h-2 rounded-full bg-orange-500 mt-1.5" />
+                                            <div className="space-y-1">
+                                                <p className="font-semibold text-slate-900 dark:text-white">{log.action}</p>
+                                                {log.remarks && (
+                                                    <p className="text-muted-foreground text-xs">{log.remarks}</p>
+                                                )}
+                                                <p className="text-muted-foreground text-xs opacity-70">
+                                                    {new Date(log.timestamp).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        ))}
+                        )}
                     </div>
                 </TabsContent>
               </Tabs>
