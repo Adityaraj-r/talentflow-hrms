@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import apiClient from "@/services/apiClient";
 import CountUp from "react-countup";
 import * as Motion from "framer-motion";
 import {
@@ -248,7 +249,10 @@ export function CompensationBreakdownCard({ offer }) {
 }
 
 export function OfferGenerator({ onSubmit, canWrite }) {
+  const [candidates, setCandidates] = useState([]);
   const [form, setForm] = useState({
+    candidateId: "",
+    candidateEmail: "",
     candidateName: "",
     position: "",
     department: "",
@@ -261,7 +265,57 @@ export function OfferGenerator({ onSubmit, canWrite }) {
     reportingManager: "",
     templateId: "executive-standard",
   });
+
+  useEffect(() => {
+    let active = true;
+    const fetchCandidates = async () => {
+      try {
+        const res = await apiClient.get("/applications");
+        const rawData = res?.data?.data ?? res?.data ?? res ?? [];
+        if (active) {
+          const filtered = Array.isArray(rawData)
+            ? rawData.filter((app) => ["Selected", "Offer"].includes(app.status))
+            : [];
+          setCandidates(filtered);
+        }
+      } catch (err) {
+        console.error("Failed to load candidates", err);
+      }
+    };
+    fetchCandidates();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+
+  const handleCandidateChange = (candidateId) => {
+    const candidate = candidates.find((c) => c._id === candidateId);
+    if (candidate) {
+      setForm((current) => ({
+        ...current,
+        candidateId,
+        candidateEmail: candidate.email || "",
+        candidateName: (candidate.name || "").trim(),
+        position: candidate.jobId?.jobTitle || current.position,
+      }));
+    }
+  };
+
+  const inputFields = [
+    ["position", "Position"],
+    ["department", "Department"],
+    ["salary", "Salary Package"],
+    ["joiningDate", "Joining Date"],
+    ["noticeBuyout", "Notice Buyout"],
+    ["bonus", "Bonus"],
+    ["benefits", "Benefits"],
+    ["probationDetails", "Probation Details"],
+    ["reportingManager", "Reporting Manager"],
+    ["templateId", "Template"],
+  ];
+
   return (
     <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-5 shadow-xl shadow-black/10">
       <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Advanced Offer Generator</h2>
@@ -273,20 +327,23 @@ export function OfferGenerator({ onSubmit, canWrite }) {
           onSubmit(form);
         }}
       >
-        {[
-          ["candidateName", "Candidate"],
-          ["position", "Position"],
-          ["department", "Department"],
-          ["salary", "Salary Package"],
-          ["joiningDate", "Joining Date"],
-          ["noticeBuyout", "Notice Buyout"],
-          ["bonus", "Bonus"],
-          ["benefits", "Benefits"],
-          ["probationDetails", "Probation Details"],
-          ["reportingManager", "Reporting Manager"],
-          ["templateId", "Template"],
-        ].map(([key, label]) => (
-          <Input key={key} type={key === "joiningDate" ? "date" : key === "salary" || key === "bonus" || key === "noticeBuyout" ? "number" : "text"} value={form[key]} onChange={(event) => set(key, event.target.value)} placeholder={label} required={["candidateName", "salary", "joiningDate"].includes(key)} className="border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 text-slate-900 dark:text-slate-100" />
+        <div className="flex flex-col gap-1">
+          <select
+            value={form.candidateId}
+            onChange={(e) => handleCandidateChange(e.target.value)}
+            required
+            className="flex h-10 w-full rounded-md border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="" disabled>Select Candidate</option>
+            {candidates.map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.name} ({c.email || "No Email"})
+              </option>
+            ))}
+          </select>
+        </div>
+        {inputFields.map(([key, label]) => (
+          <Input key={key} type={key === "joiningDate" ? "date" : key === "salary" || key === "bonus" || key === "noticeBuyout" ? "number" : "text"} value={form[key]} onChange={(event) => set(key, event.target.value)} placeholder={label} required={["salary", "joiningDate"].includes(key)} className="border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 text-slate-900 dark:text-slate-100" />
         ))}
         <Button disabled={!canWrite} className="md:col-span-3 bg-cyan-600 dark:bg-cyan-300 text-white dark:text-slate-950 hover:bg-cyan-700 dark:hover:bg-cyan-200">
           <FileSignature className="mr-2 h-4 w-4" /> Save Draft & Route Approval
