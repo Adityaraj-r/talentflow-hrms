@@ -41,7 +41,9 @@ const EmployeeProfileView = () => {
     try {
       const response = await adminService.getAllEmployees()
       const users = response.data?.users || response.data || []
-      const found = Array.isArray(users) ? users.find(u => u._id === id) : null
+      const found = Array.isArray(users) 
+        ? users.find(u => u._id === id || u.employeeCode === id) 
+        : null
       setEmployee(found || null)
     } catch (err) {
       console.error(err)
@@ -87,9 +89,12 @@ const EmployeeProfileView = () => {
   if (!employee) {
     return (
       <div className="p-6 flex flex-col items-center justify-center min-h-[60vh] gap-4 text-gray-500 dark:text-gray-400">
-        <XCircle className="h-12 w-12 opacity-30" />
-        <p className="text-lg font-semibold">Employee not found</p>
-        <Button variant="outline" onClick={() => navigate("/employee-center/all-employees")}>
+        <XCircle className="h-12 w-12 opacity-30 text-red-500" />
+        <h2 className="text-xl font-semibold text-foreground">Employee Not Found</h2>
+        <p className="text-sm text-center max-w-md">
+          The employee record you are trying to view no longer exists or has been permanently deleted from the database.
+        </p>
+        <Button variant="outline" className="mt-2" onClick={() => navigate("/employee-center/all-employees")}>
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to All Employees
         </Button>
       </div>
@@ -97,7 +102,8 @@ const EmployeeProfileView = () => {
   }
 
   const fullName = getFullName(employee)
-  const isActive = employee.isActive
+  const status = employee.status || 'Active'
+  const isActive = status === 'Active'
   const visibleTabs = isHR ? TABS : ["Overview"]
 
   return (
@@ -136,12 +142,19 @@ const EmployeeProfileView = () => {
                   </span>
                   <span className={cn(
                     "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
-                    isActive
+                    status === 'Active'
                       ? "bg-green-50 dark:bg-green-500/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/30"
-                      : "bg-orange-50 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-500/30"
+                      : status?.startsWith('Pending')
+                      ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30"
+                      : status === 'On Notice Period'
+                      ? "bg-yellow-50 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-500/30"
+                      : "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/30"
                   )}>
-                    <span className={cn("h-1.5 w-1.5 rounded-full", isActive ? "bg-green-500" : "bg-orange-500")} />
-                    {isActive ? "Active" : "Inactive"}
+                    <span className={cn(
+                      "h-1.5 w-1.5 rounded-full", 
+                      status === 'Active' ? "bg-green-500" : status?.startsWith('Pending') ? "bg-blue-500" : status === 'On Notice Period' ? "bg-yellow-500" : "bg-red-500"
+                    )} />
+                    {status}
                   </span>
                 </div>
               </div>
@@ -212,9 +225,22 @@ const EmployeeProfileView = () => {
                 <InfoRow
                   icon={CheckCircle2}
                   label="Account Status"
-                  value={isActive ? "Active" : "Inactive"}
-                  valueClassName={isActive ? "text-green-600 dark:text-green-400" : "text-orange-600 dark:text-orange-400"}
+                  value={status}
+                  valueClassName={
+                    status === 'Active' ? "text-green-600 dark:text-green-400" :
+                    status?.startsWith('Pending') ? "text-blue-600 dark:text-blue-400" :
+                    status === 'On Notice Period' ? "text-yellow-600 dark:text-yellow-400" :
+                    "text-red-600 dark:text-red-400"
+                  }
                 />
+                {status === 'On Notice Period' && employee.exitDate && (
+                  <InfoRow 
+                    icon={Calendar} 
+                    label="Last Working Day (LWD)" 
+                    value={formatDate(employee.exitDate)} 
+                    valueClassName="text-yellow-600 dark:text-yellow-400 font-semibold"
+                  />
+                )}
                 <InfoRow icon={Calendar} label="Joined On" value={formatDate(employee.createdAt)} />
               </div>
             </div>

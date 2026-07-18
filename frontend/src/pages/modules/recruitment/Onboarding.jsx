@@ -94,6 +94,23 @@ const Onboarding = () => {
   })
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const emailParam = params.get("email")
+    if (emailParam) {
+      setFormData((prev) => ({
+        ...prev,
+        email: emailParam,
+        firstName: params.get("firstName") || prev.firstName,
+        lastName: params.get("lastName") || prev.lastName,
+        MiddleName: params.get("middleName") || prev.MiddleName,
+        joiningDate: params.get("joiningDate") ? params.get("joiningDate").split("T")[0] : prev.joiningDate,
+        designation: params.get("designation") || prev.designation,
+        department: params.get("department") || prev.department,
+      }))
+    }
+  }, [])
+
+  useEffect(() => {
     const fetchProgress = async () => {
       if (formData.email && activeTab !== "personal") {
         try {
@@ -450,7 +467,7 @@ const Onboarding = () => {
                     value={formData.firstName}
                     onBlur={() => markTouched("firstName")}
                     onChange={(e) => handleChange("firstName", onlyLettersAndSpaces(e.target.value))}
-                    placeholder="Rahul"
+                    placeholder="Enter first name"
                     aria-invalid={Boolean(shouldShowError("firstName"))}
                   />
                   <FieldError message={shouldShowError("firstName")} />
@@ -461,7 +478,7 @@ const Onboarding = () => {
                     value={formData.MiddleName}
                     onBlur={() => markTouched("MiddleName")}
                     onChange={(e) => handleChange("MiddleName", onlyLettersAndSpaces(e.target.value))}
-                    placeholder="Kumar"
+                    placeholder="Enter middle name"
                     aria-invalid={Boolean(shouldShowError("MiddleName"))}
                   />
                   <FieldError message={shouldShowError("MiddleName")} />
@@ -472,7 +489,7 @@ const Onboarding = () => {
                     value={formData.lastName}
                     onBlur={() => markTouched("lastName")}
                     onChange={(e) => handleChange("lastName", onlyLettersAndSpaces(e.target.value))}
-                    placeholder="Sharma"
+                    placeholder="Enter last name"
                     aria-invalid={Boolean(shouldShowError("lastName"))}
                   />
                   <FieldError message={shouldShowError("lastName")} />
@@ -527,7 +544,7 @@ const Onboarding = () => {
                     onBlur={() => markTouched("email")}
                     onChange={(e) => handleChange("email", e.target.value.trim().toLowerCase())}
                     type="email"
-                    placeholder="rahul@gmail.com"
+                    placeholder="Enter personal email"
                     aria-invalid={Boolean(shouldShowError("email"))}
                   />
                   <FieldError message={shouldShowError("email")} />
@@ -542,7 +559,7 @@ const Onboarding = () => {
                     onChange={(e) => {
                       handleChange("phoneNumber", onlyDigits(e.target.value, 10));
                     }}
-                    placeholder="7678988776"
+                    placeholder="Enter mobile number"
                     aria-invalid={Boolean(shouldShowError("phoneNumber"))}
                   />
                   <FieldError message={shouldShowError("phoneNumber")} />
@@ -555,7 +572,7 @@ const Onboarding = () => {
                   value={formData.currentAddress}
                   onBlur={() => markTouched("currentAddress")}
                   onChange={(e) => handleChange("currentAddress", trimTextStart(e.target.value))}
-                  placeholder="Full Address"
+                  placeholder="Enter current address"
                   aria-invalid={Boolean(shouldShowError("currentAddress"))}
                 />
                 <FieldError message={shouldShowError("currentAddress")} />
@@ -584,7 +601,7 @@ const Onboarding = () => {
                     disabled
                     value={formData.employeeCode || ""}
                     onChange={(e) => handleChange("employeeCode", e.target.value.toUpperCase(), null)}
-                    placeholder="EMP-0001"
+                    placeholder="Auto-generated ID"
                     aria-invalid={Boolean(shouldShowError("employeeCode"))}
                   />
                   <FieldError message={shouldShowError("employeeCode")} />
@@ -610,7 +627,7 @@ const Onboarding = () => {
                     value={formData.designation || ""}
                     onBlur={() => markTouched("designation")}
                     onChange={(e) => handleChange("designation", e.target.value.replace(/[^A-Za-z .&/-]/g, "").replace(/\s+/g, " ").replace(/^\s/, ""))}
-                    placeholder="Software Engineer"
+                    placeholder="Enter designation"
                     aria-invalid={Boolean(shouldShowError("designation"))}
                   />
                   <FieldError message={shouldShowError("designation")} />
@@ -639,7 +656,7 @@ const Onboarding = () => {
                     value={formData.workLocation || ""}
                     onBlur={() => markTouched("workLocation")}
                     onChange={(e) => handleChange("workLocation", e.target.value.replace(/[^A-Za-z0-9 .,'-]/g, "").replace(/\s+/g, " ").replace(/^\s/, ""))}
-                    placeholder="Chh. Sambhajinagar"
+                    placeholder="Enter work location"
                     aria-invalid={Boolean(shouldShowError("workLocation"))}
                   />
                   <FieldError message={shouldShowError("workLocation")} />
@@ -712,7 +729,7 @@ const Onboarding = () => {
                       value={formData.bankDetails?.accountHolderName || ""}
                       onBlur={() => markTouched("accountHolderName", "bankDetails")}
                       onChange={(e) => handleChange("accountHolderName", onlyLettersAndSpaces(e.target.value), "bankDetails")}
-                      placeholder="As per bank records"
+                      placeholder="Enter account holder name"
                       aria-invalid={Boolean(shouldShowError("accountHolderName", "bankDetails"))}
                     />
                     <FieldError message={shouldShowError("accountHolderName", "bankDetails")} />
@@ -723,7 +740,7 @@ const Onboarding = () => {
                       value={formData.bankDetails?.bankName || ""}
                       onBlur={() => markTouched("bankName", "bankDetails")}
                       onChange={(e) => handleChange("bankName", e.target.value.replace(/[^A-Za-z .&-]/g, "").replace(/\s+/g, " ").replace(/^\s/, ""), "bankDetails")}
-                      placeholder="e.g. HDFC Bank"
+                      placeholder="Enter bank name"
                       aria-invalid={Boolean(shouldShowError("bankName", "bankDetails"))}
                     />
                     <FieldError message={shouldShowError("bankName", "bankDetails")} />
@@ -734,7 +751,7 @@ const Onboarding = () => {
                     <Label>Account Number *</Label>
                     <Input
                       value={formData.bankDetails?.accountNumber || ""}
-                      placeholder="000012345678"
+                      placeholder="Enter account number"
                       inputMode="numeric"
                       maxLength={18}
                       onBlur={() => markTouched("accountNumber", "bankDetails")}
@@ -749,7 +766,7 @@ const Onboarding = () => {
                     <Label>IFSC Code *</Label>
                     <Input
                       value={formData.bankDetails?.ifscCode || ""}
-                      placeholder="HDFC0001234"
+                      placeholder="Enter IFSC code"
                       className="uppercase"
                       maxLength={11}
                       onBlur={() => markTouched("ifscCode", "bankDetails")}
@@ -768,7 +785,7 @@ const Onboarding = () => {
                     <Label>PAN Number *</Label>
                     <Input
                       value={formData.kycDetails?.panNumber || ""}
-                      placeholder="ABCDE1234F"
+                      placeholder="Enter PAN number"
                       className="uppercase"
                       maxLength={10}
                       onBlur={() => markTouched("panNumber", "kycDetails")}
@@ -781,7 +798,7 @@ const Onboarding = () => {
                     <Label>Aadhaar Number *</Label>
                     <Input
                       value={formData.kycDetails?.aadharNumber || ""}
-                      placeholder="123456789012"
+                      placeholder="Enter Aadhaar number"
                       inputMode="numeric"
                       maxLength={12}
                       onBlur={() => markTouched("aadharNumber", "kycDetails")}
@@ -802,7 +819,7 @@ const Onboarding = () => {
                       maxLength={12}
                       onBlur={() => markTouched("uan", "kycDetails")}
                       onChange={(e) => handleChange("uan", onlyDigits(e.target.value, 12), "kycDetails")}
-                      placeholder="100123456789"
+                      placeholder="Enter UAN"
                       aria-invalid={Boolean(shouldShowError("uan", "kycDetails"))}
                     />
                     <FieldError message={shouldShowError("uan", "kycDetails")} />
@@ -815,7 +832,7 @@ const Onboarding = () => {
                       maxLength={18}
                       onBlur={() => markTouched("pfNumber", "kycDetails")}
                       onChange={(e) => handleChange("pfNumber", pfNumberValue(e.target.value), "kycDetails")}
-                      placeholder="MH/BAN/0000000/000"
+                      placeholder="Enter PF number"
                       aria-invalid={Boolean(shouldShowError("pfNumber", "kycDetails"))}
                     />
                     <FieldError message={shouldShowError("pfNumber", "kycDetails")} />

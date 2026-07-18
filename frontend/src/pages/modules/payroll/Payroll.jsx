@@ -14,23 +14,23 @@ import apiClient from "@/services/apiClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
-const MONTHS = ["January","February","March","April","May","June",
-                "July","August","September","October","November","December"];
+const MONTHS = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
 
 const normalizeRole = (role) => (role || "").toUpperCase().replace(/ /g, "_")
-const isPayrollOfficer = (role) => ["PAYROLL_OFFICER","PAYROLLOFFICER"].includes(normalizeRole(role))
-const isHRManager      = (role) => ["HR_MANAGER","HRMANAGER"].includes(normalizeRole(role))
+const isPayrollOfficer = (role) => ["PAYROLL_OFFICER", "PAYROLLOFFICER"].includes(normalizeRole(role))
+const isHRManager = (role) => ["HR_MANAGER", "HRMANAGER"].includes(normalizeRole(role))
 const isFinanceManager = (role) => normalizeRole(role) === "FINANCE_MANAGER"
-const isCEO            = (role) => normalizeRole(role) === "CEO"
-const isAdmin          = (role) => ["ADMIN","SUPER_ADMIN","SUPERADMIN"].includes(normalizeRole(role))
+const isCEO = (role) => normalizeRole(role) === "CEO"
+const isAdmin = (role) => ["ADMIN", "SUPER_ADMIN", "SUPERADMIN"].includes(normalizeRole(role))
 const isCountryManager = (role) => normalizeRole(role) === "COUNTRY_MANAGER"
 const isTeamPayrollViewer = (role) =>
-  ["DEPARTMENT_MANAGER","DIRECT_MANAGER","OPERATIONS_MANAGER","PROJECT_MANAGER"].includes(normalizeRole(role))
-const isHROrPayroll    = (role) =>
+  ["DEPARTMENT_MANAGER", "DIRECT_MANAGER", "OPERATIONS_MANAGER", "PROJECT_MANAGER"].includes(normalizeRole(role))
+const isHROrPayroll = (role) =>
   isPayrollOfficer(role) || isHRManager(role) || isFinanceManager(role) ||
-  ["HR_OFFICER","HROFFICER"].includes(normalizeRole(role))
+  ["HR_OFFICER", "HROFFICER"].includes(normalizeRole(role))
 const canProcessPayroll = (role) =>
-  isPayrollOfficer(role) || isFinanceManager(role) || isAdmin(role)
+  isPayrollOfficer(role) || isAdmin(role)
 const canViewPayrollLists = (role) =>
   isHROrPayroll(role) || isAdmin(role) || isCEO(role) || isCountryManager(role) || isTeamPayrollViewer(role)
 const canViewPayrollAudit = (role) => {
@@ -55,31 +55,39 @@ const PayrollProcessing = () => {
   const { user: authUser } = useAuth()
   const userRole = authUser?.role || ""
 
-  const [employees, setEmployees]           = useState([])
-  const [records, setRecords]               = useState([])
-  const [pending, setPending]               = useState([])
-  const [loading, setLoading]               = useState(true)
-  const [processing, setProcessing]         = useState(false)
+  const [employees, setEmployees] = useState([])
+  const [records, setRecords] = useState([])
+  const [pending, setPending] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [processing, setProcessing] = useState(false)
   const [bulkProcessing, setBulkProcessing] = useState(false)
-  const [selectedEmp, setSelectedEmp]       = useState("")
-  const [salaryData, setSalaryData]         = useState(null)
-  const [month, setMonth]                   = useState(MONTHS[new Date().getMonth()])
-  const [year, setYear]                     = useState(new Date().getFullYear())
-  const [lopDays, setLopDays]               = useState(0)
-  const [lopAuto, setLopAuto]               = useState(true)
-  const [bonus, setBonus]                   = useState(0)
-  const [bonusReason, setBonusReason]       = useState("")
-  const [overtime, setOvertime]             = useState(0)
-  const [activeTab, setActiveTab]           = useState("run")
-  const [serverPreview, setServerPreview]   = useState(null)
-  const [skipLockCheck, setSkipLockCheck]   = useState(false)
-  const [auditLogs, setAuditLogs]           = useState([])
-  const [auditLoading, setAuditLoading]    = useState(false)
-  const [compliance, setCompliance]        = useState(null)
+  const [selectedEmp, setSelectedEmp] = useState("")
+  const [salaryData, setSalaryData] = useState(null)
+  const [month, setMonth] = useState(MONTHS[new Date().getMonth()])
+  const [year, setYear] = useState(new Date().getFullYear())
+  const [runKind, setRunKind] = useState("regular")
+  const [offCycleLabel, setOffCycleLabel] = useState("")
+  const [lopDays, setLopDays] = useState(0)
+  const [lopAuto, setLopAuto] = useState(true)
+  const [bonus, setBonus] = useState(0)
+  const [bonusReason, setBonusReason] = useState("")
+  const [overtime, setOvertime] = useState(0)
+  const [activeTab, setActiveTab] = useState("run")
+  const [serverPreview, setServerPreview] = useState(null)
+  const [skipLockCheck, setSkipLockCheck] = useState(false)
+  const [auditLogs, setAuditLogs] = useState([])
+  const [auditLoading, setAuditLoading] = useState(false)
+  const [compliance, setCompliance] = useState(null)
   const [complianceLoading, setComplianceLoading] = useState(false)
-
+  const [selectedPending, setSelectedPending] = useState(new Set())
   const employeesLoadedRef = useRef(false)
   const payrollTabInitRef = useRef(false)
+
+  useEffect(() => {
+    if (!canProcessPayroll(userRole) && activeTab === "run") {
+      setActiveTab("pending");
+    }
+  }, [userRole, activeTab]);
 
   useEffect(() => {
     if (!authUser?.role || payrollTabInitRef.current) return
@@ -121,7 +129,7 @@ const PayrollProcessing = () => {
       ])
       setRecords(recRes.data || [])
       setPending(pendRes.data?.pending || [])
-    } catch {}
+    } catch { }
   }, [month, year])
 
   useEffect(() => {
@@ -171,14 +179,14 @@ const PayrollProcessing = () => {
         const res = await apiClient.get(`/employees/${empUser.employeeId}`)
         const emp = res.data || res
         setSalaryData({
-          basic:          emp.salary?.basic                 || 0,
-          hra:            emp.salary?.allowances?.hra       || 0,
-          transport:      emp.salary?.allowances?.transport || 0,
-          medical:        emp.salary?.allowances?.medical   || 0,
-          otherAllowance: emp.salary?.allowances?.other     || 0,
-          pf:             emp.salary?.deductions?.pf        || 0,
-          tax:            emp.salary?.deductions?.tax       || 0,
-          insurance:      emp.salary?.deductions?.insurance || 0,
+          basic: emp.salary?.basic || 0,
+          hra: emp.salary?.allowances?.hra || 0,
+          transport: emp.salary?.allowances?.transport || 0,
+          medical: emp.salary?.allowances?.medical || 0,
+          otherAllowance: emp.salary?.allowances?.other || 0,
+          pf: emp.salary?.deductions?.pf || 0,
+          tax: emp.salary?.deductions?.tax || 0,
+          insurance: emp.salary?.deductions?.insurance || 0,
         })
       } catch { setSalaryData(null) }
     }
@@ -222,25 +230,36 @@ const PayrollProcessing = () => {
 
   const calculatePreview = () => {
     if (!salaryData) return { gross: 0, net: 0, deductions: 0 }
-    const basic      = Number(salaryData.basic)          || 0
-    const hra        = Number(salaryData.hra)             || 0
-    const transport  = Number(salaryData.transport)       || 0
-    const medical    = Number(salaryData.medical)         || 0
-    const otherAllow = Number(salaryData.otherAllowance)  || 0
-    const pf         = Number(salaryData.pf)              || 0
-    const tax        = Number(salaryData.tax)             || 0
-    const insurance  = Number(salaryData.insurance)       || 0
-    const gross      = basic + hra + transport + medical + otherAllow + Number(bonus) + Number(overtime)
-    const lopDed     = (basic / 30) * Number(lopDays)
+    const basic = Number(salaryData.basic) || 0
+    const hra = Number(salaryData.hra) || 0
+    const transport = Number(salaryData.transport) || 0
+    const medical = Number(salaryData.medical) || 0
+    const otherAllow = Number(salaryData.otherAllowance) || 0
+    const pf = Number(salaryData.pf) || 0
+    const tax = Number(salaryData.tax) || 0
+    const insurance = Number(salaryData.insurance) || 0
+    const gross = basic + hra + transport + medical + otherAllow + Number(bonus) + Number(overtime)
+    const lopDed = (basic / 30) * Number(lopDays)
     const deductions = pf + tax + insurance + lopDed
     return {
-      gross:      Math.round(gross),
-      net:        Math.round(gross - deductions),
+      gross: Math.round(gross),
+      net: Math.round(gross - deductions),
       deductions: Math.round(deductions),
     }
   }
 
   const preview = calculatePreview()
+  const existingRecordForMonth = records.find(
+    r => r.month === month && r.year === year && (r.runKind === "off_cycle" ? false : true)
+  )
+  const isEditingExisting = !!(
+    existingRecordForMonth &&
+    selectedEmp &&
+    existingRecordForMonth.employees?.some(e => {
+      const empUser = employees.find(emp => String(emp._id) === String(selectedEmp))
+      return empUser?.employeeId && e.employeeId === empUser.employeeId
+    })
+  )
 
   const payrollLockToast = (err, fallback) => {
     let msg = err?.error || err?.message || fallback
@@ -253,13 +272,26 @@ const PayrollProcessing = () => {
 
   const handleGenerate = async () => {
     if (!selectedEmp) { toast.error("Please select an employee"); return }
-    if (!salaryData)  { toast.error("No salary structure found for this employee"); return }
+    if (runKind === "off_cycle" && !offCycleLabel.trim()) {
+      toast.error("Please enter Off Cycle Label")
+      return
+    }
+    if (!salaryData) { toast.error("No salary structure found for this employee"); return }
     setProcessing(true)
     try {
       await payrollService.generatePayroll({
         month,
         year,
         employeeIds: [selectedEmp],
+
+        runKind,
+        offCycleLabel:
+          runKind === "off_cycle"
+            ? offCycleLabel.trim()
+            : undefined,
+
+        replaceExisting: runKind === "regular",
+
         adjustments: {
           [selectedEmp]: {
             bonus: Number(bonus) || 0,
@@ -273,8 +305,15 @@ const PayrollProcessing = () => {
         skipAttendanceLockCheck: skipLockCheck,
       })
       toast.success("Payroll generated successfully!")
-      setBonus(0); setOvertime(0); setLopDays(0); setSelectedEmp("")
-      setBonusReason(""); setLopAuto(true)
+      setBonus(0)
+      setOvertime(0)
+      setBonusReason("")
+      setSelectedEmp("")
+      setLopDays(0)
+      setLopAuto(true)
+
+      setRunKind("regular")
+      setOffCycleLabel("")
       await refreshPayrollTables()
     } catch (err) {
       toast.error(payrollLockToast(err, "Failed to generate payroll"))
@@ -282,28 +321,107 @@ const PayrollProcessing = () => {
       setProcessing(false)
     }
   }
+  const togglePendingSelection = (id) => {
+    setSelectedPending(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
 
-  const handleBulkRun = async () => {
-    if (pending.length === 0) { toast.error("No pending employees for this month"); return }
-    setBulkProcessing(true)
+  const toggleSelectAllPending = () => {
+    setSelectedPending(prev =>
+      prev.size === pending.length ? new Set() : new Set(pending.map(e => e._id))
+    )
+  }
+
+  const handleRunSelected = async () => {
+    const idsToProcess = Array.from(selectedPending);
+
+    if (idsToProcess.length === 0) {
+      toast.error("Select at least one employee");
+      return;
+    }
+
+    setBulkProcessing(true);
+
     try {
-      const employeeIds = pending.map(e => e._id)
       await payrollService.generatePayroll({
         month,
         year,
-        employeeIds,
+
+        employeeIds: idsToProcess,
+
+        runKind,
+
+        offCycleLabel:
+          runKind === "off_cycle"
+            ? (offCycleLabel || `Late Payroll ${month} ${year}`)
+            : undefined,
+
+        replaceExisting: runKind === "regular",
+
         requireAttendancePeriodLocked: !skipLockCheck,
         skipAttendanceLockCheck: skipLockCheck,
-      })
-      toast.success(`Payroll generated for ${pending.length} employees!`)
-      await refreshPayrollTables()
-      setActiveTab("records")
+      });
+
+      toast.success(
+        `Payroll generated for ${idsToProcess.length} selected employee${idsToProcess.length > 1 ? "s" : ""
+        }!`
+      );
+
+      setSelectedPending(new Set());
+
+      await refreshPayrollTables();
+
+      setActiveTab("records");
     } catch (err) {
-      toast.error(payrollLockToast(err, "Bulk payroll run failed"))
+      toast.error(payrollLockToast(err, "Payroll run failed"));
     } finally {
-      setBulkProcessing(false)
+      setBulkProcessing(false);
     }
-  }
+  };
+  const handleBulkRun = async () => {
+    if (pending.length === 0) {
+      toast.error("No pending employees for this month");
+      return;
+    }
+
+    setBulkProcessing(true);
+
+    try {
+      const employeeIds = pending.map(e => e._id);
+
+      await payrollService.generatePayroll({
+        month,
+        year,
+
+        employeeIds,
+
+        replaceExisting: runKind === "regular",
+
+        runKind,
+
+        offCycleLabel:
+          runKind === "off_cycle"
+            ? (offCycleLabel || `Late Payroll ${month} ${year}`)
+            : undefined,
+
+        requireAttendancePeriodLocked: !skipLockCheck,
+        skipAttendanceLockCheck: skipLockCheck,
+      });
+
+      toast.success(`Payroll generated for ${employeeIds.length} employees!`);
+
+      await refreshPayrollTables();
+
+      setActiveTab("records");
+    } catch (err) {
+      toast.error(payrollLockToast(err, "Bulk payroll run failed"));
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
 
   const handleStatusUpdate = async (id, status, extra = {}) => {
     try {
@@ -333,6 +451,19 @@ const PayrollProcessing = () => {
       toast.error("Failed to download payslip")
     }
   }
+  const processedEmployeeIds = new Set(
+    records
+      .filter(
+        r =>
+          r.month === month &&
+          Number(r.year) === Number(year)
+      )
+      .flatMap(r => (r.employees || []).map(e => String(e.employeeId)))
+  )
+  const availableEmployees =
+    runKind === "off_cycle"
+      ? employees.filter(emp => !processedEmployeeIds.has(String(emp._id)))
+      : employees
 
   return (
     <div className="space-y-6">
@@ -346,20 +477,40 @@ const PayrollProcessing = () => {
               : "Manage and process monthly employee payroll."}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+
           <select
-            className="p-2 border rounded-md bg-transparent text-sm"
+            className="p-2 border rounded-md bg-white text-black dark:bg-slate-800 dark:text-white text-sm"
             value={month}
             onChange={e => setMonth(e.target.value)}
           >
-            {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+            {MONTHS.map(m => (
+              <option
+                key={m}
+                value={m}
+                className="bg-white text-black dark:bg-slate-800 dark:text-white"
+              >
+                {m}
+              </option>
+            ))}
           </select>
+
           <input
             type="number"
-            className="w-20 p-2 border rounded-md bg-transparent text-sm"
+            className="w-24 p-2 border rounded-md bg-transparent text-sm"
             value={year}
             onChange={e => setYear(Number(e.target.value))}
           />
+
+          <select
+            className="p-2 border rounded-md bg-white text-black dark:bg-slate-800 dark:text-white text-sm"
+            value={runKind}
+            onChange={(e) => setRunKind(e.target.value)}
+          >
+            <option value="regular">Regular Payroll</option>
+            <option value="off_cycle">Off Cycle Payroll</option>
+          </select>
+
         </div>
       </div>
 
@@ -375,18 +526,18 @@ const PayrollProcessing = () => {
         <div className="rounded-xl border bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30 p-5">
           <p className="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400">Paid This Month</p>
           <p className="text-3xl font-black text-gray-900 dark:text-white mt-1">
-            {records.filter(r => ["Paid","Disbursed","Locked"].includes(r.status)).reduce((sum, r) => sum + (r.employees?.length || 0), 0)}
+            {records.filter(r => ["Paid", "Disbursed", "Locked"].includes(r.status)).reduce((sum, r) => sum + (r.employees?.length || 0), 0)}
           </p>
         </div>
       </div>
 
       <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
         {[
-          { key: "run",         label: "Run Payroll",               show: canProcessPayroll(userRole) },
-          { key: "pending",     label: `Pending (${pending.length})`, show: canViewPayrollLists(userRole) },
-          { key: "records",     label: "Records",                     show: canViewPayrollLists(userRole) },
-          { key: "compliance",  label: "Compliance (PF / ESI / TDS)", show: canViewCompliance(userRole) },
-          { key: "audit",       label: "Audit log",                   show: canViewPayrollAudit(userRole) },
+          { key: "run", label: "Run Payroll", show: canProcessPayroll(userRole) },
+          { key: "pending", label: `Pending (${pending.length})`, show: canViewPayrollLists(userRole) },
+          { key: "records", label: "Records", show: canViewPayrollLists(userRole) },
+          { key: "compliance", label: "Compliance (PF / ESI / TDS)", show: canViewCompliance(userRole) },
+          { key: "audit", label: "Audit log", show: canViewPayrollAudit(userRole) },
         ].filter(t => t.show).map(tab => (
           <button
             key={tab.key}
@@ -452,19 +603,53 @@ const PayrollProcessing = () => {
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Select Employee</label>
                     <select
-                      className="w-full p-2 border rounded-md bg-transparent"
+                      className="w-full p-2 border rounded-md bg-white text-black dark:bg-slate-800 dark:text-white"
                       value={selectedEmp}
                       onChange={e => setSelectedEmp(e.target.value)}
                       disabled={loading}
                     >
-                      <option value="">{loading ? "Loading..." : "-- Choose Employee --"}</option>
-                      {employees.map(emp => (
-                        <option key={emp._id} value={emp._id}>
+                      {runKind === "off_cycle" && availableEmployees.length === 0 && (
+                        <p className="text-sm text-orange-600 mt-2">
+                          All employees already have payroll for {month} {year}.
+                        </p>
+                      )}
+                      <option
+                        value=""
+                        className="bg-white text-black dark:bg-slate-800 dark:text-white"
+                      >
+                        {loading ? "Loading..." : "-- Choose Employee --"}
+                      </option>
+
+                      {availableEmployees.map(emp => (
+                        <option
+                          key={emp._id}
+                          value={emp._id}
+                          className="bg-white text-black dark:bg-slate-800 dark:text-white"
+                        >
                           {emp.firstName} {emp.lastName} — {emp.role}
                         </option>
                       ))}
                     </select>
                   </div>
+                  {runKind === "off_cycle" && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Off Cycle Label
+                      </label>
+
+                      <input
+                        type="text"
+                        className="w-full p-2 border rounded-md bg-transparent"
+                        placeholder="Example: Missed Employees / New Joiners / Bonus Payroll"
+                        value={offCycleLabel}
+                        onChange={(e) => setOffCycleLabel(e.target.value)}
+                      />
+
+                      <p className="text-xs text-muted-foreground">
+                        This label identifies why this off-cycle payroll is being created.
+                      </p>
+                    </div>
+                  )}
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -531,14 +716,21 @@ const PayrollProcessing = () => {
                   )}
                   <Button
                     onClick={handleGenerate}
-                    disabled={processing || !selectedEmp || !salaryData}
+                    disabled={
+                      processing ||
+                      !selectedEmp ||
+                      !salaryData ||
+                      (runKind === "off_cycle" && availableEmployees.length === 0)
+                    }
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white h-11"
                   >
                     {processing
                       ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
                       : !salaryData && selectedEmp
                         ? "No Salary Structure Found"
-                        : "Generate Payslip"
+                        : isEditingExisting
+                          ? "Update Payslip (Edit Existing)"
+                          : "Generate Payslip"
                     }
                   </Button>
                 </CardContent>
@@ -610,11 +802,11 @@ const PayrollProcessing = () => {
                         </>
                       ) : (
                         <>
-                          <PreviewRow label="Basic"     value={salaryData.basic} />
-                          <PreviewRow label="HRA"       value={salaryData.hra} />
+                          <PreviewRow label="Basic" value={salaryData.basic} />
+                          <PreviewRow label="HRA" value={salaryData.hra} />
                           <PreviewRow label="Transport" value={salaryData.transport} />
-                          <PreviewRow label="Medical"   value={salaryData.medical} />
-                          <PreviewRow label="Bonus+OT"  value={Number(bonus) + Number(overtime)} color="text-green-600" prefix="+" />
+                          <PreviewRow label="Medical" value={salaryData.medical} />
+                          <PreviewRow label="Bonus+OT" value={Number(bonus) + Number(overtime)} color="text-green-600" prefix="+" />
                           <div className="border-t pt-2">
                             <PreviewRow label="Gross (local est.)" value={preview.gross} bold />
                           </div>
@@ -648,16 +840,31 @@ const PayrollProcessing = () => {
               </CardDescription>
             </div>
             {canProcessPayroll(userRole) && pending.length > 0 && (
-              <Button
-                onClick={handleBulkRun}
-                disabled={bulkProcessing}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
-              >
-                {bulkProcessing
-                  ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
-                  : <><Zap className="mr-2 h-4 w-4" /> Run All ({pending.length})</>
-                }
-              </Button>
+              <div className="flex gap-2">
+                {selectedPending.size > 0 && (
+                  <Button
+                    onClick={handleRunSelected}
+                    disabled={bulkProcessing}
+                    variant="outline"
+                    className="border-blue-500 text-blue-600"
+                  >
+                    {bulkProcessing
+                      ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
+                      : <>Run Selected ({selectedPending.size})</>
+                    }
+                  </Button>
+                )}
+                <Button
+                  onClick={handleBulkRun}
+                  disabled={bulkProcessing}
+                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  {bulkProcessing
+                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
+                    : <><Zap className="mr-2 h-4 w-4" /> Run All ({pending.length})</>
+                  }
+                </Button>
+              </div>
             )}
           </CardHeader>
           <CardContent>
@@ -671,6 +878,15 @@ const PayrollProcessing = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/30">
+                    {canProcessPayroll(userRole) && (
+                      <TableHead className="w-10">
+                        <input
+                          type="checkbox"
+                          checked={pending.length > 0 && selectedPending.size === pending.length}
+                          onChange={toggleSelectAllPending}
+                        />
+                      </TableHead>
+                    )}
                     <TableHead className="font-bold">Employee</TableHead>
                     <TableHead className="font-bold">Department</TableHead>
                     <TableHead className="font-bold">Role</TableHead>
@@ -680,6 +896,15 @@ const PayrollProcessing = () => {
                 <TableBody>
                   {pending.map(emp => (
                     <TableRow key={emp._id}>
+                      {canProcessPayroll(userRole) && (
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            checked={selectedPending.has(emp._id)}
+                            onChange={() => togglePendingSelection(emp._id)}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-sm font-bold text-orange-600">
@@ -835,16 +1060,33 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
   const [expanded, setExpanded] = useState(false)
   const [payRef, setPayRef] = useState("")
   const [confirmTok, setConfirmTok] = useState("")
+  const [rejectReason, setRejectReason] = useState("")
+  const [isRegenerating, setIsRegenerating] = useState(false)
 
   const statusStyle = {
-    Generated:      "bg-blue-100 text-blue-700 border-blue-200",
-    Verified:       "bg-amber-100 text-amber-800 border-amber-200",
-    HR_Approved:    "bg-purple-100 text-purple-700 border-purple-200",
-    CEO_Approved:   "bg-indigo-100 text-indigo-700 border-indigo-200",
-    Disbursed:      "bg-green-100 text-green-700 border-green-200",
-    Locked:         "bg-slate-200 text-slate-800 border-slate-300",
-    "HR Approved":  "bg-purple-100 text-purple-700 border-purple-200",
-    Paid:           "bg-green-100 text-green-700 border-green-200",
+    Generated:
+      "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/40",
+
+    Verified:
+      "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40",
+
+    HR_Approved:
+      "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/40",
+
+    CEO_Approved:
+      "bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/40",
+
+    Disbursed:
+      "bg-green-100 text-green-700 border-green-200 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/40",
+
+    Locked:
+      "bg-slate-200 text-slate-800 border-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600",
+
+    "HR Approved":
+      "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/40",
+
+    Paid:
+      "bg-green-100 text-green-700 border-green-200 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/40",
   }
 
   const runWorkflow = async (action, body = {}, headers = {}) => {
@@ -856,7 +1098,33 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
       toast.error(e?.error || e?.message || "Workflow action failed")
     }
   }
+  const handleRegenerate = async (rec) => {
+    if (isRegenerating) return
 
+    setIsRegenerating(true)
+
+    try {
+      const employeeIds = [
+        ...new Set(
+          rec.employees.map(emp => String(emp.employeeId))
+        )
+      ]
+
+      await payrollService.generatePayroll({
+        month: rec.month,
+        year: rec.year,
+        employeeIds,
+        replaceExisting: true,
+      })
+
+      toast.success("Payroll regenerated")
+      onRefresh?.()
+    } catch (e) {
+      toast.error(e?.error || e?.message || "Regenerate failed")
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
   const exportBank = async (e) => {
     e.stopPropagation()
     try {
@@ -877,7 +1145,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
   const empCount = record.employees?.length || 0
   const totalNet = record.employees?.reduce((s, e) => s + (e.netPay || 0), 0) || 0
   const st = record.status
-
+  const displayStatus = record.rejectionReason ? "Rejected" : st
   return (
     <Card className="overflow-hidden">
 
@@ -901,7 +1169,32 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
               {record.ceoApprovalRequired && (
                 <span className="ml-2 text-orange-600 font-medium">CEO gate</span>
               )}
+              {record.financeApprovalRequired && (
+                <span className="ml-2 text-blue-600 font-medium">Finance gate</span>
+              )}
             </p>
+            {record.rejectionReason && (
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-xs text-red-600">
+                  Rejected at {record.rejectedAtStage} by {record.rejectedBy}: "{record.rejectionReason}"
+                </p>
+
+                {isPayrollOfficer(userRole) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs h-6"
+                    disabled={isRegenerating}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleRegenerate(record)
+                    }}
+                  >
+                    {isRegenerating ? "Regenerating..." : "Regenerate"}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -911,27 +1204,87 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
             <p className="text-sm font-bold text-green-600">₹ {totalNet.toLocaleString()}</p>
           </div>
 
-          <Badge variant="outline" className={statusStyle[st] || ""}>
-            {st}
+          <Badge
+            variant="outline"
+            className={
+              record.rejectionReason
+                ? "bg-red-100 text-red-700 border-red-200"
+                : statusStyle[st] || ""
+            }
+          >
+            {displayStatus}
           </Badge>
+          {record.rejectionReason && (
+            <p className="text-xs text-red-600 mt-1">
+              Rejected during <b>{record.rejectedAtStage}</b>
+            </p>
+          )}
 
           <div className="flex flex-wrap gap-1" onClick={e => e.stopPropagation()}>
-            {(isFinanceManager(userRole) || isAdmin(userRole)) && st === "Generated" && (
-              <Button size="sm" variant="outline" className="text-xs h-8" onClick={() => runWorkflow("verify")}>
-                Verify
-              </Button>
-            )}
-            {(isHRManager(userRole) || isAdmin(userRole)) && st === "Verified" && (
-              <Button size="sm" variant="outline" className="text-xs h-8" onClick={() => runWorkflow("hr_approve")}>
-                HR Approve
-              </Button>
-            )}
-            {(isCEO(userRole) || isAdmin(userRole)) && st === "HR_Approved" && record.ceoApprovalRequired && (
-              <Button size="sm" variant="outline" className="text-xs h-8" onClick={() => runWorkflow("ceo_approve")}>
-                CEO Approve
-              </Button>
-            )}
-            {(isPayrollOfficer(userRole) || isFinanceManager(userRole) || isAdmin(userRole)) && st === "CEO_Approved" && (
+            {(isFinanceManager(userRole) || isAdmin(userRole)) &&
+              st === "Generated" &&
+              !record.rejectionReason && (
+                <>
+                  <Button size="sm" variant="outline" className="text-xs h-8" onClick={() => runWorkflow("verify")}>
+                    Verify
+                  </Button>
+                  <input
+                    className="h-8 w-64 px-2 text-xs border rounded"
+                    placeholder="Reject reason"
+                    value={rejectReason}
+                    onChange={e => setRejectReason(e.target.value)}
+                  />
+                  <Button size="sm" variant="destructive" className="text-xs h-8"
+                    disabled={!rejectReason.trim()}
+                    onClick={() => runWorkflow("reject", { reason: rejectReason })}>
+                    Reject
+                  </Button>
+                </>
+              )}
+            {(isHRManager(userRole) || isAdmin(userRole)) &&
+              !record.rejectionReason &&
+              (
+                st === "Verified" ||
+                (st === "Generated" && !record.financeApprovalRequired)
+              ) && (
+                <>
+                  <Button size="sm" variant="outline" className="text-xs h-8" onClick={() => runWorkflow("hr_approve")}>
+                    HR Approve
+                  </Button>
+                  <input
+                    className="h-8 w-64 px-2 text-xs border rounded"
+                    placeholder="Reject reason"
+                    value={rejectReason}
+                    onChange={e => setRejectReason(e.target.value)}
+                  />
+                  <Button size="sm" variant="destructive" className="text-xs h-8"
+                    disabled={!rejectReason.trim()}
+                    onClick={() => runWorkflow("reject", { reason: rejectReason })}>
+                    Reject
+                  </Button>
+                </>
+              )}
+            {(isCEO(userRole) || isAdmin(userRole)) &&
+              !record.rejectionReason &&
+              st === "HR_Approved" && (
+                <>
+                  <Button size="sm" variant="outline" className="text-xs h-8" onClick={() => runWorkflow("ceo_approve")}>
+                    CEO Approve
+                  </Button>
+                  <input
+                    className="h-8 w-64 px-2 text-xs border rounded"
+                    placeholder="Reject reason"
+                    value={rejectReason}
+                    onChange={e => setRejectReason(e.target.value)}
+                  />
+                  <Button size="sm" variant="destructive" className="text-xs h-8"
+                    disabled={!rejectReason.trim()}
+                    onClick={() => runWorkflow("reject", { reason: rejectReason })}>
+                    Reject
+                  </Button>
+                </>
+              )}
+            {(isPayrollOfficer(userRole) || isAdmin(userRole)) && st === "CEO_Approved" && (
               <>
                 <input
                   className="h-8 w-28 px-2 text-xs border rounded"
@@ -966,31 +1319,12 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
               </Button>
             )}
             {(isFinanceManager(userRole) || isPayrollOfficer(userRole) || isAdmin(userRole)) &&
-              ["Verified", "HR_Approved", "CEO_Approved", "Disbursed", "HR Approved", "Generated"].includes(st) && (
-              <Button size="sm" variant="secondary" className="text-xs h-8" onClick={exportBank}>
-                Bank CSV
-              </Button>
-            )}
-            {st === "Generated" && isHRManager(userRole) && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-xs h-8 text-purple-600"
-                onClick={() => onStatusUpdate(record._id, "HR Approved")}
-              >
-                Legacy approve
-              </Button>
-            )}
-            {(st === "HR Approved" || st === "HR_Approved") && isPayrollOfficer(userRole) && !["CEO_Approved", "Disbursed"].includes(st) && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-xs h-8 text-green-600"
-                onClick={() => onStatusUpdate(record._id, "Paid", { paymentReference: payRef })}
-              >
-                Legacy paid
-              </Button>
-            )}
+              (isPayrollOfficer(userRole) || isAdmin(userRole)) &&
+              ["Generated", "Verified", "HR_Approved", "CEO_Approved", "Disbursed", "HR Approved"].includes(st) && (
+                <Button size="sm" variant="secondary" className="text-xs h-8" onClick={exportBank}>
+                  Bank CSV
+                </Button>
+              )}
           </div>
         </div>
       </div>
@@ -1009,10 +1343,10 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
 
           {record.employees?.map((emp, idx) => {
             const userInfo = employees.find(e => String(e._id) === String(emp.employeeId))
-            const name     = userInfo
+            const name = userInfo
               ? `${userInfo.firstName} ${userInfo.lastName}`
               : "Unknown"
-            const initial  = name[0]?.toUpperCase() || "?"
+            const initial = name[0]?.toUpperCase() || "?"
 
             return (
               <div

@@ -1,444 +1,615 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"  /*comment*/
 import { useAuth } from "@/contexts/AuthContext"
-import { useRole } from "@/contexts/RoleContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { FileText, Check, X, Search } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Download, FileText, Plus, Search } from "lucide-react"
 import { toast } from "sonner"
+import {
+  createDisciplinaryCase,
+  getDisciplinaryCases,
+  getDisciplinaryEmployees,
+  getEmployee,
+  updateDisciplinaryCase,
+  updateDisciplinaryStatus,
+} from "@/services/disciplinaryService"
+
+const STATUSES = ["Pending Review", "In Progress", "Completed"]
+const HR_OFFICER_ROLES = ["HR_OFFICER", "ADMIN", "SUPER_ADMIN"]
+const HR_MANAGER_ROLES = ["HR_MANAGER"]
+const REPORTING_ROLES = ["DEPARTMENT_MANAGER", "DIRECT_MANAGER"]
+const API_ORIGIN = (import.meta.env.VITE_API_URL || "http://localhost:5001/api").replace(/\/api\/?$/, "")
+
+const normalizeRole = (role) => (role || "").toUpperCase().replace(/\s+/g, "_")
+const getName = (employee) =>
+  employee?.name ||
+  [employee?.firstName, employee?.MiddleName, employee?.lastName].filter(Boolean).join(" ") ||
+  "-"
+const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-")
+const getCaseKey = (item) => item?._id || item?.caseId
+const getAttachmentUrl = (attachment) =>
+  attachment?.startsWith("http") ? attachment : `${API_ORIGIN}${attachment || ""}`
 
 const DisciplinaryActions = () => {
   const { user } = useAuth()
-  const { hasRole } = useRole()
-  const canRecordAction = hasRole(["HR Manager"])
+  const role = normalizeRole(user?.role)
+  const isHrOfficer = HR_OFFICER_ROLES.includes(role)
+  const isHrManager = HR_MANAGER_ROLES.includes(role)
+  const isHr = isHrOfficer || isHrManager
+  const isReportingManager = REPORTING_ROLES.includes(role)
+  const [cases, setCases] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedCase, setSelectedCase] = useState(null)
+  const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("All")
+  const [showCreateCase, setShowCreateCase] = useState(false)
+
+  const loadCases = async () => {
+    setLoading(true)
+    try {
+      const res = await getDisciplinaryCases()
+      setCases(res.data || [])
+    } catch (error) {
+      toast.error(error?.error || error?.message || "Failed to load disciplinary cases")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadCases()
+  }, [])
+
+  const filteredCases = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    return cases.filter((item) => {
+      const matchesSearch =
+        !term ||
+        item.caseId?.toLowerCase().includes(term) ||
+        getName(item.employee).toLowerCase().includes(term)
+      const matchesStatus = statusFilter === "All" || item.status === statusFilter
+      return matchesSearch && matchesStatus
+    })
+  }, [cases, search, statusFilter])
+
+  const counts = useMemo(
+    () =>
+      STATUSES.reduce((acc, status) => {
+        acc[status] = cases.filter((item) => item.status === status).length
+        return acc
+      }, {}),
+    [cases]
+  )
+
+  const updateCaseInList = (updated) => {
+    setSelectedCase(updated)
+    setCases((prev) => prev.map((item) => (getCaseKey(item) === getCaseKey(updated) ? updated : item)))
+  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Disciplinary Actions (HR Manager)</h1>
-        <p className="text-muted-foreground">Manage employee disciplinary actions and records</p>
+        <h1 className="text-3xl font-bold tracking-tight">Disciplinary</h1>
+        <p className="text-muted-foreground">
+          {isHr ? "Review disciplinary cases and track case status" : "Report incidents and view submitted cases"}
+        </p>
       </div>
 
-      <Tabs defaultValue={canRecordAction ? "record" : "history"}>
+      <Tabs defaultValue={isHr ? "dashboard" : "report"}>
         <TabsList>
-          {canRecordAction && <TabsTrigger value="record">Record Action</TabsTrigger>}
-          {canRecordAction && <TabsTrigger value="pending">Pending Approvals</TabsTrigger>}
-          <TabsTrigger value="history">Action History</TabsTrigger>
+          {isHr ? (
+            <>
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger value="cases">All Cases</TabsTrigger>
+              <TabsTrigger value="reports">Reports</TabsTrigger>
+            </>
+          ) : (
+            <>
+              <TabsTrigger value="report">Report Incident</TabsTrigger>
+              <TabsTrigger value="cases">My Cases</TabsTrigger>
+            </>
+          )}
         </TabsList>
 
-        {canRecordAction && (
-          <TabsContent value="record">
-            <ActionForm />
+        {isHr && (
+          <TabsContent value="dashboard">
+            <HrDashboard
+              cases={cases}
+              counts={counts}
+              isHrManager={isHrManager}
+              onView={setSelectedCase}
+              loading={loading}
+            />
           </TabsContent>
         )}
 
-        {canRecordAction && (
-          <TabsContent value="pending">
-            <PendingActions />
+        {!isHr && (
+          <TabsContent value="report">
+            <ReportIncidentForm user={user} canSelectEmployee={isReportingManager} onCreated={loadCases} />
           </TabsContent>
         )}
 
-        <TabsContent value="history">
-          <ActionHistory />
+        <TabsContent value="cases">
+          <AllCases
+            cases={filteredCases}
+            isHr={isHr}
+            isHrOfficer={isHrOfficer}
+            loading={loading}
+            search={search}
+            statusFilter={statusFilter}
+            showCreateCase={showCreateCase}
+            onToggleCreate={() => setShowCreateCase((value) => !value)}
+            onCreated={() => {
+              setShowCreateCase(false)
+              loadCases()
+            }}
+            onSearch={setSearch}
+            onStatusFilter={setStatusFilter}
+            onView={setSelectedCase}
+            user={user}
+          />
         </TabsContent>
+
+        {isHr && (
+          <TabsContent value="reports">
+            <Reports counts={counts} total={cases.length} />
+          </TabsContent>
+        )}
       </Tabs>
+
+      {selectedCase && (
+        <CaseDetails
+          item={selectedCase}
+          role={role}
+          isHrOfficer={isHrOfficer}
+          isHrManager={isHrManager}
+          onClose={() => setSelectedCase(null)}
+          onUpdated={updateCaseInList}
+        />
+      )}
     </div>
   )
 }
 
-const ActionForm = () => {
+const ReportIncidentForm = ({ user, canSelectEmployee, onCreated, compact = false }) => {
   const [formData, setFormData] = useState({
-    employeeId: "",
-    employeeName: "",
-    department: "",
-    actionType: "",
+    employeeId: canSelectEmployee ? "" : user?.employeeCode || "",
+    category: "",
     incidentDate: "",
     description: "",
-    actionDate: "",
-    notes: "",
   })
+  const [employees, setEmployees] = useState([])
+  const [employee, setEmployee] = useState(null)
+  const [attachment, setAttachment] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (canSelectEmployee) {
+      getDisciplinaryEmployees()
+        .then((res) => setEmployees(res.data || []))
+        .catch(() => setEmployees([]))
+    } else if (user?.employeeCode) {
+      loadEmployee(user.employeeCode)
+    }
+  }, [canSelectEmployee, user?.employeeCode])
+
+  const loadEmployee = async (employeeId = formData.employeeId) => {
+    if (!employeeId) return
+    try {
+      const res = await getEmployee(employeeId)
+      setEmployee(res.data || res)
+    } catch {
+      setEmployee(null)
+      if (canSelectEmployee) toast.error("Employee details could not be loaded")
+    }
+  }
+
+  const selectEmployee = (employeeCode) => {
+    const selected = employees.find((item) => item.employeeCode === employeeCode)
+    setFormData((prev) => ({ ...prev, employeeId: employeeCode }))
+    setEmployee(selected || null)
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSelectChange = (name, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-
-    if (
-      !formData.employeeId ||
-      !formData.employeeName ||
-      !formData.department ||
-      !formData.actionType ||
-      !formData.incidentDate ||
-      !formData.description ||
-      !formData.actionDate
-    ) {
+    if (!formData.category || !formData.incidentDate || !formData.description || (canSelectEmployee && !formData.employeeId)) {
       toast.error("Please fill in all required fields")
       return
     }
 
     setIsSubmitting(true)
+    try {
+      const payload = new FormData()
+      Object.entries(formData).forEach(([key, value]) => payload.append(key, value))
+      if (attachment) payload.append("attachment", attachment)
 
-    setTimeout(() => {
-      toast.success("Disciplinary action recorded successfully")
+      await createDisciplinaryCase(payload)
+      toast.success("Incident reported successfully")
+      setFormData({ employeeId: canSelectEmployee ? "" : user?.employeeCode || "", category: "", incidentDate: "", description: "" })
+      setEmployee(null)
+      setAttachment(null)
+      onCreated()
+    } catch (error) {
+      toast.error(error?.error || error?.message || "Failed to report incident")
+    } finally {
       setIsSubmitting(false)
-
-      setFormData({
-        employeeId: "",
-        employeeName: "",
-        department: "",
-        actionType: "",
-        incidentDate: "",
-        description: "",
-        actionDate: "",
-        notes: "",
-      })
-    }, 1500)
+    }
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Record Disciplinary Action</CardTitle>
-        <CardDescription>Submit a new disciplinary action for an employee</CardDescription>
+        <CardTitle>{compact ? "Create Case" : "Report Incident"}</CardTitle>
+        <CardDescription>Submitted cases move to Pending Review for HR</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="employeeId">
-                Employee ID <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="employeeId"
-                name="employeeId"
-                placeholder="Enter employee ID"
-                value={formData.employeeId}
-                onChange={handleChange}
-                required
-              />
+              <Label htmlFor="employeeId">Employee ID <span className="text-red-500">*</span></Label>
+              {canSelectEmployee && employees.length > 0 ? (
+                <select
+                  id="employeeId"
+                  name="employeeId"
+                  value={formData.employeeId}
+                  onChange={(e) => selectEmployee(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  required
+                >
+                  <option value="">Select employee</option>
+                  {employees.map((item) => (
+                    <option key={item._id || item.employeeCode} value={item.employeeCode}>
+                      {item.employeeCode} - {getName(item)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    id="employeeId"
+                    name="employeeId"
+                    value={formData.employeeId}
+                    onChange={handleChange}
+                    onBlur={() => canSelectEmployee && loadEmployee()}
+                    placeholder="Enter employee ID"
+                    readOnly={!canSelectEmployee}
+                    required
+                  />
+                  {canSelectEmployee && <Button type="button" variant="outline" onClick={() => loadEmployee()}>Load</Button>}
+                </div>
+              )}
             </div>
-
+            <ReadonlyField label="Employee Name" value={employee ? getName(employee) : `${user?.firstName || ""} ${user?.lastName || ""}`.trim()} />
+            <ReadonlyField label="Department" value={employee?.department || user?.department} />
+            <ReadonlyField label="Designation" value={employee?.designation || user?.designation} />
             <div className="space-y-2">
-              <Label htmlFor="employeeName">
-                Employee Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="employeeName"
-                name="employeeName"
-                placeholder="Enter employee name"
-                value={formData.employeeName}
-                onChange={handleChange}
-                required
-              />
+              <Label htmlFor="category">Incident Category <span className="text-red-500">*</span></Label>
+              <Input id="category" name="category" value={formData.category} onChange={handleChange} placeholder="Enter category" required />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="department">
-                Department <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.department}
-                onValueChange={(value) => handleSelectChange("department", value)}
-                required
-              >
-                <SelectTrigger id="department">
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="it">IT</SelectItem>
-                  <SelectItem value="hr">Human Resources</SelectItem>
-                  <SelectItem value="finance">Finance</SelectItem>
-                  <SelectItem value="operations">Operations</SelectItem>
-                  <SelectItem value="sales">Sales</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="actionType">
-                Action Type <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.actionType}
-                onValueChange={(value) => handleSelectChange("actionType", value)}
-                required
-              >
-                <SelectTrigger id="actionType">
-                  <SelectValue placeholder="Select action type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="verbal-warning">Verbal Warning</SelectItem>
-                  <SelectItem value="written-warning">Written Warning</SelectItem>
-                  <SelectItem value="suspension">Suspension</SelectItem>
-                  <SelectItem value="termination">Termination</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="incidentDate">
-                Incident Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="incidentDate"
-                name="incidentDate"
-                type="date"
-                value={formData.incidentDate}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="actionDate">
-                Action Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="actionDate"
-                name="actionDate"
-                type="date"
-                value={formData.actionDate}
-                onChange={handleChange}
-                required
-              />
+              <Label htmlFor="incidentDate">Incident Date <span className="text-red-500">*</span></Label>
+              <Input id="incidentDate" name="incidentDate" type="date" value={formData.incidentDate} onChange={handleChange} required />
             </div>
           </div>
-
           <div className="space-y-2">
-            <Label htmlFor="description">
-              Incident Description <span className="text-red-500">*</span>
-            </Label>
-            <Textarea
-              id="description"
-              name="description"
-              placeholder="Describe the incident"
-              value={formData.description}
-              onChange={handleChange}
-              rows={4}
-              required
-            />
+            <Label htmlFor="description">Description <span className="text-red-500">*</span></Label>
+            <Textarea id="description" name="description" value={formData.description} onChange={handleChange} rows={4} placeholder="Describe the incident" required />
           </div>
-
           <div className="space-y-2">
-            <Label htmlFor="notes">Additional Notes</Label>
-            <Textarea
-              id="notes"
-              name="notes"
-              placeholder="Enter any additional notes"
-              value={formData.notes}
-              onChange={handleChange}
-              rows={4}
-            />
+            <Label htmlFor="attachment">Attachments</Label>
+            <Input id="attachment" type="file" onChange={(e) => setAttachment(e.target.files?.[0] || null)} />
           </div>
         </form>
       </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline">Cancel</Button>
-        <Button onClick={handleSubmit} disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : "Record Action"}
-        </Button>
+      <CardFooter className="flex justify-end">
+        <Button onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting ? "Submitting..." : "Submit Incident"}</Button>
       </CardFooter>
     </Card>
   )
 }
 
-const PendingActions = () => {
-  const pendingActions = [
-    {
-      id: 1,
-      employeeName: "John Doe",
-      employeeId: "EMP001",
-      department: "IT",
-      actionType: "Written Warning",
-      incidentDate: "2025-04-01",
-      submittedBy: "Jane Smith",
-      submissionDate: "2025-04-15",
-    },
-    {
-      id: 2,
-      employeeName: "Alice Johnson",
-      employeeId: "EMP002",
-      department: "HR",
-      actionType: "Suspension",
-      incidentDate: "2025-03-20",
-      submittedBy: "Bob Williams",
-      submissionDate: "2025-04-10",
-    },
-  ]
+const ReadonlyField = ({ label, value }) => (
+  <div className="space-y-2">
+    <Label>{label}</Label>
+    <Input value={value || "-"} readOnly />
+  </div>
+)
 
-  const handleApprove = (id) => {
-    toast.success(`Disciplinary action #${id} approved successfully`)
-  }
-
-  const handleReject = (id) => {
-    toast.success(`Disciplinary action #${id} rejected successfully`)
-  }
+const HrDashboard = ({ cases, counts, isHrManager, onView, loading }) => {
+  const awaitingReview = cases.filter((item) => item.managerReviewRequested && item.status !== "Completed")
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Pending Disciplinary Actions</CardTitle>
-        <CardDescription>Review and approve disciplinary actions</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
-          <div className="grid grid-cols-7 bg-muted/50 p-3 text-sm font-medium">
-            <div>Employee</div>
-            <div>Employee ID</div>
-            <div>Department</div>
-            <div>Action Type</div>
-            <div>Incident Date</div>
-            <div>Submitted By</div>
-            <div>Actions</div>
-          </div>
-          <div className="divide-y">
-            {pendingActions.map((action) => (
-              <div key={action.id} className="grid grid-cols-7 p-3 text-sm">
-                <div className="font-medium">{action.employeeName}</div>
-                <div>{action.employeeId}</div>
-                <div>{action.department}</div>
-                <div>{action.actionType}</div>
-                <div>{action.incidentDate}</div>
-                <div>{action.submittedBy}</div>
-                <div className="flex space-x-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 text-green-600"
-                    onClick={() => handleApprove(action.id)}
-                  >
-                    <Check className="h-4 w-4" />
-                    <span className="sr-only">Approve</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 text-red-600"
-                    onClick={() => handleReject(action.id)}
-                  >
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Reject</span>
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8">
-                    <FileText className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {STATUSES.map((status) => (
+          <Card key={status}>
+            <CardHeader className="pb-2">
+              <CardDescription>{status}</CardDescription>
+              <CardTitle className="text-3xl">{counts[status] || 0}</CardTitle>
+            </CardHeader>
+          </Card>
+        ))}
+      </div>
+      {isHrManager && (
+        <CasesTable
+          title="Cases Awaiting Manager Review"
+          description="Cases where HR Officer requested manager review"
+          cases={awaitingReview}
+          onView={onView}
+          loading={loading}
+        />
+      )}
+      <CasesTable title="Recent Cases" description="Latest submitted incidents" cases={cases.slice(0, 5)} onView={onView} loading={loading} />
+    </div>
   )
 }
 
-const ActionHistory = () => {
-  const actionHistory = [
-    {
-      id: 1,
-      employeeName: "John Doe",
-      employeeId: "EMP001",
-      department: "IT",
-      actionType: "Written Warning",
-      incidentDate: "2025-02-01",
-      status: "Approved",
-      approvedBy: "Jane Smith",
-      approvalDate: "2025-02-25",
-    },
-    {
-      id: 2,
-      employeeName: "Alice Johnson",
-      employeeId: "EMP002",
-      department: "HR",
-      actionType: "Suspension",
-      incidentDate: "2025-01-15",
-      status: "Rejected",
-      approvedBy: "Bob Williams",
-      approvalDate: "2025-02-10",
-      reason: "Insufficient evidence",
-    },
-  ]
-
-  return (
+const AllCases = ({
+  cases,
+  isHr,
+  isHrOfficer,
+  loading,
+  search,
+  statusFilter,
+  showCreateCase,
+  onToggleCreate,
+  onCreated,
+  onSearch,
+  onStatusFilter,
+  onView,
+  user,
+}) => (
+  <div className="space-y-4">
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Disciplinary Action History</CardTitle>
-          <CardDescription>View history of all disciplinary actions</CardDescription>
+      <CardHeader className="space-y-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <CardTitle>{isHr ? "All Cases" : "My Cases"}</CardTitle>
+            <CardDescription>{isHr ? "Search and review disciplinary cases" : "View submitted incidents"}</CardDescription>
+          </div>
+          {isHrOfficer && (
+            <Button type="button" size="sm" onClick={onToggleCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Case
+            </Button>
+          )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search actions..." className="pl-8 w-[200px] md:w-[300px]" />
+            <Input type="search" value={search} onChange={(e) => onSearch(e.target.value)} placeholder="Search employee or case ID" className="pl-8 w-full md:w-[300px]" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {["All", ...STATUSES].map((status) => (
+              <Button key={status} type="button" variant={statusFilter === status ? "default" : "outline"} size="sm" onClick={() => onStatusFilter(status)}>
+                {status}
+              </Button>
+            ))}
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
-          <div className="grid grid-cols-7 bg-muted/50 p-3 text-sm font-medium">
-            <div>Employee</div>
-            <div>Employee ID</div>
-            <div>Department</div>
-            <div>Action Type</div>
-            <div>Incident Date</div>
-            <div>Status</div>
-            <div>Actions</div>
-          </div>
-          <div className="divide-y">
-            {actionHistory.map((action) => (
-              <div key={action.id} className="grid grid-cols-7 p-3 text-sm">
-                <div className="font-medium">{action.employeeName}</div>
-                <div>{action.employeeId}</div>
-                <div>{action.department}</div>
-                <div>{action.actionType}</div>
-                <div>{action.incidentDate}</div>
-                <div>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                      action.status === "Approved"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                        : action.status === "Rejected"
-                        ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                        : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
-                    }`}
-                  >
-                    {action.status}
-                  </span>
-                </div>
-                <div>
-                  <Button variant="ghost" size="icon">
-                    <FileText className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <CasesGrid cases={cases} isHr={isHr} onView={onView} loading={loading} />
       </CardContent>
     </Card>
+    {showCreateCase && <ReportIncidentForm user={user} canSelectEmployee compact onCreated={onCreated} />}
+  </div>
+)
+
+const CasesTable = ({ title, description, cases, onView, loading }) => (
+  <Card>
+    <CardHeader>
+      <CardTitle>{title}</CardTitle>
+      <CardDescription>{description}</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <CasesGrid cases={cases} isHr onView={onView} loading={loading} />
+    </CardContent>
+  </Card>
+)
+
+const CasesGrid = ({ cases, isHr, onView, loading }) => (
+  <div className="rounded-md border overflow-x-auto">
+    <div className={`grid min-w-[680px] ${isHr ? "grid-cols-6" : "grid-cols-5"} bg-muted/50 p-3 text-sm font-medium`}>
+      <div>Case ID</div>
+      {isHr && <div>Employee</div>}
+      <div>Category</div>
+      <div>Status</div>
+      <div>Created Date</div>
+      <div>Action</div>
+    </div>
+    <div className="divide-y min-w-[680px]">
+      {loading ? (
+        <div className="p-3 text-sm text-muted-foreground">Loading cases...</div>
+      ) : cases.length === 0 ? (
+        <div className="p-3 text-sm text-muted-foreground">No cases found.</div>
+      ) : (
+        cases.map((item) => (
+          <div key={getCaseKey(item)} className={`grid ${isHr ? "grid-cols-6" : "grid-cols-5"} p-3 text-sm items-center`}>
+            <div className="font-medium">{item.caseId}</div>
+            {isHr && <div>{getName(item.employee)}</div>}
+            <div>{item.category}</div>
+            <div><StatusBadge status={item.status} /></div>
+            <div>{formatDate(item.createdAt)}</div>
+            <div>
+              <Button variant="ghost" size="icon" onClick={() => onView(item)}>
+                <FileText className="h-4 w-4" />
+                <span className="sr-only">View details</span>
+              </Button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+)
+
+const CaseDetails = ({ item, isHrOfficer, isHrManager, onClose, onUpdated }) => {
+  const [hrRemarks, setHrRemarks] = useState(item.hrRemarks || "")
+  const [managerReview, setManagerReview] = useState(item.managerReview || "")
+  const [saving, setSaving] = useState(false)
+  const isCompleted = item.status === "Completed"
+
+  useEffect(() => {
+    setHrRemarks(item.hrRemarks || "")
+    setManagerReview(item.managerReview || "")
+  }, [item])
+
+  const saveProgress = async (payload, message = "Progress saved") => {
+    setSaving(true)
+    try {
+      const res = await updateDisciplinaryCase(getCaseKey(item), payload)
+      onUpdated(res.data)
+      toast.success(message)
+    } catch (error) {
+      toast.error(error?.error || error?.message || "Failed to save progress")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const changeStatus = async (status) => {
+    setSaving(true)
+    try {
+      const res = await updateDisciplinaryStatus(getCaseKey(item), status)
+      onUpdated(res.data)
+      toast.success("Status updated")
+    } catch (error) {
+      toast.error(error?.error || error?.message || "Failed to update status")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight">Case Details</h2>
+          <p className="text-muted-foreground">{item.caseId}</p>
+        </div>
+        <Button variant="outline" onClick={onClose}>Close</Button>
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle>Employee Information</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <Info label="Employee Name" value={getName(item.employee)} />
+          <Info label="Employee ID" value={item.employee?.employeeCode || item.employeeId} />
+          <Info label="Department" value={item.employee?.department} />
+          <Info label="Designation" value={item.employee?.designation} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Incident Details</CardTitle></CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <Info label="Category" value={item.category} />
+          <Info label="Incident Date" value={formatDate(item.incidentDate)} />
+          <Info label="Description" value={item.description} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Attachments</CardTitle></CardHeader>
+        <CardContent>
+          {item.attachment ? (
+            <div className="flex gap-2">
+              <Button variant="outline" asChild><a href={getAttachmentUrl(item.attachment)} target="_blank" rel="noreferrer">View</a></Button>
+              <Button variant="outline" asChild><a href={getAttachmentUrl(item.attachment)} download><Download className="h-4 w-4 mr-2" />Download</a></Button>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No attachment uploaded.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>HR Review</CardTitle>
+          {item.managerReviewRequested && <CardDescription>Manager review requested</CardDescription>}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>HR Remarks <span className="text-red-500">*</span></Label>
+            <Textarea value={hrRemarks} onChange={(e) => setHrRemarks(e.target.value)} rows={5} readOnly={!isHrOfficer || isCompleted} placeholder="HR remarks" />
+          </div>
+          <div className="space-y-2">
+            <Label>Manager Review</Label>
+            <Textarea value={managerReview} onChange={(e) => setManagerReview(e.target.value)} rows={4} readOnly={!isHrManager || isCompleted} placeholder="Manager review" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {isHrOfficer && !isCompleted && (
+              <Button onClick={() => saveProgress({ hrRemarks })} disabled={saving}>Save Progress</Button>
+            )}
+            {isHrManager && !isCompleted && (
+              <Button onClick={() => saveProgress({ managerReview }, "Manager review saved")} disabled={saving}>Save Manager Review</Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Status</CardTitle></CardHeader>
+        <CardContent className="flex flex-wrap items-center gap-2">
+          <StatusBadge status={item.status} />
+          {isHrOfficer && item.status === "Pending Review" && <Button onClick={() => changeStatus("In Progress")} disabled={saving}>Start Investigation</Button>}
+          {isHrOfficer && item.status === "In Progress" && (
+            <>
+              <Button variant="outline" onClick={() => saveProgress({ hrRemarks }, "Progress saved")} disabled={saving}>Save Progress</Button>
+              <Button
+                variant="outline"
+                onClick={() => saveProgress({ hrRemarks, managerReviewRequested: true }, "Manager review requested")}
+                disabled={saving || item.managerReviewRequested}
+              >
+                Request Manager Review
+              </Button>
+              <Button onClick={() => changeStatus("Completed")} disabled={saving || !hrRemarks.trim()}>Mark Completed</Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   )
+}
+
+const Reports = ({ total, counts }) => (
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <ReportCard title="Total Cases" value={total} />
+    {STATUSES.map((status) => <ReportCard key={status} title={status} value={counts[status] || 0} />)}
+  </div>
+)
+
+const ReportCard = ({ title, value }) => (
+  <Card>
+    <CardHeader>
+      <CardDescription>{title}</CardDescription>
+      <CardTitle className="text-3xl">{value}</CardTitle>
+    </CardHeader>
+  </Card>
+)
+
+const Info = ({ label, value }) => (
+  <div>
+    <div className="text-muted-foreground">{label}</div>
+    <div className="font-medium">{value || "-"}</div>
+  </div>
+)
+
+const StatusBadge = ({ status }) => {
+  const variant = status === "Completed" ? "success" : status === "In Progress" ? "default" : "warning"
+  return <Badge variant={variant}>{status}</Badge>
 }
 
 export default DisciplinaryActions

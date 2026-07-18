@@ -40,6 +40,7 @@ const AllEmployees = () => {
 
       const formatted = dataArray.map(u => ({
         id: u._id || u.employeeCode,
+        employeeCode: u.employeeCode || 'Not Assigned',
         firstName: u.firstName || '',
         lastName: u.lastName || '',
         name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || '—',
@@ -50,7 +51,9 @@ const AllEmployees = () => {
         gender: u.gender || 'N/A',
         status: u.status || (u.isActive ? 'Active' : 'Inactive'),
         avatar: (u.firstName?.[0] || u.name?.[0] || 'U').toUpperCase(),
+        profilePicture: u.profilePicture || u.avatarUrl || u.photo || null,
         createdAt: u.createdAt,
+        exitDate: u.exitDate,
       }))
       
       setEmployees(formatted)
@@ -83,14 +86,16 @@ const AllEmployees = () => {
       const allUsers = response.data || response.users || []
       const dataArray = Array.isArray(allUsers) ? allUsers : []
 
-      const headers = ['Name', 'Email', 'Department', 'Role', 'Gender', 'Status', 'Joined Date']
+      const headers = ['Employee ID', 'Name', 'Email', 'Department', 'Role', 'Gender', 'Status', 'Joined Date']
       
       const csvRows = dataArray.map(u => {
+        const empCode = u.employeeCode || 'Not Assigned'
         const name = u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || '—'
         const status = u.status || (u.isActive ? 'Active' : 'Inactive')
         const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'
         
         return [
+          empCode,
           name, 
           u.email || '', 
           u.department || 'N/A', 
@@ -218,18 +223,20 @@ const AllEmployees = () => {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
-                <TableHead className="font-bold w-[30%]">Employee</TableHead>
-                <TableHead className="font-bold w-[20%]">Department</TableHead>
-                <TableHead className="font-bold w-[20%]">Access Role</TableHead>
-                <TableHead className="font-bold w-[15%]">Gender</TableHead>
-                <TableHead className="font-bold w-[15%]">Account Status</TableHead>
+                <TableHead className="font-bold w-[25%]">Employee</TableHead>
+                <TableHead className="font-bold w-[15%]">Employee ID</TableHead>
+                <TableHead className="font-bold w-[15%]">Department</TableHead>
+                <TableHead className="font-bold w-[15%]">Access Role</TableHead>
+                <TableHead className="font-bold w-[10%]">Gender</TableHead>
+                <TableHead className="font-bold w-[20%]">Account Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-full bg-muted animate-pulse" /><div className="space-y-2"><div className="h-4 w-32 bg-muted animate-pulse rounded" /><div className="h-3 w-24 bg-muted animate-pulse rounded" /></div></div></TableCell>
+                    <TableCell><div className="flex items-center gap-3"><div className="h-8 w-8 rounded-full bg-muted animate-pulse" /><div className="space-y-2"><div className="h-4 w-32 bg-muted animate-pulse rounded" /><div className="h-3 w-24 bg-muted animate-pulse rounded" /></div></div></TableCell>
+                    <TableCell><div className="h-5 w-20 bg-muted animate-pulse rounded-full" /></TableCell>
                     <TableCell><div className="h-4 w-24 bg-muted animate-pulse rounded" /></TableCell>
                     <TableCell><div className="h-5 w-20 bg-muted animate-pulse rounded-full" /></TableCell>
                     <TableCell><div className="h-4 w-16 bg-muted animate-pulse rounded" /></TableCell>
@@ -238,7 +245,7 @@ const AllEmployees = () => {
                 ))
               ) : employees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-64 text-center">
+                  <TableCell colSpan={6} className="h-64 text-center">
                     <div className="flex flex-col items-center justify-center text-muted-foreground space-y-2">
                       <Users className="h-10 w-10 opacity-20" />
                       <p className="text-sm font-medium">No employees found in this category.</p>
@@ -254,14 +261,25 @@ const AllEmployees = () => {
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary border border-primary/20">
-                          {emp.avatar}
-                        </div>
+                        {emp.profilePicture ? (
+                          <img src={emp.profilePicture} alt={emp.name} className="h-8 w-8 rounded-full object-cover border border-muted" />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-muted/80 flex items-center justify-center text-xs font-bold text-muted-foreground border border-muted/50">
+                            {emp.avatar}
+                          </div>
+                        )}
                         <div className="flex flex-col">
-                          <span className="font-semibold text-sm">{emp.name}</span>
-                          <span className="text-xs text-muted-foreground">{emp.email}</span>
+                          <span className="font-bold text-[13px] text-foreground">{emp.name}</span>
+                          <span className="text-[11px] text-muted-foreground font-medium">{emp.email}</span>
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {emp.employeeCode === 'Not Assigned' ? (
+                        <Badge variant="destructive" className="bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-200 text-[10px] px-2 py-0.5">Not Assigned</Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-muted/30 text-muted-foreground font-mono text-[11px] px-2 py-0.5">{emp.employeeCode}</Badge>
+                      )}
                     </TableCell>
                     <TableCell><span className="text-sm">{emp.department}</span></TableCell>
                     <TableCell>

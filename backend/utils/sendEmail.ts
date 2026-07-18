@@ -109,3 +109,22 @@ export const sendApplicationStatusEmail = async (
     }),
   });
 };
+
+export const sendExitBlockedEmail = async (
+  hrEmail: string,
+  employeeName: string,
+  employeeId: string,
+  pendingDepartments: string[]
+) => {
+  const message = `The final exit for ${employeeName} (${employeeId}) has been blocked on their Last Working Day due to pending clearances from: ${pendingDepartments.join(', ')}. Please take immediate action.`;
+  
+  return sendEmail({
+    to: hrEmail,
+    subject: `URGENT: Exit Blocked for ${employeeName}`,
+    html: renderEmailTemplate('genericNotification', {
+      name: 'HR Team',
+      title: 'Employee Exit Blocked',
+      message,
+    }),
+  });
+};
