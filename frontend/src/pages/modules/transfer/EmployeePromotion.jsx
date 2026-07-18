@@ -118,7 +118,7 @@ const ApprovalBoard = ({ userRole }) => {
                 </Select>
               </div>
               <div className="w-full space-y-1">
-                <label className="text-xs font-semibold">Verify Basic Salary (₹)</label>
+                <label className="text-xs font-semibold">Verify Basic Annual Salary (₹)</label>
                 <Input type="number" value={verifyData.newSalary} onChange={e => setVerifyData({...verifyData, newSalary: e.target.value})} required />
               </div>
               <div className="flex gap-2">
@@ -418,7 +418,7 @@ const NominationForm = ({ user }) => {
                   <Input disabled value={selectedEmp.role || "N/A"} className="bg-transparent font-medium" />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Current Basic Salary</label>
+                  <label className="text-xs text-muted-foreground">Current Basic Annual Salary</label>
                   <Input disabled value={`₹ ${selectedEmp.salary?.basic || "0"}`} className="bg-transparent font-medium text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
@@ -444,7 +444,7 @@ const NominationForm = ({ user }) => {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold">New Basic Salary <span className="text-red-500">*</span></label>
+                  <label className="text-xs font-semibold">New Basic Annual Salary <span className="text-red-500">*</span></label>
                   <Input type="number" placeholder="e.g. 75000" value={formData.newSalary} onChange={e => setFormData(p => ({...p, newSalary: e.target.value}))} />
                 </div>
               </div>

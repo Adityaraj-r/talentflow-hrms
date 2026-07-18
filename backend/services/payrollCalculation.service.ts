@@ -237,11 +237,11 @@ export async function computeEmployeePayrollLine(params: {
     periodEnd
   )
 
-  const basicFull = Number(employee.salary?.basic) || 0
-  const hraFull = Number(employee.salary?.allowances?.hra) || 0
-  const tr = Number(employee.salary?.allowances?.transport) || 0
-  const med = Number(employee.salary?.allowances?.medical) || 0
-  const oth = Number(employee.salary?.allowances?.other) || 0
+  const basicFull = (Number(employee.salary?.basic) || 0) / 12
+  const hraFull = (Number(employee.salary?.allowances?.hra) || 0) / 12
+  const tr = (Number(employee.salary?.allowances?.transport) || 0) / 12
+  const med = (Number(employee.salary?.allowances?.medical) || 0) / 12
+  const oth = (Number(employee.salary?.allowances?.other) || 0) / 12
 
   const basic = Math.round(basicFull * prorationFactor)
   const hra = Math.round(hraFull * prorationFactor)
@@ -318,10 +318,10 @@ const earnings = {
     earnings.reimbursement +
     earnings.performanceBonus
 
-  const fixedPf = Number(employee.salary?.deductions?.pf) || 0
-  const fixedInsurance = Number(employee.salary?.deductions?.insurance) || 0
-  const fixedOther = Number(employee.salary?.deductions?.other) || 0
-  const fixedTax = Number(employee.salary?.deductions?.tax) || 0
+  const fixedPf = (Number(employee.salary?.deductions?.pf) || 0) / 12
+  const fixedInsurance = (Number(employee.salary?.deductions?.insurance) || 0) / 12
+  const fixedOther = (Number(employee.salary?.deductions?.other) || 0) / 12
+  const fixedTax = (Number(employee.salary?.deductions?.tax) || 0) / 12
 
   const stat = applyStatutoryDeductions(settings, {
     basic: basicFull,
