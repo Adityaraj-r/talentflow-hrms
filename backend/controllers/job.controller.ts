@@ -20,6 +20,7 @@ export const createJob = async (req: Request, res: Response) => {
       department: req.body.department,
       positions: Number(req.body.positions),
       employmentType: req.body.employmentType,
+      description: req.body.description,
       deadline: req.body.deadline,
       status: req.body.status || "Draft"
     };
