@@ -13,6 +13,9 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import * as payrollService from "@/services/payrollService";
 import apiClient from "@/services/apiClient";
+import {Dialog, DialogContent, DialogHeader,  DialogTitle,  DialogFooter,} from "@/components/ui/dialog";
+
+
 
 const normStaffRole = (user) => {
   const r = typeof user?.role === "string" ? user.role : user?.role?.name;
@@ -317,16 +320,32 @@ const TicketListTable = ({ mode }) => {
                 <TableCell className="font-medium align-middle">{t.employeeName}</TableCell>
                 <TableCell className="align-middle">
                   <Badge variant="outline" className={t.type === "advance"
-                    ? "bg-blue-50 text-blue-700 border-blue-200"
-                    : "bg-purple-50 text-purple-700 border-purple-200"}>
+                    ?"text-sky-600"
+                        : "text-violet-600"}>
                     {t.type === "advance" ? "Salary Advance" : "Travel Ticket"}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground align-middle">
-                  {t.type === "advance"
-                    ? `₹ ${Number(t.amount).toLocaleString()}`
-                    : `${t.destination || "—"} · ${t.ticketClass || "—"}`}
-                </TableCell>
+              <TableCell className="align-middle">
+  {t.type === "advance" ? (
+    <span className="text-black dark:text-white">
+      ₹{Number(t.amount || 0).toLocaleString()}
+    </span>
+  ) : (
+    <div className="flex flex-col">
+      <span className="text-sm">
+        {t.destination || "—"}
+      </span>
+      <span className="text-xs text-muted-foreground">
+        {t.ticketClass
+          ? t.ticketClass
+              .split("-")
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(" ")
+          : "—"}
+      </span>
+    </div>
+  )}
+</TableCell>
                 <TableCell className="text-sm align-middle max-w-[200px] truncate" title={t.reason}>{t.reason}</TableCell>
                 {mode === "all" && (
                   <TableCell className="align-middle">
@@ -340,7 +359,7 @@ const TicketListTable = ({ mode }) => {
                 </TableCell>
                 {mode === "pending" && (
                   <TableCell className="text-right align-middle">
-                    <PendingRowActions ticketId={t._id} onDone={load} />
+                    <PendingRowActions ticket={t} onDone={load} />
                   </TableCell>
                 )}
               </TableRow>
@@ -352,32 +371,276 @@ const TicketListTable = ({ mode }) => {
   );
 };
 
-const PendingRowActions = ({ ticketId, onDone }) => (
+const PendingRowActions = ({ ticket, onDone }) => {
+  const { user } = useAuth();
+    const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectLoading, setRejectLoading] = useState(false);
+
+ const role = normStaffRole(user);
+ const handleReject = async () => {
+  try {
+    setRejectLoading(true);
+
+    await payrollService.updateTicketStatus(
+      ticket._id,
+      "Rejected",
+      rejectReason
+    );
+
+    toast.success("Rejected");
+
+    setRejectOpen(false);
+    setRejectReason("");
+
+    onDone();
+
+  } catch (err) {
+    toast.error("Action failed");
+  } finally {
+    setRejectLoading(false);
+  }
+};
+
+  // Finance Manager Action
+if (
+  role === "FINANCEMANAGER" &&
+  ticket.workflowStage === "PENDING_FINANCE"
+) {
+return (
+<>
   <div className="inline-flex gap-1 justify-end">
-    <Button size="icon" variant="outline"
-      className="h-8 w-8 text-green-600 hover:bg-green-50"
-      onClick={async () => {
-        try {
-          await payrollService.updateTicketStatus(ticketId, "Approved");
-          toast.success("Approved");
-          onDone();
-        } catch { toast.error("Action failed"); }
-      }}>
+
+    <Button
+      size="icon"
+      variant="outline"
+      className="h-8 w-8 text-green-600"
+     onClick={async () => {
+  try {
+
+    await payrollService.updateTicketStatus(
+      ticket._id,
+      "Approved"
+    );
+
+    toast.success("Sent to Payroll Approval");
+    onDone();
+
+  } catch (err) {
+    toast.error(
+      err?.response?.data?.error || "Approval failed"
+    );
+  }
+}}
+    >
       <Check className="h-4 w-4" />
     </Button>
-    <Button size="icon" variant="outline"
-      className="h-8 w-8 text-red-600 hover:bg-red-50"
-      onClick={async () => {
-        try {
-          await payrollService.updateTicketStatus(ticketId, "Rejected");
-          toast.success("Rejected");
-          onDone();
-        } catch { toast.error("Action failed"); }
-      }}>
+
+
+    <Button
+      size="icon"
+      variant="outline"
+      className="h-8 w-8 text-red-600"
+      onClick={() => setRejectOpen(true)}
+    >
       <X className="h-4 w-4" />
     </Button>
+
   </div>
+
+
+  <Dialog
+    open={rejectOpen}
+    onOpenChange={setRejectOpen}
+  >
+
+    <DialogContent>
+
+      <DialogHeader>
+        <DialogTitle>
+          Reject Ticket Request
+        </DialogTitle>
+      </DialogHeader>
+
+
+      <Textarea
+        placeholder="Enter rejection reason..."
+        value={rejectReason}
+        onChange={(e)=>setRejectReason(e.target.value)}
+      />
+
+
+      <DialogFooter>
+
+        <Button
+          variant="outline"
+          onClick={()=>{
+            setRejectOpen(false);
+            setRejectReason("");
+          }}
+        >
+          Cancel
+        </Button>
+
+
+        <Button
+          className="bg-red-600 text-white"
+          disabled={!rejectReason.trim() || rejectLoading}
+          onClick={handleReject}
+        >
+          {rejectLoading 
+            ? "Rejecting..." 
+            : "Reject Request"
+          }
+        </Button>
+
+
+      </DialogFooter>
+
+    </DialogContent>
+
+  </Dialog>
+
+</>
 );
+}
+ 
+ if (
+  role === "PAYROLLOFFICER" &&
+  ticket.workflowStage === "PENDING_PAYROLL"
+) {
+  return (
+    <>
+      <div className="space-y-2">
+
+        <div className="text-xs text-green-600">
+          Approved by: {ticket.financeApprovedBy}
+        </div>
+
+
+        <div className="inline-flex gap-1 justify-end">
+
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-8 w-8 text-green-600"
+            onClick={async () => {
+
+             try {
+
+ await payrollService.updateTicketStatus(
+   ticket._id,
+   "Approved"
+ );
+
+ toast.success("Ticket Approved Successfully");
+
+ onDone();
+
+} catch(err){
+
+ toast.error(
+  err?.response?.data?.error || "Approval failed"
+ );
+
+}
+
+              toast.success("Approved");
+              onDone();
+
+            }}
+          >
+            <Check className="h-4 w-4" />
+          </Button>
+
+
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-8 w-8 text-red-600"
+            onClick={() => setRejectOpen(true)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+
+
+        </div>
+
+      </div>
+
+
+      <Dialog
+        open={rejectOpen}
+        onOpenChange={setRejectOpen}
+      >
+
+        <DialogContent>
+
+          <DialogHeader>
+            <DialogTitle>
+              Reject Ticket Request
+            </DialogTitle>
+          </DialogHeader>
+
+
+          <Textarea
+            placeholder="Enter rejection reason..."
+            value={rejectReason}
+            onChange={(e)=>setRejectReason(e.target.value)}
+          />
+
+
+          <DialogFooter>
+
+            <Button
+              variant="outline"
+              onClick={()=>{
+                setRejectOpen(false);
+                setRejectReason("");
+              }}
+            >
+              Cancel
+            </Button>
+
+
+            <Button
+              className="bg-red-600 text-white"
+              disabled={!rejectReason.trim() || rejectLoading}
+              onClick={handleReject}
+            >
+              {
+                rejectLoading 
+                ? "Rejecting..."
+                : "Reject Request"
+              }
+            </Button>
+
+
+          </DialogFooter>
+
+
+        </DialogContent>
+
+      </Dialog>
+
+    </>
+  );
+}
+
+ 
+  if (
+    role === "PAYROLLOFFICER" &&
+    ticket.workflowStage === "PENDING_FINANCE"
+  ) {
+    return (
+      <span className="text-xs text-orange-600 font-medium">
+        Pending Finance Approval
+      </span>
+    );
+  }
+
+  return null;
+};
 
 const PendingTicketsPanel = () => <TicketListTable mode="pending" />;
 
