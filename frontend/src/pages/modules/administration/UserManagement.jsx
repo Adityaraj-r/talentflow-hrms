@@ -265,7 +265,7 @@ const UserManagement = () => {
     inactive: users.filter(u => u.status === 'Inactive').length
   }), [users])
 
-  const SalarySection = () => (
+  const renderSalarySection = () => (
     <div className="space-y-3 border rounded-lg p-4 bg-muted/20">
       <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
         Salary Structure (₹)
@@ -489,7 +489,7 @@ const UserManagement = () => {
                 </div>
 
                 {/* Salary Section */}
-                <SalarySection />
+                {renderSalarySection()}
 
                 <DialogFooter className="pt-6">
                   <Button type="button" variant="ghost" onClick={handleResetForm}>Cancel</Button>
@@ -576,7 +576,7 @@ const UserManagement = () => {
                 </div>
 
                 {/* Salary Section in Edit too */}
-                <SalarySection />
+                {renderSalarySection()}
 
                 <DialogFooter className="pt-6">
                   <Button type="button" variant="ghost" onClick={() => setIsEditOpen(false)}>Cancel</Button>

@@ -4,6 +4,8 @@ export type OfferStatus = 'Pending HR Manager Approval' | 'Pending CEO Approval'
 
 export interface IOffer extends Document {
   offerId: string;
+  candidateId?: mongoose.Types.ObjectId;
+  candidateEmail?: string;
   candidateName: string;
   position?: string;
   department?: string;
@@ -90,6 +92,8 @@ const PreOnboardingStepSchema = new Schema(
 
 const OfferSchema: Schema = new Schema({
   offerId: { type: String, required: true, unique: true },
+  candidateId: { type: Schema.Types.ObjectId, ref: 'Application' },
+  candidateEmail: { type: String, default: '' },
   candidateName: { type: String, required: true },
   position: { type: String, default: '' },
   department: { type: String, default: '' },

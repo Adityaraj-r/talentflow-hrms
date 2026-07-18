@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, Navigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, UserCheck, ShieldAlert, Users, RefreshCw, ChevronRight, Download, Loader2 } from "lucide-react"
+import { Search, UserCheck, ShieldAlert, Users, RefreshCw, ChevronRight, Download, Loader2, UserMinus } from "lucide-react"
 import adminService from "@/services/adminService"
 import { ROLES } from "@/constants/roles"
 import { useAuth } from "@/contexts/AuthContext"
@@ -19,8 +19,14 @@ const AllEmployees = () => {
   const [isExporting, setIsExporting] = useState(false)
   const [employees, setEmployees] = useState([])
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, totalItems: 0 })
-  const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0, roles: 0 })
-  const [filters, setFilters] = useState({ search: '', role: 'all', page: 1, limit: 10 })
+  const [stats, setStats] = useState({ total: 0, active: 0, onNotice: 0, inactive: 0, roles: 0 })
+  const [activeCard, setActiveCard] = useState('total')
+  const [filters, setFilters] = useState({ search: '', role: 'all', page: 1, limit: 10, statusFilter: 'total' })
+
+  // Sync activeCard with filters
+  useEffect(() => {
+    setFilters(p => ({ ...p, statusFilter: activeCard, page: 1 }))
+  }, [activeCard])
 
   const fetchEmployees = useCallback(async () => {
     setIsLoading(true)
@@ -33,7 +39,8 @@ const AllEmployees = () => {
       const dataArray = Array.isArray(userData) ? userData : []
 
       const formatted = dataArray.map(u => ({
-        id: u._id,
+        id: u._id || u.employeeCode,
+        employeeCode: u.employeeCode || 'Not Assigned',
         firstName: u.firstName || '',
         lastName: u.lastName || '',
         name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || '—',
@@ -42,9 +49,11 @@ const AllEmployees = () => {
         department: u.department || 'N/A',
         phoneNumber: u.phoneNumber || '',
         gender: u.gender || 'N/A',
-        status: u.isActive ? 'Active' : 'Inactive',
+        status: u.status || (u.isActive ? 'Active' : 'Inactive'),
         avatar: (u.firstName?.[0] || u.name?.[0] || 'U').toUpperCase(),
+        profilePicture: u.profilePicture || u.avatarUrl || u.photo || null,
         createdAt: u.createdAt,
+        exitDate: u.exitDate,
       }))
       
       setEmployees(formatted)
@@ -54,7 +63,8 @@ const AllEmployees = () => {
         setStats({
           total: response.stats.total,
           active: response.stats.active,
-          inactive: response.stats.inactive,
+          onNotice: response.stats.onNotice || 0,
+          inactive: response.stats.inactive || 0, // This is now 'Exited'
           roles: response.stats.rolesAssigned
         })
       }
@@ -76,14 +86,16 @@ const AllEmployees = () => {
       const allUsers = response.data || response.users || []
       const dataArray = Array.isArray(allUsers) ? allUsers : []
 
-      const headers = ['Name', 'Email', 'Department', 'Role', 'Gender', 'Status', 'Joined Date']
+      const headers = ['Employee ID', 'Name', 'Email', 'Department', 'Role', 'Gender', 'Status', 'Joined Date']
       
       const csvRows = dataArray.map(u => {
+        const empCode = u.employeeCode || 'Not Assigned'
         const name = u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || '—'
-        const status = u.isActive ? 'Active' : 'Inactive'
+        const status = u.status || (u.isActive ? 'Active' : 'Inactive')
         const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'
         
         return [
+          empCode,
           name, 
           u.email || '', 
           u.department || 'N/A', 
@@ -130,11 +142,47 @@ const AllEmployees = () => {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatsCard title="Total Staff" value={stats.total} icon={<Users className="h-8 w-8" />} variant="blue" />
-        <StatsCard title="Active" value={stats.active} icon={<UserCheck className="h-8 w-8" />} variant="green" />
-        <StatsCard title="Inactive" value={stats.inactive} icon={<ShieldAlert className="h-8 w-8" />} variant="orange" />
-        <StatsCard title="Roles Assigned" value={stats.roles} icon={<ShieldAlert className="h-8 w-8" />} variant="red" />
+      <div className="grid gap-4 md:grid-cols-5">
+        <StatsCard 
+          title="Total Staff" 
+          value={stats.total} 
+          icon={<Users className="h-8 w-8" />} 
+          variant="blue" 
+          isActive={activeCard === 'total'}
+          onClick={() => setActiveCard('total')}
+        />
+        <StatsCard 
+          title="Active Employees" 
+          value={stats.active} 
+          icon={<UserCheck className="h-8 w-8" />} 
+          variant="green" 
+          isActive={activeCard === 'active'}
+          onClick={() => setActiveCard('active')}
+        />
+        <StatsCard 
+          title="On Notice Period" 
+          value={stats.onNotice} 
+          icon={<ShieldAlert className="h-8 w-8" />} 
+          variant="yellow" 
+          isActive={activeCard === 'onNotice'}
+          onClick={() => setActiveCard('onNotice')}
+        />
+        <StatsCard 
+          title="Exited Employees" 
+          value={stats.inactive} 
+          icon={<UserMinus className="h-8 w-8" />} 
+          variant="red" 
+          isActive={activeCard === 'exited'}
+          onClick={() => setActiveCard('exited')}
+        />
+        <StatsCard 
+          title="Roles Assigned" 
+          value={stats.roles} 
+          icon={<ShieldAlert className="h-8 w-8" />} 
+          variant="purple" 
+          isActive={activeCard === 'rolesAssigned'}
+          onClick={() => setActiveCard('rolesAssigned')}
+        />
       </div>
 
       <Card>
@@ -145,10 +193,11 @@ const AllEmployees = () => {
               <Input
                 placeholder="Search by name, email or ID..."
                 className="pl-10"
+                value={filters.search}
                 onChange={e => setFilters(p => ({ ...p, search: e.target.value, page: 1 }))}
               />
             </div>
-            <Select onValueChange={v => setFilters(p => ({ ...p, role: v, page: 1 }))}>
+            <Select value={filters.role} onValueChange={v => setFilters(p => ({ ...p, role: v, page: 1 }))}>
               <SelectTrigger className="w-40"><SelectValue placeholder="All Roles" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
@@ -174,19 +223,35 @@ const AllEmployees = () => {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
-                <TableHead className="font-bold">Employee</TableHead>
-                <TableHead className="font-bold">Department</TableHead>
-                <TableHead className="font-bold">Access Role</TableHead>
-                <TableHead className="font-bold w-[120px]">Gender</TableHead>
-                <TableHead className="font-bold">Account Status</TableHead>
-                <TableHead />
+                <TableHead className="font-bold w-[25%]">Employee</TableHead>
+                <TableHead className="font-bold w-[15%]">Employee ID</TableHead>
+                <TableHead className="font-bold w-[15%]">Department</TableHead>
+                <TableHead className="font-bold w-[15%]">Access Role</TableHead>
+                <TableHead className="font-bold w-[10%]">Gender</TableHead>
+                <TableHead className="font-bold w-[20%]">Account Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="h-64 text-center text-muted-foreground">Refreshing employee records...</TableCell></TableRow>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><div className="flex items-center gap-3"><div className="h-8 w-8 rounded-full bg-muted animate-pulse" /><div className="space-y-2"><div className="h-4 w-32 bg-muted animate-pulse rounded" /><div className="h-3 w-24 bg-muted animate-pulse rounded" /></div></div></TableCell>
+                    <TableCell><div className="h-5 w-20 bg-muted animate-pulse rounded-full" /></TableCell>
+                    <TableCell><div className="h-4 w-24 bg-muted animate-pulse rounded" /></TableCell>
+                    <TableCell><div className="h-5 w-20 bg-muted animate-pulse rounded-full" /></TableCell>
+                    <TableCell><div className="h-4 w-16 bg-muted animate-pulse rounded" /></TableCell>
+                    <TableCell><div className="h-5 w-20 bg-muted animate-pulse rounded-full" /></TableCell>
+                  </TableRow>
+                ))
               ) : employees.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="h-64 text-center text-muted-foreground">No matching records found.</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={6} className="h-64 text-center">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground space-y-2">
+                      <Users className="h-10 w-10 opacity-20" />
+                      <p className="text-sm font-medium">No employees found in this category.</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
               ) : (
                 employees.map(emp => (
                   <TableRow
@@ -196,19 +261,30 @@ const AllEmployees = () => {
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary border border-primary/20">
-                          {emp.avatar}
-                        </div>
+                        {emp.profilePicture ? (
+                          <img src={emp.profilePicture} alt={emp.name} className="h-8 w-8 rounded-full object-cover border border-muted" />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-muted/80 flex items-center justify-center text-xs font-bold text-muted-foreground border border-muted/50">
+                            {emp.avatar}
+                          </div>
+                        )}
                         <div className="flex flex-col">
-                          <span className="font-semibold text-sm">{emp.name}</span>
-                          <span className="text-xs text-muted-foreground">{emp.email}</span>
+                          <span className="font-bold text-[13px] text-foreground">{emp.name}</span>
+                          <span className="text-[11px] text-muted-foreground font-medium">{emp.email}</span>
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {emp.employeeCode === 'Not Assigned' ? (
+                        <Badge variant="destructive" className="bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-200 text-[10px] px-2 py-0.5">Not Assigned</Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-muted/30 text-muted-foreground font-mono text-[11px] px-2 py-0.5">{emp.employeeCode}</Badge>
+                      )}
                     </TableCell>
                     <TableCell><span className="text-sm">{emp.department}</span></TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="text-[10px] font-bold tracking-wider px-2 py-0.5">
-                        {emp.role}
+                        {emp.role || 'EMPLOYEE'}
                       </Badge>
                     </TableCell>
                     <TableCell><span className="text-sm font-medium">{emp.gender}</span></TableCell>
@@ -217,14 +293,18 @@ const AllEmployees = () => {
                         "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
                         emp.status === 'Active'
                           ? "bg-green-500/10 text-green-600 border-green-200"
-                          : "bg-orange-500/10 text-orange-600 border-orange-200"
+                          : emp.status?.startsWith('Pending')
+                          ? "bg-blue-500/10 text-blue-600 border-blue-200"
+                          : emp.status === 'On Notice Period'
+                          ? "bg-yellow-500/10 text-yellow-600 border-yellow-200"
+                          : "bg-red-500/10 text-red-600 border-red-200"
                       )}>
-                        <span className={cn("h-1.5 w-1.5 rounded-full", emp.status === 'Active' ? "bg-green-600" : "bg-orange-600")} />
+                        <span className={cn(
+                          "h-1.5 w-1.5 rounded-full", 
+                          emp.status === 'Active' ? "bg-green-600" : emp.status?.startsWith('Pending') ? "bg-blue-600" : emp.status === 'On Notice Period' ? "bg-yellow-600" : "bg-red-600"
+                        )} />
                         {emp.status}
                       </div>
-                    </TableCell>
-                    <TableCell className="pr-4 w-8">
-                      <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all ml-auto" />
                     </TableCell>
                   </TableRow>
                 ))
@@ -234,7 +314,7 @@ const AllEmployees = () => {
           
           <div className="p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground font-medium">
             <span>
-              Displaying {employees.length > 0 ? ((pagination.currentPage - 1) * 10) + 1 : 0} - {Math.min(pagination.currentPage * 10, pagination.totalItems)} of {pagination.totalItems} records
+              Displaying {employees.length > 0 ? ((pagination.currentPage - 1) * filters.limit) + 1 : 0} - {Math.min(pagination.currentPage * filters.limit, pagination.totalItems)} of {pagination.totalItems} records
             </span>
             <div className="flex items-center gap-2">
               <Button 
@@ -264,36 +344,62 @@ const AllEmployees = () => {
   )
 }
 
-const StatsCard = ({ title, value, icon, variant }) => {
+const StatsCard = ({ title, value, icon, variant, isActive, onClick }) => {
   const styles = {
     blue: {
       card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
       icon: "text-blue-600 dark:text-blue-400",
       label: "text-gray-600 dark:text-gray-400",
       value: "text-gray-900 dark:text-white",
+      activeRing: "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-background"
     },
     green: {
       card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
       icon: "text-green-600 dark:text-green-400",
       label: "text-gray-600 dark:text-gray-400",
       value: "text-gray-900 dark:text-white",
+      activeRing: "ring-2 ring-green-500 ring-offset-2 dark:ring-offset-background"
     },
     orange: {
       card: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30",
       icon: "text-orange-600 dark:text-orange-400",
       label: "text-gray-600 dark:text-gray-400",
       value: "text-gray-900 dark:text-white",
+      activeRing: "ring-2 ring-orange-500 ring-offset-2 dark:ring-offset-background"
+    },
+    yellow: {
+      card: "bg-yellow-50 dark:bg-yellow-500/10 border-yellow-200 dark:border-yellow-500/30",
+      icon: "text-yellow-600 dark:text-yellow-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+      activeRing: "ring-2 ring-yellow-500 ring-offset-2 dark:ring-offset-background"
     },
     red: {
+      card: "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30",
+      icon: "text-red-600 dark:text-red-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+      activeRing: "ring-2 ring-red-500 ring-offset-2 dark:ring-offset-background"
+    },
+    purple: {
       card: "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30",
       icon: "text-purple-600 dark:text-purple-400",
       label: "text-gray-600 dark:text-gray-400",
       value: "text-gray-900 dark:text-white",
+      activeRing: "ring-2 ring-purple-500 ring-offset-2 dark:ring-offset-background"
     },
   }
   const s = styles[variant]
   return (
-    <div className={cn("rounded-xl border p-6 transition-all duration-200 hover:scale-105", s.card)}>
+    <div 
+      onClick={onClick}
+      className={cn(
+        "rounded-xl border p-6 transition-all duration-200 hover:scale-105 cursor-pointer", 
+        s.card,
+        isActive && s.activeRing,
+        !isActive && "opacity-80 hover:opacity-100"
+      )}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className={cn("text-sm", s.label)}>{title}</p>

@@ -19,11 +19,12 @@ const EmployeeOverview = () => {
     const fetchEmployees = async () => {
       try {
         setLoading(true);
-        const response = await apiClient.get('/users');
-        const users = response.data.filter(user => user.role !== 'admin');
+        const employees = await apiClient.get('/performance/employee-overview');
+
+        const users = employees.filter(user => user.role !== 'admin');
         setEmployeeData(users.map(user => ({
-          id: user._id,
-          name: user.name || user.fullName || user.email?.split('@')[0],
+          id: user.employeeId,
+          name: user.name || user.email?.split('@')[0],
           email: user.email,
           department: user.department || 'General',
           position: user.position || 'Employee',
@@ -34,7 +35,7 @@ const EmployeeOverview = () => {
           status: getStatusFromRating(user.avgRating || 0)
         })));
       } catch (error) {
-        console.error("Users API failed:", error);
+        console.error("Employee overview fetch failed:", error);
         setEmployeeData([]);
       } finally {
         setLoading(false);

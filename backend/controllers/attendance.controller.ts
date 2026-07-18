@@ -132,7 +132,7 @@ export const clockIn = async (req: Request, res: Response) => {
     }
 
     const user = await User.findById(userId).populate("currentShift");
-    let status = "Present";
+    let status: "Present" | "Late" = "Present";
 
     if (user && user.currentShift) {
       const shift: any = user.currentShift;

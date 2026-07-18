@@ -1,4 +1,4 @@
-import express from 'express';
+import express from 'express'; //
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
@@ -49,13 +49,17 @@ import appraisalCycleRoutes from './routes/appraisalCycle.routes';
 import bonusRoutes from './routes/bonus.routes';
 import notificationRoutes from './routes/notification.routes';
 import offerRoutes from './routes/offer.routes';
+import disciplinaryRoutes from './routes/disciplinary.routes';
 import User from './models/User.model';
+import { initCronJobs } from './scripts/cronJobs';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 const MONGODB_URI = process.env.MONGODB_URI || '';
+
+initCronJobs();
 
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:3000'],
@@ -165,6 +169,7 @@ app.use('/api/pms/cycles', appraisalCycleRoutes);
 app.use('/api/pms/bonus', bonusRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/offers', offerRoutes);
+app.use('/api/disciplinary', disciplinaryRoutes);
 
 app.use((req, res) => {
   console.warn(`\x1b[33m[404] Route not found: ${req.method} ${req.path}\x1b[0m`);

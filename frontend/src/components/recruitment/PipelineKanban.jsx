@@ -263,45 +263,89 @@ export function PipelineFilters({ filters, onChange, options, onSaveFilter, save
   const set = (key, value) => onChange({ ...filters, [key]: value })
 
   return (
-    <section className="rounded-lg border border-white/10 bg-card/80 p-4">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={filters.search}
-            onChange={(e) => set("search", e.target.value)}
-            placeholder="Search candidate, role, email, skills..."
-            className="pl-9"
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:flex">
-          <FilterSelect label="Recruiter" value={filters.recruiter} onChange={(value) => set("recruiter", value)} options={options.recruiters} />
-          <FilterSelect label="Department" value={filters.department} onChange={(value) => set("department", value)} options={options.departments} />
-          <FilterSelect label="Role" value={filters.role} onChange={(value) => set("role", value)} options={options.roles} />
-          <FilterSelect label="Stage" value={filters.stage} onChange={(value) => set("stage", value)} options={PIPELINE_STAGES.map((s) => s.id)} />
-          <FilterSelect label="Experience" value={filters.experience} onChange={(value) => set("experience", value)} options={["0-2 years", "3-5 years", "6+ years"]} />
-          <FilterSelect label="Priority" value={filters.priority} onChange={(value) => set("priority", value)} options={priorities} />
-        </div>
-        <Button type="button" variant="outline" onClick={onSaveFilter} className="shrink-0">
-          Save Filter
-        </Button>
-      </div>
-      {savedFilters.length > 0 && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span>Saved:</span>
-          {savedFilters.map((saved, index) => (
-            <button
-              key={`${saved.label}-${index}`}
-              type="button"
-              onClick={() => onApplySavedFilter(saved.filters)}
-              className="rounded-full border border-white/10 px-3 py-1 transition-colors hover:bg-muted"
-            >
-              {saved.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </section>
+   <section className="rounded-lg border border-white/10 bg-card/80 p-4">
+  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+
+    {/* Search */}
+    <div className="relative xl:col-span-1">
+      <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+      <Input
+        value={filters.search}
+        onChange={(e) => set("search", e.target.value)}
+        placeholder="Search candidate, role, email, skills..."
+        className="pl-9"
+      />
+    </div>
+
+    <FilterSelect
+      label="Recruiter"
+      value={filters.recruiter}
+      onChange={(value) => set("recruiter", value)}
+      options={options.recruiters}
+    />
+
+    <FilterSelect
+      label="Department"
+      value={filters.department}
+      onChange={(value) => set("department", value)}
+      options={options.departments}
+    />
+
+    <FilterSelect
+      label="Role"
+      value={filters.role}
+      onChange={(value) => set("role", value)}
+      options={options.roles}
+    />
+
+    <FilterSelect
+      label="Stage"
+      value={filters.stage}
+      onChange={(value) => set("stage", value)}
+      options={PIPELINE_STAGES.map((s) => s.id)}
+    />
+
+    <FilterSelect
+      label="Experience"
+      value={filters.experience}
+      onChange={(value) => set("experience", value)}
+      options={["0-2 years", "3-5 years", "6+ years"]}
+    />
+
+    <FilterSelect
+      label="Priority"
+      value={filters.priority}
+      onChange={(value) => set("priority", value)}
+      options={priorities}
+    />
+
+    <Button
+      type="button"
+      variant="outline"
+      onClick={onSaveFilter}
+      className="w-full"
+    >
+      Save Filter
+    </Button>
+
+  </div>
+
+  {savedFilters.length > 0 && (
+    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+      <span>Saved:</span>
+      {savedFilters.map((saved, index) => (
+        <button
+          key={`${saved.label}-${index}`}
+          type="button"
+          onClick={() => onApplySavedFilter(saved.filters)}
+          className="rounded-full border border-white/10 px-3 py-1 transition-colors hover:bg-muted"
+        >
+          {saved.label}
+        </button>
+      ))}
+    </div>
+  )}
+</section>
   )
 }
 
@@ -309,19 +353,24 @@ function FilterSelect({ label, value, onChange, options = [] }) {
   return (
     <label className="relative min-w-[142px]">
       <span className="sr-only">{label}</span>
+
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-full rounded-md border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-[3px] focus:ring-ring/50"
+        className="appearance-none h-9 w-full rounded-md border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-[3px] focus:ring-ring/50"
       >
         <option value="All">{label}</option>
+
         {options.map((option) => (
-          <option key={option} value={option}>{option}</option>
+          <option key={option} value={option}>
+            {option}
+          </option>
         ))}
       </select>
+
       <ChevronDown className="pointer-events-none absolute right-2 top-2.5 h-4 w-4 text-muted-foreground" />
     </label>
-  )
+  );
 }
 
 export function PipelineInsightsPanel({ candidates }) {

@@ -6,7 +6,8 @@ import {
   getEmployeeById,
   getManageOnboarding,
   offboardEmployee,
-  getMyDocuments
+  getMyDocuments,
+  getEmployeeDirectory
 } from "../controllers/employee.controller";
 import { protect } from "../middleware/auth.middleware";
 
@@ -20,9 +21,16 @@ const allowRoles =
   };
 
 router.get(
+  "/directory",
+  protect,
+  allowRoles("ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "COUNTRY_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"),
+  getEmployeeDirectory
+);
+
+router.get(
   "/",
   protect,
-  allowRoles("ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"),
+  allowRoles("ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "COUNTRY_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"),
   getAllEmployees
 );
 
@@ -64,6 +72,8 @@ router.get(
     "DEPARTMENT_MANAGER", 
     "DIRECT_MANAGER", 
     "PROJECT_MANAGER", 
+    "PAYROLL_OFFICER",
+    "FINANCE_MANAGER",
     "EMPLOYEE"),
   getEmployeeById
 );

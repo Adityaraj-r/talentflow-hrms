@@ -71,13 +71,13 @@ const validate = (config: Partial<SmtpConfig>, source: SmtpConfig['source']): Sm
   return {
     configured: true,
     config: {
-      host: config.host,
+      host: config.host as string,
       port,
       secure: Boolean(config.secure),
-      user: config.user,
-      pass: config.pass,
-      fromName: config.fromName || DEFAULT_FROM_NAME,
-      fromEmail: config.fromEmail || config.user,
+      user: config.user as string,
+      pass: config.pass as string,
+      fromName: (config.fromName || DEFAULT_FROM_NAME) as string,
+      fromEmail: (config.fromEmail || config.user) as string,
       source,
     },
   };

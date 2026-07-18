@@ -52,7 +52,6 @@ export async function assertCanViewReview(params: {
 }): Promise<void> {
   const { viewer, reviewEmployeeId, reviewerId, employeeDepartment } = params;
   const vid = new mongoose.Types.ObjectId(String(viewer._id));
-
   if (!(await canReadPerformanceOrg(viewer))) {
     throw new Error('Access denied: performance read permission required.');
   }

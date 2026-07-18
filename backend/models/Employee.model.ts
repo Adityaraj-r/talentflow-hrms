@@ -67,7 +67,7 @@ export interface IEmployee extends Document {
   };
 
   onboardingStatus: string;
-  status: 'Active' | 'Inactive' | 'On Leave' | 'Terminated';
+  status: 'Active' | 'Inactive' | 'On Leave' | 'Terminated' | 'On Notice Period' | 'Exit Clearance' | 'Exited' | 'Pending Manager Approval' | 'Pending HR Approval' | 'Pending Country Manager Approval' | 'Pending CEO Approval' | 'Withdrawn';
   createdBy?: mongoose.Types.ObjectId;
   updatedBy?: mongoose.Types.ObjectId;
 }
@@ -162,7 +162,7 @@ const EmployeeSchema = new Schema<IEmployee>(
     },
     status: {
       type: String,
-      enum: ['Active', 'Inactive', 'On Leave', 'Terminated'],
+      enum: ['Active', 'Inactive', 'On Leave', 'Terminated', 'On Notice Period', 'Exit Clearance', 'Exited', 'Pending Manager Approval', 'Pending HR Approval', 'Pending Country Manager Approval', 'Pending CEO Approval', 'Withdrawn'],
       default: 'Active',
     },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },

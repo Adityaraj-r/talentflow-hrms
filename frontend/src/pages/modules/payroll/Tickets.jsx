@@ -28,7 +28,7 @@ const canManageTickets = (user) => {
 };
 
 const STATUS_COLORS = {
-  Pending:  "bg-yellow-100 text-yellow-700 border-yellow-200",
+  Pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
   Approved: "bg-green-100 text-green-700 border-green-200",
   Rejected: "bg-red-100 text-red-700 border-red-200",
 };
@@ -61,7 +61,7 @@ const Tickets = () => {
         )}
         {isStaff && (
           <TabsContent value="request" className="mt-4">
-            <TicketForm onSuccess={() => {}} />
+            <TicketForm onSuccess={() => { }} />
           </TabsContent>
         )}
       </Tabs>
@@ -82,7 +82,7 @@ const TicketForm = ({ onSuccess }) => {
   useEffect(() => {
     apiClient.get("/admin/users").then(res => {
       setEmployees(res.users || res.data || []);
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   const set = (field, val) => setForm(p => ({ ...p, [field]: val }));
@@ -211,8 +211,13 @@ const TicketForm = ({ onSuccess }) => {
             {form.type === "advance" && (
               <div className="space-y-2">
                 <Label>Advance Amount (₹) <span className="text-red-500">*</span></Label>
-                <Input type="number" min="0" placeholder="Enter amount"
-                  value={form.amount} onChange={e => set("amount", e.target.value)} />
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="Enter amount"
+                  value={form.amount}
+                  onChange={e => set("amount", e.target.value)}
+                />
               </div>
             )}
 
