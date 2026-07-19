@@ -114,11 +114,15 @@ const HRDocumentRequests = () => {
         cursorY += 15;
 
         pdf.setFont("helvetica", "bold");
-        pdf.text(`• Basic Salary: ${employeeData.salary?.currency || 'INR'} ${employeeData.salary?.basic || 0}`, 25, cursorY);
+        const monthlyBasic = Math.round((employeeData.salary?.basic || 0) / 12);
+        const monthlyAllowances = Math.round(((employeeData.salary?.allowances?.hra || 0) + (employeeData.salary?.allowances?.transport || 0)) / 12);
+        const monthlyDeductions = Math.round(((employeeData.salary?.deductions?.tax || 0) + (employeeData.salary?.deductions?.pf || 0)) / 12);
+
+        pdf.text(`• Basic Salary: ${employeeData.salary?.currency || 'INR'} ${monthlyBasic}`, 25, cursorY);
         cursorY += 10;
-        pdf.text(`• Allowances: ${employeeData.salary?.currency || 'INR'} ${(employeeData.salary?.allowances?.hra || 0) + (employeeData.salary?.allowances?.transport || 0)}`, 25, cursorY);
+        pdf.text(`• Allowances: ${employeeData.salary?.currency || 'INR'} ${monthlyAllowances}`, 25, cursorY);
         cursorY += 10;
-        pdf.text(`• Gross Deductions: ${employeeData.salary?.currency || 'INR'} ${(employeeData.salary?.deductions?.tax || 0) + (employeeData.salary?.deductions?.pf || 0)}`, 25, cursorY);
+        pdf.text(`• Gross Deductions: ${employeeData.salary?.currency || 'INR'} ${monthlyDeductions}`, 25, cursorY);
       } 
       else if (selectedReq.documentType === "Visa NOC") {
         const text = `This is to certify that ${employeeData.firstName} ${employeeData.lastName} holding Passport Number ${manualInputs.passportNumber} is employed with InternsLand HRMS as a ${employeeData.designation}. We have no objection to them traveling to ${manualInputs.destinationCountry}. Their approved leave dates are from ${manualInputs.leaveStartDate} to ${manualInputs.leaveEndDate}, after which they will resume their duties.`;

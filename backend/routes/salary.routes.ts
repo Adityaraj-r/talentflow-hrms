@@ -35,7 +35,7 @@ const resolveEmployee = async (user: any, selectFields = "salary employeeCode") 
 router.get("/:userId", authorize(...HR_ROLES), async (req, res) => {
   try {
     let user = null;
-    if (req.params.userId.match(/^[0-9a-fA-F]{24}$/)) {
+    if ((req.params.userId as string).match(/^[0-9a-fA-F]{24}$/)) {
       user = await User.findById(req.params.userId).select("employeeId firstName lastName email")
     }
 
@@ -43,7 +43,7 @@ router.get("/:userId", authorize(...HR_ROLES), async (req, res) => {
     if (user) {
       employee = await resolveEmployee(user)
     } else {
-      if (req.params.userId.match(/^[0-9a-fA-F]{24}$/)) {
+      if ((req.params.userId as string).match(/^[0-9a-fA-F]{24}$/)) {
         employee = await Employee.findById(req.params.userId)
       }
       if (!employee) {
@@ -127,7 +127,7 @@ router.get("/:userId/self", authorize("EMPLOYEE", ...HR_ROLES), async (req, res)
 router.put("/:userId", authorize(...HR_ROLES), async (req, res) => {
   try {
     let user = null;
-    if (req.params.userId.match(/^[0-9a-fA-F]{24}$/)) {
+    if ((req.params.userId as string).match(/^[0-9a-fA-F]{24}$/)) {
       user = await User.findById(req.params.userId).select("employeeId email")
     }
 
@@ -136,7 +136,7 @@ router.put("/:userId", authorize(...HR_ROLES), async (req, res) => {
     if (!basic || Number(basic) <= 0)
       return res.status(400).json({
         success: false,
-        error: "Basic salary is required and must be > 0",
+        error: "Basic annual salary is required and must be > 0",
       })
 
     // Use full doc (no .select) so we can save
@@ -153,7 +153,7 @@ router.put("/:userId", authorize(...HR_ROLES), async (req, res) => {
         }
       }
     } else {
-      if (req.params.userId.match(/^[0-9a-fA-F]{24}$/)) {
+      if ((req.params.userId as string).match(/^[0-9a-fA-F]{24}$/)) {
         employee = await Employee.findById(req.params.userId)
       }
       if (!employee) {

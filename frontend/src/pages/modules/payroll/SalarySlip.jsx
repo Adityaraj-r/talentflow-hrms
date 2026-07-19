@@ -462,7 +462,7 @@ const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
             </h3>
             <div className="space-y-2">
               <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
-                <span className="text-muted-foreground shrink-0">Basic Salary</span>
+                <span className="text-muted-foreground shrink-0">Basic Annual Salary</span>
                 <span className="font-medium font-mono tabular-nums text-right">Rs. {eg.basic.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">

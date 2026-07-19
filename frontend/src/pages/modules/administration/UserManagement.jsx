@@ -144,7 +144,7 @@ const UserManagement = () => {
     if (!formData.department) return "Please assign a department"
     if (!formData.gender) return "Please select a gender"
     if (!formData.salary.basic || Number(formData.salary.basic) <= 0)
-      return "Basic salary is required"
+      return "Basic annual salary is required"
     return null
   }
 
@@ -272,7 +272,7 @@ const UserManagement = () => {
       </p>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Basic Salary <span className="text-red-500">*</span></Label>
+          <Label>Basic Annual Salary <span className="text-red-500">*</span></Label>
           <Input
             type="number" min="0" placeholder="e.g. 30000"
             value={formData.salary.basic}
