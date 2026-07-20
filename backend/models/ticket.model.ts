@@ -11,11 +11,18 @@ export interface ITicket extends Document {
   travelPurpose?: string
   departureDate?: Date
   returnDate?: Date
-  ticketClass?: "economy" | "business" | "first"
+  ticketClass?: "economy" | "premium-economy" | "business" | "first"
   reason: string
   notes?: string
   status: "Pending" | "Approved" | "Rejected"
+  workflowStage:
+  | "PENDING_FINANCE"
+  | "PENDING_PAYROLL"
+  | "APPROVED"
+  | "REJECTED"
   requestedBy: string
+  financeApprovedBy?: string
+  financeApprovalDate?: Date
   approvedBy?: string
   approvalDate?: Date
   rejectionReason?: string
@@ -32,7 +39,7 @@ const TicketSchema = new Schema<ITicket>(
     travelPurpose: String,
     departureDate: Date,
     returnDate: Date,
-    ticketClass: { type: String, enum: ["economy", "business", "first"] },
+    ticketClass: { type: String, enum: ["economy", "premium-economy", "business", "first"] },
     reason: { type: String, required: true },
     notes: String,
     status: {
@@ -40,7 +47,19 @@ const TicketSchema = new Schema<ITicket>(
       enum: ["Pending", "Approved", "Rejected"],
       default: "Pending",
     },
+    workflowStage: {
+  type: String,
+  enum: [
+    "PENDING_FINANCE",
+    "PENDING_PAYROLL",
+    "APPROVED",
+    "REJECTED",
+  ],
+  default: "PENDING_FINANCE",
+},
     requestedBy: { type: String, required: true },
+    financeApprovedBy: String,
+    financeApprovalDate: Date,
     approvedBy: String,
     approvalDate: Date,
     rejectionReason: String,

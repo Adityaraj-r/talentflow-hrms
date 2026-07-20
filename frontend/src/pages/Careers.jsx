@@ -48,21 +48,28 @@ const Careers = () => {
 
         {/* Header */}
 
-        <div className="flex justify-between items-start mb-10">
+        <div className="flex justify-between items-start mb-12">
 
           <div>
 
-            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
               Careers
             </h1>
 
-            <h2 className="text-gray-500 dark:text-slate-400 mt-2 text-base">
+            <p className="text-gray-500 dark:text-slate-400 mt-2 text-base">
               Join our team and help build the future.
-            </h2>
+            </p>
+             <div className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
 
-            <h4 className="text-sm text-gray-400 mt-1">
-              {jobs.length} open positions available
-            </h4>
+              <Briefcase
+                size={18}
+                className="text-blue-500"
+              />
+
+             <span className="text-sm text-slate-600 dark:text-slate-300">
+                {jobs.length} Open Position{jobs.length !== 1 && "s"}
+              </span>
+              </div>
 
           </div>
 
@@ -70,85 +77,141 @@ const Careers = () => {
 
           <button
             onClick={()=>setDark(!dark)}
-            className="p-3 rounded-xl bg-gray-200 dark:bg-slate-800"
+            className="p-3
+            rounded-xl
+            bg-white
+            dark:bg-slate-900
+            border
+            border-slate-200
+            dark:border-slate-800
+            hover:scale-105
+            transition"
           >
             {dark ? <Sun size={20}/> : <Moon size={20}/>}
           </button>
 
         </div>
+         
+         {/* Jobs */}
 
-        {/* LARGE JOB BOARD CARD */}
+        <div className="space-y-7">
 
-        <div
-          className="
-          bg-white dark:bg-slate-900
-          border border-gray-200 dark:border-slate-800
-          rounded-3xl
-          p-8
-          shadow-lg
-          space-y-6
-          "
-        >
-
-          {jobs.map(job =>(
+          {jobs.map((job) => (
 
             <div
               key={job._id}
               className="
-              flex justify-between items-center
-              border border-gray-200 dark:border-slate-800
-              rounded-2xl
-              p-6
-              hover:shadow-md
-              transition
+              bg-white
+              dark:bg-slate-900
+              border
+              border-gray-200
+              dark:border-slate-800
+              rounded-3xl
+              p-7
+              hover:-translate-y-1
+              hover:shadow-xl
+              transition-all
+              duration-300
               "
             >
 
-              {/* Left */}
+              <div className="flex justify-between items-start gap-6">
 
-              <div className="flex items-start gap-4">
+                {/* Left */}
 
-                <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-xl">
-                  <Briefcase className="text-blue-600"/>
+                <div className="flex gap-5">
+
+                  <div
+                    className="
+                    w-16
+                    h-16
+                    rounded-2xl
+                    bg-blue-500/10
+                    flex
+                    items-center
+                    justify-center
+                    shrink-0
+                    "
+                  >
+                    <Briefcase
+                      size={30}
+                      className="text-blue-500"
+                    />
+                  </div>
+
+                  <div>
+
+                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {job.jobTitle}
+                    </h2>
+
+                    <div className="flex gap-3 mt-4 flex-wrap">
+
+                      <span
+                        className="
+                        px-3
+                        py-1
+                        rounded-full
+                        bg-slate-100
+                        dark:bg-slate-800
+                        text-sm
+                        text-slate-700
+                        dark:text-slate-300
+                        "
+                      >
+                        {job.department}
+                      </span>
+
+                      <span
+                        className="
+                        px-3
+                        py-1
+                        rounded-full
+                        bg-slate-100
+                        dark:bg-slate-800
+                        text-sm
+                        text-slate-700
+                        dark:text-slate-300
+                        "
+                      >
+                        {job.employmentType}
+                      </span>
+
+                    </div>
+
+                    <p className="mt-5 text-sm text-slate-500 dark:text-slate-400">
+                      Application Deadline
+                    </p>
+
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {new Date(job.deadline).toLocaleDateString()}
+                    </p>
+
+                  </div>
+
                 </div>
 
-                <div>
+                {/* Apply */}
 
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {job.jobTitle}
-                  </h3>
-
-                  <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-                    Department: {job.department}
-                  </p>
-
-                  <p className="text-sm text-gray-500 dark:text-slate-400">
-                    Type: {job.employmentType}
-                  </p>
-
-                  <p className="text-sm text-gray-400 mt-1">
-                    Deadline: {job.deadline ? new Date(job.deadline).toLocaleDateString() : "N/A"}
-                  </p>
-
-                </div>
+                <button
+                  onClick={() => navigate(`/apply/${job._id}`)}
+                  className="
+                  bg-blue-600
+                  hover:bg-blue-700
+                  hover:scale-105
+                  transition-all
+                  text-white
+                  font-medium
+                  px-7
+                  py-3
+                  rounded-xl
+                  whitespace-nowrap
+                  "
+                >
+                  Apply Now →
+                </button>
 
               </div>
-
-              {/* Apply Button */}
-
-              <button
-                onClick={()=>navigate(`/apply/${job._id}`)}
-                className="
-                bg-blue-600 hover:bg-blue-700
-                text-white
-                px-5 py-2
-                rounded-lg
-                text-sm
-                transition
-                "
-              >
-                Apply
-              </button>
 
             </div>
 
@@ -159,9 +222,7 @@ const Careers = () => {
       </div>
 
     </div>
+  );
+};
 
-  )
-
-}
-
-export default Careers
+export default Careers;
