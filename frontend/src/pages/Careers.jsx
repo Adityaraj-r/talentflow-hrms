@@ -127,7 +127,7 @@ const Careers = () => {
                   </p>
 
                   <p className="text-sm text-gray-400 mt-1">
-                    Deadline: {new Date(job.deadline).toLocaleDateString()}
+                    Deadline: {job.deadline ? new Date(job.deadline).toLocaleDateString() : "N/A"}
                   </p>
 
                 </div>

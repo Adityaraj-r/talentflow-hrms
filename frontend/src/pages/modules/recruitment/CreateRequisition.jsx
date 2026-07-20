@@ -146,38 +146,28 @@ const RequisitionForm = () => {
 
             {/* POSITION */}
             <div className="space-y-2">
-              <Label>Position *</Label>
-              <Select
+              <Label>Job Opening *</Label>
+              <Input
+                name="position"
+                type="text"
+                placeholder="Enter job opening"
                 value={formData.position}
-                onValueChange={(val) => handleSelectChange("position", val)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select position" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Software Engineer">Software Engineer</SelectItem>
-                  <SelectItem value="HR">HR</SelectItem>
-                  <SelectItem value="Manager">Manager</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={handleChange}
+                required
+              />
             </div>
 
             {/* DEPARTMENT */}
             <div className="space-y-2">
               <Label>Department *</Label>
-              <Select
+              <Input
+                name="department"
+                type="text"
+                placeholder="Enter department"
                 value={formData.department}
-                onValueChange={(val) => handleSelectChange("department", val)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="IT">IT</SelectItem>
-                  <SelectItem value="HR">HR</SelectItem>
-                  <SelectItem value="Finance">Finance</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={handleChange}
+                required
+              />
             </div>
 
             {/* JOB TYPE */}

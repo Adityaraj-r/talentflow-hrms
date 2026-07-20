@@ -437,74 +437,31 @@ export function AtsRecommendationWidgets({ candidates }) {
     if (experienceDelta) return experienceDelta
     return Number(b.scoreFactors?.skills || 0) - Number(a.scoreFactors?.skills || 0)
   })
-  const topCandidates = ranked.slice(0, 5)
   const priorityQueue = ranked
     .filter((candidate) => ["Interview", "Screening"].includes(candidate.stage) || candidate.matchScore >= 60)
     .slice(0, 5)
-  const weakProfiles = candidates.filter((candidate) => candidate.matchScore < 60).length
-  const needReview = candidates.filter((candidate) => candidate.suggestedNextAction === "Manual Review" || candidate.riskLevel === "High Risk").length
-  const offerReady = candidates.filter((candidate) => candidate.suggestedNextAction === "Issue Offer" || candidate.hiringProbability >= 75).length
-
-  const insightTiles = [
-    { label: "Top Matches", value: candidates.filter((candidate) => candidate.matchScore >= 75).length, tone: "emerald" },
-    { label: "Need Review", value: needReview, tone: "amber" },
-    { label: "Weak Profiles", value: weakProfiles, tone: "rose" },
-    { label: "Interview Ready", value: priorityQueue.length, tone: "cyan" },
-    { label: "Offer Ready", value: offerReady, tone: "violet" },
-  ]
 
   return (
-    <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-      <div className="rounded-lg border border-white/10 bg-card/80 p-4">
-        <div className="mb-4 flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-cyan-300" />
-          <h2 className="text-sm font-semibold">Top Recommended Candidates</h2>
-        </div>
-        <div className="space-y-2">
-          {topCandidates.length ? topCandidates.map((candidate, index) => (
-            <div key={candidate._id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-white/10 bg-muted/10 p-3">
-              <span className="text-sm font-semibold text-cyan-300">#{candidate.aiRank || index + 1}</span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{candidate.name}</p>
-                <p className="truncate text-xs text-muted-foreground">{candidate.recommendationStage} - {candidate.suggestedNextAction}</p>
-              </div>
-              <span className="text-sm font-semibold">{candidate.matchScore}%</span>
-            </div>
-          )) : (
-            <p className="rounded-lg border border-dashed border-white/15 bg-muted/10 p-4 text-sm text-muted-foreground">No ranked candidates available.</p>
-          )}
-        </div>
+    <div className="rounded-lg border border-white/10 bg-card/80 p-4">
+      <div className="mb-4 flex items-center gap-2">
+        <CalendarClock className="h-4 w-4 text-amber-300" />
+        <h2 className="text-sm font-semibold">Interview Priority Queue</h2>
       </div>
-
-      <div className="rounded-lg border border-white/10 bg-card/80 p-4">
-        <div className="mb-4 flex items-center gap-2">
-          <CalendarClock className="h-4 w-4 text-amber-300" />
-          <h2 className="text-sm font-semibold">Interview Priority Queue</h2>
-        </div>
-        <div className="space-y-2">
-          {priorityQueue.length ? priorityQueue.slice(0, 3).map((candidate, index) => (
-            <div key={candidate._id} className="rounded-lg border border-white/10 bg-muted/10 p-3">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Priority {index + 1}</span>
-                <span className="text-xs font-semibold text-amber-300">{candidate.hiringProbability}% probability</span>
-              </div>
-              <p className="mt-1 truncate text-sm font-semibold">{candidate.name}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{candidate.suggestedNextAction}</p>
+      <div className="space-y-2">
+        {priorityQueue.length ? priorityQueue.slice(0, 3).map((candidate, index) => (
+          <div key={candidate._id} className="rounded-lg border border-white/10 bg-muted/10 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Priority {index + 1}</span>
+              <span className="text-xs font-semibold text-amber-300">{candidate.hiringProbability}% probability</span>
             </div>
-          )) : (
-            <p className="rounded-lg border border-dashed border-white/15 bg-muted/10 p-4 text-sm text-muted-foreground">No interview-ready candidates in the current view.</p>
-          )}
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5 xl:grid-cols-2">
-          {insightTiles.map((tile) => (
-            <div key={tile.label} className={cn("rounded-lg border p-2", getToneClass(tile.tone))}>
-              <div className="text-lg font-semibold">{tile.value}</div>
-              <div className="text-[11px] font-medium">{tile.label}</div>
-            </div>
-          ))}
-        </div>
+            <p className="mt-1 truncate text-sm font-semibold">{candidate.name}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{candidate.suggestedNextAction}</p>
+          </div>
+        )) : (
+          <p className="rounded-lg border border-dashed border-white/15 bg-muted/10 p-4 text-sm text-muted-foreground">No interview-ready candidates in the current view.</p>
+        )}
       </div>
-    </section>
+    </div>
   )
 }
 

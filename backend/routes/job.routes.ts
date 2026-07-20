@@ -6,6 +6,7 @@ import {
   closeJob,
   getPublishedJobs,
   getAllJobs,
+  deleteJob,
 } from "../controllers/job.controller";
 import { protect } from "../middleware/auth.middleware";
 import { authorizeByMatrix, MODULE_KEYS } from "../middleware/role.middleware";
@@ -22,5 +23,6 @@ router.post("/", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), requireRec
 router.put("/:id", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), requireRecruitmentOperator, updateJob);
 router.put("/:id/publish", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), requireRecruitmentApprover, publishJob);
 router.put("/:id/close", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), requireRecruitmentApprover, closeJob);
+router.delete("/:id", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), requireRecruitmentOperator, deleteJob);
 
 export default router;

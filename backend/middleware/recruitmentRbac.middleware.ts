@@ -20,6 +20,10 @@ export const requireRecruitmentRole = (...allowedRoles: string[]) => {
   const allowed = allowedRoles.map(normalizeRole)
   return (req: Request, res: Response, next: NextFunction) => {
     const role = normalizeRole((req as any).user?.role)
+    if (role === "ADMIN" || role === "SUPER_ADMIN") {
+      next();
+      return;
+    }
     if (!allowed.includes(role)) {
       return res.status(403).json({ success: false, message: "Access denied for this recruitment action" })
     }
