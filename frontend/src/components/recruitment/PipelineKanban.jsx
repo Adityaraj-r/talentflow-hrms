@@ -942,15 +942,88 @@ export function PipelineAnalytics({ candidates }) {
   const interviewSuccess = interview + offer + hired ? Math.round(((offer + hired) / (interview + offer + hired)) * 100) : 0
   const dropOff = total ? Math.round((rejected / total) * 100) : 0
 
+  const metrics = React.useMemo(() => {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+    const dayMs = 1000 * 60 * 60 * 24
+
+    const isThisMonth = (d) => d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+    const isLastMonth = (d) => {
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      return d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear()
+    }
+
+    let cmTotal = 0, lmTotal = 0
+    let cmSuccess = 0, lmSuccess = 0
+    let cmRejects = 0, lmRejects = 0
+    let cmInterviews = 0, lmInterviews = 0
+
+    const last7Days = Array.from({ length: 7 }, (_, i) => today - (6 - i) * dayMs)
+    const charts = { total: [0,0,0,0,0,0,0], conv: [0,0,0,0,0,0,0], drop: [0,0,0,0,0,0,0], vel: [0,0,0,0,0,0,0], int: [0,0,0,0,0,0,0], age: [0,0,0,0,0,0,0] }
+    const ageCounts = [0,0,0,0,0,0,0]
+
+    candidates.forEach(c => {
+      const created = new Date(c.createdAt || Date.now())
+      const updated = new Date(c.updatedAt || c.createdAt || Date.now())
+      const createdTime = new Date(created.getFullYear(), created.getMonth(), created.getDate()).getTime()
+      const updatedTime = new Date(updated.getFullYear(), updated.getMonth(), updated.getDate()).getTime()
+
+      if (isThisMonth(created)) cmTotal++
+      if (isLastMonth(created)) lmTotal++
+
+      const isWin = c.stage === "Hired" || c.stage === "Offer"
+      if (isWin) {
+        if (isThisMonth(updated)) cmSuccess++
+        if (isLastMonth(updated)) lmSuccess++
+      }
+      if (c.stage === "Rejected") {
+        if (isThisMonth(updated)) cmRejects++
+        if (isLastMonth(updated)) lmRejects++
+      }
+      if (c.stage === "Interview") {
+        if (isThisMonth(updated)) cmInterviews++
+        if (isLastMonth(updated)) lmInterviews++
+      }
+
+      last7Days.forEach((day, i) => {
+        if (createdTime === day) charts.total[i]++
+        if (updatedTime === day) {
+          if (isWin) { charts.conv[i]++; charts.vel[i]++ }
+          if (c.stage === "Rejected") charts.drop[i]++
+          if (c.stage === "Interview") charts.int[i]++
+        }
+        if (createdTime <= day) {
+          charts.age[i] += Math.floor((day - createdTime) / dayMs)
+          ageCounts[i]++
+        }
+      })
+    })
+
+    const calcTrend = (curr, prev) => prev ? Math.round(((curr - prev) / prev) * 100) : curr ? 100 : 0
+    const totalTrend = calcTrend(cmTotal, lmTotal)
+    const velocityTrend = calcTrend(cmSuccess, lmSuccess)
+    
+    const convTrend = Math.round((cmTotal ? cmSuccess/cmTotal : 0) * 100) - Math.round((lmTotal ? lmSuccess/lmTotal : 0) * 100)
+    const dropTrend = Math.round((cmTotal ? cmRejects/cmTotal : 0) * 100) - Math.round((lmTotal ? lmRejects/lmTotal : 0) * 100)
+    
+    const currIntSucc = cmInterviews + cmSuccess ? cmSuccess / (cmInterviews + cmSuccess) : 0
+    const lastIntSucc = lmInterviews + lmSuccess ? lmSuccess / (lmInterviews + lmSuccess) : 0
+    const intSuccessTrend = Math.round((currIntSucc - lastIntSucc) * 100)
+
+    charts.age = charts.age.map((sum, i) => ageCounts[i] ? Math.round(sum / ageCounts[i]) : 0)
+
+    return { totalTrend, velocityTrend, convTrend, dropTrend, intSuccessTrend, charts }
+  }, [candidates])
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-        <RecruitmentKpiCard title="Total Candidates" value={total} icon={Users} trend={0} helper="Visible pipeline volume" accent="sky" />
-        <RecruitmentKpiCard title="Conversion Rate" value={`${conversion}%`} icon={BadgeCheck} trend={0} helper="Offer and hire movement" accent="emerald" />
-        <RecruitmentKpiCard title="Avg Stage Age" value={`${averageStageAge(candidates)}d`} icon={Clock3} trend={0} helper="Average time since application" accent="cyan" />
-        <RecruitmentKpiCard title="Stage Drop-off" value={`${dropOff}%`} icon={TrendingDown} trend={0} helper="Rejected share" accent="rose" />
-        <RecruitmentKpiCard title="Hiring Velocity" value={`${hired + offer}`} icon={TrendingUp} trend={0} helper="Offer and hired candidates" accent="violet" />
-        <RecruitmentKpiCard title="Interview Success" value={`${interviewSuccess}%`} icon={Sparkles} trend={0} helper="Interview to offer/hire" accent="amber" />
+        <RecruitmentKpiCard title="Total Candidates" value={total} icon={Users} trend={metrics.totalTrend} chartData={metrics.charts.total} helper="Visible pipeline volume" accent="sky" />
+        <RecruitmentKpiCard title="Conversion Rate" value={`${conversion}%`} icon={BadgeCheck} trend={metrics.convTrend} chartData={metrics.charts.conv} helper="Offer and hire movement" accent="emerald" />
+        <RecruitmentKpiCard title="Avg Stage Age" value={`${averageStageAge(candidates)}d`} icon={Clock3} trend={0} chartData={metrics.charts.age} helper="Average time since application" accent="cyan" />
+        <RecruitmentKpiCard title="Stage Drop-off" value={`${dropOff}%`} icon={TrendingDown} trend={metrics.dropTrend} chartData={metrics.charts.drop} helper="Rejected share" accent="rose" />
+        <RecruitmentKpiCard title="Hiring Velocity" value={`${hired + offer}`} icon={TrendingUp} trend={metrics.velocityTrend} chartData={metrics.charts.vel} helper="Offer and hired candidates" accent="violet" />
+        <RecruitmentKpiCard title="Interview Success" value={`${interviewSuccess}%`} icon={Sparkles} trend={metrics.intSuccessTrend} chartData={metrics.charts.int} helper="Interview to offer/hire" accent="amber" />
       </div>
       <div className="custom-scrollbar flex gap-3 overflow-x-auto pb-1">
         {PIPELINE_STAGES.map((stage) => (

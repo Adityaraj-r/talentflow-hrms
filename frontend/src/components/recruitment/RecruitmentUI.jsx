@@ -84,6 +84,7 @@ export function RecruitmentKpiCard({
   accent = "sky",
   onClick,
   active,
+  chartData,
 }) {
   const positive = Number(trend) >= 0
   const TrendIcon = positive ? ArrowUpRight : ArrowDownRight
@@ -96,6 +97,11 @@ export function RecruitmentKpiCard({
     cyan: "from-cyan-500/20 text-cyan-600 dark:text-cyan-300 ring-cyan-400/20",
     slate: "from-slate-500/20 text-slate-700 dark:text-slate-300 ring-slate-400/20",
   }[accent] || "from-sky-500/20 text-sky-300 ring-sky-400/20"
+
+  const maxVal = Math.max(...(chartData || []), 1)
+  const normalizedData = chartData 
+    ? chartData.map(val => Math.max((val / maxVal) * 100, 5)) // Min 5% height so 0 values are visible
+    : [35, 55, 42, 70, 48, 82, 64] // Fallback
 
   return (
     <Motion.motion.button
@@ -131,7 +137,7 @@ export function RecruitmentKpiCard({
         <span className="text-muted-foreground">{trendLabel}</span>
       </div>
       <div className="mt-3 flex h-6 items-end gap-1">
-        {[35, 55, 42, 70, 48, 82, 64].map((height, index) => (
+        {normalizedData.map((height, index) => (
           <span
             key={index}
             className={cn("w-full rounded-t bg-muted transition-colors group-hover:bg-primary/40", active && "bg-primary/50")}
