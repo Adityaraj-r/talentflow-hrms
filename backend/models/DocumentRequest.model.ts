@@ -1,37 +1,54 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IDocumentRequest extends Document {
-  employeeId: string;
-  employeeName: string;
-  documentType: 'Salary Certificate' | 'Form 16' | 'Bonafide Certificate' | 'Experience Certificate' | 'Relieving Letter' | 'Visa NOC';
-  purpose: string;
-  status: 'Pending' | 'Processing' | 'Completed' | 'Rejected';
-  rejectionReason?: string;
-  fulfilledDocumentId?: mongoose.Types.ObjectId;
-  requestDate: Date;
-  actionedBy?: string;
-  actionedAt?: Date;
+export interface IRemark {
+  remark: string;
+  addedBy: string;
+  role: string;
+  createdAt: Date;
 }
 
+export interface IDocumentRequest extends Document {
+  requestId: string;
+  employeeId: string;
+  documentType: string;
+  purpose: string;
+  additionalNotes?: string;
+  remarks: IRemark[];
+  status: 'Pending' | 'Approved' | 'Rejected';
+  documentPath?: string;
+  documentPaths?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const RemarkSchema: Schema = new Schema({
+  remark: { type: String, required: true },
+  addedBy: { type: String, required: true },
+  role: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+}, { _id: false });
+
 const DocumentRequestSchema: Schema = new Schema({
+  requestId: { type: String, unique: true },
   employeeId: { type: String, required: true },
-  employeeName: { type: String, required: true },
-  documentType: { 
-    type: String, 
-    required: true,
-    enum: ['Salary Certificate', 'Form 16', 'Bonafide Certificate', 'Experience Certificate', 'Relieving Letter', 'Visa NOC']
-  },
+  documentType: { type: String, required: true },
   purpose: { type: String, required: true },
+  additionalNotes: { type: String },
+  remarks: { type: [RemarkSchema], default: [] },
   status: {
     type: String,
-    enum: ['Pending', 'Processing', 'Completed', 'Rejected'],
+    enum: ['Pending', 'Approved', 'Rejected'],
     default: 'Pending'
   },
-  rejectionReason: { type: String },
-  fulfilledDocumentId: { type: Schema.Types.ObjectId, ref: 'Document' },
-  requestDate: { type: Date, default: Date.now },
-  actionedBy: { type: String },
-  actionedAt: { type: Date }
+  documentPath: { type: String },
+  documentPaths: { type: [String], default: [] }
 }, { timestamps: true });
+
+DocumentRequestSchema.pre('save', function (this: any) {
+  if (!this.requestId) {
+    const uniqueSuffix = Date.now().toString().slice(-6) + '-' + Math.floor(100 + Math.random() * 900);
+    this.requestId = `REQ-${uniqueSuffix}`;
+  }
+});
 
 export default mongoose.model<IDocumentRequest>('DocumentRequest', DocumentRequestSchema);

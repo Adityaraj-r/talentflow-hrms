@@ -173,46 +173,32 @@ const RequisitionForm = ({ onSubmitted }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="position">
-                Position Title <span className="text-red-500">*</span>
+                Job Opening <span className="text-red-500">*</span>
               </Label>
-              <Select
+              <Input
+                id="position"
+                name="position"
+                type="text"
+                placeholder="Enter job opening"
                 value={formData.position}
-                onValueChange={(value) => handleSelectChange("position", value)}
+                onChange={handleChange}
                 required
-              >
-                <SelectTrigger id="position">
-                  <SelectValue placeholder="Select position" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="software-engineer">Software Engineer</SelectItem>
-                  <SelectItem value="project-manager">Project Manager</SelectItem>
-                  <SelectItem value="hr-specialist">HR Specialist</SelectItem>
-                  <SelectItem value="accountant">Accountant</SelectItem>
-                  <SelectItem value="sales-representative">Sales Representative</SelectItem>
-                </SelectContent>
-              </Select>
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="department">
                 Department <span className="text-red-500">*</span>
               </Label>
-              <Select
+              <Input
+                id="department"
+                name="department"
+                type="text"
+                placeholder="Enter department"
                 value={formData.department}
-                onValueChange={(value) => handleSelectChange("department", value)}
+                onChange={handleChange}
                 required
-              >
-                <SelectTrigger id="department">
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="it">IT</SelectItem>
-                  <SelectItem value="hr">Human Resources</SelectItem>
-                  <SelectItem value="finance">Finance</SelectItem>
-                  <SelectItem value="operations">Operations</SelectItem>
-                  <SelectItem value="sales">Sales</SelectItem>
-                </SelectContent>
-              </Select>
+              />
             </div>
 
             <div className="space-y-2">

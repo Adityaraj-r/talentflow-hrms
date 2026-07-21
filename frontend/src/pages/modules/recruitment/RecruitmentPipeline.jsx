@@ -214,10 +214,6 @@ const RecruitmentPipeline = () => {
         onApplySavedFilter={setFilters}
       />
 
-      <PipelineInsightsPanel candidates={filteredCandidates} />
-
-      <AtsRecommendationWidgets candidates={filteredCandidates} />
-
       <PipelineBoard
         candidates={filteredCandidates}
         onMoveCandidate={handleMoveCandidate}
