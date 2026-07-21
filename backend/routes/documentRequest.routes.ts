@@ -7,7 +7,9 @@ import {
   createRequest,
   getMyRequests,
   getAllRequests,
-  fulfillRequest
+  approveRequest,
+  rejectRequest,
+  addSupervisorRemark
 } from '../controllers/documentRequest.controller';
 
 const router = express.Router();
@@ -35,6 +37,8 @@ const allowRoles = (...roles: string[]) => (req: any, res: any, next: any) => {
 router.post('/create', protect, allowRoles('EMPLOYEE'), createRequest);
 router.get('/my-requests', protect, allowRoles('EMPLOYEE'), getMyRequests);
 router.get('/all', protect, allowRoles('ADMIN', 'HR_MANAGER', 'HR_OFFICER'), getAllRequests);
-router.post('/fulfill/:id', protect, allowRoles('ADMIN', 'HR_MANAGER', 'HR_OFFICER'), upload.single('file'), fulfillRequest);
+router.post('/approve/:id', protect, allowRoles('ADMIN', 'HR_OFFICER'), upload.array('files', 5), approveRequest);
+router.post('/reject/:id', protect, allowRoles('ADMIN', 'HR_OFFICER'), rejectRequest);
+router.post('/supervisor-remark/:id', protect, allowRoles('HR_MANAGER'), addSupervisorRemark);
 
 export default router;
