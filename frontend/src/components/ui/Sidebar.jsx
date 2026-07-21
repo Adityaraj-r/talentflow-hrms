@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react"   /*comment*/
 import { Link, useLocation } from "react-router-dom"
 import {
   Users, Calendar, RefreshCw, DollarSign, Award, AlertTriangle,
@@ -408,6 +408,10 @@ const Sidebar = ({
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
             <SubLink to="/role/employee/appraisal" label="My Appraisal" />
             <SubLink to="/employee/appraisal-result" label="Published results" />
+          </SidebarGroup>
+
+          <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
+            <SubLink to="/role/employee/disciplinary-actions" label="Report Incident" />
           </SidebarGroup>
 
           <SidebarGroup id="documentRequests" icon={FileCheck} label="Documents">
