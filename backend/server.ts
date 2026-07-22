@@ -52,8 +52,8 @@ import offerRoutes from './routes/offer.routes';
 import disciplinaryRoutes from './routes/disciplinary.routes';
 import User from './models/User.model';
 import { initCronJobs } from './scripts/cronJobs';
+import dns from 'dns'
 
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;

@@ -351,9 +351,9 @@ const Sidebar = ({
               <SubLink to="/dashboard/job-openings" label="Job Openings" />
               <SubLink to="/dashboard/applications" label="Applications" />
               <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
-              <SubLink to="/recruitment/analytics" label="Recruitment Analytics" icon={BarChart2} />
               <SubLink to="/dashboard/offer-management" label="Offer Management" />
               <SubLink to="/recruitment/offers" label="Offer Operations" icon={FileSignature} />
+              <SubLink to="/recruitment/analytics" label="Recruitment Analytics" icon={BarChart2} />
               <SubLink to="/admin/recruitment-suggestions" label="Suggest to HR Manager" />
             </SidebarGroup>
           )}
@@ -443,9 +443,9 @@ const Sidebar = ({
               <SubLink to="/dashboard/applications" label="Applications" />
               <SubLink to="/dashboard/interview-scheduling" label="Interview Scheduling" />
               <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
-              <SubLink to="/recruitment/analytics" label="Recruitment Analytics" icon={BarChart2} />
               <SubLink to="/dashboard/offer-management" label="Offer Management" />
               <SubLink to="/recruitment/offers" label="Offer Operations" icon={FileSignature} />
+              <SubLink to="/recruitment/analytics" label="Recruitment Analytics" icon={BarChart2} />
             </SidebarGroup>
           )}
 
@@ -504,9 +504,9 @@ const Sidebar = ({
               <SubLink to="/dashboard/applications" label="Applications" />
               <SubLink to="/dashboard/interview-scheduling" label="Interview Scheduling" />
               <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
-              <SubLink to="/recruitment/analytics" label="Recruitment Analytics" icon={BarChart2} />
               <SubLink to="/dashboard/offer-management" label="Offer Management" />
               <SubLink to="/recruitment/offers" label="Offer Operations" icon={FileSignature} />
+              <SubLink to="/recruitment/analytics" label="Recruitment Analytics" icon={BarChart2} />
             </SidebarGroup>
           )}
           {canSee('attendance') && (
