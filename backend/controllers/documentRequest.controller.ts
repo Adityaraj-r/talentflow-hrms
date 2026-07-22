@@ -116,11 +116,11 @@ export const approveRequest = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    // STRICT VALIDATION: Must be Pending
-    if (documentRequest.status !== 'Pending') {
+    // VALIDATION: Must be Pending or Approved
+    if (documentRequest.status === 'Rejected') {
       res.status(400).json({
         success: false,
-        error: `Document request is already ${documentRequest.status}. A final decision can only be made on Pending requests.`
+        error: "Document request has been rejected. No additional documents can be uploaded."
       });
       return;
     }
@@ -133,6 +133,7 @@ export const approveRequest = async (req: AuthRequest, res: Response): Promise<v
     }
 
     const uploadedUrls: string[] = [];
+    const uploadedDocs: any[] = [];
 
     for (const file of files) {
       let savedFilePath = `/uploads/requested_docs/${path.basename(file.path)}`;
@@ -160,6 +161,14 @@ export const approveRequest = async (req: AuthRequest, res: Response): Promise<v
         );
       }
       uploadedUrls.push(savedFilePath);
+      uploadedDocs.push({
+        originalName: file.originalname,
+        fileName: file.filename || path.basename(savedFilePath),
+        filePath: savedFilePath,
+        fileSize: file.size || 0,
+        mimeType: file.mimetype || 'application/octet-stream',
+        uploadedAt: new Date()
+      });
     }
 
     // Append HR Remark if provided
@@ -173,8 +182,17 @@ export const approveRequest = async (req: AuthRequest, res: Response): Promise<v
     }
 
     documentRequest.status = 'Approved';
-    documentRequest.documentPaths = uploadedUrls;
-    documentRequest.documentPath = uploadedUrls[0]; // for single compatibility
+    
+    // Append instead of overwrite
+    const existingPaths = documentRequest.documentPaths || [];
+    documentRequest.documentPaths = [...existingPaths, ...uploadedUrls];
+    documentRequest.documentPath = documentRequest.documentPaths[0]; // for single compatibility
+    
+    const existingDocs = documentRequest.uploadedDocuments || [];
+    documentRequest.uploadedDocuments = [
+      ...existingDocs.map((d: any) => typeof d.toObject === 'function' ? d.toObject() : d),
+      ...uploadedDocs
+    ];
 
     await documentRequest.save();
     res.status(200).json({ success: true, data: documentRequest });
