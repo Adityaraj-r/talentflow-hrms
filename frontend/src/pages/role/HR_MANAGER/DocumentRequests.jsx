@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Search, Loader2, Eye, CheckCircle2, XCircle, Clock, Download } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "@/services/apiClient";
+import JSZip from "jszip";
 
 const DocumentRequests = () => {
   const [requests, setRequests] = useState([]);
@@ -24,6 +25,8 @@ const DocumentRequests = () => {
   // Form State
   const [supervisorRemark, setSupervisorRemark] = useState("");
   const [savingRemark, setSavingRemark] = useState(false);
+  const [attachmentsModalOpen, setAttachmentsModalOpen] = useState(false);
+  const [activeReqAttachments, setActiveReqAttachments] = useState(null);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -122,6 +125,90 @@ const DocumentRequests = () => {
     return filename.split('?')[0]; // Remove query params if any
   };
 
+  const renderDocumentTypes = (docTypeStr) => {
+    if (!docTypeStr) return null;
+    const list = docTypeStr.split(',').map(s => s.trim()).filter(Boolean);
+    return (
+      <div className="flex flex-wrap gap-1.5 mt-1.5">
+        {list.map((type, idx) => (
+          <span
+            key={idx}
+            className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-blue-100 dark:border-blue-800/40"
+          >
+            {type}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
+  const getAttachments = (req) => {
+    if (!req) return [];
+    if (req.uploadedDocuments && req.uploadedDocuments.length > 0) {
+      return req.uploadedDocuments;
+    }
+    if (req.documentPaths && req.documentPaths.length > 0) {
+      return req.documentPaths.map((path) => ({
+        originalName: getFileName(path),
+        filePath: path,
+        fileSize: 0,
+        mimeType: "",
+        uploadedAt: req.updatedAt || req.createdAt
+      }));
+    }
+    if (req.documentPath) {
+      return [{
+        originalName: getFileName(req.documentPath),
+        filePath: req.documentPath,
+        fileSize: 0,
+        mimeType: "",
+        uploadedAt: req.updatedAt || req.createdAt
+      }];
+    }
+    return [];
+  };
+
+  const downloadAllAsZip = async (attachments, requestId) => {
+    try {
+      toast.loading("Generating ZIP file...", { id: "zip-download" });
+      const zip = new JSZip();
+      
+      const fetchPromises = attachments.map(async (file) => {
+        const fileUrl = forceCloudinaryDownload(file.filePath);
+        const res = await fetch(fileUrl);
+        if (!res.ok) throw new Error(`Failed to fetch ${file.originalName}`);
+        const blob = await res.blob();
+        zip.file(file.originalName, blob);
+      });
+
+      await Promise.all(fetchPromises);
+      const content = await zip.generateAsync({ type: "blob" });
+      
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(content);
+      link.download = `documents_${requestId || "request"}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      
+      toast.success("ZIP downloaded successfully!", { id: "zip-download" });
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to generate ZIP. Please download files individually.", { id: "zip-download" });
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes === 0) return "";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  };
+
+
+
   return (
     <div className="space-y-6">
       <div>
@@ -176,7 +263,33 @@ const DocumentRequests = () => {
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{new Date(req.createdAt).toLocaleDateString()}</td>
                       <td className="px-4 py-3">{getStatusBadge(req.status)}</td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-1.5">
+                        <div className="flex justify-end items-center gap-2">
+                          {req.status === "Approved" && (
+                            <>
+                              {getAttachments(req).length === 0 ? (
+                                <span className="text-xs text-muted-foreground italic">No documents uploaded yet.</span>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 px-2.5 text-xs font-semibold flex items-center gap-1.5 border-blue-200 bg-blue-50 hover:bg-blue-100/70 text-blue-700 dark:bg-blue-950/30 dark:border-blue-900/30 dark:text-blue-400"
+                                  onClick={() => {
+                                    setActiveReqAttachments(req);
+                                    setAttachmentsModalOpen(true);
+                                  }}
+                                >
+                                  {getAttachments(req).length === 1 ? (
+                                    <span>📄</span>
+                                  ) : (
+                                    <span className="flex items-center gap-1">
+                                      <span>📎</span>
+                                      <span>{getAttachments(req).length}</span>
+                                    </span>
+                                  )}
+                                </Button>
+                              )}
+                            </>
+                          )}
                           <Button variant="outline" size="sm" onClick={() => handleOpenViewDetails(req)}>
                             View Details
                           </Button>
@@ -222,7 +335,7 @@ const DocumentRequests = () => {
               <div className="space-y-3">
                 <h3 className="font-semibold text-sm border-b pb-1 text-slate-700 dark:text-slate-300">Request Information</h3>
                 <div className="space-y-2 text-sm leading-relaxed">
-                  <div><strong>Document Type:</strong> {selectedReq.documentType}</div>
+                  <div><strong>Document Type:</strong> {renderDocumentTypes(selectedReq.documentType)}</div>
                   <div>
                     <strong>Purpose:</strong>
                     <p className="bg-muted/40 p-2.5 rounded-lg border text-slate-600 dark:text-slate-300 mt-1">{selectedReq.purpose}</p>
@@ -263,42 +376,77 @@ const DocumentRequests = () => {
               </div>
 
               {/* Uploaded Documents List */}
-              {((selectedReq.documentPaths && selectedReq.documentPaths.length > 0) || selectedReq.documentPath) && (
+              {selectedReq.status === "Approved" && (
                 <div className="space-y-3">
                   <h3 className="font-semibold text-sm border-b pb-1 text-slate-700 dark:text-slate-300">Uploaded Documents</h3>
-                  <div className="space-y-2">
-                    {selectedReq.documentPaths && selectedReq.documentPaths.length > 0 ? (
-                      selectedReq.documentPaths.map((path, idx) => (
-                        <div key={idx} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-2.5 border rounded-lg text-xs">
-                          <span className="truncate max-w-[280px]" title={getFileName(path)}>
-                            {idx + 1}. {getFileName(path)}
-                          </span>
+                  {((selectedReq.uploadedDocuments && selectedReq.uploadedDocuments.length > 0) ||
+                    (selectedReq.documentPaths && selectedReq.documentPaths.length > 0) ||
+                    selectedReq.documentPath) ? (
+                    <div className="space-y-2">
+                      {selectedReq.uploadedDocuments && selectedReq.uploadedDocuments.length > 0 ? (
+                        selectedReq.uploadedDocuments.map((doc, idx) => (
+                          <div key={idx} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-3 border rounded-lg text-xs">
+                            <div className="space-y-0.5 truncate max-w-[280px]">
+                              <span className="font-medium text-slate-700 dark:text-slate-300 block truncate" title={doc.originalName || getFileName(doc.filePath)}>
+                                {idx + 1}. {doc.originalName || getFileName(doc.filePath)}
+                              </span>
+                              {doc.fileSize > 0 && (
+                                <span className="text-[10px] text-muted-foreground block font-normal">
+                                  {formatFileSize(doc.fileSize)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex gap-1.5 shrink-0">
+                              <Button variant="outline" size="sm" className="h-7 px-2" onClick={() => window.open(getFileUrl(doc.filePath), "_blank")}>
+                                View
+                              </Button>
+                              <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => window.open(forceCloudinaryDownload(doc.filePath), "_blank")}>
+                                <Download className="w-3.5 h-3.5 mr-1" /> Download
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      ) : selectedReq.documentPaths && selectedReq.documentPaths.length > 0 ? (
+                        selectedReq.documentPaths.map((path, idx) => (
+                          <div key={idx} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-3 border rounded-lg text-xs">
+                            <div className="space-y-0.5 truncate max-w-[280px]">
+                              <span className="font-medium text-slate-700 dark:text-slate-300 block truncate" title={getFileName(path)}>
+                                {idx + 1}. {getFileName(path)}
+                              </span>
+                            </div>
+                            <div className="flex gap-1.5 shrink-0">
+                              <Button variant="outline" size="sm" className="h-7 px-2" onClick={() => window.open(getFileUrl(path), "_blank")}>
+                                View
+                              </Button>
+                              <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => window.open(forceCloudinaryDownload(path), "_blank")}>
+                                <Download className="w-3.5 h-3.5 mr-1" /> Download
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-3 border rounded-lg text-xs">
+                          <div className="space-y-0.5 truncate max-w-[280px]">
+                            <span className="font-medium text-slate-700 dark:text-slate-300 block truncate" title={getFileName(selectedReq.documentPath)}>
+                              1. {getFileName(selectedReq.documentPath)}
+                            </span>
+                          </div>
                           <div className="flex gap-1.5 shrink-0">
-                            <Button variant="outline" size="sm" className="h-7 px-2" onClick={() => window.open(getFileUrl(path), "_blank")}>
+                            <Button variant="outline" size="sm" className="h-7 px-2" onClick={() => window.open(getFileUrl(selectedReq.documentPath), "_blank")}>
                               View
                             </Button>
-                            <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => window.open(forceCloudinaryDownload(path), "_blank")}>
-                              <Download className="w-3.5 h-3.5" />
+                            <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => window.open(forceCloudinaryDownload(selectedReq.documentPath), "_blank")}>
+                              <Download className="w-3.5 h-3.5 mr-1" /> Download
                             </Button>
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-2.5 border rounded-lg text-xs">
-                        <span className="truncate max-w-[280px]">
-                          1. {getFileName(selectedReq.documentPath)}
-                        </span>
-                        <div className="flex gap-1.5 shrink-0">
-                          <Button variant="outline" size="sm" className="h-7 px-2" onClick={() => window.open(getFileUrl(selectedReq.documentPath), "_blank")}>
-                            View
-                          </Button>
-                          <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => window.open(forceCloudinaryDownload(selectedReq.documentPath), "_blank")}>
-                            <Download className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-yellow-600 bg-yellow-50 dark:bg-yellow-950/20 dark:text-yellow-400 p-3 rounded-lg border border-yellow-100 dark:border-yellow-900/30 font-medium">
+                      Documents are being prepared by HR.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -348,6 +496,69 @@ const DocumentRequests = () => {
               </DialogFooter>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Attachments List Modal */}
+      <Dialog open={attachmentsModalOpen} onOpenChange={setAttachmentsModalOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Uploaded Documents</DialogTitle>
+          </DialogHeader>
+          
+          {activeReqAttachments && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-3 divide-y border rounded-lg p-3 max-h-[300px] overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50">
+                {getAttachments(activeReqAttachments).map((file, idx) => (
+                  <div key={idx} className={`flex items-center justify-between gap-3 text-xs py-2.5 ${idx === 0 ? "pt-0" : ""}`}>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 truncate" title={file.originalName}>
+                        ✓ {file.originalName}
+                      </span>
+                      {file.fileSize > 0 && (
+                        <span className="text-[10px] text-muted-foreground mt-0.5">
+                          {formatFileSize(file.fileSize)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => window.open(getFileUrl(file.filePath), "_blank")}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="h-7 px-2 text-xs bg-green-600 hover:bg-green-700 text-white"
+                        onClick={() => window.open(forceCloudinaryDownload(file.filePath), "_blank")}
+                      >
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {getAttachments(activeReqAttachments).length > 1 && (
+                <Button
+                  onClick={() => downloadAllAsZip(getAttachments(activeReqAttachments), activeReqAttachments.requestId)}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-2.5 flex items-center justify-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" /> Download All (.zip)
+                </Button>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter className="border-t pt-3">
+            <Button onClick={() => {
+              setAttachmentsModalOpen(false);
+              setActiveReqAttachments(null);
+            }}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

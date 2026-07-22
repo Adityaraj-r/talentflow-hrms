@@ -7,6 +7,15 @@ export interface IRemark {
   createdAt: Date;
 }
 
+export interface IUploadedDocument {
+  originalName: string;
+  fileName: string;
+  filePath: string;
+  fileSize: number;
+  mimeType: string;
+  uploadedAt: Date;
+}
+
 export interface IDocumentRequest extends Document {
   requestId: string;
   employeeId: string;
@@ -17,6 +26,7 @@ export interface IDocumentRequest extends Document {
   status: 'Pending' | 'Approved' | 'Rejected';
   documentPath?: string;
   documentPaths?: string[];
+  uploadedDocuments?: IUploadedDocument[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +36,15 @@ const RemarkSchema: Schema = new Schema({
   addedBy: { type: String, required: true },
   role: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
+}, { _id: false });
+
+const UploadedDocumentSchema: Schema = new Schema({
+  originalName: { type: String, required: true },
+  fileName: { type: String, required: true },
+  filePath: { type: String, required: true },
+  fileSize: { type: Number, required: true, default: 0 },
+  mimeType: { type: String, required: true, default: 'application/octet-stream' },
+  uploadedAt: { type: Date, default: Date.now }
 }, { _id: false });
 
 const DocumentRequestSchema: Schema = new Schema({
@@ -41,8 +60,97 @@ const DocumentRequestSchema: Schema = new Schema({
     default: 'Pending'
   },
   documentPath: { type: String },
-  documentPaths: { type: [String], default: [] }
-}, { timestamps: true });
+  documentPaths: { type: [String], default: [] },
+  uploadedDocuments: { type: [UploadedDocumentSchema], default: [] }
+}, {
+  timestamps: true,
+  toJSON: {
+    transform: function (doc: any, ret: any) {
+      if ((!ret.uploadedDocuments || ret.uploadedDocuments.length === 0) && (ret.documentPaths && ret.documentPaths.length > 0)) {
+        ret.uploadedDocuments = ret.documentPaths.map((pathStr: string) => {
+          const extension = pathStr.split('.').pop()?.toLowerCase();
+          let mimeType = 'application/octet-stream';
+          if (extension === 'pdf') mimeType = 'application/pdf';
+          else if (extension === 'doc') mimeType = 'application/msword';
+          else if (extension === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          else if (extension === 'png') mimeType = 'image/png';
+          else if (extension === 'jpg' || extension === 'jpeg') mimeType = 'image/jpeg';
+          
+          return {
+            originalName: pathStr.split('/').pop() || 'document',
+            fileName: pathStr.split('/').pop() || 'document',
+            filePath: pathStr,
+            fileSize: 0,
+            mimeType: mimeType,
+            uploadedAt: doc.updatedAt || doc.createdAt || new Date()
+          };
+        });
+      } else if ((!ret.uploadedDocuments || ret.uploadedDocuments.length === 0) && ret.documentPath) {
+        const pathStr = ret.documentPath;
+        const extension = pathStr.split('.').pop()?.toLowerCase();
+        let mimeType = 'application/octet-stream';
+        if (extension === 'pdf') mimeType = 'application/pdf';
+        else if (extension === 'doc') mimeType = 'application/msword';
+        else if (extension === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        else if (extension === 'png') mimeType = 'image/png';
+        else if (extension === 'jpg' || extension === 'jpeg') mimeType = 'image/jpeg';
+
+        ret.uploadedDocuments = [{
+          originalName: pathStr.split('/').pop() || 'document',
+          fileName: pathStr.split('/').pop() || 'document',
+          filePath: pathStr,
+          fileSize: 0,
+          mimeType: mimeType,
+          uploadedAt: doc.updatedAt || doc.createdAt || new Date()
+        }];
+      }
+      return ret;
+    }
+  },
+  toObject: {
+    transform: function (doc: any, ret: any) {
+      if ((!ret.uploadedDocuments || ret.uploadedDocuments.length === 0) && (ret.documentPaths && ret.documentPaths.length > 0)) {
+        ret.uploadedDocuments = ret.documentPaths.map((pathStr: string) => {
+          const extension = pathStr.split('.').pop()?.toLowerCase();
+          let mimeType = 'application/octet-stream';
+          if (extension === 'pdf') mimeType = 'application/pdf';
+          else if (extension === 'doc') mimeType = 'application/msword';
+          else if (extension === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          else if (extension === 'png') mimeType = 'image/png';
+          else if (extension === 'jpg' || extension === 'jpeg') mimeType = 'image/jpeg';
+          
+          return {
+            originalName: pathStr.split('/').pop() || 'document',
+            fileName: pathStr.split('/').pop() || 'document',
+            filePath: pathStr,
+            fileSize: 0,
+            mimeType: mimeType,
+            uploadedAt: doc.updatedAt || doc.createdAt || new Date()
+          };
+        });
+      } else if ((!ret.uploadedDocuments || ret.uploadedDocuments.length === 0) && ret.documentPath) {
+        const pathStr = ret.documentPath;
+        const extension = pathStr.split('.').pop()?.toLowerCase();
+        let mimeType = 'application/octet-stream';
+        if (extension === 'pdf') mimeType = 'application/pdf';
+        else if (extension === 'doc') mimeType = 'application/msword';
+        else if (extension === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        else if (extension === 'png') mimeType = 'image/png';
+        else if (extension === 'jpg' || extension === 'jpeg') mimeType = 'image/jpeg';
+
+        ret.uploadedDocuments = [{
+          originalName: pathStr.split('/').pop() || 'document',
+          fileName: pathStr.split('/').pop() || 'document',
+          filePath: pathStr,
+          fileSize: 0,
+          mimeType: mimeType,
+          uploadedAt: doc.updatedAt || doc.createdAt || new Date()
+        }];
+      }
+      return ret;
+    }
+  }
+});
 
 DocumentRequestSchema.pre('save', function (this: any) {
   if (!this.requestId) {
