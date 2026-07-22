@@ -68,7 +68,7 @@ export const updateJob = async (req: Request, res: Response) => {
     }
 
     const role = (req as any).user?.role ? (req as any).user.role.toString().toUpperCase().replace(/\s+/g, "_") : "";
-    if (job.status === "Published" || job.status === "Closed" || job.status === "Open") {
+    if (job.status === "Published" || job.status === "Closed" || String(job.status) === "Open") {
       if (role !== "HR_MANAGER" && role !== "ADMIN" && role !== "SUPER_ADMIN") {
         return res.status(403).json({ success: false, message: "Access denied to update published/closed/open jobs" });
       }
@@ -147,7 +147,7 @@ export const deleteJob = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: "Job not found" });
     }
 
-    if (job.status === "Published" || job.status === "Open") {
+    if (job.status === "Published" || String(job.status) === "Open") {
       return res.status(400).json({ success: false, message: "Published/Open jobs cannot be deleted directly" });
     }
 

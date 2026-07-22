@@ -11,7 +11,7 @@ export const applyJob = async (req: Request, res: Response) => {
 
   try {
 
-    const { jobId, name, email } = req.body
+    const { jobId, name, email, phone } = req.body
 
     const resume = (req as any).file?.filename
     const job = jobId && mongoose.Types.ObjectId.isValid(jobId)
@@ -28,6 +28,7 @@ export const applyJob = async (req: Request, res: Response) => {
       jobId,
       name,
       email,
+      phone,
       resume,
       ...fit,
     })

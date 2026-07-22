@@ -18,6 +18,11 @@ const applicationSchema = new mongoose.Schema(
     required: true
   },
 
+  phone: {
+    type: String,
+    required: false
+  },
+
   resume: {
     type: String
   },
