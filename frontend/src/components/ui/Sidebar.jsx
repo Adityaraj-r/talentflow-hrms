@@ -114,7 +114,7 @@ const Sidebar = ({
         path.startsWith("/recruitment/offers") ||
         path.startsWith("/dashboard/onboarding"),
 
-      documentRequests: path.includes("document-requests"),
+      documentRequests: path.includes("document-requests") || path.includes("my-documents") || path.includes("employee-documents"),
       disciplinaryActions: path.includes("disciplinary-actions"),
       appraisal: path.includes("/appraisal") || path.includes("/role/hr_manager/review"),
     }))
@@ -484,7 +484,9 @@ const Sidebar = ({
           </SidebarGroup>
 
           <SidebarGroup id="documentRequests" icon={FileCheck} label="Documents">
-            <SubLink to="/role/hr_manager/document-requests" label="HR Manager Requests" />
+            <SubLink to="/role/hr_manager/document-requests" label="Document Requests" />
+            <SubLink to="/role/employee/my-documents" label="My Documents" />
+            <SubLink to="/documents/employee-documents" label="Employee Documents" />
           </SidebarGroup>
         </>
       )
@@ -536,7 +538,9 @@ const Sidebar = ({
           </SidebarGroup>
 
           <SidebarGroup id="documentRequests" icon={FileCheck} label="Documents">
-            <SubLink to="/role/hr_officer/document-requests" label="Requests" />
+            <SubLink to="/role/hr_officer/document-requests" label="Document Requests" />
+            <SubLink to="/role/employee/my-documents" label="My Documents" />
+            <SubLink to="/documents/employee-documents" label="Employee Documents" />
           </SidebarGroup>
 
           <SidebarGroup id="appraisal" icon={Award} label="Performance (PMS)">

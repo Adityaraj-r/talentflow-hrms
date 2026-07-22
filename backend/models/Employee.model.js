@@ -1,0 +1,92 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose_1 = require("mongoose");
+const EmployeeSchema = new mongoose_1.Schema({
+    userId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null,
+    },
+    firstName: { type: String, required: true, trim: true },
+    MiddleName: { type: String, trim: true },
+    lastName: { type: String, trim: true, default: '' },
+    workEmail: { type: String, lowercase: true },
+    email: { type: String, required: true, unique: true, lowercase: true },
+    phoneNumber: { type: String, required: true },
+    alternatePhone: { type: String },
+    dateOfBirth: { type: Date },
+    gender: { type: String, enum: ['Male', 'Female', 'Other'] },
+    nationality: { type: String, default: 'Indian' },
+    maritalStatus: { type: String, enum: ['Single', 'Married', 'Divorced', 'Widowed'] },
+    currentAddress: { type: String },
+    employeeCode: {
+        type: String,
+        default: null,
+        unique: true,
+        sparse: true,
+        trim: true,
+    },
+    role: {
+        type: String,
+        default: null,
+    },
+    joiningDate: { type: Date },
+    exitDate: { type: Date, default: null },
+    exitReason: { type: String, default: null },
+    department: { type: String },
+    designation: { type: String },
+    employmentType: { type: String, enum: ['Full-Time', 'Part-Time', 'Contract', 'Intern'] },
+    workLocation: { type: String },
+    reportingManager: { type: String },
+    reportingManagerId: { type: String, default: null },
+    salary: {
+        basic: { type: Number, default: 0 },
+        currency: { type: String, default: 'INR' },
+        allowances: {
+            hra: { type: Number, default: 0 },
+            transport: { type: Number, default: 0 },
+            medical: { type: Number, default: 0 },
+            other: { type: Number, default: 0 },
+        },
+        deductions: {
+            pf: { type: Number, default: 0 },
+            tax: { type: Number, default: 0 },
+            insurance: { type: Number, default: 0 },
+            other: { type: Number, default: 0 },
+        },
+    },
+    kycDetails: {
+        panNumber: { type: String, uppercase: true },
+        aadharNumber: { type: String },
+        uan: { type: String },
+        pfNumber: { type: String },
+    },
+    bankDetails: {
+        accountHolderName: { type: String },
+        accountNumber: { type: String },
+        bankName: { type: String },
+        branchName: { type: String },
+        ifscCode: { type: String },
+    },
+    Documents: {
+        aadharCardPath: { type: String, default: null },
+        panCardPath: { type: String, default: null },
+        resumePath: { type: String, default: null },
+        educationDocsPath: { type: String, default: null },
+        passportPhotoPath: { type: String, default: null },
+        relievingLetterPath: { type: String, default: null },
+    },
+    onboardingStatus: {
+        type: String,
+        enum: ['Personal', 'Employment', 'Banking', 'Documents', 'Completed'],
+        default: 'Personal',
+    },
+    status: {
+        type: String,
+        enum: ['Active', 'Inactive', 'On Leave', 'Terminated', 'On Notice Period', 'Exit Clearance', 'Exited', 'Pending Manager Approval', 'Pending HR Approval', 'Pending Country Manager Approval', 'Pending CEO Approval', 'Withdrawn'],
+        default: 'Active',
+    },
+    createdBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+    updatedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+}, { timestamps: true });
+exports.default = mongoose_1.default.model('Employee', EmployeeSchema);
