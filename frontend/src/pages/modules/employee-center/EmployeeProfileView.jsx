@@ -41,7 +41,9 @@ const EmployeeProfileView = () => {
     try {
       const response = await adminService.getAllEmployees()
       const users = response.data?.users || response.data || []
-      const found = Array.isArray(users) ? users.find(u => u._id === id) : null
+      const found = Array.isArray(users) 
+        ? users.find(u => u._id === id || u.employeeCode === id) 
+        : null
       setEmployee(found || null)
     } catch (err) {
       console.error(err)
@@ -87,9 +89,12 @@ const EmployeeProfileView = () => {
   if (!employee) {
     return (
       <div className="p-6 flex flex-col items-center justify-center min-h-[60vh] gap-4 text-gray-500 dark:text-gray-400">
-        <XCircle className="h-12 w-12 opacity-30" />
-        <p className="text-lg font-semibold">Employee not found</p>
-        <Button variant="outline" onClick={() => navigate("/employee-center/all-employees")}>
+        <XCircle className="h-12 w-12 opacity-30 text-red-500" />
+        <h2 className="text-xl font-semibold text-foreground">Employee Not Found</h2>
+        <p className="text-sm text-center max-w-md">
+          The employee record you are trying to view no longer exists or has been permanently deleted from the database.
+        </p>
+        <Button variant="outline" className="mt-2" onClick={() => navigate("/employee-center/all-employees")}>
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to All Employees
         </Button>
       </div>
@@ -97,7 +102,8 @@ const EmployeeProfileView = () => {
   }
 
   const fullName = getFullName(employee)
-  const isActive = employee.isActive
+  const status = employee.status || 'Active'
+  const isActive = status === 'Active'
   const visibleTabs = isHR ? TABS : ["Overview"]
 
   return (
@@ -136,12 +142,19 @@ const EmployeeProfileView = () => {
                   </span>
                   <span className={cn(
                     "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
-                    isActive
+                    status === 'Active'
                       ? "bg-green-50 dark:bg-green-500/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/30"
-                      : "bg-orange-50 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-500/30"
+                      : status?.startsWith('Pending')
+                      ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30"
+                      : status === 'On Notice Period'
+                      ? "bg-yellow-50 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-500/30"
+                      : "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/30"
                   )}>
-                    <span className={cn("h-1.5 w-1.5 rounded-full", isActive ? "bg-green-500" : "bg-orange-500")} />
-                    {isActive ? "Active" : "Inactive"}
+                    <span className={cn(
+                      "h-1.5 w-1.5 rounded-full", 
+                      status === 'Active' ? "bg-green-500" : status?.startsWith('Pending') ? "bg-blue-500" : status === 'On Notice Period' ? "bg-yellow-500" : "bg-red-500"
+                    )} />
+                    {status}
                   </span>
                 </div>
               </div>
@@ -212,9 +225,22 @@ const EmployeeProfileView = () => {
                 <InfoRow
                   icon={CheckCircle2}
                   label="Account Status"
-                  value={isActive ? "Active" : "Inactive"}
-                  valueClassName={isActive ? "text-green-600 dark:text-green-400" : "text-orange-600 dark:text-orange-400"}
+                  value={status}
+                  valueClassName={
+                    status === 'Active' ? "text-green-600 dark:text-green-400" :
+                    status?.startsWith('Pending') ? "text-blue-600 dark:text-blue-400" :
+                    status === 'On Notice Period' ? "text-yellow-600 dark:text-yellow-400" :
+                    "text-red-600 dark:text-red-400"
+                  }
                 />
+                {status === 'On Notice Period' && employee.exitDate && (
+                  <InfoRow 
+                    icon={Calendar} 
+                    label="Last Working Day (LWD)" 
+                    value={formatDate(employee.exitDate)} 
+                    valueClassName="text-yellow-600 dark:text-yellow-400 font-semibold"
+                  />
+                )}
                 <InfoRow icon={Calendar} label="Joined On" value={formatDate(employee.createdAt)} />
               </div>
             </div>
@@ -282,17 +308,22 @@ const SalaryTab = ({ userId, employeeName }) => {
 
   const set = (field, val) => setForm(p => ({ ...p, [field]: val }))
 
-  const gross = [form.basic, form.hra, form.transport, form.medical, form.otherAllowance]
+  const grossAnnual = [form.basic, form.hra, form.transport, form.medical, form.otherAllowance]
     .reduce((sum, v) => sum + (Number(v) || 0), 0)
 
-  const deductions = [form.pf, form.tax, form.insurance]
+  const deductionsAnnual = [form.pf, form.tax, form.insurance]
     .reduce((sum, v) => sum + (Number(v) || 0), 0)
 
-  const net = gross - deductions
+  const netAnnual = grossAnnual - deductionsAnnual
+
+  const toMonthly = (val) => Math.round((Number(val) || 0) / 12)
+  const grossMonthly = toMonthly(grossAnnual)
+  const deductionsMonthly = toMonthly(deductionsAnnual)
+  const netMonthly = grossMonthly - deductionsMonthly
 
   const handleSave = async () => {
     if (!form.basic || Number(form.basic) <= 0) {
-      toast.error("Basic salary is required and must be greater than 0")
+      toast.error("Basic annual salary is required and must be greater than 0")
       return
     }
     setSaving(true)
@@ -340,7 +371,7 @@ const SalaryTab = ({ userId, employeeName }) => {
               </h3>
             </div>
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <SalaryField label="Basic Salary" value={form.basic} onChange={v => set("basic", v)} required />
+              <SalaryField label="Basic Annual Salary" value={form.basic} onChange={v => set("basic", v)} required />
               <SalaryField label="HRA (House Rent Allowance)" value={form.hra} onChange={v => set("hra", v)} />
               <SalaryField label="Transport Allowance" value={form.transport} onChange={v => set("transport", v)} />
               <SalaryField label="Medical Allowance" value={form.medical} onChange={v => set("medical", v)} />
@@ -379,10 +410,10 @@ const SalaryTab = ({ userId, employeeName }) => {
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-blue-600" />
               <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
-                Live Preview
+                Annual Summary
               </h3>
             </div>
-            <div className="p-6 space-y-3">
+            <div className="p-6 space-y-3 pb-4">
               <PreviewRow label="Basic" value={form.basic} color="text-gray-900 dark:text-white" />
               <PreviewRow label="HRA" value={form.hra} color="text-gray-700 dark:text-gray-300" />
               <PreviewRow label="Transport" value={form.transport} color="text-gray-700 dark:text-gray-300" />
@@ -390,7 +421,7 @@ const SalaryTab = ({ userId, employeeName }) => {
               <PreviewRow label="Other Allowance" value={form.otherAllowance} color="text-gray-700 dark:text-gray-300" />
 
               <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
-                <PreviewRow label="Gross Salary" value={gross} color="font-bold text-gray-900 dark:text-white" />
+                <PreviewRow label="Gross Salary" value={grossAnnual} color="font-bold text-gray-900 dark:text-white" />
               </div>
 
               <div className="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-3">
@@ -400,13 +431,33 @@ const SalaryTab = ({ userId, employeeName }) => {
               </div>
 
               <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
-                <PreviewRow label="Total Deductions" value={deductions} color="font-semibold text-red-500" prefix="−" />
+                <PreviewRow label="Total Deductions" value={deductionsAnnual} color="font-semibold text-red-500" prefix="−" />
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50">
+              <Calendar className="h-4 w-4 text-green-600" />
+              <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+                Monthly Breakdown
+              </h3>
+            </div>
+            <div className="p-6 space-y-3 pt-4">
+              <PreviewRow label="Basic" value={toMonthly(form.basic)} color="text-gray-900 dark:text-white" />
+              <PreviewRow label="HRA" value={toMonthly(form.hra)} color="text-gray-700 dark:text-gray-300" />
+              <PreviewRow label="Allowances" value={toMonthly(form.transport) + toMonthly(form.medical) + toMonthly(form.otherAllowance)} color="text-gray-700 dark:text-gray-300" />
+              
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                <PreviewRow label="Gross Monthly" value={grossMonthly} color="font-bold text-gray-900 dark:text-white" />
+              </div>
+              
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-3">
+                <PreviewRow label="Total Deductions" value={deductionsMonthly} color="font-semibold text-red-500" prefix="−" />
               </div>
 
-              <div className="mt-4 p-4 bg-blue-600 rounded-xl text-white text-center">
-                <p className="text-xs uppercase tracking-widest opacity-80">Net Monthly Pay</p>
+              <div className="mt-4 p-4 bg-green-600 rounded-xl text-white text-center shadow-md">
+                <p className="text-xs uppercase tracking-widest opacity-90">Net Monthly Pay</p>
                 <h2 className="text-3xl font-black mt-1">
-                  ₹ {net > 0 ? net.toLocaleString() : "0"}
+                  ₹ {netMonthly > 0 ? netMonthly.toLocaleString() : "0"}
                 </h2>
               </div>
             </div>

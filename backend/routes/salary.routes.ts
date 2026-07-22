@@ -34,12 +34,23 @@ const resolveEmployee = async (user: any, selectFields = "salary employeeCode") 
 
 router.get("/:userId", authorize(...HR_ROLES), async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId)
-      .select("employeeId firstName lastName email")
-    if (!user)
-      return res.status(404).json({ success: false, error: "User not found" })
+    let user = null;
+    if ((req.params.userId as string).match(/^[0-9a-fA-F]{24}$/)) {
+      user = await User.findById(req.params.userId).select("employeeId firstName lastName email")
+    }
 
-    const employee = await resolveEmployee(user)
+    let employee = null;
+    if (user) {
+      employee = await resolveEmployee(user)
+    } else {
+      if ((req.params.userId as string).match(/^[0-9a-fA-F]{24}$/)) {
+        employee = await Employee.findById(req.params.userId)
+      }
+      if (!employee) {
+        employee = await Employee.findOne({ employeeCode: req.params.userId })
+      }
+    }
+
     if (!employee)
       return res.status(404).json({ success: false, error: "No employee profile found" })
 
@@ -115,29 +126,38 @@ router.get("/:userId/self", authorize("EMPLOYEE", ...HR_ROLES), async (req, res)
 
 router.put("/:userId", authorize(...HR_ROLES), async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId)
-      .select("employeeId email")
-    if (!user)
-      return res.status(404).json({ success: false, error: "User not found" })
+    let user = null;
+    if ((req.params.userId as string).match(/^[0-9a-fA-F]{24}$/)) {
+      user = await User.findById(req.params.userId).select("employeeId email")
+    }
 
     const { basic, hra, transport, medical, otherAllowance, pf, tax, insurance } = req.body
 
     if (!basic || Number(basic) <= 0)
       return res.status(400).json({
         success: false,
-        error: "Basic salary is required and must be > 0",
+        error: "Basic annual salary is required and must be > 0",
       })
 
     // Use full doc (no .select) so we can save
     let employee = null
-    if (user.employeeId) {
-      employee = await Employee.findById(user.employeeId)
-    }
-    if (!employee && user.email) {
-      employee = await Employee.findOne({ email: user.email })
-      if (employee) {
-        await User.findByIdAndUpdate(user._id, { employeeId: employee._id })
-        console.log(`[salary.routes] Updated employeeId for ${user.email}`)
+    if (user) {
+      if (user.employeeId) {
+        employee = await Employee.findById(user.employeeId)
+      }
+      if (!employee && user.email) {
+        employee = await Employee.findOne({ email: user.email })
+        if (employee) {
+          await User.findByIdAndUpdate(user._id, { employeeId: employee._id })
+          console.log(`[salary.routes] Updated employeeId for ${user.email}`)
+        }
+      }
+    } else {
+      if ((req.params.userId as string).match(/^[0-9a-fA-F]{24}$/)) {
+        employee = await Employee.findById(req.params.userId)
+      }
+      if (!employee) {
+        employee = await Employee.findOne({ employeeCode: req.params.userId })
       }
     }
 

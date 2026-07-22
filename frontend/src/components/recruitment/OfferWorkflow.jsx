@@ -43,6 +43,7 @@ import {
   Sparkles,
   TrendingDown,
   TrendingUp,
+  UserPlus,
   UserRound,
   Users,
   X,
@@ -774,6 +775,18 @@ export function OfferDetailsDrawer({ offer, open, onClose, onAction, isCeo, canW
                 </>
               )}
               {canApproveOffers && offer.status === "Offered" && <Button variant="outline" onClick={() => onAction("send", offer)}>Send Offer</Button>}
+              {canWrite && offer.status === "Accepted" && (
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-md shadow-emerald-500/10 transition-all hover:scale-[1.02]"
+                  onClick={() => {
+                    const [firstName, ...lastNameParts] = (offer.candidateName || "").split(" ");
+                    const lastName = lastNameParts.join(" ");
+                    window.location.href = `/employee-center/onboarding?email=${encodeURIComponent(offer.candidateEmail || "")}&firstName=${encodeURIComponent(firstName || "")}&lastName=${encodeURIComponent(lastName || "")}&designation=${encodeURIComponent(offer.position || "")}&department=${encodeURIComponent(offer.department || "")}&joiningDate=${encodeURIComponent(offer.joiningDate || "")}`;
+                  }}
+                >
+                  <UserPlus className="mr-2 h-4 w-4" /> Onboard Candidate
+                </Button>
+              )}
             </div>
           </Motion.motion.aside>
         </>
@@ -895,7 +908,19 @@ export function OfferActionConfirm({ action, offer, open, onClose, onConfirm }) 
 export function OfferActionBar({ offer, onAction, canWrite, isCeo, canApproveOffers = false }) {
   return (
     <div className="flex flex-wrap gap-2">
-      {canApproveOffers && <Button variant="outline" onClick={() => onAction("send", offer)}><Send className="mr-2 h-4 w-4" />Send Offer</Button>}
+      {canWrite && offer?.status === "Accepted" && (
+        <Button
+          className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-md shadow-emerald-500/10 transition-all hover:scale-[1.02]"
+          onClick={() => {
+            const [firstName, ...lastNameParts] = (offer.candidateName || "").split(" ");
+            const lastName = lastNameParts.join(" ");
+            window.location.href = `/employee-center/onboarding?email=${encodeURIComponent(offer.candidateEmail || "")}&firstName=${encodeURIComponent(firstName || "")}&lastName=${encodeURIComponent(lastName || "")}&designation=${encodeURIComponent(offer.position || "")}&department=${encodeURIComponent(offer.department || "")}&joiningDate=${encodeURIComponent(offer.joiningDate || "")}`;
+          }}
+        >
+          <UserPlus className="mr-2 h-4 w-4" /> Onboard Candidate
+        </Button>
+      )}
+      {canApproveOffers && offer?.status === "Offered" && <Button variant="outline" onClick={() => onAction("send", offer)}><Send className="mr-2 h-4 w-4" />Send Offer</Button>}
       {(isCeo || canApproveOffers) && (offer?.status === "Pending CEO Approval" || offer?.status === "Pending HR Manager Approval") && <Button onClick={() => onAction("approve", offer)}><CheckCircle2 className="mr-2 h-4 w-4" />Approve</Button>}
       {canApproveOffers && <Button variant="outline" onClick={() => onAction("reject", offer)}><XCircle className="mr-2 h-4 w-4" />Reject</Button>}
       {canApproveOffers && <Button variant="outline" onClick={() => onAction("renegotiate", offer)}><PenLine className="mr-2 h-4 w-4" />Re-negotiate</Button>}

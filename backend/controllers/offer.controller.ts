@@ -60,7 +60,7 @@ const buildOfferAnalytics = async () => {
     Offer.find({ createdAt: { $gte: previousStart, $lt: start } }).lean(),
   ]);
 
-  const allOffers = await Offer.find().sort({ createdAt: -1 }).lean();
+  const allOffers = await Offer.find().sort({ createdAt: -1 }).populate('createdBy', 'firstName lastName').lean();
   const accepted = offers.filter((offer: any) => offer.status === 'Accepted').length;
   const rejected = offers.filter((offer: any) => offer.status === 'Declined').length;
   const pending = offers.filter((offer: any) => isPendingOfferApproval(offer.status)).length;
@@ -146,7 +146,7 @@ const buildOfferAnalytics = async () => {
 
 export const getOffers = async (req: AuthRequest, res: Response) => {
   try {
-    const offers = await Offer.find().sort({ createdAt: -1 });
+    const offers = await Offer.find().sort({ createdAt: -1 }).populate('createdBy', 'firstName lastName');
     res.status(200).json({ success: true, data: offers });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Server Error' });
@@ -155,7 +155,7 @@ export const getOffers = async (req: AuthRequest, res: Response) => {
 
 export const getOfferById = async (req: AuthRequest, res: Response) => {
   try {
-    const offer = await Offer.findById(req.params.id);
+    const offer = await Offer.findById(req.params.id).populate('createdBy', 'firstName lastName');
     if (!offer) return res.status(404).json({ success: false, error: 'Offer not found' });
     res.status(200).json({ success: true, data: offer });
   } catch (error) {
@@ -165,14 +165,13 @@ export const getOfferById = async (req: AuthRequest, res: Response) => {
 
 export const createOffer = async (req: AuthRequest, res: Response) => {
   try {
-    const { candidateName, salary, joiningDate, position, department, noticeBuyout, benefits, probationDetails, reportingManager, templateId } = req.body;
+    const { candidateId, candidateEmail, candidateName, salary, joiningDate, position, department, noticeBuyout, benefits, probationDetails, reportingManager, templateId } = req.body;
     if (
        !candidateName ||
       !position ||
       !department ||
       !salary ||
-      !joiningDate ||
-      !reportingManager
+      !joiningDate
     ){
       return res.status(400).json({
         success: false,
@@ -185,16 +184,19 @@ export const createOffer = async (req: AuthRequest, res: Response) => {
     const status = needsCeo ? 'Pending HR Manager Approval' : 'Offered';
     const expiryDate = req.body.expiryDate ? new Date(req.body.expiryDate) : new Date(Date.now() + 7 * dayMs);
     const compensation = compensationFor(numSalary, req.body);
-   const existingOffer = await Offer.findOne({
-  candidateName,
-});
+    const query = candidateId 
+      ? { candidateId } 
+      : (candidateEmail ? { candidateEmail } : { candidateName });
+    const existingOffer = await Offer.findOne(query);
 
 if (existingOffer) {
+  existingOffer.candidateId = candidateId || existingOffer.candidateId;
+  existingOffer.candidateEmail = candidateEmail || existingOffer.candidateEmail || '';
   existingOffer.position = position;
   existingOffer.department = department;
   existingOffer.salary = numSalary;
   existingOffer.joiningDate = joiningDate;
-  existingOffer.reportingManager = reportingManager;
+  existingOffer.reportingManager = reportingManager || existingOffer.reportingManager || '';
   existingOffer.expiryDate = expiryDate;
   existingOffer.noticeBuyout = Number(noticeBuyout || 0);
   existingOffer.bonus = Number(req.body.bonus || compensation.bonus);
@@ -216,6 +218,8 @@ if (existingOffer) {
 }
     const offer = await Offer.create({
       offerId,
+      candidateId: candidateId || undefined,
+      candidateEmail: candidateEmail || '',
       candidateName,
       position,
       department,
@@ -226,7 +230,7 @@ if (existingOffer) {
       bonus: Number(req.body.bonus || compensation.bonus),
       benefits: Array.isArray(benefits) ? benefits : typeof benefits === 'string' ? benefits.split(',').map((item) => item.trim()).filter(Boolean) : [],
       probationDetails,
-      reportingManager,
+      reportingManager: reportingManager || '',
       templateId,
       approvalStage: needsCeo ? 'HR Manager Approval' : 'Sent',
       compensation,

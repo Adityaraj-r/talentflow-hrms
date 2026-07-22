@@ -66,6 +66,10 @@ const CandidateApplications = () => {
   const [selectedApplication, setSelectedApplication] = useState(null)
   const [viewOpen, setViewOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [filterStatus, setFilterStatus] = useState("All")
+  const [filterRole, setFilterRole] = useState("All Roles")
+  const [filterAIMatch, setFilterAIMatch] = useState("All")
+  const [sortBy, setSortBy] = useState("Newest First")
 
   const uploadBaseUrl = useMemo(
     () => (import.meta.env.VITE_API_URL || "http://localhost:5001/api").replace(/\/api\/?$/, ""),
@@ -116,30 +120,84 @@ const CandidateApplications = () => {
     }
   }
 
-  const filteredApplications = useMemo(
-    () =>
-      applications.filter((app) =>
-        `${app.name || ""} ${app.email || ""} ${app.jobId?.jobTitle || ""}`
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      ),
-    [applications, search]
-  )
+  const jobRoles = useMemo(() => {
+    const roles = new Set()
+    applications.forEach((app) => {
+      if (app.jobId?.jobTitle) {
+        roles.add(app.jobId.jobTitle)
+      }
+    })
+    return ["All Roles", ...Array.from(roles)]
+  }, [applications])
 
-  const rankedApplications = useMemo(
-    () =>
-      [...filteredApplications].sort((a, b) => {
-        const rankA = Number(a.aiRank) || Number.MAX_SAFE_INTEGER
-        const rankB = Number(b.aiRank) || Number.MAX_SAFE_INTEGER
-        if (rankA !== rankB) return rankA - rankB
-        const scoreDelta = Number(b.aiFitScore || b.matchScore || 0) - Number(a.aiFitScore || a.matchScore || 0)
-        if (scoreDelta) return scoreDelta
-        const experienceDelta = Number(b.experienceScore || 0) - Number(a.experienceScore || 0)
-        if (experienceDelta) return experienceDelta
-        return Number(b.skillsScore || 0) - Number(a.skillsScore || 0)
-      }),
-    [filteredApplications]
-  )
+  const handleResetFilters = () => {
+    setSearch("")
+    setFilterStatus("All")
+    setFilterRole("All Roles")
+    setFilterAIMatch("All")
+    setSortBy("Newest First")
+  }
+
+  const filteredApplications = useMemo(() => {
+    return applications.filter((app) => {
+      const matchesSearch = !search ||
+        (app.name || "").toLowerCase().includes(search.toLowerCase()) ||
+        (app.email || "").toLowerCase().includes(search.toLowerCase()) ||
+        (app._id || "").toLowerCase().includes(search.toLowerCase());
+
+      let matchesStatus = true;
+      if (filterStatus !== "All") {
+        const normalizedApp = normalizeApplicationStage(app.status)
+        const target = filterStatus.toLowerCase()
+        if (target === "hired") {
+          matchesStatus = normalizedApp === "selected" || app.status.toLowerCase().includes("hire");
+        } else {
+          matchesStatus = normalizedApp === target || app.status.toLowerCase().includes(target);
+        }
+      }
+
+      const matchesRole = filterRole === "All Roles" || app.jobId?.jobTitle === filterRole;
+
+      let matchesAI = true;
+      if (filterAIMatch !== "All") {
+        const score = Number(app.aiFitScore || app.matchScore || 0)
+        const label = app.aiRecommendationLabel || getMatchLabel(score)
+        
+        let calculatedLabel = "Poor Match";
+        if (label === "Excellent Match" || label === "Strong Match" || score >= 75) {
+          calculatedLabel = "Strong Match";
+        } else if (label === "Moderate Match" || (score >= 60 && score < 75)) {
+          calculatedLabel = "Good Match";
+        } else if (score >= 40 && score < 60) {
+          calculatedLabel = "Review Required";
+        }
+
+        matchesAI = calculatedLabel === filterAIMatch;
+      }
+
+      return matchesSearch && matchesStatus && matchesRole && matchesAI;
+    });
+  }, [applications, search, filterStatus, filterRole, filterAIMatch])
+
+  const rankedApplications = useMemo(() => {
+    return [...filteredApplications].sort((a, b) => {
+      if (sortBy === "Newest First") {
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      }
+      if (sortBy === "Oldest First") {
+        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      }
+      if (sortBy === "Highest AI Match") {
+        const scoreA = Number(a.aiFitScore || a.matchScore || 0);
+        const scoreB = Number(b.aiFitScore || b.matchScore || 0);
+        return scoreB - scoreA;
+      }
+      if (sortBy === "Candidate Name (A–Z)") {
+        return (a.name || "").localeCompare(b.name || "");
+      }
+      return 0;
+    });
+  }, [filteredApplications, sortBy])
 
   const stats = useMemo(() => {
     const result = { total: applications.length, applied: 0, shortlisted: 0, interview: 0, selected: 0, rejected: 0 }
@@ -207,17 +265,6 @@ const CandidateApplications = () => {
         title="Candidate Applications"
         subtitle="Review candidate profiles, resumes, and stage decisions from a single ATS workspace."
         summary={`${filteredApplications.length} visible candidates - ${stats.applied} applied - ${stats.shortlisted} shortlisted - ${stats.interview} in interview - ${stats.selected} selected - ${stats.rejected} rejected`}
-        actions={
-          <div className="relative w-full sm:w-80">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search candidate, role, email..."
-              className="pl-9"
-            />
-          </div>
-        }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
@@ -236,30 +283,80 @@ const CandidateApplications = () => {
         ))}
       </div>
 
-      <section className="rounded-lg border border-white/10 bg-card/80 p-4">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold">Top Recommended Candidates</h2>
-          <span className="text-xs text-muted-foreground">Ranked by fit, experience, and skills</span>
+      {/* FILTER BAR */}
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-white/10 bg-card/85 p-4 shadow-sm">
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search candidate..."
+            className="w-full text-foreground bg-background"
+          />
         </div>
-        <div className="grid gap-3 lg:grid-cols-3">
-          {rankedApplications.slice(0, 3).map((app, index) => {
-            const score = Number(app.aiFitScore || app.matchScore || 0)
-            return (
-              <div key={app._id} className="rounded-lg border border-white/10 bg-muted/10 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-semibold text-cyan-300">#{app.aiRank || index + 1}</span>
-                  <span className="text-sm font-semibold">{score}%</span>
-                </div>
-                <p className="mt-2 truncate text-sm font-semibold">{app.name}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{app.aiRecommendationLabel || getMatchLabel(score)} - {app.suggestedNextAction || "Manual Review"}</p>
-              </div>
-            )
-          })}
-          {rankedApplications.length === 0 && (
-            <p className="text-sm text-muted-foreground">No ranked candidates available.</p>
-          )}
+        <div className="w-full sm:w-auto min-w-[140px]">
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option value="All">All Statuses</option>
+            <option value="Applied">Applied</option>
+            <option value="Shortlisted">Shortlisted</option>
+            <option value="Interview">Interview</option>
+            <option value="Selected">Selected</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Hired">Hired</option>
+          </select>
         </div>
-      </section>
+        <div className="w-full sm:w-auto min-w-[140px]">
+          <select
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
+            className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            {jobRoles.map((role) => (
+              <option key={role} value={role}>
+                {role === "All Roles" ? "All Roles" : role}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="w-full sm:w-auto min-w-[140px]">
+          <select
+            value={filterAIMatch}
+            onChange={(e) => setFilterAIMatch(e.target.value)}
+            className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option value="All">All AI Matches</option>
+            <option value="Strong Match">Strong Match</option>
+            <option value="Good Match">Good Match</option>
+            <option value="Review Required">Review Required</option>
+            <option value="Poor Match">Poor Match</option>
+          </select>
+        </div>
+        <div className="w-full sm:w-auto min-w-[140px]">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option value="Newest First">Newest First</option>
+            <option value="Oldest First">Oldest First</option>
+            <option value="Highest AI Match">Highest AI Match</option>
+            <option value="Candidate Name (A–Z)">Candidate Name (A–Z)</option>
+          </select>
+        </div>
+        <div>
+          <Button
+            variant="outline"
+            onClick={handleResetFilters}
+            className="w-full sm:w-auto border-white/10 bg-background hover:bg-muted"
+          >
+            Reset Filters
+          </Button>
+        </div>
+      </div>
+
 
       <RecruitmentTable columns={["Candidate", "Role", "Contact", "Status", "AI Fit", "Progress", "Actions"]}>
         {loading ? (

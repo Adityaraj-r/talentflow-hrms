@@ -20,8 +20,8 @@ const getDocumentIcon = (category) => {
 }
 
 const getStatusBadge = (status) => {
-  if (status === 'Verified') {
-    return <span className="flex items-center gap-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider"><CheckCircle2 className="h-3 w-3"/> Verified</span>
+  if (status === 'Verified' || status === 'Approved') {
+    return <span className="flex items-center gap-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider"><CheckCircle2 className="h-3 w-3"/> Approved</span>
   }
   if (status === 'Rejected') {
     return <span className="flex items-center gap-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider"><XCircle className="h-3 w-3"/> Rejected</span>
@@ -29,13 +29,19 @@ const getStatusBadge = (status) => {
   return <span className="flex items-center gap-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider"><Clock className="h-3 w-3"/> Pending</span>
 }
 
+const getFileUrl = (url) => {
+  if (!url) return "#";
+  return url.startsWith("http") ? url : `http://localhost:5001${url}`;
+};
+
 const forceCloudinaryDownload = (url) => {
   if (!url) return "#"
-  const parts = url.split('/upload/')
+  const finalUrl = getFileUrl(url)
+  const parts = finalUrl.split('/upload/')
   if (parts.length === 2) {
     return `${parts[0]}/upload/fl_attachment/${parts[1]}`
   }
-  return url
+  return finalUrl
 }
 
 const isImageFile = (doc) => {
@@ -72,7 +78,7 @@ const MyDocuments = () => {
   }
 
   const docs = Array.isArray(documents) ? documents : []
-  const categories = ["All", ...new Set(docs.map(d => d.category).filter(Boolean))]
+  const categories = ["All", "Onboarding"]
   
   const filteredDocs = activeTab === "All" ? docs : docs.filter(d => d.category === activeTab)
 
@@ -186,14 +192,14 @@ const MyDocuments = () => {
           )}>
             {selectedDoc && isImageFile(selectedDoc) ? (
               <img 
-                src={selectedDoc.filePath} 
+                src={getFileUrl(selectedDoc.filePath)} 
                 alt={selectedDoc.originalName}
                 className="max-w-full max-h-full object-contain rounded-md shadow-sm transition-transform duration-200"
                 style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center' }}
               />
             ) : selectedDoc && isPdfFile(selectedDoc) ? (
               <iframe 
-                src={`${selectedDoc.filePath}#view=FitH`} 
+                src={`${getFileUrl(selectedDoc.filePath)}#view=FitH`} 
                 className="w-full h-full border-0 bg-white"
                 title={selectedDoc.originalName}
               />
@@ -203,7 +209,7 @@ const MyDocuments = () => {
                 style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top center', width: '100%', height: '100%' }}
               >
                 <iframe 
-                  src={selectedDoc.filePath} 
+                  src={getFileUrl(selectedDoc.filePath)} 
                   className="w-full h-full border-0 bg-white shadow-sm"
                   title={selectedDoc.originalName}
                 />

@@ -67,6 +67,10 @@ const OfferManagement = () => {
   const [pendingAction, setPendingAction] = useState(null)
   const singleOfferFetchAttemptedFor = useRef(null)
 
+  const [candidates, setCandidates] = useState([])
+  const [selectedCandidate, setSelectedCandidate] = useState(null)
+  const [positionVal, setPositionVal] = useState("")
+
   const location = useLocation()
   const navigate = useNavigate()
   const { offerId } = useParams()
@@ -87,9 +91,29 @@ const OfferManagement = () => {
     }
   }, [])
 
+  const loadCandidates = useCallback(async () => {
+    try {
+      const res = await apiClient.get("/applications")
+      const rawData = res?.data?.data ?? res?.data ?? res ?? []
+      const filtered = Array.isArray(rawData)
+        ? rawData.filter((app) => ["Selected", "Offer"].includes(app.status))
+        : []
+      setCandidates(filtered)
+    } catch {
+      toast.error("Could not load candidates")
+    }
+  }, [])
+
   useEffect(() => {
     loadOffers()
-  }, [loadOffers])
+    loadCandidates()
+  }, [loadOffers, loadCandidates])
+
+  useEffect(() => {
+    if (selectedCandidate) {
+      setPositionVal(selectedCandidate.jobId?.jobTitle || "")
+    }
+  }, [selectedCandidate])
 
   const enrichedOffers = useMemo(() => offers.map(enrichOffer), [offers])
   const findOffer = useCallback(
@@ -267,14 +291,16 @@ const OfferManagement = () => {
                   e.preventDefault()
                   const form = e.target
                   try {
+                    const cName = selectedCandidate ? selectedCandidate.name : "";
+                    const cEmail = selectedCandidate ? selectedCandidate.email : "";
                     await apiClient.post("/offers", {
-                      candidateName: form.candidateName.value,
+                      candidateId: selectedCandidate?._id || undefined,
+                      candidateEmail: cEmail,
+                      candidateName: cName,
                       salary: Number(form.salary.value),
                       joiningDate: form.joiningDate.value,
-                      position: form.position?.value ,
-                      department: form.department?.value ,
-                      
-                     
+                      position: positionVal || form.position?.value,
+                      department: form.department?.value,
                     })
                     toast.success("Offer created")
                     await loadOffers()
@@ -285,8 +311,26 @@ const OfferManagement = () => {
                 }}
                 className="grid gap-4 md:grid-cols-3"
               >
-                <Input name="candidateName" placeholder="Candidate Name" required />
-                <Input name="position" placeholder="Position" />
+                <div className="flex flex-col gap-1">
+                  <select
+                    name="candidateId"
+                    value={selectedCandidate?._id || ""}
+                    onChange={(e) => {
+                      const candidate = candidates.find(c => c._id === e.target.value)
+                      setSelectedCandidate(candidate || null)
+                    }}
+                    required
+                    className="flex h-10 w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
+                  >
+                    <option value="" disabled>Select Candidate</option>
+                    {candidates.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name} ({c.email || "No Email"})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Input name="position" placeholder="Position" value={positionVal} onChange={(e) => setPositionVal(e.target.value)} />
                 <Input name="department" placeholder="Department" />
                 <Input name="salary" type="number" placeholder="Final Salary" required />
                 <Input name="joiningDate" type="date" required />

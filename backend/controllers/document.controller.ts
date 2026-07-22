@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import Document from '../models/Document.model';
+import DocumentRequest from '../models/DocumentRequest.model';
 import { v2 as cloudinary } from 'cloudinary';
 import Employee from '../models/Employee.model';
 
@@ -135,7 +136,46 @@ export const getMyUploadedDocuments = async (req: Request, res: Response): Promi
 
     const docs = await Document.find({ employeeId: employee.employeeCode }).sort({ uploadDate: -1 });
     
-    res.status(200).json(docs);
+    const processedDocs = docs.map(doc => {
+      const docObj = doc.toObject();
+      if (docObj.category === 'Onboarding' && docObj.status === 'Pending' && employee.onboardingStatus === 'Completed') {
+        docObj.status = 'Verified';
+      }
+      return docObj;
+    });
+
+    const approvedRequests = await DocumentRequest.find({ employeeId: employee.employeeCode, status: 'Approved' });
+
+    const requestDocs: any[] = [];
+    for (const reqDoc of approvedRequests) {
+      const paths = reqDoc.documentPaths && reqDoc.documentPaths.length > 0
+        ? reqDoc.documentPaths
+        : (reqDoc.documentPath ? [reqDoc.documentPath] : []);
+
+      paths.forEach((filePath: string, idx: number) => {
+        const filename = filePath.split('/').pop() || 'document.pdf';
+        requestDocs.push({
+          _id: `${reqDoc._id}_${idx}`,
+          employeeId: reqDoc.employeeId,
+          uploadedBy: 'HR Officer',
+          fileName: filename,
+          originalName: reqDoc.documentType + (paths.length > 1 ? ` (Part ${idx + 1})` : ''),
+          fileType: filename.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
+          fileSize: 'Cloud File',
+          filePath: filePath,
+          category: 'HR Generated',
+          status: 'Verified',
+          uploadDate: reqDoc.updatedAt || reqDoc.createdAt
+        });
+      });
+    }
+
+    const combinedDocs = [
+      ...processedDocs,
+      ...requestDocs
+    ].sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
+
+    res.status(200).json(combinedDocs);
   } catch (error) {
     console.error("Error fetching documents:", error);
     res.status(500).json({ message: "Error fetching documents", error });
