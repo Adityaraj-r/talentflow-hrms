@@ -324,7 +324,7 @@ const earnings = {
   const fixedTax = (Number(employee.salary?.deductions?.tax) || 0) / 12
 
   const stat = applyStatutoryDeductions(settings, {
-    basic: basicFull,
+    basic: basic,
     gross: grossPay,
     fixedPf,
     fixedEsi: 0,
