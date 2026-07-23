@@ -9,7 +9,9 @@ import {
   getDocumentsByEmployee,
   deleteDocument,
   updateDocumentStatus,
-  getMyUploadedDocuments
+  getMyUploadedDocuments,
+  searchEmployeesForDocuments,
+  getAggregatedEmployeeDocuments
 } from '../controllers/document.controller';
 
 const router = express.Router();
@@ -60,6 +62,20 @@ router.get(
   protect,
   allowRoles('ADMIN', 'HR_MANAGER', 'HR_OFFICER', 'CEO', 'COUNTRY_MANAGER', 'DEPARTMENT_MANAGER', 'DIRECT_MANAGER', 'FINANCE_MANAGER', 'PAYROLL_OFFICER', 'PROJECT_MANAGER', 'OPERATIONS_MANAGER', 'EMPLOYEE'),
   getMyUploadedDocuments
+);
+
+router.get(
+  '/employee-documents/search',
+  protect,
+  allowRoles('HR_MANAGER', 'HR_OFFICER'),
+  searchEmployeesForDocuments
+);
+
+router.get(
+  '/employee-documents/aggregate/:employeeId',
+  protect,
+  allowRoles('HR_MANAGER', 'HR_OFFICER'),
+  getAggregatedEmployeeDocuments
 );
 
 router.get(
