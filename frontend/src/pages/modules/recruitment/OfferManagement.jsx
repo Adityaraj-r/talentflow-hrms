@@ -1,25 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"  /*comment*/
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
-import { Plus, RefreshCcw } from "lucide-react"
+import { Plus, RefreshCcw, FileSignature, Clock3, Send, CheckCircle2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useUser } from "@/contexts/UserContext"
 import apiClient from "@/services/apiClient"
 import { RecruitmentEmptyState, RecruitmentPageHeader, RecruitmentSkeleton } from "@/components/recruitment/RecruitmentUI"
+import { cn } from "@/lib/utils"
 import {
   enrichOffer,
   OfferActionBar,
   OfferActionConfirm,
-  OfferAnalyticsCharts,
-  OfferDashboardAnalytics,
   OfferDetailsDrawer,
   OfferFilters,
-  OfferInsightsPanel,
   OfferLetterPreview,
   OfferTable,
-  OfferWorkflowTracker,
 } from "@/components/recruitment/OfferWorkflow"
 
 const defaultFilters = {
@@ -110,6 +107,19 @@ const OfferManagement = () => {
   }, [loadOffers, loadCandidates])
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const statusParam = params.get("status")
+    const expiryParam = params.get("expiry")
+    if (statusParam || expiryParam) {
+      setFilters(prev => ({
+        ...prev,
+        status: statusParam || prev.status,
+        expiry: expiryParam || prev.expiry,
+      }))
+    }
+  }, [location.search])
+
+  useEffect(() => {
     if (selectedCandidate) {
       setPositionVal(selectedCandidate.jobId?.jobTitle || "")
     }
@@ -161,7 +171,11 @@ const OfferManagement = () => {
     const filtered = enrichedOffers.filter((offer) => {
       const haystack = `${offer.offerId || ""} ${offer.candidateName || ""} ${offer.position || ""} ${offer.department || ""} ${offer.recruiter || ""}`.toLowerCase()
       const matchesSearch = haystack.includes(filters.search.toLowerCase())
-      const matchesStatus = filters.status === "All" || offer.status === filters.status
+      const matchesStatus =
+        filters.status === "All" ||
+        (filters.status === "Pending Approval" && (offer.status === "Pending CEO Approval" || offer.status === "Pending HR Manager Approval")) ||
+        (filters.status === "Released" && offer.status === "Offered") ||
+        offer.status === filters.status
       const matchesDepartment = filters.department === "All" || offer.department === filters.department
       const matchesRecruiter = filters.recruiter === "All" || offer.recruiter === filters.recruiter
       const matchesApproval = filters.approvalStage === "All" || offer.approvalStage === filters.approvalStage
@@ -214,6 +228,10 @@ const OfferManagement = () => {
 
   const requestAction = (action, offer = selectedOffer) => {
     if (!offer && !["export"].includes(action)) return
+    if (action === "preview-pdf") {
+      setLetterOffer(offer)
+      return
+    }
     const managerOnly = ["send", "reject", "renegotiate", "duplicate", "archive"]
     const operatorOnly = ["accepted", "declined"]
     if (managerOnly.includes(action) && !canApproveOffers) {
@@ -378,8 +396,67 @@ const OfferManagement = () => {
         <RecruitmentSkeleton />
       ) : (
         <>
-          <OfferDashboardAnalytics offers={filteredOffers} />
-          <OfferWorkflowTracker offer={detailsOffer || selectedOffer || filteredOffers[0]} />
+          {/* Four Compact Summary Cards */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="border-white/10 bg-card/80 p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Offers</p>
+                <FileSignature className="h-4 w-4 text-sky-400" />
+              </div>
+              <p className="mt-2 text-2xl font-bold">{filteredOffers.length}</p>
+            </Card>
+            <Card className="border-white/10 bg-card/80 p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pending Approval</p>
+                <Clock3 className="h-4 w-4 text-amber-400" />
+              </div>
+              <p className="mt-2 text-2xl font-bold">
+                {filteredOffers.filter(o => o.status === "Pending CEO Approval" || o.status === "Pending HR Manager Approval").length}
+              </p>
+            </Card>
+            <Card className="border-white/10 bg-card/80 p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Released Offers</p>
+                <Send className="h-4 w-4 text-violet-400" />
+              </div>
+              <p className="mt-2 text-2xl font-bold">
+                {filteredOffers.filter(o => o.status === "Offered").length}
+              </p>
+            </Card>
+            <Card className="border-white/10 bg-card/80 p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Accepted Offers</p>
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+              </div>
+              <p className="mt-2 text-2xl font-bold">
+                {filteredOffers.filter(o => o.status === "Accepted").length}
+              </p>
+            </Card>
+          </div>
+
+          {/* Small Filter Chips */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mr-1">Status:</span>
+            {["All", "Draft", "Pending Approval", "Released", "Accepted", "Declined"].map((statusOption) => {
+              const isActive = filters.status === statusOption
+              return (
+                <button
+                  key={statusOption}
+                  type="button"
+                  onClick={() => setFilters(prev => ({ ...prev, status: statusOption }))}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-medium border transition-colors cursor-pointer",
+                    isActive
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5"
+                  )}
+                >
+                  {statusOption}
+                </button>
+              )
+            })}
+          </div>
+
           <OfferFilters
             filters={filters}
             onChange={setFilters}
@@ -388,8 +465,6 @@ const OfferManagement = () => {
             savedFilters={savedFilters}
             onApply={setFilters}
           />
-          <OfferInsightsPanel offers={filteredOffers} />
-          <OfferAnalyticsCharts offers={filteredOffers} />
 
           {filteredOffers.length === 0 ? (
             <RecruitmentEmptyState
