@@ -135,6 +135,7 @@ import EmployeeResignation from "./pages/role/EMPLOYEE/EmployeeResignation"
 
 // Document Module
 import MyDocuments from "./pages/modules/documents/MyDocuments"
+import EmployeeDocuments from "./pages/modules/documents/EmployeeDocuments"
 
 const CEOLeaveManagement = LeaveManagement
 
@@ -790,6 +791,11 @@ function App() {
             <Route path="/role/employee/my-documents" element={
               <ProtectedRoute allowedRoles={["EMPLOYEE", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "COUNTRY_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "FINANCE_MANAGER", "PAYROLL_OFFICER", "PROJECT_MANAGER", "OPERATIONS_MANAGER"]}>
                 <DashboardLayout><MyDocuments /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/documents/employee-documents" element={
+              <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER"]}>
+                <DashboardLayout><EmployeeDocuments /></DashboardLayout>
               </ProtectedRoute>
             } />
 

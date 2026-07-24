@@ -20,6 +20,7 @@ const statusConfig = {
   approved: { icon: CheckCircle2, className: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10" },
   draft: { icon: FileText, className: "border-slate-400/30 bg-slate-500/10 text-slate-700 dark:text-slate-300 shadow-slate-500/10" },
   published: { icon: Sparkles, className: "border-sky-400/30 bg-sky-500/10 text-sky-300 shadow-sky-500/10" },
+  open: { icon: Sparkles, className: "border-sky-400/30 bg-sky-500/10 text-sky-300 shadow-sky-500/10" },
   rejected: { icon: XCircle, className: "border-rose-400/30 bg-rose-500/10 text-rose-300 shadow-rose-500/10" },
   interview: { icon: Clock3, className: "border-violet-400/30 bg-violet-500/10 text-violet-300 shadow-violet-500/10" },
   shortlisted: { icon: CircleDashed, className: "border-indigo-400/30 bg-indigo-500/10 text-indigo-300 shadow-indigo-500/10" },
@@ -83,6 +84,7 @@ export function RecruitmentKpiCard({
   accent = "sky",
   onClick,
   active,
+  chartData,
 }) {
   const positive = Number(trend) >= 0
   const TrendIcon = positive ? ArrowUpRight : ArrowDownRight
@@ -95,6 +97,11 @@ export function RecruitmentKpiCard({
     cyan: "from-cyan-500/20 text-cyan-600 dark:text-cyan-300 ring-cyan-400/20",
     slate: "from-slate-500/20 text-slate-700 dark:text-slate-300 ring-slate-400/20",
   }[accent] || "from-sky-500/20 text-sky-300 ring-sky-400/20"
+
+  const maxVal = Math.max(...(chartData || []), 1)
+  const normalizedData = chartData 
+    ? chartData.map(val => Math.max((val / maxVal) * 100, 5)) // Min 5% height so 0 values are visible
+    : [35, 55, 42, 70, 48, 82, 64] // Fallback
 
   return (
     <Motion.motion.button
@@ -130,7 +137,7 @@ export function RecruitmentKpiCard({
         <span className="text-muted-foreground">{trendLabel}</span>
       </div>
       <div className="mt-3 flex h-6 items-end gap-1">
-        {[35, 55, 42, 70, 48, 82, 64].map((height, index) => (
+        {normalizedData.map((height, index) => (
           <span
             key={index}
             className={cn("w-full rounded-t bg-muted transition-colors group-hover:bg-primary/40", active && "bg-primary/50")}

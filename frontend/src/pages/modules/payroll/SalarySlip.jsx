@@ -96,26 +96,6 @@ const HRSlipView = () => {
         status: inner.payroll.status,
       })
       setPayrollId(record._id)
-
-      // Trigger download immediately
-      toast.info("Downloading PDF...")
-      try {
-        const { blob, filename } = await payrollService.downloadPayslipWithFilename(
-          record._id,
-          selectedUser
-        )
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement("a")
-        a.href = url
-        a.setAttribute("download", filename)
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
-        window.URL.revokeObjectURL(url)
-        toast.success("Payslip downloaded")
-      } catch (err) {
-        toast.error("Failed to download PDF")
-      }
     } catch {
       toast.error("Failed to fetch salary slip")
     } finally {
@@ -462,7 +442,7 @@ const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
             </h3>
             <div className="space-y-2">
               <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">
-                <span className="text-muted-foreground shrink-0">Basic Salary</span>
+                <span className="text-muted-foreground shrink-0">Basic Annual Salary</span>
                 <span className="font-medium font-mono tabular-nums text-right">Rs. {eg.basic.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center gap-4 text-sm min-h-[1.5rem]">

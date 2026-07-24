@@ -104,7 +104,7 @@ const IndemnityCalculator = () => {
 
   const handleCalculate = async () => {
     if (!form.basicSalary || !form.joiningDate || !form.lastWorkingDate) {
-      toast.error("Basic salary, joining date and last working date are required");
+      toast.error("Basic annual salary, joining date and last working date are required");
       return;
     }
     setCalculating(true);
@@ -207,8 +207,8 @@ const IndemnityCalculator = () => {
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <Label>Basic Salary (₹) <span className="text-red-500">*</span></Label>
-                <Input type="number" min="0" placeholder="Enter basic salary"
+                <Label>Basic Annual Salary (₹) <span className="text-red-500">*</span></Label>
+                <Input type="number" min="0" placeholder="Enter basic annual salary"
                   value={form.basicSalary} onChange={e => set("basicSalary", e.target.value)} />
                 <div className="flex flex-wrap gap-2 pt-1">
                   {[25000, 40000, 55000, 75000, 100000, 150000].map((amt) => (
@@ -267,7 +267,7 @@ const IndemnityCalculator = () => {
                   <span className="font-medium">{result.yearsOfService} yrs</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Basic Salary</span>
+                  <span className="text-muted-foreground">Basic Annual Salary</span>
                   <span className="font-medium">₹ {Number(form.basicSalary).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">

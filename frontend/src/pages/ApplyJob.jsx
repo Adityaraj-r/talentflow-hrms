@@ -14,6 +14,8 @@ const ApplyJob = () => {
 
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [phoneError, setPhoneError] = useState("")
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [applicationId, setApplicationId] = useState(null)
@@ -39,6 +41,18 @@ const ApplyJob = () => {
     fetchJob()
   }, [id])
 
+  const handlePhoneChange = (e) => {
+    const val = e.target.value.replace(/\D/g, '')
+    setPhone(val)
+    if (val && !/^[6-9]/.test(val)) {
+      setPhoneError("Phone number must start with 6, 7, 8, or 9.")
+    } else if (val.length > 0 && val.length < 10) {
+      setPhoneError("Phone number must be exactly 10 digits.")
+    } else {
+      setPhoneError("")
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError("")
@@ -55,6 +69,7 @@ const ApplyJob = () => {
       formData.append("jobId", id)
       formData.append("name", name)
       formData.append("email", email)
+      formData.append("phone", phone)
       formData.append("resume", resume)
 
       const res = await axios.post(
@@ -73,6 +88,7 @@ const ApplyJob = () => {
 
       setName("")
       setEmail("")
+      setPhone("")
       setResume(null)
 
     } catch (error) {
@@ -213,6 +229,24 @@ const ApplyJob = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="e.g. 7896675734"
+                    pattern="[6-9][0-9]{9}"
+                    title="Please enter exactly 10 digits starting with 6, 7, 8, or 9"
+                    value={phone}
+                    onChange={handlePhoneChange}
+                    required
+                    maxLength={10}
+                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                  />
+                  {phoneError && <p className="text-red-500 dark:text-red-400 text-sm mt-1.5 font-medium">{phoneError}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                     Upload Resume
                   </label>
                   <input
@@ -226,8 +260,8 @@ const ApplyJob = () => {
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition duration-200 mt-4 disabled:opacity-70"
+                  disabled={loading || !!phoneError || phone.length !== 10}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition duration-200 mt-4 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {loading ? "Submitting..." : "Submit Application"}
                 </button>

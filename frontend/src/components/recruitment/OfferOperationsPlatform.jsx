@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import apiClient from "@/services/apiClient";
 import CountUp from "react-countup";
 import * as Motion from "framer-motion";
@@ -102,6 +102,7 @@ export function OfferOperationsKpiCard({ metric }) {
           </AreaChart>
         </ResponsiveContainer>
       </div>
+      <p className="mt-2 text-[10px] text-slate-400 dark:text-slate-500 text-right font-medium">Last Updated 2 mins ago</p>
     </Motion.motion.div>
   );
 }
@@ -127,12 +128,26 @@ export function OfferLifecycleTracker({ offer }) {
             return (
               <div key={step} className="flex flex-1 items-center">
                 <div className="flex flex-col items-center text-center">
-                  <Motion.motion.div animate={{ scale: active ? 1.08 : 1 }} className={cn("grid h-11 w-11 place-items-center rounded-full border", complete && "border-emerald-400/40 bg-emerald-500/10 text-emerald-300", active && "border-cyan-300/60 bg-cyan-500/10 text-cyan-700 dark:text-cyan-200", !complete && !active && "border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-500")}>
-                    {complete ? <CheckCircle2 className="h-5 w-5" /> : active ? <Clock3 className="h-5 w-5" /> : <GitBranch className="h-5 w-5" />}
+                  <Motion.motion.div
+                    animate={{ scale: active ? 1.15 : 1 }}
+                    className={cn(
+                      "grid place-items-center rounded-full border transition-all duration-300",
+                      active
+                        ? "h-14 w-14 border-[3px] border-cyan-500 dark:border-cyan-400 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 shadow-lg shadow-cyan-500/20"
+                        : "h-11 w-11",
+                      complete && !active && "border-emerald-400 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400",
+                      !complete && !active && "border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-400 dark:text-slate-600"
+                    )}
+                  >
+                    {complete ? <CheckCircle2 className="h-5 w-5" /> : active ? <Clock3 className="h-6 w-6 animate-pulse" /> : <GitBranch className="h-5 w-5" />}
                   </Motion.motion.div>
-                  <span className="mt-2 w-24 text-xs font-medium text-slate-700 dark:text-slate-300">{step}</span>
+                  <span className={cn("mt-2 w-24 text-xs font-semibold", active ? "text-cyan-600 dark:text-cyan-300 font-bold" : complete ? "text-slate-700 dark:text-slate-300" : "text-slate-400 dark:text-slate-600")}>
+                    {step}
+                  </span>
                 </div>
-                {index < steps.length - 1 && <div className={cn("mx-2 mt-5 h-px flex-1", complete ? "bg-emerald-400/40" : "bg-slate-200 dark:bg-white/10")} />}
+                {index < steps.length - 1 && (
+                  <div className={cn("mx-2 mt-5 h-px flex-1 transition-all duration-300", complete ? "bg-emerald-400" : active ? "bg-cyan-500/50" : "bg-slate-200 dark:bg-white/10")} />
+                )}
               </div>
             );
           })}
@@ -174,11 +189,15 @@ export function OfferApprovalTimeline({ offer, onAction, canWrite }) {
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-semibold text-slate-900 dark:text-white">{row.role}</p>
-                <span className="rounded-full border border-slate-200 dark:border-white/10 px-2 py-0.5 text-xs text-slate-700 dark:text-slate-300">{row.action}</span>
+                <p className="font-semibold text-slate-900 dark:text-white">Approver: {row.role}</p>
+                <span className={cn("rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide", row.action === "Pending" ? "bg-amber-500/10 border-amber-500/20 text-amber-500" : row.action === "Rejected" ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500")}>
+                  {row.action}
+                </span>
               </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{row.comments || "No comments recorded"}</p>
-              <p className="mt-1 text-xs text-slate-500">{new Date(row.at || Date.now()).toLocaleString()}</p>
+              <div className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                <p><span className="font-medium text-slate-400 dark:text-slate-500">Date:</span> {row.at ? new Date(row.at).toLocaleString() : "Pending"}</p>
+                <p><span className="font-medium text-slate-400 dark:text-slate-500">Remarks:</span> <span className="italic">{row.comments || "No remarks"}</span></p>
+              </div>
             </div>
           </div>
         ))}
@@ -229,15 +248,18 @@ export function CompensationBreakdownCard({ offer }) {
           </ResponsiveContainer>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          {data.map((item, index) => (
-            <div key={item.name} className="rounded-md border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{item.name}</p>
-              <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">{formatMoney(item.value)}</p>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
-                <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round((item.value / Math.max(1, compensation.total)) * 100))}%`, backgroundColor: colors[index % colors.length] }} />
+          {data.map((item, index) => {
+            const pct = Math.min(100, Math.round((item.value / Math.max(1, compensation.total)) * 100));
+            return (
+              <div key={item.name} className="rounded-md border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{item.name} ({pct}%)</p>
+                <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">{formatMoney(item.value)}</p>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: colors[index % colors.length] }} />
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
       <div className="mt-4 rounded-md border border-cyan-300/20 bg-cyan-500/10 p-4">
@@ -420,87 +442,139 @@ export function HiringActivityFeed({ activity = [] }) {
 }
 
 export function NotificationCenter({ notifications = [] }) {
+  const todayStr = new Date().toDateString();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toDateString();
+
+  const grouped = useMemo(() => {
+    const groups = { Today: [], Yesterday: [], Earlier: [] };
+    let hasTimestamps = false;
+
+    notifications.forEach(item => {
+      const ts = item.at || item.date || item.timestamp || item.createdAt;
+      if (ts) {
+        hasTimestamps = true;
+        const dStr = new Date(ts).toDateString();
+        if (dStr === todayStr) {
+          groups.Today.push(item);
+        } else if (dStr === yesterdayStr) {
+          groups.Yesterday.push(item);
+        } else {
+          groups.Earlier.push(item);
+        }
+      }
+    });
+
+    return hasTimestamps ? groups : null;
+  }, [notifications, todayStr, yesterdayStr]);
+
   return (
     <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-5 shadow-xl shadow-black/10">
       <div className="mb-5 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Notification Center</h2>
         <span className="rounded-full bg-rose-500 px-2 py-0.5 text-xs font-bold text-slate-900 dark:text-white">{notifications.length}</span>
       </div>
-      <div className="space-y-3">
-        {notifications.slice(0, 7).map((item, index) => (
-          <div key={`${item.title}-${index}`} className="rounded-md border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-3">
-            <div className="flex items-start gap-3">
-              <Bell className={cn("mt-0.5 h-4 w-4", item.priority === "high" ? "text-amber-300" : item.priority === "success" ? "text-emerald-300" : "text-cyan-600 dark:text-cyan-300")} />
-              <div>
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.title}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{item.message}</p>
+      <div className="custom-scrollbar max-h-96 overflow-y-auto space-y-4">
+        {notifications.length === 0 ? (
+          <p className="text-sm text-slate-500">No new notifications.</p>
+        ) : grouped ? (
+          Object.entries(grouped).map(([groupName, items]) => {
+            if (items.length === 0) return null;
+            return (
+              <div key={groupName} className="space-y-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">{groupName}</h3>
+                <div className="space-y-2">
+                  {items.map((item, index) => (
+                    <NotificationItem key={index} item={item} />
+                  ))}
+                </div>
               </div>
-            </div>
+            );
+          })
+        ) : (
+          <div className="space-y-2">
+            {notifications.slice(0, 7).map((item, index) => (
+              <NotificationItem key={index} item={item} />
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </section>
   );
 }
 
+function NotificationItem({ item }) {
+  return (
+    <div className="rounded-md border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-3">
+      <div className="flex items-start gap-3">
+        <Bell className={cn("mt-0.5 h-4 w-4 shrink-0", item.priority === "high" ? "text-amber-300" : item.priority === "success" ? "text-emerald-300" : "text-cyan-600 dark:text-cyan-300")} />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{item.title}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{item.message}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function CandidateComparisonPanel({ offers = [] }) {
-  const candidates = offers.slice(0, 3).map((offer) => ({
-    name: offer.candidateName,
-    skills: Number(offer.skillsScore ?? offer.matchScore ?? 0),
-    experience: Number(offer.experienceScore ?? 0),
-    interviews: Number(offer.interviewScore ?? 0),
-    salaryFit: Number(offer.salaryFitScore ?? 0),
-    recruiterRating: Number(offer.recruiterRating ?? 0),
-    expectedSalary: offer.salary,
-    offerPackage: offer.compensation?.totalCtc || offer.compensation?.total || offer.salary,
-  }));
-  const radar = ["skills", "experience", "interviews", "salaryFit", "recruiterRating"].map((metric) => ({
-    metric,
-    ...Object.fromEntries(candidates.map((candidate) => [candidate.name, candidate[metric]])),
-  }));
+  const rows = useMemo(() => {
+    return offers.slice(0, 5).map((offer) => {
+      const offered = Number(offer.salary || 0);
+      const expected = Number(offer.expectedSalary || Math.round(offered * 0.95));
+      const diff = offered - expected;
+      return {
+        id: offer._id || offer.offerId,
+        name: offer.candidateName,
+        interviewScore: offer.interviewScore !== undefined && offer.interviewScore !== null ? `${offer.interviewScore}/10` : "N/A",
+        expected,
+        offered,
+        difference: diff,
+        status: offer.status,
+      };
+    });
+  }, [offers]);
+
   return (
     <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-5 shadow-xl shadow-black/10">
-      <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Candidate Comparison Tool</h2>
-      <p className="mb-5 text-sm text-slate-500 dark:text-slate-400">Side-by-side candidate, score, salary, and offer comparison.</p>
-      <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-        {candidates.length === 0 ? (
-          <div className="xl:col-span-2 grid min-h-56 place-items-center rounded-md border border-dashed border-slate-200 dark:border-white/10 text-sm text-slate-500 dark:text-slate-400">
-            No candidate comparison data available
-          </div>
-        ) : (
-        <>
-        <div className="h-72">
-          <ResponsiveContainer>
-            <RadarChart data={radar}>
-              <PolarGrid stroke="rgba(255,255,255,0.12)" />
-              <PolarAngleAxis dataKey="metric" stroke="#94a3b8" />
-              <PolarRadiusAxis stroke="#475569" />
-              {candidates.map((candidate, index) => (
-                <Radar key={candidate.name} dataKey={candidate.name} stroke={colors[index]} fill={colors[index]} fillOpacity={0.18} />
-              ))}
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="min-w-full text-sm">
-            <thead className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              <tr><th className="px-3 py-2 text-left">Candidate</th><th className="px-3 py-2 text-left">Skills</th><th className="px-3 py-2 text-left">Interview</th><th className="px-3 py-2 text-left">Expected Salary</th><th className="px-3 py-2 text-left">Offer</th></tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {candidates.map((candidate) => (
-                <tr key={candidate.name} className="text-slate-700 dark:text-slate-300">
-                  <td className="px-3 py-3 font-semibold text-slate-900 dark:text-white">{candidate.name}</td>
-                  <td className="px-3 py-3">{candidate.skills}</td>
-                  <td className="px-3 py-3">{candidate.interviews}</td>
-                  <td className="px-3 py-3">{formatMoney(candidate.expectedSalary)}</td>
-                  <td className="px-3 py-3">{formatMoney(candidate.offerPackage)}</td>
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Candidate Comparison Panel</h2>
+      <p className="mb-5 text-sm text-slate-500 dark:text-slate-400">Side-by-side candidate expected salary, offered salary, difference, and status comparison.</p>
+      <div className="overflow-x-auto custom-scrollbar">
+        <table className="min-w-full text-sm">
+          <thead className="border-b border-slate-200 dark:border-white/10 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <tr>
+              <th className="px-3 py-2 text-left">Candidate</th>
+              <th className="px-3 py-2 text-left">Interview Score</th>
+              <th className="px-3 py-2 text-left">Expected Salary</th>
+              <th className="px-3 py-2 text-left">Offered Salary</th>
+              <th className="px-3 py-2 text-left">Difference</th>
+              <th className="px-3 py-2 text-left">Current Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-3 py-4 text-center text-slate-500">No candidate comparison data available</td>
+              </tr>
+            ) : (
+              rows.map((row) => (
+                <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
+                  <td className="px-3 py-3 font-semibold text-slate-900 dark:text-white">{row.name}</td>
+                  <td className="px-3 py-3">{row.interviewScore}</td>
+                  <td className="px-3 py-3 font-mono">{formatMoney(row.expected)}</td>
+                  <td className="px-3 py-3 font-mono font-semibold text-slate-900 dark:text-white">{formatMoney(row.offered)}</td>
+                  <td className={cn("px-3 py-3 font-mono font-semibold", row.difference >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                    {row.difference >= 0 ? "+" : ""}{formatMoney(row.difference)}
+                  </td>
+                  <td className="px-3 py-3">
+                    <OfferStatusBadge status={row.status} />
+                  </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        </>
-        )}
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </section>
   );
@@ -545,28 +619,6 @@ export function OfferAnalyticsDashboard({ data }) {
   );
 }
 
-export function OfferAutomationRules({ rules = [] }) {
-  return (
-    <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-5 shadow-xl shadow-black/10">
-      <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Automation Center</h2>
-      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-        {rules.length === 0 ? (
-          <div className="rounded-md border border-dashed border-slate-200 dark:border-white/10 p-4 text-sm text-slate-500 dark:text-slate-400 xl:col-span-5">
-            No automation rules are configured for the selected offer.
-          </div>
-        ) : rules.map((rule) => (
-          <div key={rule.name} className="rounded-md border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-4">
-            <Settings2 className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
-            <p className="mt-3 font-semibold text-slate-900 dark:text-white">{rule.name}</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{rule.cadence || rule.channel || "Configured workflow rule"}</p>
-            <span className={cn("mt-3 inline-flex rounded-full px-2 py-1 text-xs font-semibold", rule.enabled ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-500/10 text-slate-700 dark:text-slate-300")}>{rule.enabled ? "Enabled" : "Paused"}</span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 export function OfferInsightsPanel({ insights = [] }) {
   const iconMap = { success: Sparkles, warning: AlertTriangle, risk: Zap, opportunity: Bot };
   return (
@@ -587,6 +639,28 @@ export function OfferInsightsPanel({ insights = [] }) {
             </div>
           );
         })}
+      </div>
+    </section>
+  );
+}
+
+export function OfferAutomationRules({ rules = [] }) {
+  return (
+    <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-5 shadow-xl shadow-black/10">
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Automation Center</h2>
+      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        {rules.length === 0 ? (
+          <div className="rounded-md border border-dashed border-slate-200 dark:border-white/10 p-4 text-sm text-slate-500 dark:text-slate-400 xl:col-span-5">
+            No automation rules are configured for the selected offer.
+          </div>
+        ) : rules.map((rule) => (
+          <div key={rule.name} className="rounded-md border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-4">
+            <Settings2 className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
+            <p className="mt-3 font-semibold text-slate-900 dark:text-white">{rule.name}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{rule.cadence || rule.channel || "Configured workflow rule"}</p>
+            <span className={cn("mt-3 inline-flex rounded-full px-2 py-1 text-xs font-semibold", rule.enabled ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-500/10 text-slate-700 dark:text-slate-300")}>{rule.enabled ? "Enabled" : "Paused"}</span>
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -650,3 +724,5 @@ export function ExportCenter({ onExport }) {
 }
 
 export { OfferLetterPreview, SalaryBreakdownChart };
+
+

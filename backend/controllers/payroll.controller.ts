@@ -1145,6 +1145,7 @@ export const createTicket = async (req: AuthRequest, res: Response) => {
       amount: req.body.amount ? Number(req.body.amount) : undefined,
       requestedBy: req.user?.email || "unknown",
       status: "Pending",
+       workflowStage: "PENDING_FINANCE",
     })
 
     res.status(201).json({ success: true, data: ticket })
@@ -1166,19 +1167,57 @@ export const updateTicketStatus = async (req: AuthRequest, res: Response) => {
     if (ticket.status !== "Pending")
       return res.status(400).json({ success: false, error: "Only pending tickets can be actioned" })
 
-    ticket.status = status
-    if (status === "Approved") {
-      ticket.approvedBy = req.user?.email
-      ticket.approvalDate = new Date()
-      if (ticket.type === "advance" && ticket.amount != null)
-        ticket.remainingAmount = Number(ticket.amount)
-    }
-    if (status === "Rejected") {
-      if (!rejectionReason)
-        return res.status(400).json({ success: false, error: "Rejection reason is required" })
-      ticket.rejectionReason = rejectionReason
-    }
+   
+ const role = req.user?.role
 
+const normalizedRole = (role || "")
+  .toUpperCase()
+  .replace(/[\s_-]/g, "")
+
+if (status === "Approved") {
+
+  // Finance Manager Approval
+  if (
+    normalizedRole === "FINANCEMANAGER" &&
+    ticket.workflowStage === "PENDING_FINANCE"
+  ) {
+    ticket.workflowStage = "PENDING_PAYROLL"
+  }
+
+  // Payroll Officer Final Approval
+  else if (
+    normalizedRole === "PAYROLLOFFICER" &&
+    ticket.workflowStage === "PENDING_PAYROLL"
+  ) {
+    ticket.workflowStage = "APPROVED"
+    ticket.status = "Approved"
+    ticket.approvedBy = req.user?.email
+    ticket.approvalDate = new Date()
+
+    if (ticket.type === "advance" && ticket.amount != null) {
+      ticket.remainingAmount = Number(ticket.amount)
+    }
+  }
+
+  else {
+    return res.status(403).json({
+      success: false,
+      error: "You are not allowed to approve this ticket",
+    })
+  }
+}
+ if (status === "Rejected") {
+  if (!rejectionReason) {
+    return res.status(400).json({
+      success: false,
+      error: "Rejection reason is required",
+    })
+  }
+
+  ticket.status = "Rejected"
+  ticket.workflowStage = "REJECTED"
+  ticket.rejectionReason = rejectionReason
+}
     await ticket.save()
     res.json({ success: true, data: ticket })
   } catch (err: any) {

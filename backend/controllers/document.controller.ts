@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import Document from '../models/Document.model';
+import DocumentRequest from '../models/DocumentRequest.model';
 import { v2 as cloudinary } from 'cloudinary';
 import Employee from '../models/Employee.model';
 
@@ -135,7 +136,46 @@ export const getMyUploadedDocuments = async (req: Request, res: Response): Promi
 
     const docs = await Document.find({ employeeId: employee.employeeCode }).sort({ uploadDate: -1 });
     
-    res.status(200).json(docs);
+    const processedDocs = docs.map(doc => {
+      const docObj = doc.toObject();
+      if (docObj.category === 'Onboarding' && docObj.status === 'Pending' && employee.onboardingStatus === 'Completed') {
+        docObj.status = 'Verified';
+      }
+      return docObj;
+    });
+
+    const approvedRequests = await DocumentRequest.find({ employeeId: employee.employeeCode, status: 'Approved' });
+
+    const requestDocs: any[] = [];
+    for (const reqDoc of approvedRequests) {
+      const paths = reqDoc.documentPaths && reqDoc.documentPaths.length > 0
+        ? reqDoc.documentPaths
+        : (reqDoc.documentPath ? [reqDoc.documentPath] : []);
+
+      paths.forEach((filePath: string, idx: number) => {
+        const filename = filePath.split('/').pop() || 'document.pdf';
+        requestDocs.push({
+          _id: `${reqDoc._id}_${idx}`,
+          employeeId: reqDoc.employeeId,
+          uploadedBy: 'HR Officer',
+          fileName: filename,
+          originalName: reqDoc.documentType + (paths.length > 1 ? ` (Part ${idx + 1})` : ''),
+          fileType: filename.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
+          fileSize: 'Cloud File',
+          filePath: filePath,
+          category: 'HR Generated',
+          status: 'Verified',
+          uploadDate: reqDoc.updatedAt || reqDoc.createdAt
+        });
+      });
+    }
+
+    const combinedDocs = [
+      ...processedDocs,
+      ...requestDocs
+    ].sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
+
+    res.status(200).json(combinedDocs);
   } catch (error) {
     console.error("Error fetching documents:", error);
     res.status(500).json({ message: "Error fetching documents", error });
@@ -222,3 +262,179 @@ export const updateDocumentStatus = async (req: Request, res: Response): Promise
     res.status(500).json({ message: "Error updating document status", error });
   }
 };
+
+export const searchEmployeesForDocuments = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const requestingUser = (req as any).user;
+    if (!['HR_MANAGER', 'HR_OFFICER'].includes(requestingUser?.role)) {
+      res.status(403).json({ success: false, message: "Access denied" });
+      return;
+    }
+
+    const { query } = req.query;
+    if (!query || typeof query !== 'string') {
+      res.status(400).json({ success: false, message: "Search query is required" });
+      return;
+    }
+
+    const searchStr = query.trim();
+    const employees = await Employee.find({
+      $or: [
+        { employeeCode: { $regex: searchStr, $options: 'i' } },
+        { email: { $regex: searchStr, $options: 'i' } },
+        { workEmail: { $regex: searchStr, $options: 'i' } },
+        { firstName: { $regex: searchStr, $options: 'i' } },
+        { lastName: { $regex: searchStr, $options: 'i' } }
+      ]
+    })
+      .limit(10)
+      .select('firstName lastName employeeCode email workEmail department designation');
+
+    res.status(200).json(employees);
+  } catch (error: any) {
+    console.error("Error searching employees:", error);
+    res.status(500).json({ success: false, message: "Error searching employees", error: error.message });
+  }
+};
+
+export const getAggregatedEmployeeDocuments = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const requestingUser = (req as any).user;
+    if (!['HR_MANAGER', 'HR_OFFICER'].includes(requestingUser?.role)) {
+      res.status(403).json({ success: false, message: "Access denied" });
+      return;
+    }
+
+    const { employeeId } = req.params;
+    let employee = await Employee.findOne({ employeeCode: employeeId });
+    if (!employee && typeof employeeId === 'string' && /^[0-9a-fA-F]{24}$/.test(employeeId)) {
+      employee = await Employee.findById(employeeId);
+    }
+
+    if (!employee) {
+      res.status(404).json({ success: false, message: "Employee not found" });
+      return;
+    }
+
+    const code = employee.employeeCode;
+    const query: any = {};
+    if (code) {
+      query.$or = [
+        { employeeId: code },
+        { employeeId: employee._id.toString() }
+      ];
+    } else {
+      query.employeeId = employee._id.toString();
+    }
+
+    // Query Document collection
+    const docs = await Document.find(query).sort({ uploadDate: -1 });
+
+    // Query Approved DocumentRequest collection
+    const reqQuery: any = {};
+    if (code) {
+      reqQuery.$or = [
+        { employeeId: code },
+        { employeeId: employee._id.toString() }
+      ];
+    } else {
+      reqQuery.employeeId = employee._id.toString();
+    }
+    reqQuery.status = 'Approved';
+
+    const approvedRequests = await DocumentRequest.find(reqQuery).sort({ updatedAt: -1 });
+
+    const onboardingDocs: any[] = [];
+    const employmentDocs: any[] = [];
+    const requestedDocs: any[] = [];
+    const otherDocs: any[] = [];
+
+    // Filter db docs
+    docs.forEach(doc => {
+      const docObj = doc.toObject();
+      if (docObj.category === 'Onboarding') {
+        onboardingDocs.push(docObj);
+      } else if (docObj.category === 'Employment') {
+        employmentDocs.push(docObj);
+      } else {
+        otherDocs.push(docObj);
+      }
+    });
+
+    // Extract documents from DocumentRequest
+    for (const reqDoc of approvedRequests) {
+      const paths = reqDoc.documentPaths && reqDoc.documentPaths.length > 0
+        ? reqDoc.documentPaths
+        : (reqDoc.documentPath ? [reqDoc.documentPath] : []);
+
+      paths.forEach((filePath: string, idx: number) => {
+        const filename = filePath.split('/').pop() || 'document.pdf';
+        requestedDocs.push({
+          _id: `${reqDoc._id}_${idx}`,
+          employeeId: reqDoc.employeeId,
+          uploadedBy: 'HR Officer',
+          fileName: filename,
+          originalName: reqDoc.documentType + (paths.length > 1 ? ` (Part ${idx + 1})` : ''),
+          fileType: filename.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
+          fileSize: 'Cloud File',
+          filePath: filePath,
+          category: 'Requested',
+          status: 'Verified',
+          uploadDate: reqDoc.updatedAt || reqDoc.createdAt
+        });
+      });
+    }
+
+    // Add and synthesize missing onboarding documents from employee.Documents
+    const empDocs = employee.Documents || {};
+    const docMappings = [
+      { path: empDocs.resumePath, name: 'Resume', key: 'resume' },
+      { path: empDocs.aadharCardPath, name: 'Aadhar Card (Front & Back)', key: 'aadhar' },
+      { path: empDocs.panCardPath, name: 'PAN Card', key: 'pan' },
+      { path: empDocs.educationDocsPath, name: 'Highest Education Certificate', key: 'education' },
+      { path: empDocs.relievingLetterPath, name: 'Previous Relieving Letter', key: 'relieving' },
+      { path: empDocs.passportPhotoPath, name: 'Passport Photo', key: 'passport' }
+    ];
+
+    docMappings.forEach(mapping => {
+      if (mapping.path) {
+        // check if onboardingDocs already has this path
+        const alreadyExists = onboardingDocs.some(d => d.filePath === mapping.path);
+        if (!alreadyExists) {
+          onboardingDocs.push({
+            _id: `virtual_onboarding_${mapping.key}_${employee._id}`,
+            employeeId: code || employee._id.toString(),
+            uploadedBy: 'Onboarding System',
+            fileName: mapping.path.split('/').pop() || 'document',
+            originalName: mapping.name,
+            fileType: mapping.path.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
+            fileSize: 'Cloud File',
+            filePath: mapping.path,
+            category: 'Onboarding',
+            status: 'Verified',
+            uploadDate: (employee as any).updatedAt || (employee as any).createdAt || new Date()
+          });
+        }
+      }
+    });
+
+    res.status(200).json({
+      employee: {
+        id: employee._id,
+        name: `${employee.firstName} ${employee.lastName || ''}`.trim(),
+        employeeCode: employee.employeeCode,
+        email: employee.email,
+        department: employee.department || 'N/A',
+        designation: employee.designation || 'N/A'
+      },
+      onboardingDocs,
+      employmentDocs,
+      requestedDocs,
+      otherDocs
+    });
+  } catch (error: any) {
+    console.error("Error aggregating employee documents:", error);
+    res.status(500).json({ success: false, message: "Error aggregating documents", error: error.message });
+  }
+};
+

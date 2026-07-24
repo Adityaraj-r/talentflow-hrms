@@ -17,9 +17,9 @@ const JobOpenings = () => {
   const { user } = useUser()
   const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
   const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
-  const isRecruitmentOperator = role === "HR_OFFICER" || role === "HR_MANAGER"
+  const isRecruitmentOperator = ["HR_OFFICER", "HR_MANAGER", "ADMIN", "SUPER_ADMIN"].includes(role)
   const canWrite = user?.can?.("recruitment", "write") && isRecruitmentOperator
-  const canPublish = user?.can?.("recruitment", "write") && role === "HR_MANAGER"
+  const canPublish = user?.can?.("recruitment", "write") && ["HR_MANAGER", "ADMIN", "SUPER_ADMIN"].includes(role)
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -33,13 +33,18 @@ const JobOpenings = () => {
     deadline: "",
   })
 
+  const [editingJobId, setEditingJobId] = useState(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmType, setConfirmType] = useState("")
+  const [jobToActOn, setJobToActOn] = useState(null)
+
   const fetchJobs = async () => {
     setLoading(true)
     try {
       const data = await apiClient.get("/job-openings")
       setJobs(Array.isArray(data) ? data : [])
     } catch (error) {
-      toast.error(error?.response?.data?.error || "Failed to load job openings")
+      toast.error(error?.response?.data?.error || error?.response?.data?.message || "Failed to load job openings")
       setJobs([])
     } finally {
       setLoading(false)
@@ -62,42 +67,94 @@ const JobOpenings = () => {
     }
 
     try {
-      await apiClient.post("/job-openings", {
-        jobTitle: formData.jobTitle,
-        department: formData.department,
-        positions: Number(formData.positions),
-        employmentType: formData.employmentType,
-        deadline: formData.deadline,
-        status: "Draft",
-      })
+      if (editingJobId) {
+        await apiClient.put(`/job-openings/${editingJobId}`, {
+          jobTitle: formData.jobTitle,
+          department: formData.department,
+          positions: Number(formData.positions),
+          employmentType: formData.employmentType,
+          deadline: formData.deadline,
+        })
+        toast.success("Job updated successfully")
+      } else {
+        await apiClient.post("/job-openings", {
+          jobTitle: formData.jobTitle,
+          department: formData.department,
+          positions: Number(formData.positions),
+          employmentType: formData.employmentType,
+          deadline: formData.deadline,
+          status: "Draft",
+        })
+        toast.success("Job draft created successfully")
+      }
       setShowForm(false)
+      setEditingJobId(null)
       setFormData({ jobTitle: "", department: "", positions: "", employmentType: "", deadline: "" })
       fetchJobs()
     } catch (error) {
-      toast.error(error?.response?.data?.error || "Failed to create job")
+      toast.error(error?.response?.data?.error || error?.response?.data?.message || "Failed to save job")
     }
   }
 
   const publishJob = async (id) => {
     try {
       await apiClient.put(`/job-openings/${id}/publish`)
+      toast.success("Job published successfully")
       fetchJobs()
     } catch (error) {
-      toast.error(error?.response?.data?.error || "Failed to publish job")
+      toast.error(error?.response?.data?.error || error?.response?.data?.message || "Failed to publish job")
     }
   }
 
   const closeJob = async (id) => {
     try {
       await apiClient.put(`/job-openings/${id}/close`)
+      toast.success("Job closed successfully")
       fetchJobs()
     } catch (error) {
-      toast.error(error?.response?.data?.error || "Failed to close job")
+      toast.error(error?.response?.data?.error || error?.response?.data?.message || "Failed to close job")
+    }
+  }
+
+  const handleEditClick = (job) => {
+    setEditingJobId(job._id)
+    setFormData({
+      jobTitle: job.jobTitle || "",
+      department: job.department || "",
+      positions: job.positions ? job.positions.toString() : "",
+      employmentType: job.employmentType || "",
+      deadline: job.deadline ? new Date(job.deadline).toISOString().split("T")[0] : "",
+    })
+    setShowForm(true)
+  }
+
+  const handleDeleteClick = (job) => {
+    setJobToActOn(job)
+    setConfirmType("delete")
+    setConfirmOpen(true)
+  }
+
+  const handleRemoveClick = (job) => {
+    setJobToActOn(job)
+    setConfirmType("remove")
+    setConfirmOpen(true)
+  }
+
+  const handleConfirmAction = async () => {
+    if (!jobToActOn) return
+    try {
+      await apiClient.delete(`/job-openings/${jobToActOn._id}`)
+      toast.success(confirmType === "delete" ? "Draft job deleted" : "Closed job removed")
+      setConfirmOpen(false)
+      setJobToActOn(null)
+      fetchJobs()
+    } catch (error) {
+      toast.error(error?.response?.data?.error || error?.response?.data?.message || "Action failed")
     }
   }
 
   const total = jobs.length
-  const active = jobs.filter((j) => j.status === "Published").length
+  const active = jobs.filter((j) => j.status === "Published" || j.status === "Open").length
   const draft = jobs.filter((j) => j.status === "Draft").length
   const closed = jobs.filter((j) => j.status === "Closed").length
 
@@ -109,7 +166,11 @@ const JobOpenings = () => {
         summary={`${total} openings · ${active} published · ${draft} drafts`}
         actions={
           canWrite && (
-            <Button onClick={() => setShowForm(true)}>
+            <Button onClick={() => {
+              setEditingJobId(null);
+              setFormData({ jobTitle: "", department: "", positions: "", employmentType: "", deadline: "" });
+              setShowForm(true);
+            }}>
               <Plus size={16} className="mr-2" />
               Create Job
             </Button>
@@ -127,7 +188,7 @@ const JobOpenings = () => {
       {canWrite && showForm && (
         <Card className="border-white/10 bg-card/80">
           <CardContent className="p-6 space-y-4">
-            <h2 className="text-lg font-semibold">Create Job Draft</h2>
+            <h2 className="text-lg font-semibold">{editingJobId ? "Edit Job Draft" : "Create Job Draft"}</h2>
             <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-2">
               <input type="text" name="jobTitle" placeholder="Job Title" value={formData.jobTitle} onChange={handleChange} className="rounded-md border border-input bg-background px-3 py-2 text-sm" />
               <input type="text" name="department" placeholder="Department" value={formData.department} onChange={handleChange} className="rounded-md border border-input bg-background px-3 py-2 text-sm" />
@@ -140,8 +201,12 @@ const JobOpenings = () => {
               </select>
               <input type="date" name="deadline" value={formData.deadline} onChange={handleChange} className="rounded-md border border-input bg-background px-3 py-2 text-sm" />
               <div className="flex gap-3 md:col-span-2">
-                <Button type="submit">Save Draft</Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button type="submit">{editingJobId ? "Update Draft" : "Save Draft"}</Button>
+                <Button type="button" variant="outline" onClick={() => {
+                  setShowForm(false);
+                  setEditingJobId(null);
+                  setFormData({ jobTitle: "", department: "", positions: "", employmentType: "", deadline: "" });
+                }}>Cancel</Button>
               </div>
             </form>
           </CardContent>
@@ -162,25 +227,54 @@ const JobOpenings = () => {
             actionLabel={canWrite ? "Create Job" : undefined}
             onAction={() => setShowForm(true)}
           />
-        ) : jobs.map((job) => (
-          <Card key={job._id} className="border-white/10 bg-card/80 transition-all hover:-translate-y-0.5 hover:border-white/20 hover:shadow-lg">
-            <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
-              <div className="min-w-0">
-                <h3 className="truncate text-lg font-semibold">{job.jobTitle}</h3>
-                <p className="text-sm text-muted-foreground">{job.department} · {job.positions} positions · {job.employmentType}</p>
-                <p className="text-sm text-muted-foreground">
-                  Deadline: {job.deadline ? new Date(job.deadline).toLocaleDateString() : "N/A"}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <RecruitmentStatusBadge status={job.status} />
-                <Button size="sm" variant="outline" onClick={() => { setSelectedJob(job); setViewOpen(true) }}>View</Button>
-                {canPublish && job.status === "Draft" && <Button size="sm" onClick={() => publishJob(job._id)}>Publish</Button>}
-                {canPublish && job.status === "Published" && <Button size="sm" variant="destructive" onClick={() => closeJob(job._id)}>Close</Button>}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        ) : jobs.map((job) => {
+          const isOpen = job.status === "Open" || (job.status === "Published" && !job.deadline)
+          return (
+            <Card key={job._id} className="border-white/10 bg-card/80 transition-all hover:-translate-y-0.5 hover:border-white/20 hover:shadow-lg">
+              <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                  <h3 className="truncate text-lg font-semibold">{job.jobTitle}</h3>
+                  <p className="text-sm text-muted-foreground">{job.department} · {job.positions} positions · {job.employmentType}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Deadline: {job.deadline ? new Date(job.deadline).toLocaleDateString() : "N/A"}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <RecruitmentStatusBadge status={isOpen ? "Open" : job.status} />
+                  {job.status === "Draft" && (
+                    <>
+                      {canWrite && (
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => handleEditClick(job)}>Edit</Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteClick(job)}>Delete</Button>
+                        </>
+                      )}
+                      {canPublish && (
+                        <Button size="sm" onClick={() => publishJob(job._id)}>Publish</Button>
+                      )}
+                    </>
+                  )}
+                  {(job.status === "Published" || job.status === "Open") && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => { setSelectedJob(job); setViewOpen(true) }}>View</Button>
+                      {canPublish && (
+                        <Button size="sm" variant="destructive" onClick={() => closeJob(job._id)}>Close</Button>
+                      )}
+                    </>
+                  )}
+                  {job.status === "Closed" && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => { setSelectedJob(job); setViewOpen(true) }}>View</Button>
+                      {canPublish && (
+                        <Button size="sm" variant="destructive" onClick={() => handleRemoveClick(job)}>Remove</Button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       <Dialog open={viewOpen} onOpenChange={(open) => { setViewOpen(open); if (!open) setSelectedJob(null) }}>
@@ -188,7 +282,7 @@ const JobOpenings = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between gap-3">
               <span className="truncate">{selectedJob?.jobTitle || "Job"}</span>
-              <RecruitmentStatusBadge status={selectedJob?.status} />
+              <RecruitmentStatusBadge status={(selectedJob?.status === "Open" || (selectedJob?.status === "Published" && !selectedJob?.deadline)) ? "Open" : selectedJob?.status} />
             </DialogTitle>
             <DialogDescription>Job opening details.</DialogDescription>
           </DialogHeader>
@@ -214,6 +308,32 @@ const JobOpenings = () => {
           ) : (
             <div className="text-sm text-muted-foreground">No job selected.</div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>
+              {confirmType === "delete" ? "Delete Draft Job?" : "Remove Closed Job?"}
+            </DialogTitle>
+            <DialogDescription>
+              {confirmType === "delete"
+                ? "Are you sure you want to permanently delete this draft?"
+                : "This action will permanently remove this closed job opening and cannot be undone."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmAction}
+            >
+              {confirmType === "delete" ? "Delete" : "Remove"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
