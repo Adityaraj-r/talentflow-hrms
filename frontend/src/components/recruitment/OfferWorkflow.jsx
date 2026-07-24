@@ -50,9 +50,17 @@ import {
   XCircle,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CandidateAvatar, RecruitmentEmptyState, RecruitmentKpiCard, RecruitmentStatusBadge } from "@/components/recruitment/RecruitmentUI"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 
 export const OFFER_WORKFLOW_STEPS = [
   { id: "Draft", label: "Draft", icon: FileText, statuses: ["Draft"] },
@@ -673,12 +681,55 @@ export function OfferTable({ offers, sort, onSort, page, pageSize, onPageChange,
                       <Eye className="mr-1 h-3.5 w-3.5" />
                       View
                     </Button>
-                    {(isCeo || canApproveOffers) && (offer.status === "Pending CEO Approval" || offer.status === "Pending HR Manager Approval") && (
-                      <Button size="sm" onClick={() => onAction("approve", offer)}>Approve</Button>
-                    )}
-                    {canApproveOffers && offer.status === "Offered" && (
-                      <Button size="sm" variant="outline" onClick={() => onAction("send", offer)}>Send</Button>
-                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 border border-white/10">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48 border-white/10 bg-slate-950 text-slate-100 shadow-xl">
+                        <DropdownMenuItem onClick={() => onView(offer)} className="cursor-pointer hover:bg-white/10">
+                          <Eye className="mr-2 h-4 w-4" /> View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          if (offer.status === "Draft" || offer.status === "Under Review") {
+                            toast.info("Edit package details via renegotiation or duplicate.")
+                          } else {
+                            onAction("renegotiate", offer)
+                          }
+                        }} className="cursor-pointer hover:bg-white/10">
+                          <PenLine className="mr-2 h-4 w-4" /> Edit / Negotiate
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onAction("preview-pdf", offer)} className="cursor-pointer hover:bg-white/10">
+                          <FileText className="mr-2 h-4 w-4" /> Preview PDF
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          onView(offer)
+                          toast.info("Opening offer history in drawer...")
+                        }} className="cursor-pointer hover:bg-white/10">
+                          <Clock3 className="mr-2 h-4 w-4" /> History
+                        </DropdownMenuItem>
+
+                        {((isCeo || canApproveOffers) && (offer.status === "Pending CEO Approval" || offer.status === "Pending HR Manager Approval")) && (
+                          <>
+                            <DropdownMenuSeparator className="bg-white/10" />
+                            <DropdownMenuItem onClick={() => onAction("approve", offer)} className="cursor-pointer hover:bg-white/10 text-emerald-400">
+                              <BadgeCheck className="mr-2 h-4 w-4" /> Release/Approve
+                            </DropdownMenuItem>
+                          </>
+                        )}
+
+                        {(canApproveOffers && offer.status === "Offered") && (
+                          <>
+                            <DropdownMenuSeparator className="bg-white/10" />
+                            <DropdownMenuItem onClick={() => onAction("send", offer)} className="cursor-pointer hover:bg-white/10 text-sky-400">
+                              <Send className="mr-2 h-4 w-4" /> Send Offer
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </td>
               </Motion.motion.tr>
@@ -724,7 +775,36 @@ export function OfferDetailsDrawer({ offer, open, onClose, onAction, isCeo, canW
               <Button size="icon" variant="ghost" onClick={onClose} aria-label="Close offer drawer"><X className="h-4 w-4" /></Button>
             </div>
             <div className="custom-scrollbar flex-1 space-y-5 overflow-y-auto p-5">
-              <OfferWorkflowTracker offer={offer} />
+              <DrawerSection title="Candidate Summary" icon={UserRound}>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-xs text-muted-foreground">Candidate Name</span>
+                    <p className="font-semibold text-slate-900 dark:text-white">{offer.candidateName || "N/A"}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground">Candidate ID</span>
+                    <p className="font-mono text-xs text-slate-900 dark:text-white">{offer.candidateId?._id || offer.candidateId || "N/A"}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground">Position</span>
+                    <p className="font-medium text-slate-900 dark:text-white">{offer.position || "N/A"}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground">Department</span>
+                    <p className="font-medium text-slate-900 dark:text-white">{offer.department || "N/A"}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground">Recruiter</span>
+                    <p className="font-medium text-slate-900 dark:text-white">{offer.recruiter || "N/A"}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground">Interview Score</span>
+                    <p className="font-semibold text-emerald-400">
+                      {offer.interviewScore !== undefined && offer.interviewScore !== null ? `${offer.interviewScore}/10` : "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </DrawerSection>
               <div className="grid grid-cols-2 gap-3">
                 <InfoTile icon={FileSignature} label="Offer ID" value={offer.offerId} />
                 <InfoTile icon={CircleDollarSign} label="Salary Package" value={formatMoney(offer.salary)} />
