@@ -8,6 +8,7 @@ export const UserProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
   const [rolePermissions, setRolePermissions] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const loadPermissions = async () => {
@@ -42,7 +43,7 @@ export const UserProvider = ({ children }) => {
     };
 
     loadPermissions();
-  }, [user?.role, isAuthenticated]); 
+  }, [user?.role, isAuthenticated, refreshTrigger]); 
 
   const enrichedUser = useMemo(() => {
     if (!user) return null;
@@ -66,11 +67,14 @@ export const UserProvider = ({ children }) => {
     };
   }, [user, rolePermissions]);
 
+  const refreshPermissions = () => setRefreshTrigger(prev => prev + 1);
+
   const value = {
     user: enrichedUser,
     userData: enrichedUser,
     currentUser: enrichedUser,
     loading: loading || !rolePermissions,
+    refreshPermissions,
   };
 
   return (
