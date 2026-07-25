@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { DocumentPreviewDialog } from "@/components/ui/DocumentViewer";
 
 const DigitalLocker = () => {
   const { user } = useAuth();
@@ -24,8 +25,6 @@ const DigitalLocker = () => {
   const [targetEmployeeId, setTargetEmployeeId] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
-  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
-  const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [file, setFile] = useState(null);
   const [uploadCategory, setUploadCategory] = useState("Personal");
   const [documentTitle, setDocumentTitle] = useState("");
@@ -86,31 +85,7 @@ const DigitalLocker = () => {
     fetchDocuments();
   }, [selectedCategory, targetEmployeeId, fetchDocuments, canSeeOnboarding]);
 
-  useEffect(() => {
-    let objectUrl = null;
-    const loadPdfSecurely = async () => {
-      if (selectedDoc && selectedDoc.filePath.toLowerCase().endsWith('.pdf')) {
-        setIsPdfLoading(true);
-        setPdfBlobUrl(null);
-        try {
-          const isHttp = selectedDoc.filePath.startsWith('http');
-          const fileUrl = isHttp ? selectedDoc.filePath : `http://localhost:5001${selectedDoc.filePath}`;
-          const response = await fetch(fileUrl);
-          if (!response.ok) throw new Error("Failed to fetch PDF");
-          const blob = await response.blob();
-          objectUrl = URL.createObjectURL(blob);
-          setPdfBlobUrl(objectUrl);
-        } catch (error) {
-          console.error("Blob conversion failed:", error);
-          setPdfBlobUrl(selectedDoc.filePath.startsWith('http') ? selectedDoc.filePath : `http://localhost:5001${selectedDoc.filePath}`);
-        } finally {
-          setIsPdfLoading(false);
-        }
-      }
-    };
-    loadPdfSecurely();
-    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
-  }, [selectedDoc]);
+
 
   const handleUpload = async () => {
     if (!file) return toast.error("Please select a file");
@@ -454,52 +429,11 @@ const DigitalLocker = () => {
         </div>
       </div>
 
-      {selectedDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden relative border dark:border-gray-700">
-            <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
-              <div>
-                <h3 className="text-lg font-semibold dark:text-white">{selectedDoc.originalName}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{selectedDoc.fileName}</p>
-              </div>
-              <button onClick={() => setSelectedDoc(null)} className="text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-full transition-colors">
-                <XCircle className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-auto bg-slate-50 dark:bg-gray-950 p-4 flex justify-center items-center">
-              {selectedDoc.filePath.toLowerCase().endsWith('.pdf') ? (
-                isPdfLoading ? (
-                  <div className="flex flex-col items-center justify-center h-[600px]">
-                    <Loader2 className="w-10 h-10 animate-spin text-blue-600 mb-4" />
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Loading document securely...</p>
-                  </div>
-                ) : (
-                  <iframe src={pdfBlobUrl} className="w-full h-[600px] border-0 rounded shadow-sm bg-white" title="PDF Viewer" />
-                )
-              ) : (
-                <img
-                  src={selectedDoc.filePath.startsWith('http') ? selectedDoc.filePath : `http://localhost:5001${selectedDoc.filePath}`}
-                  alt="Document Preview"
-                  className="max-w-full max-h-[70vh] object-contain rounded border dark:border-gray-800 shadow-sm"
-                />
-              )}
-            </div>
-            <div className="p-4 border-t dark:border-gray-700 flex justify-end gap-2 bg-gray-50 dark:bg-gray-900">
-              <Button variant="outline" onClick={() => setSelectedDoc(null)}>Close</Button>
-              <Button onClick={() => {
-                const isHttp = selectedDoc.filePath.startsWith('http');
-                let finalUrl = isHttp ? selectedDoc.filePath : `http://localhost:5001${selectedDoc.filePath}`;
-                if (isHttp && finalUrl.includes('cloudinary.com') && finalUrl.endsWith('.pdf')) {
-                  finalUrl = finalUrl.replace('/upload/', '/upload/fl_attachment/');
-                }
-                window.open(finalUrl, '_blank');
-              }}>
-                {selectedDoc.filePath.toLowerCase().endsWith('.pdf') ? "Download PDF" : "Open in New Tab"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Document Preview Dialog */}
+      <DocumentPreviewDialog
+        previewDoc={selectedDoc}
+        onClose={() => setSelectedDoc(null)}
+      />
     </div>
   );
 };

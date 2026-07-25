@@ -485,7 +485,6 @@ const Sidebar = ({
 
           <SidebarGroup id="documentRequests" icon={FileCheck} label="Documents">
             <SubLink to="/role/hr_manager/document-requests" label="Document Requests" />
-            <SubLink to="/role/employee/my-documents" label="My Documents" />
             <SubLink to="/documents/employee-documents" label="Employee Documents" />
           </SidebarGroup>
         </>
@@ -539,7 +538,6 @@ const Sidebar = ({
 
           <SidebarGroup id="documentRequests" icon={FileCheck} label="Documents">
             <SubLink to="/role/hr_officer/document-requests" label="Document Requests" />
-            <SubLink to="/role/employee/my-documents" label="My Documents" />
             <SubLink to="/documents/employee-documents" label="Employee Documents" />
           </SidebarGroup>
 

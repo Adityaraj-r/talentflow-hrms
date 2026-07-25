@@ -789,7 +789,7 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/role/employee/my-documents" element={
-              <ProtectedRoute allowedRoles={["EMPLOYEE", "ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "COUNTRY_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "FINANCE_MANAGER", "PAYROLL_OFFICER", "PROJECT_MANAGER", "OPERATIONS_MANAGER"]}>
+              <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
                 <DashboardLayout><MyDocuments /></DashboardLayout>
               </ProtectedRoute>
             } />
