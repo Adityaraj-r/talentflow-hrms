@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Search, Loader2, Eye, CheckCircle2, XCircle, Clock, Download } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "@/services/apiClient";
-import JSZip from "jszip";
+import { UploadedDocumentsModal, DocumentPreviewDialog, getAttachments, getFileUrl, forceCloudinaryDownload, getFileName, formatFileSize, downloadFile } from "@/components/ui/DocumentViewer";
 
 const DocumentRequests = () => {
   const { user } = useAuth();
@@ -33,6 +33,7 @@ const DocumentRequests = () => {
   const [actioning, setActioning] = useState(false);
   const [attachmentsModalOpen, setAttachmentsModalOpen] = useState(false);
   const [activeReqAttachments, setActiveReqAttachments] = useState(null);
+  const [previewDoc, setPreviewDoc] = useState(null);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -179,26 +180,7 @@ const DocumentRequests = () => {
     return <span className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 w-fit"><Clock className="w-3 h-3" /> Pending</span>;
   };
 
-  const getFileUrl = (url) => {
-    if (!url) return "#";
-    return url.startsWith("http") ? url : `http://localhost:5001${url}`;
-  };
 
-  const forceCloudinaryDownload = (url) => {
-    if (!url) return "#";
-    const finalUrl = getFileUrl(url);
-    const parts = finalUrl.split('/upload/');
-    if (parts.length === 2) {
-      return `${parts[0]}/upload/fl_attachment/${parts[1]}`;
-    }
-    return finalUrl;
-  };
-
-  const getFileName = (url) => {
-    if (!url) return "";
-    const filename = url.substring(url.lastIndexOf('/') + 1);
-    return filename.split('?')[0]; // Remove query params if any
-  };
 
   const renderDocumentTypes = (docTypeStr) => {
     if (!docTypeStr) return null;
@@ -217,70 +199,7 @@ const DocumentRequests = () => {
     );
   };
 
-  const formatFileSize = (bytes) => {
-    if (!bytes || bytes === 0) return "";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
-  };
 
-  const getAttachments = (req) => {
-    if (!req) return [];
-    if (req.uploadedDocuments && req.uploadedDocuments.length > 0) {
-      return req.uploadedDocuments;
-    }
-    if (req.documentPaths && req.documentPaths.length > 0) {
-      return req.documentPaths.map((path) => ({
-        originalName: getFileName(path),
-        filePath: path,
-        fileSize: 0,
-        mimeType: "",
-        uploadedAt: req.updatedAt || req.createdAt
-      }));
-    }
-    if (req.documentPath) {
-      return [{
-        originalName: getFileName(req.documentPath),
-        filePath: req.documentPath,
-        fileSize: 0,
-        mimeType: "",
-        uploadedAt: req.updatedAt || req.createdAt
-      }];
-    }
-    return [];
-  };
-
-  const downloadAllAsZip = async (attachments, requestId) => {
-    try {
-      toast.loading("Generating ZIP file...", { id: "zip-download" });
-      const zip = new JSZip();
-      
-      const fetchPromises = attachments.map(async (file) => {
-        const fileUrl = forceCloudinaryDownload(file.filePath);
-        const res = await fetch(fileUrl);
-        if (!res.ok) throw new Error(`Failed to fetch ${file.originalName}`);
-        const blob = await res.blob();
-        zip.file(file.originalName, blob);
-      });
-
-      await Promise.all(fetchPromises);
-      const content = await zip.generateAsync({ type: "blob" });
-      
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(content);
-      link.download = `documents_${requestId || "request"}.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
-      
-      toast.success("ZIP downloaded successfully!", { id: "zip-download" });
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to generate ZIP. Please download files individually.", { id: "zip-download" });
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -344,7 +263,7 @@ const DocumentRequests = () => {
                       <tr><td colSpan="6" className="text-center py-8 text-muted-foreground">No pending requests.</td></tr>
                     ) : (
                       pendingRequestsList.map((req) => (
-                        <tr key={req._id} className="hover:bg-muted/20">
+                        <tr key={req._id} className="group hover:bg-slate-50 dark:hover:bg-slate-900/60 transition-colors">
                           <td className="px-4 py-3 font-bold">{req.requestId || "N/A"}</td>
                           <td className="px-4 py-3">
                             <div className="font-medium text-slate-800 dark:text-slate-200">{req.employeeName}</div>
@@ -354,14 +273,29 @@ const DocumentRequests = () => {
                           <td className="px-4 py-3 max-w-[200px] truncate" title={req.purpose}>{req.purpose}</td>
                           <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{new Date(req.createdAt).toLocaleDateString()}</td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-1.5">
-                              <Button variant="outline" size="sm" onClick={() => handleOpenViewDetails(req)}>
+                            <div className="flex justify-end gap-1.5 opacity-85 group-hover:opacity-100 transition-opacity duration-150">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                onClick={() => handleOpenViewDetails(req)}
+                              >
                                 View
                               </Button>
-                              <Button variant="outline" size="sm" className="bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 border-green-200" onClick={() => handleOpenApprove(req)}>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-8 px-3 text-xs font-semibold bg-green-50 hover:bg-green-100 border-green-200 text-green-700 dark:bg-green-950/20 dark:border-green-900/40 dark:text-green-400 dark:hover:bg-green-900/40 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                onClick={() => handleOpenApprove(req)}
+                              >
                                 Approve
                               </Button>
-                              <Button variant="outline" size="sm" className="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border-red-200" onClick={() => handleOpenReject(req)}>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-8 px-3 text-xs font-semibold bg-red-50 hover:bg-red-100 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/40 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                onClick={() => handleOpenReject(req)}
+                              >
                                 Reject
                               </Button>
                             </div>
@@ -414,7 +348,7 @@ const DocumentRequests = () => {
                       <tr><td colSpan="6" className="text-center py-8 text-muted-foreground">No matching requests found.</td></tr>
                     ) : (
                       historyRequestsList.map((req) => (
-                        <tr key={req._id} className="hover:bg-muted/20">
+                        <tr key={req._id} className="group hover:bg-slate-50 dark:hover:bg-slate-900/60 transition-colors">
                           <td className="px-4 py-3 font-bold">{req.requestId || "N/A"}</td>
                           <td className="px-4 py-3">
                             <div className="font-medium text-slate-800 dark:text-slate-200">{req.employeeName}</div>
@@ -424,7 +358,7 @@ const DocumentRequests = () => {
                           <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{new Date(req.createdAt).toLocaleDateString()}</td>
                           <td className="px-4 py-3">{getStatusBadge(req.status)}</td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end items-center gap-2">
+                            <div className="flex justify-end items-center gap-2 opacity-85 group-hover:opacity-100 transition-opacity duration-150">
                               {req.status === "Approved" && (
                                 <>
                                   {getAttachments(req).length === 0 ? (
@@ -433,7 +367,7 @@ const DocumentRequests = () => {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      className="h-8 px-2.5 text-xs font-semibold flex items-center gap-1.5 border-blue-200 bg-blue-50 hover:bg-blue-100/70 text-blue-700 dark:bg-blue-950/30 dark:border-blue-900/30 dark:text-blue-400"
+                                      className="h-8 px-2.5 text-xs font-semibold flex items-center gap-1.5 border-indigo-200 bg-indigo-50/55 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/40 dark:text-indigo-400 dark:hover:bg-indigo-900/40 text-indigo-700 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                                       onClick={() => {
                                         setActiveReqAttachments(req);
                                         setAttachmentsModalOpen(true);
@@ -451,7 +385,12 @@ const DocumentRequests = () => {
                                   )}
                                 </>
                               )}
-                              <Button variant="ghost" size="sm" onClick={() => handleOpenViewDetails(req)}>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                onClick={() => handleOpenViewDetails(req)}
+                              >
                                 View Details
                               </Button>
                             </div>
@@ -530,68 +469,44 @@ const DocumentRequests = () => {
               {selectedReq.status === "Approved" && (
                 <div className="space-y-3">
                   <h3 className="font-semibold text-sm border-b pb-1 text-slate-700 dark:text-slate-300">Uploaded Documents</h3>
-                  {((selectedReq.uploadedDocuments && selectedReq.uploadedDocuments.length > 0) ||
-                    (selectedReq.documentPaths && selectedReq.documentPaths.length > 0) ||
-                    selectedReq.documentPath) ? (
+                  {getAttachments(selectedReq).length > 0 ? (
                     <div className="space-y-2">
-                      {selectedReq.uploadedDocuments && selectedReq.uploadedDocuments.length > 0 ? (
-                        selectedReq.uploadedDocuments.map((doc, idx) => (
-                          <div key={idx} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-3 border rounded-lg text-xs">
-                            <div className="space-y-0.5 truncate max-w-[280px]">
-                              <span className="font-medium text-slate-700 dark:text-slate-300 block truncate" title={doc.originalName || getFileName(doc.filePath)}>
-                                {idx + 1}. {doc.originalName || getFileName(doc.filePath)}
+                      {getAttachments(selectedReq).map((doc, idx) => (
+                        <div key={idx} className="flex items-center justify-between gap-4 p-3 border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50/55 dark:bg-slate-900/30 transition-colors hover:border-slate-300 dark:hover:border-slate-700">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="p-2.5 bg-indigo-500/10 text-indigo-505 dark:text-indigo-400 rounded-lg shrink-0">
+                              <FileText className="h-5 w-5" />
+                            </div>
+                            <div className="flex flex-col min-w-0 text-left justify-center">
+                              <span className="font-semibold text-sm text-slate-805 dark:text-slate-200 truncate" title={doc.originalName}>
+                                {doc.originalName}
                               </span>
                               {doc.fileSize > 0 && (
-                                <span className="text-[10px] text-muted-foreground block font-normal">
+                                <span className="text-[10px] text-muted-foreground mt-0.5">
                                   {formatFileSize(doc.fileSize)}
                                 </span>
                               )}
                             </div>
-                            <div className="flex gap-1.5 shrink-0">
-                              <Button variant="outline" size="sm" className="h-7 px-2" onClick={() => window.open(getFileUrl(doc.filePath), "_blank")}>
-                                View
-                              </Button>
-                              <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => window.open(forceCloudinaryDownload(doc.filePath), "_blank")}>
-                                <Download className="w-3.5 h-3.5 mr-1" /> Download
-                              </Button>
-                            </div>
                           </div>
-                        ))
-                      ) : selectedReq.documentPaths && selectedReq.documentPaths.length > 0 ? (
-                        selectedReq.documentPaths.map((path, idx) => (
-                          <div key={idx} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-3 border rounded-lg text-xs">
-                            <div className="space-y-0.5 truncate max-w-[280px]">
-                              <span className="font-medium text-slate-700 dark:text-slate-300 block truncate" title={getFileName(path)}>
-                                {idx + 1}. {getFileName(path)}
-                              </span>
-                            </div>
-                            <div className="flex gap-1.5 shrink-0">
-                              <Button variant="outline" size="sm" className="h-7 px-2" onClick={() => window.open(getFileUrl(path), "_blank")}>
-                                View
-                              </Button>
-                              <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => window.open(forceCloudinaryDownload(path), "_blank")}>
-                                <Download className="w-3.5 h-3.5 mr-1" /> Download
-                              </Button>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-3 border rounded-lg text-xs">
-                          <div className="space-y-0.5 truncate max-w-[280px]">
-                            <span className="font-medium text-slate-700 dark:text-slate-300 block truncate" title={getFileName(selectedReq.documentPath)}>
-                              1. {getFileName(selectedReq.documentPath)}
-                            </span>
-                          </div>
-                          <div className="flex gap-1.5 shrink-0">
-                            <Button variant="outline" size="sm" className="h-7 px-2" onClick={() => window.open(getFileUrl(selectedReq.documentPath), "_blank")}>
-                              View
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                              onClick={() => setPreviewDoc(doc)}
+                            >
+                              <Eye className="h-3.5 w-3.5 mr-1" /> View
                             </Button>
-                            <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => window.open(forceCloudinaryDownload(selectedReq.documentPath), "_blank")}>
-                              <Download className="w-3.5 h-3.5 mr-1" /> Download
+                            <Button
+                              size="sm"
+                              className="h-8 px-3 text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-150 shadow-sm focus:ring-2 focus:ring-green-500 focus:outline-none flex items-center gap-1"
+                              onClick={() => downloadFile(doc)}
+                            >
+                              <Download className="h-3.5 w-3.5 mr-1" /> Download
                             </Button>
                           </div>
                         </div>
-                      )}
+                      ))}
                     </div>
                   ) : (
                     <p className="text-sm text-yellow-600 bg-yellow-50 dark:bg-yellow-950/20 dark:text-yellow-400 p-3 rounded-lg border border-yellow-100 dark:border-yellow-900/30 font-medium">
@@ -611,47 +526,61 @@ const DocumentRequests = () => {
 
       {/* Approve Request Modal (Approve + Upload multiple documents of any format) */}
       <Dialog open={approveModalOpen} onOpenChange={setApproveModalOpen}>
-        <DialogContent className="sm:max-w-[480px]">
-          <DialogHeader>
-            <DialogTitle>Approve Document Request</DialogTitle>
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[760px] max-h-[92vh] overflow-y-auto p-0 rounded-xl shadow-xl">
+          <DialogHeader className="px-7 py-6 border-b border-slate-200 dark:border-slate-800">
+            <DialogTitle className="text-2xl font-bold tracking-tight pr-8">Approve Document Request</DialogTitle>
           </DialogHeader>
 
           {selectedReq && (
-            <form onSubmit={handleApproveSubmit} className="space-y-4 py-2">
-              <div className="bg-slate-50 dark:bg-slate-900 border p-3 rounded-lg text-sm space-y-1">
-                <div><strong>Employee:</strong> {selectedReq.employeeName}</div>
-                <div><strong>Document:</strong> {selectedReq.documentType}</div>
-              </div>
+            <form onSubmit={handleApproveSubmit} className="px-7 py-6 space-y-6">
+              <section className="space-y-3">
+                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Request Information</h3>
+                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-5 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <div className="text-xs font-medium text-muted-foreground">Employee</div>
+                      <div className="font-semibold leading-6 text-slate-900 dark:text-slate-100 break-words">{selectedReq.employeeName}</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-xs font-medium text-muted-foreground">Requested Documents</div>
+                      <div className="font-semibold leading-6 text-slate-900 dark:text-slate-100 break-words">{selectedReq.documentType}</div>
+                    </div>
+                  </div>
+                </div>
+              </section>
 
-              <div className="space-y-2">
-                <Label htmlFor="documentFiles">Upload Documents <span className="text-red-500">*</span></Label>
-                <div className="flex items-center gap-2">
+              <section className="space-y-3 border-t border-slate-200 pt-6 dark:border-slate-800">
+                <div className="space-y-1">
+                  <Label htmlFor="documentFiles" className="text-sm font-semibold text-slate-800 dark:text-slate-200">Upload Documents <span className="text-red-500">*</span></Label>
+                  <p className="text-xs text-muted-foreground">Select one or more documents (PDF, JPG, PNG, DOCX, etc.) for this employee.</p>
+                </div>
+                <div className="w-full">
                   <Input
                     id="documentFiles"
                     type="file"
                     multiple
                     ref={fileInputRef}
                     onChange={handleFileChange}
-                    className={uploadFiles.length > 0 ? "sr-only" : ""}
+                    className={uploadFiles.length > 0 ? "sr-only" : "h-12 w-full cursor-pointer rounded-lg border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-colors file:mr-4 file:h-8 file:rounded-md file:border-0 file:bg-slate-100 file:px-4 file:text-sm file:font-semibold file:text-slate-700 hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:file:bg-slate-800 dark:file:text-slate-200 dark:hover:bg-slate-900"}
                     required={uploadFiles.length === 0}
                   />
                 </div>
                 {uploadFiles && uploadFiles.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="space-y-1.5 bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border text-xs">
-                      <span className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Selected Files:</span>
+                  <div className="space-y-3">
+                    <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                      <span className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Selected Files</span>
                       {uploadFiles.map((file, idx) => (
-                        <div key={idx} className="flex items-center justify-between gap-1.5 text-slate-600 dark:text-slate-400 py-0.5">
-                          <div className="flex items-center gap-1.5 truncate">
+                        <div key={idx} className="flex items-center justify-between gap-3 rounded-md bg-white px-3 py-2 text-slate-600 ring-1 ring-slate-200 dark:bg-slate-950 dark:text-slate-400 dark:ring-slate-800">
+                          <div className="flex min-w-0 items-center gap-2">
                             <span className="text-green-600 font-bold">✓</span>
-                            <span className="truncate max-w-[240px] font-medium" title={file.name}>{file.name}</span>
-                            <span className="text-[10px] text-muted-foreground">({formatFileSize(file.size)})</span>
+                            <span className="min-w-0 flex-1 break-words font-medium" title={file.name}>{file.name}</span>
+                            <span className="shrink-0 text-[10px] text-muted-foreground">({formatFileSize(file.size)})</span>
                           </div>
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="h-6 px-1.5 text-red-500 hover:text-red-700 hover:bg-red-50/50 shrink-0"
+                            className="h-8 shrink-0 rounded-md px-2 text-xs font-semibold text-red-500 hover:bg-red-50 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-red-500"
                             onClick={() => handleRemoveFile(idx)}
                           >
                             Remove
@@ -663,32 +592,42 @@ const DocumentRequests = () => {
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="w-full text-xs flex items-center justify-center gap-1 mt-1.5"
+                      className="h-10 w-full rounded-lg text-xs font-semibold transition-all hover:bg-slate-50 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-500 dark:hover:bg-slate-900"
                       onClick={() => fileInputRef.current?.click()}
                     >
                       + Add More Files
                     </Button>
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground mt-1">Select one or more documents (PDF, JPG, PNG, DOCX, etc.) for this employee.</p>
-              </div>
+              </section>
 
-              <div className="space-y-2">
-                <Label htmlFor="hrApproveRemark">HR Remarks (Optional)</Label>
+              <section className="space-y-3 border-t border-slate-200 pt-6 dark:border-slate-800">
+                <Label htmlFor="hrApproveRemark" className="text-sm font-semibold text-slate-800 dark:text-slate-200">HR Remarks (Optional)</Label>
                 <Textarea
                   id="hrApproveRemark"
                   placeholder="Enter any optional approval notes..."
                   value={hrRemark}
                   onChange={(e) => setHrRemark(e.target.value)}
-                  rows={3}
+                  rows={5}
+                  className="min-h-[140px] w-full resize-y rounded-lg border-slate-300 p-4 text-sm shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-slate-700"
                 />
-              </div>
+              </section>
 
-              <DialogFooter className="border-t pt-3">
-                <Button type="button" variant="outline" onClick={() => setApproveModalOpen(false)} disabled={actioning}>
+              <DialogFooter className="border-t border-slate-200 pt-6 dark:border-slate-800">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setApproveModalOpen(false)}
+                  disabled={actioning}
+                  className="h-11 min-w-[120px] rounded-lg font-semibold transition-all hover:bg-slate-50 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-500 dark:hover:bg-slate-900"
+                >
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white" disabled={actioning}>
+                <Button
+                  type="submit"
+                  className="h-11 min-w-[170px] rounded-lg bg-green-600 font-semibold text-white shadow-sm transition-all hover:bg-green-700 hover:shadow-md focus-visible:ring-2 focus-visible:ring-green-500"
+                  disabled={actioning}
+                >
                   {actioning && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Approve and Send
                 </Button>
@@ -738,68 +677,22 @@ const DocumentRequests = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Attachments List Modal */}
-      <Dialog open={attachmentsModalOpen} onOpenChange={setAttachmentsModalOpen}>
-        <DialogContent className="sm:max-w-[480px]">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold">Uploaded Documents</DialogTitle>
-          </DialogHeader>
-          
-          {activeReqAttachments && (
-            <div className="space-y-4 py-2">
-              <div className="space-y-3 divide-y border rounded-lg p-3 max-h-[300px] overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50">
-                {getAttachments(activeReqAttachments).map((file, idx) => (
-                  <div key={idx} className={`flex items-center justify-between gap-3 text-xs py-2.5 ${idx === 0 ? "pt-0" : ""}`}>
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-semibold text-slate-800 dark:text-slate-200 truncate" title={file.originalName}>
-                        ✓ {file.originalName}
-                      </span>
-                      {file.fileSize > 0 && (
-                        <span className="text-[10px] text-muted-foreground mt-0.5">
-                          {formatFileSize(file.fileSize)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => window.open(getFileUrl(file.filePath), "_blank")}
-                      >
-                        View
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="h-7 px-2 text-xs bg-green-600 hover:bg-green-700 text-white"
-                        onClick={() => window.open(forceCloudinaryDownload(file.filePath), "_blank")}
-                      >
-                        Download
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {getAttachments(activeReqAttachments).length > 1 && (
-                <Button
-                  onClick={() => downloadAllAsZip(getAttachments(activeReqAttachments), activeReqAttachments.requestId)}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-2.5 flex items-center justify-center gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5" /> Download All (.zip)
-                </Button>
-              )}
-            </div>
-          )}
-          
-          <DialogFooter className="border-t pt-3">
-            <Button onClick={() => {
-              setAttachmentsModalOpen(false);
-              setActiveReqAttachments(null);
-            }}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Uploaded Documents List Modal */}
+      <UploadedDocumentsModal
+        open={attachmentsModalOpen}
+        onOpenChange={(open) => {
+          setAttachmentsModalOpen(open);
+          if (!open) setActiveReqAttachments(null);
+        }}
+        activeRequest={activeReqAttachments}
+        onViewFile={(file) => setPreviewDoc(file)}
+      />
+
+      {/* Document Preview Dialog */}
+      <DocumentPreviewDialog
+        previewDoc={previewDoc}
+        onClose={() => setPreviewDoc(null)}
+      />
     </div>
   );
 };

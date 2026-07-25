@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type OfferStatus = 'Pending HR Manager Approval' | 'Pending CEO Approval' | 'Offered' | 'Accepted' | 'Declined';
+export type OfferStatus = 'Under Review' | 'Changes Requested' | 'Pending HR Manager Approval' | 'Pending CEO Approval' | 'Offered' | 'Accepted' | 'Declined' | 'Expired';
 
 export interface IOffer extends Document {
   offerId: string;
@@ -126,7 +126,7 @@ const OfferSchema: Schema = new Schema({
   preOnboarding: [PreOnboardingStepSchema],
   status: {
     type: String,
-    enum: ['Pending HR Manager Approval', 'Pending CEO Approval', 'Offered', 'Accepted', 'Declined'],
+    enum: ['Under Review', 'Changes Requested', 'Pending HR Manager Approval', 'Pending CEO Approval', 'Offered', 'Accepted', 'Declined', 'Expired'],
     default: 'Offered',
   },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },

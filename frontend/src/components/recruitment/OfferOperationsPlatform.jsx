@@ -691,23 +691,90 @@ export function PreOnboardingWorkflow({ offer }) {
   );
 }
 
-export function TemplatesPanel({ offers = [] }) {
-  const templates = [...new Set(offers.map((offer) => offer.templateId).filter(Boolean))]
+const offerTemplates = [
+  {
+    id: "standard",
+    title: "Standard Employment Offer",
+    description: "Standard employment contract for regular staff, incorporating candidate details, job role, standard terms, and compensation breakdown.",
+  },
+  {
+    id: "executive",
+    title: "Executive Employment Offer",
+    description: "Executive contract for leadership positions, including executive benefits, leadership responsibilities, confidentiality/non-compete clauses, and extended notice period.",
+  },
+];
+
+export function TemplatesPanel({ offers = [], selectedOffer, onPreview }) {
+  const isExecutive = useMemo(() => {
+    if (!selectedOffer) return false;
+    const designation = (selectedOffer.position || "").trim();
+    const pattern = /\b(executive|manager|director|head|chief|vp|vice president|president|lead|principal|architect)\b/i;
+    return pattern.test(designation);
+  }, [selectedOffer]);
+
   return (
-    <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-5 shadow-xl shadow-black/10">
-      <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Offer Templates</h2>
-      <div className="mt-5 grid gap-3 md:grid-cols-3">
-        {templates.length === 0 ? (
-          <div className="rounded-md border border-dashed border-slate-200 dark:border-white/10 p-4 text-sm text-slate-500 dark:text-slate-400 md:col-span-3">
-            No offer templates are in use yet.
+    <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <FileText className="h-5 w-5 text-cyan-500 dark:text-cyan-400 mt-1 shrink-0" strokeWidth={2} />
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Offer Templates</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Branded contract templates for different roles.</p>
           </div>
-        ) : templates.map((template) => (
-          <div key={template} className="rounded-md border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-4">
-            <FileText className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
-            <p className="mt-3 font-semibold text-slate-900 dark:text-white">{template}</p>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Branded letter structure with compensation, terms, and signature placeholders.</p>
-          </div>
-        ))}
+        </div>
+      </div>
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        {offerTemplates.map((template) => {
+          const recommended = (template.id === "executive" && isExecutive) || (template.id === "standard" && !isExecutive);
+
+          return (
+            <div
+              key={template.id}
+              className={cn(
+                "relative rounded-xl flex flex-col justify-between transition-all duration-200",
+                recommended
+                  ? "border-2 border-cyan-500 dark:border-cyan-500/60 bg-cyan-500/[0.03] dark:bg-cyan-500/[0.045] p-[19px] shadow-md shadow-cyan-500/[0.03] dark:shadow-cyan-950/10"
+                  : "border border-slate-150 dark:border-slate-850 bg-slate-50/50 dark:bg-white/[0.01] p-5 shadow-sm hover:border-slate-350 dark:hover:border-slate-700 hover:bg-slate-100/50 dark:hover:bg-white/[0.02]"
+              )}
+            >
+              <div>
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <FileText className={cn("h-4 w-4 shrink-0", recommended ? "text-cyan-500" : "text-slate-400 dark:text-slate-500")} />
+                    <p className="font-semibold text-slate-850 dark:text-slate-205 text-sm truncate">{template.title}</p>
+                  </div>
+                  {recommended && (
+                    <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-cyan-500 dark:bg-cyan-600 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white shadow-sm">
+                      <Sparkles className="h-3.5 w-3.5 shrink-0 animate-pulse" />
+                      Recommended
+                    </span>
+                  )}
+                </div>
+                
+                <p className="text-xs text-slate-450 dark:text-slate-550 leading-relaxed font-medium mt-2">{template.description}</p>
+                
+                {recommended && (
+                  <div className="mt-4 pt-3 border-t border-slate-150/60 dark:border-slate-850/50">
+                    <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Recommended for</p>
+                    <p className="mt-1 text-xs font-bold text-cyan-600 dark:text-cyan-400 truncate">{selectedOffer?.position || "N/A"}</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-5">
+                <Button
+                  type="button"
+                  onClick={() => onPreview && onPreview(template.id)}
+                  disabled={!selectedOffer}
+                  className="h-[38px] px-4 rounded-lg border border-cyan-250/70 dark:border-cyan-500/20 bg-cyan-50/50 dark:bg-cyan-500/10 hover:bg-cyan-100/50 dark:hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-400 text-[13px] font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none disabled:bg-slate-100 disabled:border-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-900/50 dark:disabled:border-slate-850 dark:disabled:text-slate-500"
+                >
+                  <Eye className="h-4 w-4 shrink-0" />
+                  Preview Template
+                </Button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

@@ -80,6 +80,7 @@ export const canonicalOfferStatus = (status = "") => {
   if (value === "offered" || value === "sent" || value === "offer released") return "Offered"
   if (value === "accepted") return "Accepted"
   if (value === "declined" || value === "rejected") return "Declined"
+  if (value === "changes requested" || value === "change requested") return "Changes Requested"
   if (value === "expired") return "Expired"
   if (value === "draft") return "Draft"
   if (value === "under review") return "Under Review"
@@ -132,21 +133,27 @@ const formatMoney = (amount = 0) =>
 
 export function OfferStatusBadge({ status, className }) {
   const canonical = canonicalOfferStatus(status)
-  const style =
-    canonical === "Pending CEO Approval" || canonical === "Pending HR Manager Approval"
-      ? "border-amber-400/30 bg-amber-500/10 text-amber-300 shadow-amber-500/10"
-      : canonical === "Offered"
-        ? "border-sky-400/30 bg-sky-500/10 text-sky-300 shadow-sky-500/10"
-        : canonical === "Accepted"
-          ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10"
-          : canonical === "Declined" || canonical === "Expired"
-            ? "border-rose-400/30 bg-rose-500/10 text-rose-300 shadow-rose-500/10"
-            : "border-violet-400/30 bg-violet-500/10 text-violet-300 shadow-violet-500/10"
-  const Icon = canonical === "Accepted" ? CheckCircle2 : canonical === "Declined" || canonical === "Expired" ? XCircle : canonical === "Offered" ? Send : Clock3
+  let style = ""
+
+  if (canonical === "Pending CEO Approval" || canonical === "Pending HR Manager Approval" || canonical === "Under Review" || canonical === "Pending" || canonical === "Changes Requested") {
+    style = "border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300"
+  } else if (canonical === "Offered" || canonical === "Sent" || canonical === "Viewed" || canonical === "Released") {
+    style = "border-cyan-200 dark:border-cyan-500/20 bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300"
+  } else if (canonical === "Accepted" || canonical === "Approved") {
+    style = "border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+  } else if (canonical === "Declined" || canonical === "Rejected") {
+    style = "border-rose-200 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300"
+  } else if (canonical === "Expired") {
+    style = "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400"
+  } else {
+    style = "border-violet-200 dark:border-violet-500/20 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300"
+  }
+
+  const Icon = canonical === "Accepted" || canonical === "Approved" ? CheckCircle2 : canonical === "Declined" || canonical === "Rejected" ? XCircle : canonical === "Expired" ? Clock3 : canonical === "Offered" || canonical === "Sent" || canonical === "Released" ? Send : Clock3
 
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold shadow-sm", style, className)}>
-      {React.createElement(Icon, { className: "h-3.5 w-3.5" })}
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors duration-150 h-5", style, className)}>
+      {React.createElement(Icon, { className: "h-3 w-3 shrink-0" })}
       {canonical}
     </span>
   )
@@ -898,49 +905,117 @@ function DrawerSection({ title, icon, children }) {
     </section>
   )
 }
+const executiveDesignationPattern = /\b(executive|manager|director|head|chief|vp|vice president|president|lead|principal|architect)\b/i;
+
+const getActiveTemplate = (offer) => {
+  if (!offer) return "standard";
+  if (offer.previewTemplateId) {
+    return offer.previewTemplateId;
+  }
+  const tid = (offer.templateId || "").toLowerCase().trim();
+  if (tid === "executive" || tid === "executive-offer") {
+    return "executive";
+  }
+  if (tid === "standard" || tid === "standard-offer") {
+    return "standard";
+  }
+  const designation = (offer.position || "").trim();
+  return executiveDesignationPattern.test(designation) ? "executive" : "standard";
+};
 
 export function OfferLetterPreview({ offer, open, onClose, onDownload }) {
+  const activeTemplate = getActiveTemplate(offer);
+
   return (
     <AnimatePresence>
       {open && offer && (
         <div className="fixed inset-0 z-[60] grid place-items-center bg-black/60 p-4">
-          <Motion.motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.98 }} className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-lg border border-white/10 bg-background shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/10 p-4">
+          <Motion.motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.98 }} className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 bg-background shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 p-4">
               <div>
                 <h2 className="text-lg font-semibold">Offer Letter Preview</h2>
                 <p className="text-sm text-muted-foreground">Branded template preview for {offer.candidateName}</p>
               </div>
               <Button size="icon" variant="ghost" onClick={onClose}><X className="h-4 w-4" /></Button>
             </div>
-            <div className="custom-scrollbar max-h-[68vh] overflow-y-auto p-6">
-              <div className="rounded-lg border border-white/10 bg-card p-6">
-                <div className="flex items-center justify-between border-b border-white/10 pb-5">
+            <div className="custom-scrollbar max-h-[68vh] overflow-y-auto bg-slate-50/40 dark:bg-transparent p-6">
+              <div className="rounded-lg border border-slate-200 dark:border-white/10 bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-5">
                   <div>
                     <p className="text-xl font-semibold">HRMS System</p>
                     <p className="text-sm text-muted-foreground">Official Employment Offer</p>
                   </div>
                   <FileSignature className="h-10 w-10 text-primary" />
                 </div>
-                <div className="space-y-4 py-5 text-sm leading-6">
-                  <p>Dear {offer.candidateName},</p>
-                  <p>We are pleased to extend an offer for the role of <strong>{offer.position}</strong> in the <strong>{offer.department}</strong> department.</p>
-                  <p>Your proposed joining date is <strong>{offer.joiningDate}</strong>, with a salary package of <strong>{formatMoney(offer.salary)}</strong>.</p>
-                  <div className="rounded-lg border border-white/10 bg-muted/10 p-4">
-                    <p className="font-semibold">Compensation Summary</p>
-                    <p>Base: {formatMoney(offer.compensation.base)}</p>
-                    <p>Bonus: {formatMoney(offer.compensation.bonus)}</p>
-                    <p>Allowances: {formatMoney(offer.compensation.allowances)}</p>
-                    <p>Total CTC: {formatMoney(offer.compensation.total)}</p>
+                {activeTemplate === "executive" ? (
+                  <div className="space-y-4 py-5 text-sm leading-6">
+                    <p>Dear {offer.candidateName},</p>
+                    <p>We are pleased to extend an offer for the executive role of <strong>{offer.position}</strong> in the <strong>{offer.department}</strong> department.</p>
+                    <p>Your proposed joining date is <strong>{offer.joiningDate}</strong>, with a salary package of <strong>{formatMoney(offer.salary)}</strong>.</p>
+                    
+                    <div className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-muted/10 p-4">
+                      <p className="font-semibold text-slate-900 dark:text-slate-100">Compensation Summary</p>
+                      <p>Base: {formatMoney(offer.compensation.base)}</p>
+                      <p>Bonus: {formatMoney(offer.compensation.bonus)}</p>
+                      <p>Allowances: {formatMoney(offer.compensation.allowances)}</p>
+                      {offer.compensation.stock > 0 && (
+                        <p>Equity/ESOP Value: {formatMoney(offer.compensation.stock)}</p>
+                      )}
+                      <p>Total CTC: {formatMoney(offer.compensation.total)}</p>
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-white/10">
+                      <div>
+                        <p className="font-semibold text-slate-900 dark:text-white text-xs uppercase tracking-wider mb-1">Executive Benefits & Compensation</p>
+                        <p className="text-muted-foreground text-xs leading-relaxed">
+                          As an executive leader, you will be eligible for executive health screening, premium corporate wellness programs, relocation assistance (where applicable), and executive performance bonus pools. You will also participate in the company Equity Stock Option Plan (ESOP) vesting over a standard four-year schedule.
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-slate-900 dark:text-white text-xs uppercase tracking-wider mb-1">Leadership Responsibilities & Reporting Structure</p>
+                        <p className="text-muted-foreground text-xs leading-relaxed">
+                          In this position, you will report directly to the Chief Executive Officer (CEO) or designated Board members. You will be responsible for department budget management, strategic decision-making, team leadership, and driving organizational key performance metrics.
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-slate-900 dark:text-white text-xs uppercase tracking-wider mb-1">Confidentiality & Non-Compete Clauses</p>
+                        <p className="text-muted-foreground text-xs leading-relaxed">
+                          You agree to strictly maintain the confidentiality of all proprietary company data, IP assets, and strategic roadmaps. Additionally, you agree to a standard one (1) year non-compete clause post-employment.
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-slate-900 dark:text-white text-xs uppercase tracking-wider mb-1">Executive Notice Period & Employment Terms</p>
+                        <p className="text-muted-foreground text-xs leading-relaxed">
+                          Due to the strategic nature of this leadership position, an extended notice period of ninety (90) days is required by either party for termination of employment. This position is subject to quarterly key performance indicator (KPI) reviews and standard board approvals.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <p>This offer is subject to company policies, documentation verification, and standard employment terms.</p>
-                </div>
-                <div className="grid grid-cols-2 gap-6 border-t border-white/10 pt-5">
-                  <div className="h-24 rounded-lg border border-dashed border-white/15 p-3 text-xs text-muted-foreground">Company Signature</div>
-                  <div className="h-24 rounded-lg border border-dashed border-white/15 p-3 text-xs text-muted-foreground">Candidate Digital Signature</div>
+                ) : (
+                  <div className="space-y-4 py-5 text-sm leading-6">
+                    <p>Dear {offer.candidateName},</p>
+                    <p>We are pleased to extend an offer for the role of <strong>{offer.position}</strong> in the <strong>{offer.department}</strong> department.</p>
+                    <p>Your proposed joining date is <strong>{offer.joiningDate}</strong>, with a salary package of <strong>{formatMoney(offer.salary)}</strong>.</p>
+                    <div className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-muted/10 p-4">
+                      <p className="font-semibold text-slate-900 dark:text-slate-100">Compensation Summary</p>
+                      <p>Base: {formatMoney(offer.compensation.base)}</p>
+                      <p>Bonus: {formatMoney(offer.compensation.bonus)}</p>
+                      <p>Allowances: {formatMoney(offer.compensation.allowances)}</p>
+                      <p>Total CTC: {formatMoney(offer.compensation.total)}</p>
+                    </div>
+                    <p>This offer is subject to company policies, documentation verification, and standard employment terms.</p>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-6 border-t border-slate-200 dark:border-white/10 pt-5">
+                  <div className="h-24 rounded-lg border border-dashed border-slate-300 dark:border-white/15 bg-slate-50/40 dark:bg-muted/5 p-3 text-xs text-muted-foreground">Company Signature</div>
+                  <div className="h-24 rounded-lg border border-dashed border-slate-300 dark:border-white/15 bg-slate-50/40 dark:bg-muted/5 p-3 text-xs text-muted-foreground">Candidate Digital Signature</div>
                 </div>
               </div>
             </div>
-            <div className="flex justify-end gap-2 border-t border-white/10 p-4">
+            <div className="flex justify-end gap-2 border-t border-slate-200 dark:border-white/10 p-4">
               <Button variant="outline" onClick={onClose}>Close</Button>
               <Button onClick={() => onDownload(offer)}><Download className="mr-2 h-4 w-4" />Download PDF</Button>
             </div>

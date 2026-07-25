@@ -176,3 +176,37 @@
 ::view-transition-new(root) {
   z-index: 2147483646;
 }
+
+/* Consistent pointer cursors for interactive components */
+button,
+select,
+option,
+a,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="file"],
+[role="button"],
+[role="tab"],
+[role="menuitem"],
+[role="option"],
+[role="checkbox"],
+[role="switch"],
+[role="link"],
+[role="combobox"],
+.cursor-pointer {
+  cursor: pointer !important;
+}
+
+/* Prevent pointer cursors on disabled elements */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[disabled],
+.cursor-not-allowed {
+  cursor: not-allowed !important;
+}
+

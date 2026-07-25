@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FileText, Download, ShieldCheck, GraduationCap, Briefcase, User, Loader2, FolderOpen, Eye, FileDigit, Clock, XCircle, CheckCircle2, ZoomIn, ZoomOut } from "lucide-react"
+import { FileText, Download, ShieldCheck, GraduationCap, Briefcase, User, Loader2, FolderOpen, Eye, FileDigit, Clock, XCircle, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { DocumentPreviewDialog } from "@/components/ui/DocumentViewer"
 
 const getDocumentIcon = (category) => {
   switch (category) {
@@ -29,39 +30,11 @@ const getStatusBadge = (status) => {
   return <span className="flex items-center gap-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider"><Clock className="h-3 w-3"/> Pending</span>
 }
 
-const getFileUrl = (url) => {
-  if (!url) return "#";
-  return url.startsWith("http") ? url : `http://localhost:5001${url}`;
-};
 
-const forceCloudinaryDownload = (url) => {
-  if (!url) return "#"
-  const finalUrl = getFileUrl(url)
-  const parts = finalUrl.split('/upload/')
-  if (parts.length === 2) {
-    return `${parts[0]}/upload/fl_attachment/${parts[1]}`
-  }
-  return finalUrl
-}
-
-const isImageFile = (doc) => {
-  if (!doc) return false
-  if (doc.fileType && doc.fileType.startsWith('image/')) return true
-  if (doc.filePath && /\.(jpg|jpeg|png|gif|webp)$/i.test(doc.filePath)) return true
-  return false
-}
-
-const isPdfFile = (doc) => {
-  if (!doc) return false
-  if (doc.fileType && doc.fileType === 'application/pdf') return true
-  if (doc.filePath && doc.filePath.toLowerCase().includes('.pdf')) return true
-  return false
-}
 
 const MyDocuments = () => {
   const [selectedDoc, setSelectedDoc] = useState(null)
   const [activeTab, setActiveTab] = useState("All")
-  const [zoomLevel, setZoomLevel] = useState(1)
 
   const { data: documents, isLoading } = useQuery({
     queryKey: ['myUploadedDocuments'],
@@ -150,87 +123,11 @@ const MyDocuments = () => {
         </Tabs>
       )}
 
-      <Dialog open={!!selectedDoc} onOpenChange={(open) => {
-        if (!open) {
-          setSelectedDoc(null)
-          setZoomLevel(1)
-        }
-      }}>
-        <DialogContent className={cn(
-          "flex flex-col p-0 overflow-hidden bg-background",
-          selectedDoc && isPdfFile(selectedDoc) ? "max-w-[98vw] w-[98vw] h-[102vh] max-h-[110vh]" : "sm:max-w-4xl md:max-w-[80vw] h-[85vh]"
-        )}>
-          <DialogHeader className={cn(
-            "border-b bg-muted/30 flex-shrink-0",
-            selectedDoc && isPdfFile(selectedDoc) ? "px-4 py-2" : "p-4"
-          )}>
-           <DialogTitle className="flex justify-between items-center pr-6">
-            <span className={cn("truncate pr-4", selectedDoc && isPdfFile(selectedDoc) && "text-base")}>
-              {selectedDoc?.originalName}
-            </span>
-            <div className="flex items-center gap-4">
-              
-              {selectedDoc && !isPdfFile(selectedDoc) && (
-                <div className="flex items-center gap-1 bg-background border rounded-md px-1 py-0.5">
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.25))} title="Zoom Out">
-                    <ZoomOut className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                  <span className="text-xs font-medium w-9 text-center">{Math.round(zoomLevel * 100)}%</span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setZoomLevel(prev => Math.min(3, prev + 0.25))} title="Zoom In">
-                    <ZoomIn className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </div>
-              )}
-              {selectedDoc && getStatusBadge(selectedDoc.status)}
-            </div>
-          </DialogTitle>
-          </DialogHeader>
-          
-          <div className={cn(
-            "flex-1 bg-muted/10 relative",
-            selectedDoc && isPdfFile(selectedDoc) ? "w-full h-full" : "flex items-center justify-center p-4 overflow-auto custom-scrollbar"
-          )}>
-            {selectedDoc && isImageFile(selectedDoc) ? (
-              <img 
-                src={getFileUrl(selectedDoc.filePath)} 
-                alt={selectedDoc.originalName}
-                className="max-w-full max-h-full object-contain rounded-md shadow-sm transition-transform duration-200"
-                style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center' }}
-              />
-            ) : selectedDoc && isPdfFile(selectedDoc) ? (
-              <iframe 
-                src={`${getFileUrl(selectedDoc.filePath)}#view=FitH`} 
-                className="w-full h-full border-0 bg-white"
-                title={selectedDoc.originalName}
-              />
-            ) : selectedDoc ? (
-              <div 
-                className="absolute inset-0 flex items-center justify-center transition-transform duration-200"
-                style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top center', width: '100%', height: '100%' }}
-              >
-                <iframe 
-                  src={getFileUrl(selectedDoc.filePath)} 
-                  className="w-full h-full border-0 bg-white shadow-sm"
-                  title={selectedDoc.originalName}
-                />
-              </div>
-            ) : null}
-          </div>
-          
-          <div className={cn(
-            "border-t bg-muted/30 flex justify-end flex-shrink-0",
-            selectedDoc && isPdfFile(selectedDoc) ? "px-4 py-2" : "p-4"
-          )}>
-            <Button 
-              size={selectedDoc && isPdfFile(selectedDoc) ? "sm" : "default"} 
-              onClick={() => window.open(forceCloudinaryDownload(selectedDoc?.filePath), '_blank')} 
-              className="w-full sm:w-auto"
-            >
-              <Download className="h-4 w-4 mr-2" /> Download Original File
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Document Preview Dialog */}
+      <DocumentPreviewDialog
+        previewDoc={selectedDoc}
+        onClose={() => setSelectedDoc(null)}
+      />
     </div>
   )
 }
