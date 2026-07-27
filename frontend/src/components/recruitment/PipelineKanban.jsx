@@ -338,7 +338,7 @@ export function PipelineFilters({ filters, onChange, options, onSaveFilter, save
           key={`${saved.label}-${index}`}
           type="button"
           onClick={() => onApplySavedFilter(saved.filters)}
-          className="rounded-full border border-white/10 px-3 py-1 transition-colors hover:bg-muted"
+          className="rounded-full border border-white/10 px-3 py-1 transition-colors hover:bg-muted cursor-pointer"
         >
           {saved.label}
         </button>
@@ -357,7 +357,7 @@ function FilterSelect({ label, value, onChange, options = [] }) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none h-9 w-full rounded-md border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-[3px] focus:ring-ring/50"
+        className="appearance-none h-9 w-full rounded-md border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-[3px] focus:ring-ring/50 cursor-pointer"
       >
         <option value="All">{label}</option>
 
@@ -692,7 +692,7 @@ export function CandidateCard({ candidate, onOpen, canDrag = true, dragging = fa
     >
       <button
         type="button"
-        className="w-full text-left focus:outline-none"
+        className="w-full text-left focus:outline-none cursor-pointer hover:cursor-grab active:cursor-grabbing"
         onClick={() => onOpen(candidate)}
         {...(canDrag ? attributes : {})}
         {...(canDrag ? listeners : {})}
@@ -751,7 +751,7 @@ export function CandidateCard({ candidate, onOpen, canDrag = true, dragging = fa
         <span className="text-xs text-muted-foreground">{candidate.interviewDate ? `Interview ${candidate.interviewDate}` : `${candidate.priority} priority`}</span>
         <button
           type="button"
-          className="text-xs font-medium text-primary outline-none hover:underline focus:ring-2 focus:ring-ring"
+          className="text-xs font-medium text-primary outline-none hover:underline focus:ring-2 focus:ring-ring cursor-pointer"
           onClick={(event) => {
             event.stopPropagation()
             setExpanded((prev) => !prev)

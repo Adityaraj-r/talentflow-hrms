@@ -196,7 +196,7 @@ const DigitalLocker = () => {
                   if (cat.name !== "Onboarding") setTargetEmployeeId("");
                   if (cat.name === "Onboarding") { setTargetEmployeeId(""); setSearchQuery(""); }
                 }}
-                className={`flex-shrink-0 flex items-center justify-between rounded-lg text-sm font-medium transition-colors px-3 py-1.5 border lg:w-full lg:px-4 lg:py-3 lg:border-none ${selectedCategory === cat.name
+                className={`flex-shrink-0 flex items-center justify-between rounded-lg text-sm font-medium transition-colors cursor-pointer gap-3 px-3 py-1.5 border lg:w-full lg:px-4 lg:py-3 lg:border-none ${selectedCategory === cat.name
                   ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800"
                   : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"}`}
               >
