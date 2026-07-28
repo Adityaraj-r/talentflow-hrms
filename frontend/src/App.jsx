@@ -56,6 +56,7 @@ import Payroll from "./pages/modules/payroll/Payroll"
 import Tickets from "./pages/modules/payroll/Tickets"
 import Indemnity from "./pages/modules/payroll/Indemnity"
 import SalarySlip from "./pages/modules/payroll/SalarySlip"
+import PayrollPolicyManagement from "./pages/modules/administration/PayrollPolicyManagement"
 
 // Transfer and Promotion Module
 import EmployeeTransfer from "./pages/modules/transfer/EmployeeTransfer"
@@ -385,6 +386,11 @@ function App() {
             <Route path="/admin/recruitment-suggestions" element={
               <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
                 <DashboardLayout><AdminRecruitmentSuggestions /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/payroll-policies" element={
+              <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+                <DashboardLayout><PayrollPolicyManagement /></DashboardLayout>
               </ProtectedRoute>
             } />
 

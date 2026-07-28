@@ -8,6 +8,7 @@ import Indemnity from "../models/indemnity.model"
 import User from "../models/User.model"
 import Employee from "../models/Employee.model"
 import Settings from "../models/Settings.model"
+import { getActivePolicy, calculateSlabTax } from '../services/payrollPolicy.service';
 import { generatePayslip, computePayslipYearToDate } from "../utils/payslip.generator"
 import { getOrCreatePayrollSettings } from "../models/payrollCompanySettings.model"
 import {

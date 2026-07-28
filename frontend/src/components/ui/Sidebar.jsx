@@ -373,7 +373,7 @@ const Sidebar = ({
           <SidebarLink to="/dashboard/pm/tasks" icon={FileCheck} label="Task Board" />
 
           <FullPayrollSidebarGroup label="Payroll & Compliance" />
-          
+
           <SidebarLink to="/pms/appraisal-cycles" icon={Award} label="Performance (PMS)" />
 
           <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
@@ -385,6 +385,7 @@ const Sidebar = ({
             <SubLink to="/admin/company-structure" label="Company Structure" icon={Building} />
             <SubLink to="/admin/audit-logs" label="Audit Logs" icon={FileText} />
             <SubLink to="/admin/integrations" label="Integrations" icon={Layers} />
+            <SubLink to="/admin/payroll-policies" label="Payroll Policies" icon={CircleDollarSign} />
           </SidebarGroup>
         </>
       )
@@ -396,8 +397,8 @@ const Sidebar = ({
           <SidebarLink to="/employee/dashboard" icon={Home} label="Dashboard" />
 
           <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
-             <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
-             <SubLink to="/attendance/my-leaves" label="My Leave" />
+            <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
+            <SubLink to="/attendance/my-leaves" label="My Leave" />
           </SidebarGroup>
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
@@ -458,9 +459,9 @@ const Sidebar = ({
               <SubLink to="/attendance/roster" label="Shift Roster" />
               <SubLink to="/attendance/holidays" label="Holiday List" />
               <SubLink to="/attendance/leave-management" label="Leave Approvals" />
-               <SubLink to="/attendance/leave-policies" label="Leave Policies" />
+              <SubLink to="/attendance/leave-policies" label="Leave Policies" />
               <SubLink to="/attendance/correction-requests" label="Correction Requests" />
-              <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" /> 
+              <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" />
             </SidebarGroup>
           )}
 
@@ -552,14 +553,14 @@ const Sidebar = ({
       )
     }
 
-   if (isRole(ROLES.CEO, ROLES.COUNTRY_MANAGER)) {
+    if (isRole(ROLES.CEO, ROLES.COUNTRY_MANAGER)) {
       return (
         <>
           <SidebarLink to="/ceo/dashboard" icon={LayoutDashboard} label="Dashboard" />
-          
+
           <SidebarLink to="/ceo/analytics" icon={Users} label="Workforce Analytics" />
 
-           <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
+          <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
             <SubLink to="/employee-center/all-employees" label="All Employees" />
             <SubLink to="/employee-center/employee-transfer" label="Employee Lifecycle" />
           </SidebarGroup>
@@ -591,7 +592,7 @@ const Sidebar = ({
           <SidebarLink to="/ceo/audit" icon={FileBadge} label="Audit Summary" />
           <SidebarLink to="/ceo/task-analytics" icon={BarChart2} label="Task Analytics" />
 
-        
+
           {canSee("attendance") && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/attendance/analytics" label="Attendance Analytics" />
@@ -630,7 +631,7 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
-          
+
           <SidebarGroup id="employeeCenter" icon={Users} label="Employee Center">
             <SubLink to="/employee-center/all-employees" label="Department Directory" />
             <SubLink to="/employee-center/employee-transfer" label="Transfers & Promotions" />
@@ -638,7 +639,7 @@ const Sidebar = ({
           </SidebarGroup>
 
           {canSee('recruitment') && <SidebarLink to="/staff-requisition" icon={Users} label={getRecruitmentLabel()} />}
-          
+
           {canSee('attendance') && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
@@ -654,9 +655,9 @@ const Sidebar = ({
           <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
           {canSee("performance") && (
-          <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
-            <SubLink to="/role/department_manager/appraisal" label="Team Appraisals" />
-          </SidebarGroup>
+            <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
+              <SubLink to="/role/department_manager/appraisal" label="Team Appraisals" />
+            </SidebarGroup>
           )}
 
           <SidebarGroup id="disciplinaryActions" icon={AlertTriangle} label="Disciplinary">
@@ -688,7 +689,7 @@ const Sidebar = ({
               <SubLink to="/attendance/overtime-approvals" label="Overtime Approvals" />
             </SidebarGroup>
           )}
-          
+
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
 
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
@@ -719,7 +720,7 @@ const Sidebar = ({
           )}
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           <FullPayrollSidebarGroup label={getPayrollLabel()} />
-          
+
           <SidebarGroup id="appraisal" icon={Award} label="Performance (bonus)">
             <SubLink to="/pms/appraisal-cycles" label="Appraisal cycles" />
           </SidebarGroup>
@@ -731,14 +732,14 @@ const Sidebar = ({
       return (
         <>
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
-         {canSee('attendance') && (
+          {canSee('attendance') && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
               <SubLink to="/attendance" label="Attendance Records" />
               <SubLink to="/attendance/holidays" label="Holiday List" />
             </SidebarGroup>
           )}
           <FullPayrollSidebarGroup label={getPayrollLabel()} />
-          
+
           <SidebarLink to="/role/ceo/appraisal" icon={Award} label="Performance (bonus signals)" />
         </>
       )
