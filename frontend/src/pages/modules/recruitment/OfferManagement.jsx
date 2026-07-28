@@ -121,7 +121,7 @@ const OfferManagement = () => {
 
   useEffect(() => {
     if (selectedCandidate) {
-      setPositionVal(selectedCandidate.jobId?.jobTitle || "")
+      setPositionVal(selectedCandidate.selectedPositionTitle || selectedCandidate.hiringRoleName || selectedCandidate.jobId?.jobTitle || "")
     }
   }, [selectedCandidate])
 

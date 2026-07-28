@@ -64,13 +64,96 @@ const RequisitionForm = () => {
     requirements: "",
     reason: "",
     urgency: "normal",
-    location: ""
+    location: "",
+    applicationDeadline: ""
   })
 
   const [loading, setLoading] = useState(false)
 
+  const getSalaryError = () => {
+    const minVal = formData.minSalary;
+    const maxVal = formData.maxSalary;
+    if (minVal !== "" && maxVal !== "" && minVal !== undefined && maxVal !== undefined) {
+      const minNum = Number(minVal);
+      const maxNum = Number(maxVal);
+      if (!isNaN(minNum) && !isNaN(maxNum) && maxNum < minNum) {
+        return "Maximum salary must be greater than or equal to minimum salary.";
+      }
+    }
+    return "";
+  };
+
+  const salaryError = getSalaryError();
+
+  const getNumberOfPositionsError = () => {
+    const val = formData.numberOfPositions;
+    if (val === "") {
+      return "";
+    }
+    const num = Number(val);
+    if (isNaN(num) || num < 1 || !Number.isInteger(num)) {
+      return "Number of positions must be at least 1.";
+    }
+    return "";
+  };
+
+  const numberOfPositionsError = getNumberOfPositionsError();
+
+  const handleKeyDownPositions = (e) => {
+    const allowedKeys = [
+      "Backspace",
+      "Delete",
+      "Tab",
+      "Escape",
+      "Enter",
+      "ArrowLeft",
+      "ArrowRight",
+      "Home",
+      "End",
+    ];
+    if (allowedKeys.includes(e.key) || e.ctrlKey || e.metaKey || e.altKey) {
+      return;
+    }
+    if (!/^\d$/.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  const handleKeyDownSalary = (e) => {
+    if (["e", "E", "-", "+"].includes(e.key)) {
+      e.preventDefault();
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target
+    if (name === "numberOfPositions") {
+      if (value === "") {
+        setFormData((prev) => ({
+          ...prev,
+          numberOfPositions: ""
+        }));
+        return;
+      }
+      const cleanValue = value.replace(/[^0-9]/g, "");
+      setFormData((prev) => ({
+        ...prev,
+        numberOfPositions: cleanValue === "" ? "" : parseInt(cleanValue, 10)
+      }));
+      return;
+    }
+    if (name === "minSalary" || name === "maxSalary") {
+      const cleanValue = value.replace(/[^0-9.]/g, "");
+      const parts = cleanValue.split(".");
+      const formattedValue = parts.length > 2 
+        ? parts[0] + "." + parts.slice(1).join("") 
+        : cleanValue;
+      setFormData((prev) => ({
+        ...prev,
+        [name]: formattedValue
+      }));
+      return;
+    }
     setFormData((prev) => ({
       ...prev,
       [name]: value
@@ -84,11 +167,45 @@ const RequisitionForm = () => {
     }))
   }
 
+  const getTodayString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+  const todayStr = getTodayString();
+
+  const getDeadlineError = () => {
+    const val = formData.applicationDeadline;
+    if (!val) {
+      return "Application deadline is required.";
+    }
+    const selectedDate = new Date(val);
+    selectedDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate < today) {
+      return "Application deadline cannot be in the past.";
+    }
+    return "";
+  };
+  const deadlineError = getDeadlineError();
+
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!formData.position || !formData.department) {
+    if (!formData.position || !formData.department || !formData.numberOfPositions) {
       toast.error("Position and department are required")
+      return
+    }
+
+    if (numberOfPositionsError || salaryError) {
+      return
+    }
+
+    if (deadlineError) {
+      toast.error(deadlineError);
       return
     }
 
@@ -96,13 +213,15 @@ const RequisitionForm = () => {
       setLoading(true)
 
       const payload = {
-  position: formData.position,
-  department: formData.department,
-  experience: formData.jobType,
-  salaryRange: `${formData.minSalary}-${formData.maxSalary}`,
-  reason: formData.reason,
-  urgency: formData.urgency
-}
+        position: formData.position,
+        department: formData.department,
+        experience: formData.jobType,
+        salaryRange: `${formData.minSalary}-${formData.maxSalary}`,
+        reason: formData.reason,
+        urgency: formData.urgency,
+        numberOfPositions: Number(formData.numberOfPositions),
+        applicationDeadline: formData.applicationDeadline
+      }
 
       await apiClient.post("/requisitions", payload)
 
@@ -119,7 +238,8 @@ const RequisitionForm = () => {
         requirements: "",
         reason: "",
         urgency: "normal",
-        location: ""
+        location: "",
+        applicationDeadline: ""
       })
 
     } catch (err) {
@@ -146,8 +266,9 @@ const RequisitionForm = () => {
 
             {/* POSITION */}
             <div className="space-y-2">
-              <Label>Job Opening *</Label>
+              <Label htmlFor="position">Job Opening *</Label>
               <Input
+                id="position"
                 name="position"
                 type="text"
                 placeholder="Enter job opening"
@@ -159,8 +280,9 @@ const RequisitionForm = () => {
 
             {/* DEPARTMENT */}
             <div className="space-y-2">
-              <Label>Department *</Label>
+              <Label htmlFor="department">Department *</Label>
               <Input
+                id="department"
                 name="department"
                 type="text"
                 placeholder="Enter department"
@@ -190,40 +312,99 @@ const RequisitionForm = () => {
 
             {/* POSITIONS */}
             <div className="space-y-2">
-              <Label>Number of Positions</Label>
+              <Label htmlFor="numberOfPositions">Number of Positions</Label>
               <Input
+                id="numberOfPositions"
                 type="number"
                 name="numberOfPositions"
                 value={formData.numberOfPositions}
                 onChange={handleChange}
+                onKeyDown={handleKeyDownPositions}
+                required
               />
+              {numberOfPositionsError && (
+                <p className="text-red-500 text-sm mt-1">{numberOfPositionsError}</p>
+              )}
             </div>
 
             {/* SALARY */}
             <div className="space-y-2">
-              <Label>Min Salary</Label>
-              <Input name="minSalary" value={formData.minSalary} onChange={handleChange} />
+              <Label htmlFor="minSalary">Min Salary</Label>
+              <Input
+                id="minSalary"
+                name="minSalary"
+                value={formData.minSalary}
+                onChange={handleChange}
+                onKeyDown={handleKeyDownSalary}
+              />
             </div>
 
             <div className="space-y-2">
-              <Label>Max Salary</Label>
-              <Input name="maxSalary" value={formData.maxSalary} onChange={handleChange} />
+              <Label htmlFor="maxSalary">Max Salary</Label>
+              <Input
+                id="maxSalary"
+                name="maxSalary"
+                value={formData.maxSalary}
+                onChange={handleChange}
+                onKeyDown={handleKeyDownSalary}
+              />
+              {salaryError && (
+                <p className="text-red-500 text-sm mt-1">{salaryError}</p>
+              )}
             </div>
 
             {/* URGENCY */}
             <div className="space-y-2">
-              <Label>Urgency</Label>
+              <Label htmlFor="urgency">Urgency</Label>
               <Select
                 value={formData.urgency}
                 onValueChange={(val) => handleSelectChange("urgency", val)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="urgency">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="normal">Normal</SelectItem>
                   <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* APPLICATION DEADLINE */}
+            <div className="space-y-2">
+              <Label htmlFor="applicationDeadline">
+                Application Deadline <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="applicationDeadline"
+                name="applicationDeadline"
+                type="date"
+                min={todayStr}
+                placeholder="Select application deadline"
+                value={formData.applicationDeadline}
+                onChange={handleChange}
+                onKeyDown={(e) => e.preventDefault()}
+                required
+              />
+              {deadlineError && (
+                <p className="text-red-500 text-sm mt-1">{deadlineError}</p>
+              )}
+            </div>
+
+            {/* REASON */}
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason *</Label>
+              <Select
+                value={formData.reason}
+                onValueChange={(val) => handleSelectChange("reason", val)}
+              >
+                <SelectTrigger id="reason">
+                  <SelectValue placeholder="Select reason" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new">New Position</SelectItem>
+                  <SelectItem value="replacement">Replacement</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -248,23 +429,6 @@ const RequisitionForm = () => {
               value={formData.requirements}
               onChange={handleChange}
             />
-          </div>
-
-          {/* REASON */}
-          <div className="space-y-2">
-            <Label>Reason *</Label>
-            <Select
-              value={formData.reason}
-              onValueChange={(val) => handleSelectChange("reason", val)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select reason" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="new">New Position</SelectItem>
-                <SelectItem value="replacement">Replacement</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
         </form>

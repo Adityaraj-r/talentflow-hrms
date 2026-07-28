@@ -8,6 +8,26 @@ const applicationSchema = new mongoose.Schema(
     required: true
   },
 
+  hiringRoleId: {
+    type: String,
+    default: ""
+  },
+
+  hiringRoleName: {
+    type: String,
+    default: ""
+  },
+
+  selectedPositionId: {
+    type: String,
+    default: ""
+  },
+
+  selectedPositionTitle: {
+    type: String,
+    default: ""
+  },
+
   name: {
     type: String,
     required: true

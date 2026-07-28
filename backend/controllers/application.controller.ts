@@ -7,16 +7,77 @@ import Employee from "../models/Employee.model"
 import { getHrSenderEmail, sendInterviewScheduleEmail } from "../utils/sendEmail"
 import { sendApplicationStatusEmail } from "../utils/sendEmail";
 import { calculateResumeFit } from "../utils/resumeFit"
+
+const selectedStatuses = ["selected", "hired"];
+
+const recomputeHiringProgress = async (jobId?: any) => {
+  if (!jobId || !mongoose.Types.ObjectId.isValid(String(jobId))) return;
+
+  const job: any = await Job.findById(jobId);
+  if (!job || !Array.isArray(job.hiringRoles) || job.hiringRoles.length === 0) return;
+
+  const selectedApplications = await Application.find({
+    jobId,
+    status: { $in: ["Selected", "Hired"] },
+  }).lean();
+
+  job.hiringRoles.forEach((role: any) => {
+    const roleId = String(role._id);
+    const filled = selectedApplications.filter((application: any) =>
+      String(application.hiringRoleId || "") === roleId ||
+      (!application.hiringRoleId && application.hiringRoleName && application.hiringRoleName === role.roleName)
+    ).length;
+    role.filled = Math.min(Number(role.openings) || 0, filled);
+    role.status = role.filled >= (Number(role.openings) || 0) ? "Closed" : "Open";
+  });
+
+  const allRolesClosed = job.hiringRoles.every((role: any) => role.status === "Closed");
+  if (allRolesClosed && job.hiringRoles.length > 0) {
+    job.status = "Closed";
+    job.autoClosedByHiringProgress = true;
+  } else if (job.status === "Closed" && job.autoClosedByHiringProgress) {
+    job.status = "Published";
+    job.autoClosedByHiringProgress = false;
+  }
+
+  await job.save();
+};
+
 export const applyJob = async (req: Request, res: Response) => {
 
   try {
 
-    const { jobId, name, email, phone } = req.body
+    const { jobId, hiringRoleId, name, email, phone } = req.body
 
     const resume = (req as any).file?.filename
     const job = jobId && mongoose.Types.ObjectId.isValid(jobId)
       ? await Job.findById(jobId).lean()
       : null
+
+    if (job && job.deadline) {
+      const d = new Date(job.deadline);
+      d.setHours(23, 59, 59, 999);
+      if (new Date() > d) {
+        res.status(400).json({
+          success: false,
+          message: "Applications for this position are closed because the deadline has passed."
+        });
+        return;
+      }
+    }
+
+    const hiringRole = Array.isArray((job as any)?.hiringRoles)
+      ? (job as any).hiringRoles.find((role: any) => String(role._id) === String(hiringRoleId))
+      : null
+
+    if (Array.isArray((job as any)?.hiringRoles) && (job as any).hiringRoles.length > 0 && !hiringRole) {
+      res.status(400).json({
+        success: false,
+        message: "A valid hiring role is required for this job opening",
+      })
+      return
+    }
+
     const fit = await calculateResumeFit({
       resume,
       candidateName: name,
@@ -26,6 +87,10 @@ export const applyJob = async (req: Request, res: Response) => {
 
     const application = await Application.create({
       jobId,
+      hiringRoleId: hiringRole ? String((hiringRole as any)._id) : "",
+      hiringRoleName: hiringRole ? (hiringRole as any).roleName : "",
+      selectedPositionId: hiringRole ? String((hiringRole as any)._id) : "",
+      selectedPositionTitle: hiringRole ? (hiringRole as any).roleName : "",
       name,
       email,
       phone,
@@ -116,12 +181,18 @@ export const updateApplicationStatus = async (req: Request, res: Response) => {
   try {
 
     const { status } = req.body
+    const before = await Application.findById(req.params.id).lean()
 
     const application = await Application.findByIdAndUpdate(
       req.params.id,
       { status },
       { new: true }
     )
+    const beforeWasSelected = selectedStatuses.includes(String((before as any)?.status || "").toLowerCase())
+    const afterIsSelected = selectedStatuses.includes(String(status || "").toLowerCase())
+    if (application && beforeWasSelected !== afterIsSelected) {
+      await recomputeHiringProgress((application as any).jobId)
+    }
 
     // ✅ EMAIL TRIGGER (NEW ADD)
     if (application && ["Shortlisted", "Rejected", "Selected"].includes(status)) {
@@ -233,7 +304,10 @@ export const scheduleInterviewAndSendMail = async (req: Request, res: Response) 
     const hrEmail = user.email || configuredSenderEmail || ""
     const hrPhone = user.phoneNumber || ""
 
-    const jobTitle = (application as any)?.jobId?.jobTitle || "Position"
+    const jobTitle = (application as any)?.selectedPositionTitle
+      || (application as any)?.hiringRoleName
+      || (application as any)?.jobId?.jobTitle
+      || "Position"
     const department = (application as any)?.jobId?.department || "General"
 
     const payload = {

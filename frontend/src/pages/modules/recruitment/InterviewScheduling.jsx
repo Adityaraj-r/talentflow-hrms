@@ -300,7 +300,7 @@ const InterviewScheduling = () => {
                     <div className="font-medium">{c.name}</div>
                     <div className="text-sm text-muted-foreground">{c.email}</div>
                     <div className="text-sm text-muted-foreground">
-                      {c.jobId?.jobTitle || "Role"} · {c.status}
+                      {c.selectedPositionTitle || c.hiringRoleName || c.jobId?.jobTitle || "Role"} · {c.status}
                     </div>
                   </div>
                   {canWrite && (
@@ -339,14 +339,14 @@ const InterviewScheduling = () => {
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[620px]">
-          <DialogHeader>
-            <DialogTitle>Schedule interview</DialogTitle>
-            <DialogDescription>{selected?.name} · {selected?.email}</DialogDescription>
+        <DialogContent className="sm:max-w-[800px] p-8">
+          <DialogHeader className="mb-2">
+            <DialogTitle className="text-xl">Schedule interview</DialogTitle>
+            <DialogDescription className="text-sm mt-1">{selected?.name} · {selected?.email}</DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <Label>Date</Label>
                 <Input
@@ -530,7 +530,7 @@ const InterviewScheduling = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="space-y-1.5">
                 <Label>Interviewer name</Label>
                 <Select
@@ -588,21 +588,21 @@ const InterviewScheduling = () => {
               </div>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Instructions (one per line)</Label>
               <Textarea
-                rows={4}
+                rows={6}
                 value={form.instructionsText}
                 onChange={(e) => setField("instructionsText", e.target.value)}
                 placeholder="Bring valid ID card"
-                className="w-full"
+                className="w-full resize-none"
               />
             </div>
 
-            <div className="flex justify-end">
-              <Button onClick={submitSchedule} disabled={sending}>
+            <div className="flex justify-end pt-2">
+              <Button onClick={submitSchedule} disabled={sending} size="lg">
                 {sending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Send dedicated interview email
+                Send Interview Email
               </Button>
             </div>
           </div>

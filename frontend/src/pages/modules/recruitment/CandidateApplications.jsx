@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { Link } from "react-router-dom"
 import apiClient from "@/services/apiClient"
 import { useUser } from "@/contexts/UserContext"
 import { CalendarClock, FileText, Search, UserCheck, Users, UserX } from "lucide-react"
@@ -53,6 +54,18 @@ const getRiskClass = (risk = "") => {
   return "border-amber-400/30 bg-amber-500/10 text-amber-300"
 }
 
+const getOfferStatusLabel = (app) => {
+  if (app.offerStatus) return app.offerStatus;
+  if (app.offer?.status) return app.offer?.status;
+  const statusLower = (app.status || "").toLowerCase();
+  if (statusLower.includes("reject")) return "N/A";
+  if (statusLower.includes("offer") || statusLower.includes("hire") || statusLower.includes("join")) {
+    return app.status;
+  }
+  if (statusLower.includes("select")) return "Draft";
+  return "Not Started";
+}
+
 const CandidateApplications = () => {
   const { user } = useUser()
   const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
@@ -62,14 +75,29 @@ const CandidateApplications = () => {
   const canFinalApprove = user?.can?.("recruitment", "write") && role === "HR_MANAGER"
 
   const [applications, setApplications] = useState([])
-  const [search, setSearch] = useState("")
   const [selectedApplication, setSelectedApplication] = useState(null)
   const [viewOpen, setViewOpen] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [filterStatus, setFilterStatus] = useState("All")
-  const [filterRole, setFilterRole] = useState("All Roles")
-  const [filterAIMatch, setFilterAIMatch] = useState("All")
-  const [sortBy, setSortBy] = useState("Newest First")
+
+  // Filters for Section 1 - New Applicants
+  const [searchNew, setSearchNew] = useState("")
+  const [filterRoleNew, setFilterRoleNew] = useState("All Roles")
+  const [filterHiringRoleNew, setFilterHiringRoleNew] = useState("All Hiring Roles")
+  const [filterDeptNew, setFilterDeptNew] = useState("All Departments")
+  const [filterStatusNew, setFilterStatusNew] = useState("All")
+  const [filterAIMatchNew, setFilterAIMatchNew] = useState("All")
+  const [filterAppliedDateNew, setFilterAppliedDateNew] = useState("")
+  const [sortByNew, setSortByNew] = useState("Newest First")
+
+  // Filters for Section 2 - Completed Applications
+  const [searchCompleted, setSearchCompleted] = useState("")
+  const [filterStatusCompleted, setFilterStatusCompleted] = useState("All")
+  const [filterRoleCompleted, setFilterRoleCompleted] = useState("All Roles")
+  const [filterHiringRoleCompleted, setFilterHiringRoleCompleted] = useState("All Hiring Roles")
+  const [filterDeptCompleted, setFilterDeptCompleted] = useState("All Departments")
+  const [filterDecisionDateCompleted, setFilterDecisionDateCompleted] = useState("")
+  const [filterOfferStatusCompleted, setFilterOfferStatusCompleted] = useState("All")
+  const [sortByCompleted, setSortByCompleted] = useState("Newest First")
 
   const uploadBaseUrl = useMemo(
     () => (import.meta.env.VITE_API_URL || "http://localhost:5001/api").replace(/\/api\/?$/, ""),
@@ -130,74 +158,179 @@ const CandidateApplications = () => {
     return ["All Roles", ...Array.from(roles)]
   }, [applications])
 
-  const handleResetFilters = () => {
-    setSearch("")
-    setFilterStatus("All")
-    setFilterRole("All Roles")
-    setFilterAIMatch("All")
-    setSortBy("Newest First")
+  const hiringRolesList = useMemo(() => {
+    const roles = new Set()
+    applications.forEach((app) => {
+      if (app.hiringRoleName) {
+        roles.add(app.hiringRoleName)
+      }
+    })
+    return ["All Hiring Roles", ...Array.from(roles)]
+  }, [applications])
+
+  const departments = useMemo(() => {
+    const depts = new Set()
+    applications.forEach((app) => {
+      if (app.jobId?.department) {
+        depts.add(app.jobId.department)
+      }
+    })
+    return ["All Departments", ...Array.from(depts)]
+  }, [applications])
+
+  const handleResetFiltersNew = () => {
+    setSearchNew("")
+    setFilterRoleNew("All Roles")
+    setFilterHiringRoleNew("All Hiring Roles")
+    setFilterDeptNew("All Departments")
+    setFilterStatusNew("All")
+    setFilterAIMatchNew("All")
+    setFilterAppliedDateNew("")
+    setSortByNew("Newest First")
   }
 
-  const filteredApplications = useMemo(() => {
-    return applications.filter((app) => {
-      const matchesSearch = !search ||
-        (app.name || "").toLowerCase().includes(search.toLowerCase()) ||
-        (app.email || "").toLowerCase().includes(search.toLowerCase()) ||
-        (app._id || "").toLowerCase().includes(search.toLowerCase());
+  const handleResetFiltersCompleted = () => {
+    setSearchCompleted("")
+    setFilterStatusCompleted("All")
+    setFilterRoleCompleted("All Roles")
+    setFilterHiringRoleCompleted("All Hiring Roles")
+    setFilterDeptCompleted("All Departments")
+    setFilterDecisionDateCompleted("")
+    setFilterOfferStatusCompleted("All")
+    setSortByCompleted("Newest First")
+  }
 
-      let matchesStatus = true;
-      if (filterStatus !== "All") {
+  const isCompleted = (app) => {
+    const statusLower = (app.status || "").toLowerCase()
+    return (
+      statusLower.includes("select") ||
+      statusLower.includes("reject") ||
+      statusLower.includes("offer") ||
+      statusLower.includes("hire") ||
+      statusLower.includes("join")
+    )
+  }
+
+  const newApplicants = useMemo(() => {
+    return applications.filter((app) => !isCompleted(app))
+  }, [applications])
+
+  const completedApplications = useMemo(() => {
+    return applications.filter((app) => isCompleted(app))
+  }, [applications])
+
+  // New Applicants filtering and sorting
+  const filteredNew = useMemo(() => {
+    return newApplicants.filter((app) => {
+      const matchesSearch = !searchNew ||
+        (app.name || "").toLowerCase().includes(searchNew.toLowerCase()) ||
+        (app.email || "").toLowerCase().includes(searchNew.toLowerCase()) ||
+        (app._id || "").toLowerCase().includes(searchNew.toLowerCase())
+
+      let matchesStatus = true
+      if (filterStatusNew !== "All") {
         const normalizedApp = normalizeApplicationStage(app.status)
-        const target = filterStatus.toLowerCase()
-        if (target === "hired") {
-          matchesStatus = normalizedApp === "selected" || app.status.toLowerCase().includes("hire");
-        } else {
-          matchesStatus = normalizedApp === target || app.status.toLowerCase().includes(target);
-        }
+        const target = filterStatusNew.toLowerCase()
+        matchesStatus = normalizedApp === target || app.status.toLowerCase().includes(target)
       }
 
-      const matchesRole = filterRole === "All Roles" || app.jobId?.jobTitle === filterRole;
+      const matchesRole = filterRoleNew === "All Roles" || app.jobId?.jobTitle === filterRoleNew
+      const matchesHiringRole = filterHiringRoleNew === "All Hiring Roles" || app.hiringRoleName === filterHiringRoleNew
+      const matchesDept = filterDeptNew === "All Departments" || app.jobId?.department === filterDeptNew
 
-      let matchesAI = true;
-      if (filterAIMatch !== "All") {
+      let matchesAI = true
+      if (filterAIMatchNew !== "All") {
         const score = Number(app.aiFitScore || app.matchScore || 0)
         const label = app.aiRecommendationLabel || getMatchLabel(score)
         
-        let calculatedLabel = "Poor Match";
+        let calculatedLabel = "Poor Match"
         if (label === "Excellent Match" || label === "Strong Match" || score >= 75) {
-          calculatedLabel = "Strong Match";
+          calculatedLabel = "Strong Match"
         } else if (label === "Moderate Match" || (score >= 60 && score < 75)) {
-          calculatedLabel = "Good Match";
+          calculatedLabel = "Good Match"
         } else if (score >= 40 && score < 60) {
-          calculatedLabel = "Review Required";
+          calculatedLabel = "Review Required"
         }
 
-        matchesAI = calculatedLabel === filterAIMatch;
+        matchesAI = calculatedLabel === filterAIMatchNew
       }
 
-      return matchesSearch && matchesStatus && matchesRole && matchesAI;
-    });
-  }, [applications, search, filterStatus, filterRole, filterAIMatch])
+      const matchesAppliedDate = !filterAppliedDateNew || new Date(app.createdAt).toISOString().startsWith(filterAppliedDateNew)
 
-  const rankedApplications = useMemo(() => {
-    return [...filteredApplications].sort((a, b) => {
-      if (sortBy === "Newest First") {
-        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      return matchesSearch && matchesStatus && matchesRole && matchesHiringRole && matchesDept && matchesAI && matchesAppliedDate
+    })
+  }, [newApplicants, searchNew, filterStatusNew, filterRoleNew, filterHiringRoleNew, filterDeptNew, filterAIMatchNew, filterAppliedDateNew])
+
+  const rankedNew = useMemo(() => {
+    return [...filteredNew].sort((a, b) => {
+      if (sortByNew === "Newest First") {
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
       }
-      if (sortBy === "Oldest First") {
-        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      if (sortByNew === "Oldest First") {
+        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
       }
-      if (sortBy === "Highest AI Match") {
-        const scoreA = Number(a.aiFitScore || a.matchScore || 0);
-        const scoreB = Number(b.aiFitScore || b.matchScore || 0);
-        return scoreB - scoreA;
+      if (sortByNew === "Highest AI Match") {
+        const scoreA = Number(a.aiFitScore || a.matchScore || 0)
+        const scoreB = Number(b.aiFitScore || b.matchScore || 0)
+        return scoreB - scoreA
       }
-      if (sortBy === "Candidate Name (A–Z)") {
-        return (a.name || "").localeCompare(b.name || "");
+      if (sortByNew === "Candidate Name (A–Z)") {
+        return (a.name || "").localeCompare(b.name || "")
       }
-      return 0;
-    });
-  }, [filteredApplications, sortBy])
+      return 0
+    })
+  }, [filteredNew, sortByNew])
+
+  // Completed Applications filtering and sorting
+  const filteredCompleted = useMemo(() => {
+    return completedApplications.filter((app) => {
+      const matchesSearch = !searchCompleted ||
+        (app.name || "").toLowerCase().includes(searchCompleted.toLowerCase()) ||
+        (app.email || "").toLowerCase().includes(searchCompleted.toLowerCase()) ||
+        (app._id || "").toLowerCase().includes(searchCompleted.toLowerCase())
+
+      let matchesStatus = true
+      if (filterStatusCompleted !== "All") {
+        const normalizedApp = normalizeApplicationStage(app.status)
+        const target = filterStatusCompleted.toLowerCase()
+        matchesStatus = normalizedApp === target || app.status.toLowerCase().includes(target)
+      }
+
+      const matchesRole = filterRoleCompleted === "All Roles" || app.jobId?.jobTitle === filterRoleCompleted
+      const matchesHiringRole = filterHiringRoleCompleted === "All Hiring Roles" || app.hiringRoleName === filterHiringRoleCompleted
+      const matchesDept = filterDeptCompleted === "All Departments" || app.jobId?.department === filterDeptCompleted
+
+      const matchesDecisionDate = !filterDecisionDateCompleted || new Date(app.updatedAt).toISOString().startsWith(filterDecisionDateCompleted)
+
+      let matchesOfferStatus = true
+      if (filterOfferStatusCompleted !== "All") {
+        const statusStr = (app.offerStatus || app.offer?.status || "").toLowerCase()
+        matchesOfferStatus = statusStr.includes(filterOfferStatusCompleted.toLowerCase())
+      }
+
+      return matchesSearch && matchesStatus && matchesRole && matchesHiringRole && matchesDept && matchesDecisionDate && matchesOfferStatus
+    })
+  }, [completedApplications, searchCompleted, filterStatusCompleted, filterRoleCompleted, filterHiringRoleCompleted, filterDeptCompleted, filterDecisionDateCompleted, filterOfferStatusCompleted])
+
+  const rankedCompleted = useMemo(() => {
+    return [...filteredCompleted].sort((a, b) => {
+      if (sortByCompleted === "Newest First") {
+        return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0)
+      }
+      if (sortByCompleted === "Oldest First") {
+        return new Date(a.updatedAt || a.createdAt || 0) - new Date(b.updatedAt || b.createdAt || 0)
+      }
+      if (sortByCompleted === "Highest AI Match") {
+        const scoreA = Number(a.aiFitScore || a.matchScore || 0)
+        const scoreB = Number(b.aiFitScore || b.matchScore || 0)
+        return scoreB - scoreA
+      }
+      if (sortByCompleted === "Candidate Name (A–Z)") {
+        return (a.name || "").localeCompare(b.name || "")
+      }
+      return 0
+    })
+  }, [filteredCompleted, sortByCompleted])
 
   const stats = useMemo(() => {
     const result = { total: applications.length, applied: 0, shortlisted: 0, interview: 0, selected: 0, rejected: 0 }
@@ -252,7 +385,7 @@ const CandidateApplications = () => {
     {
       title: "Rejected",
       value: stats.rejected,
-      icon: UserX,
+      icon: UserCheck,
       trend: -percentOfTotal(stats.rejected),
       helper: stats.rejected === 0 ? "No rejected candidates" : "Closed candidate decisions",
       accent: "rose",
@@ -264,7 +397,7 @@ const CandidateApplications = () => {
       <RecruitmentPageHeader
         title="Candidate Applications"
         subtitle="Review candidate profiles, resumes, and stage decisions from a single ATS workspace."
-        summary={`${filteredApplications.length} visible candidates - ${stats.applied} applied - ${stats.shortlisted} shortlisted - ${stats.interview} in interview - ${stats.selected} selected - ${stats.rejected} rejected`}
+        summary={`${rankedNew.length + rankedCompleted.length} visible candidates - ${stats.applied} applied - ${stats.shortlisted} shortlisted - ${stats.interview} in interview - ${stats.selected} selected - ${stats.rejected} rejected`}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
@@ -283,149 +416,367 @@ const CandidateApplications = () => {
         ))}
       </div>
 
-      {/* FILTER BAR */}
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-white/10 bg-card/85 p-4 shadow-sm">
-        <div className="flex-1 min-w-[200px]">
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search candidate..."
-            className="w-full text-foreground bg-background"
-          />
+      {/* SECTION 1 — NEW APPLICANTS */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border-b border-white/5 pb-2">
+          <h2 className="text-xl font-bold text-foreground">New Applicants</h2>
+          <span className="text-xs text-muted-foreground bg-white/5 border border-white/10 rounded-full px-3 py-1 font-semibold">
+            {rankedNew.length} Active Candidates
+          </span>
         </div>
-        <div className="w-full sm:w-auto min-w-[140px]">
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="All">All Statuses</option>
-            <option value="Applied">Applied</option>
-            <option value="Shortlisted">Shortlisted</option>
-            <option value="Interview">Interview</option>
-            <option value="Selected">Selected</option>
-            <option value="Rejected">Rejected</option>
-            <option value="Hired">Hired</option>
-          </select>
-        </div>
-        <div className="w-full sm:w-auto min-w-[140px]">
-          <select
-            value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value)}
-            className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            {jobRoles.map((role) => (
-              <option key={role} value={role}>
-                {role === "All Roles" ? "All Roles" : role}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="w-full sm:w-auto min-w-[140px]">
-          <select
-            value={filterAIMatch}
-            onChange={(e) => setFilterAIMatch(e.target.value)}
-            className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="All">All AI Matches</option>
-            <option value="Strong Match">Strong Match</option>
-            <option value="Good Match">Good Match</option>
-            <option value="Review Required">Review Required</option>
-            <option value="Poor Match">Poor Match</option>
-          </select>
-        </div>
-        <div className="w-full sm:w-auto min-w-[140px]">
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="Newest First">Newest First</option>
-            <option value="Oldest First">Oldest First</option>
-            <option value="Highest AI Match">Highest AI Match</option>
-            <option value="Candidate Name (A–Z)">Candidate Name (A–Z)</option>
-          </select>
-        </div>
-        <div>
-          <Button
-            variant="outline"
-            onClick={handleResetFilters}
-            className="w-full sm:w-auto border-white/10 bg-background hover:bg-muted"
-          >
-            Reset Filters
-          </Button>
-        </div>
-      </div>
 
+        {/* NEW APPLICANTS FILTER BAR */}
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-white/10 bg-card/85 p-4 shadow-sm">
+          <div className="flex-1 min-w-[200px]">
+            <Input
+              value={searchNew}
+              onChange={(e) => setSearchNew(e.target.value)}
+              placeholder="Search candidate..."
+              className="w-full text-foreground bg-background"
+            />
+          </div>
+          <div className="w-full sm:w-auto min-w-[140px]">
+            <select
+              value={filterRoleNew}
+              onChange={(e) => setFilterRoleNew(e.target.value)}
+              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="All Roles">All Job Openings</option>
+              {jobRoles.filter(r => r !== "All Roles").map((role) => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+          </div>
+          <div className="w-full sm:w-auto min-w-[140px]">
+            <select
+              value={filterHiringRoleNew}
+              onChange={(e) => setFilterHiringRoleNew(e.target.value)}
+              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="All Hiring Roles">All Hiring Roles</option>
+              {hiringRolesList.filter(r => r !== "All Hiring Roles").map((role) => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+          </div>
+          <div className="w-full sm:w-auto min-w-[140px]">
+            <select
+              value={filterDeptNew}
+              onChange={(e) => setFilterDeptNew(e.target.value)}
+              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="All Departments">All Departments</option>
+              {departments.filter(d => d !== "All Departments").map((dept) => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
+          </div>
+          <div className="w-full sm:w-auto min-w-[140px]">
+            <select
+              value={filterStatusNew}
+              onChange={(e) => setFilterStatusNew(e.target.value)}
+              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="All">All Stages</option>
+              <option value="Applied">Applied</option>
+              <option value="Shortlisted">Shortlisted</option>
+              <option value="Interview">Interview</option>
+            </select>
+          </div>
+          <div className="w-full sm:w-auto min-w-[140px]">
+            <select
+              value={filterAIMatchNew}
+              onChange={(e) => setFilterAIMatchNew(e.target.value)}
+              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="All">All AI Matches</option>
+              <option value="Strong Match">Strong Match</option>
+              <option value="Good Match">Good Match</option>
+              <option value="Review Required">Review Required</option>
+              <option value="Poor Match">Poor Match</option>
+            </select>
+          </div>
+          <div className="w-full sm:w-auto min-w-[140px] flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Applied:</span>
+            <Input
+              type="date"
+              value={filterAppliedDateNew}
+              onChange={(e) => setFilterAppliedDateNew(e.target.value)}
+              className="w-full text-foreground bg-background py-1.5 px-2 text-sm h-[38px]"
+            />
+          </div>
+          <div className="w-full sm:w-auto min-w-[140px]">
+            <select
+              value={sortByNew}
+              onChange={(e) => setSortByNew(e.target.value)}
+              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="Newest First">Newest First</option>
+              <option value="Oldest First">Oldest First</option>
+              <option value="Highest AI Match">Highest AI Match</option>
+              <option value="Candidate Name (A–Z)">Candidate Name (A–Z)</option>
+            </select>
+          </div>
+          <div>
+            <Button
+              variant="outline"
+              onClick={handleResetFiltersNew}
+              className="w-full sm:w-auto border-white/10 bg-background hover:bg-muted"
+            >
+              Reset
+            </Button>
+          </div>
+        </div>
 
-      <RecruitmentTable columns={["Candidate", "Role", "Contact", "Status", "AI Fit", "Progress", "Actions"]}>
-        {loading ? (
-          <tr>
-            <td colSpan={7} className="p-0">
-              <div className="p-5 text-sm text-muted-foreground">Loading applications...</div>
-            </td>
-          </tr>
-        ) : filteredApplications.length === 0 ? (
-          <tr>
-            <td colSpan={7} className="p-5">
-              <RecruitmentEmptyState
-                title="No applications yet"
-                description="Start publishing jobs to receive applications, then shortlist and move qualified candidates through the pipeline."
-              />
-            </td>
-          </tr>
-        ) : (
-          rankedApplications.map((app, index) => (
-            <tr key={app._id} className="transition-colors hover:bg-muted/30 odd:bg-white/[0.02]">
-              <td className="px-5 py-4">
-                <div className="flex items-center gap-3">
-                  <CandidateAvatar name={app.name} />
-                  <div>
-                    <div className="font-medium text-foreground">{app.name}</div>
-                    <div className="text-xs text-muted-foreground">Applicant #{index + 1}</div>
-                  </div>
-                </div>
-              </td>
-              <td className="px-5 py-4 text-muted-foreground">{app.jobId?.jobTitle || "Unassigned"}</td>
-              <td className="px-5 py-4 text-muted-foreground">{app.email}</td>
-              <td className="px-5 py-4">
-                <RecruitmentStatusBadge status={app.status} />
-              </td>
-              <td className="px-5 py-4">
-                <div className="space-y-1">
-                  <div className="text-sm font-semibold text-foreground">#{app.aiRank || index + 1} - {Number(app.aiFitScore || app.matchScore || 0)}%</div>
-                  <div className="text-xs text-muted-foreground">{app.aiRecommendationLabel || getMatchLabel(app.aiFitScore || app.matchScore)}</div>
-                </div>
-              </td>
-              <td className="px-5 py-4">
-                <ProgressBar value={applicationStages[normalizeApplicationStage(app.status)]?.progress || 18} />
-              </td>
-              <td className="px-5 py-4">
-                <div className="flex flex-wrap justify-end gap-2">
-                  <Button variant="outline" size="sm" onClick={() => { setSelectedApplication(app); setViewOpen(true) }}>
-                    View
-                  </Button>
-                  {canWrite && (
-                    <>
-                      <Button size="sm" onClick={() => handleShortlist(app._id)} disabled={normalizeApplicationStage(app.status) !== "applied"} className="bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40">
-                        Shortlist
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleReject(app._id)} disabled={["selected", "rejected"].includes(normalizeApplicationStage(app.status))} className="disabled:opacity-40">
-                        Reject
-                      </Button>
-                      {canFinalApprove && (
-                        <Button size="sm" onClick={() => handleSelected(app._id)} disabled={normalizeApplicationStage(app.status) !== "interview"} className="bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40">
-                          Selected
-                        </Button>
-                      )}
-                    </>
-                  )}
-                </div>
+        {/* NEW APPLICANTS TABLE */}
+        <RecruitmentTable
+          columns={["Candidate", "Job Opening", "Hiring Role", "Contact", "Status", "AI Fit", "Progress", "Actions"]}
+          className="h-[400px] overflow-y-auto"
+        >
+          {loading ? (
+            <tr>
+              <td colSpan={8} className="p-0">
+                <div className="p-5 text-sm text-muted-foreground">Loading applications...</div>
               </td>
             </tr>
-          ))
-        )}
-      </RecruitmentTable>
+          ) : filteredNew.length === 0 ? (
+            <tr>
+              <td colSpan={8} className="p-5">
+                <RecruitmentEmptyState
+                  title="No active applications"
+                  description="No new or active candidates match the filters."
+                />
+              </td>
+            </tr>
+          ) : (
+            rankedNew.map((app, index) => (
+              <tr key={app._id} className="transition-colors hover:bg-muted/30 odd:bg-white/[0.02]">
+                <td className="px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <CandidateAvatar name={app.name} />
+                    <div>
+                      <div className="font-medium text-foreground">{app.name}</div>
+                      <div className="text-xs text-muted-foreground">Applicant #{index + 1}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-5 py-4 text-muted-foreground">{app.jobId?.jobTitle || "Unassigned"}</td>
+                <td className="px-5 py-4 text-muted-foreground">{app.hiringRoleName || "N/A"}</td>
+                <td className="px-5 py-4 text-muted-foreground">{app.email}</td>
+                <td className="px-5 py-4">
+                  <RecruitmentStatusBadge status={app.status} />
+                </td>
+                <td className="px-5 py-4">
+                  <div className="space-y-1">
+                    <div className="text-sm font-semibold text-foreground">#{app.aiRank || index + 1} - {Number(app.aiFitScore || app.matchScore || 0)}%</div>
+                    <div className="text-xs text-muted-foreground">{app.aiRecommendationLabel || getMatchLabel(app.aiFitScore || app.matchScore)}</div>
+                  </div>
+                </td>
+                <td className="px-5 py-4">
+                  <ProgressBar value={applicationStages[normalizeApplicationStage(app.status)]?.progress || 18} />
+                </td>
+                <td className="px-5 py-4">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button variant="outline" size="sm" onClick={() => { setSelectedApplication(app); setViewOpen(true) }}>
+                      View
+                    </Button>
+                    {canWrite && (
+                      <>
+                        <Button size="sm" onClick={() => handleShortlist(app._id)} disabled={normalizeApplicationStage(app.status) !== "applied"} className="bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40">
+                          Shortlist
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleReject(app._id)} disabled={["selected", "rejected"].includes(normalizeApplicationStage(app.status))} className="disabled:opacity-40">
+                          Reject
+                        </Button>
+                        {canFinalApprove && (
+                          <Button size="sm" onClick={() => handleSelected(app._id)} disabled={normalizeApplicationStage(app.status) !== "interview"} className="bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40">
+                            Selected
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))
+          )}
+        </RecruitmentTable>
+      </div>
+
+      {/* SECTION 2 — COMPLETED APPLICATIONS */}
+      <div className="space-y-4 pt-4">
+        <div className="flex items-center justify-between border-b border-white/5 pb-2">
+          <h2 className="text-xl font-bold text-foreground">Completed Applications</h2>
+          <span className="text-xs text-muted-foreground bg-white/5 border border-white/10 rounded-full px-3 py-1 font-semibold">
+            {rankedCompleted.length} Completed Decisions
+          </span>
+        </div>
+
+        {/* COMPLETED APPLICATIONS FILTER BAR */}
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-white/10 bg-card/85 p-4 shadow-sm">
+          <div className="flex-1 min-w-[200px]">
+            <Input
+              value={searchCompleted}
+              onChange={(e) => setSearchCompleted(e.target.value)}
+              placeholder="Search candidate..."
+              className="w-full text-foreground bg-background"
+            />
+          </div>
+          <div className="w-full sm:w-auto min-w-[140px]">
+            <select
+              value={filterStatusCompleted}
+              onChange={(e) => setFilterStatusCompleted(e.target.value)}
+              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="All">All Statuses</option>
+              <option value="Selected">Selected</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+          <div className="w-full sm:w-auto min-w-[140px]">
+            <select
+              value={filterRoleCompleted}
+              onChange={(e) => setFilterRoleCompleted(e.target.value)}
+              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="All Roles">All Job Openings</option>
+              {jobRoles.filter(r => r !== "All Roles").map((role) => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+          </div>
+          <div className="w-full sm:w-auto min-w-[140px]">
+            <select
+              value={filterHiringRoleCompleted}
+              onChange={(e) => setFilterHiringRoleCompleted(e.target.value)}
+              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="All Hiring Roles">All Hiring Roles</option>
+              {hiringRolesList.filter(r => r !== "All Hiring Roles").map((role) => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+          </div>
+          <div className="w-full sm:w-auto min-w-[140px]">
+            <select
+              value={filterDeptCompleted}
+              onChange={(e) => setFilterDeptCompleted(e.target.value)}
+              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="All Departments">All Departments</option>
+              {departments.filter(d => d !== "All Departments").map((dept) => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
+          </div>
+          <div className="w-full sm:w-auto min-w-[140px] flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Decision:</span>
+            <Input
+              type="date"
+              value={filterDecisionDateCompleted}
+              onChange={(e) => setFilterDecisionDateCompleted(e.target.value)}
+              className="w-full text-foreground bg-background py-1.5 px-2 text-sm h-[38px]"
+            />
+          </div>
+          <div className="w-full sm:w-auto min-w-[140px]">
+            <select
+              value={filterOfferStatusCompleted}
+              onChange={(e) => setFilterOfferStatusCompleted(e.target.value)}
+              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="All">All Offer Statuses</option>
+              <option value="Draft">Draft</option>
+              <option value="Sent">Sent</option>
+              <option value="Accepted">Accepted</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+          <div className="w-full sm:w-auto min-w-[140px]">
+            <select
+              value={sortByCompleted}
+              onChange={(e) => setSortByCompleted(e.target.value)}
+              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="Newest First">Newest First</option>
+              <option value="Oldest First">Oldest First</option>
+              <option value="Highest AI Match">Highest AI Match</option>
+              <option value="Candidate Name (A–Z)">Candidate Name (A–Z)</option>
+            </select>
+          </div>
+          <div>
+            <Button
+              variant="outline"
+              onClick={handleResetFiltersCompleted}
+              className="w-full sm:w-auto border-white/10 bg-background hover:bg-muted"
+            >
+              Reset
+            </Button>
+          </div>
+        </div>
+
+        {/* COMPLETED APPLICATIONS TABLE */}
+        <RecruitmentTable
+          columns={["Candidate", "Job Opening", "Hiring Role", "Contact", "Final Status", "Decision Date", "Offer Status", "Actions"]}
+          className="h-[400px] overflow-y-auto"
+        >
+          {loading ? (
+            <tr>
+              <td colSpan={8} className="p-0">
+                <div className="p-5 text-sm text-muted-foreground">Loading applications...</div>
+              </td>
+            </tr>
+          ) : filteredCompleted.length === 0 ? (
+            <tr>
+              <td colSpan={8} className="p-5">
+                <RecruitmentEmptyState
+                  title="No completed applications"
+                  description="No candidates reached a final decision yet."
+                />
+              </td>
+            </tr>
+          ) : (
+            rankedCompleted.map((app, index) => (
+              <tr key={app._id} className="transition-colors hover:bg-muted/30 odd:bg-white/[0.02]">
+                <td className="px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <CandidateAvatar name={app.name} />
+                    <div>
+                      <div className="font-medium text-foreground">{app.name}</div>
+                      <div className="text-xs text-muted-foreground">Applicant #{index + 1}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-5 py-4 text-muted-foreground">{app.jobId?.jobTitle || "Unassigned"}</td>
+                <td className="px-5 py-4 text-muted-foreground">{app.hiringRoleName || "N/A"}</td>
+                <td className="px-5 py-4 text-muted-foreground">{app.email}</td>
+                <td className="px-5 py-4">
+                  <RecruitmentStatusBadge status={app.status} />
+                </td>
+                <td className="px-5 py-4 text-muted-foreground">
+                  {new Date(app.updatedAt || app.createdAt).toLocaleDateString()}
+                </td>
+                <td className="px-5 py-4">
+                  <span className="font-semibold text-foreground">{getOfferStatusLabel(app)}</span>
+                </td>
+                <td className="px-5 py-4">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button variant="outline" size="sm" onClick={() => { setSelectedApplication(app); setViewOpen(true) }}>
+                      View
+                    </Button>
+                    {!(app.status || "").toLowerCase().includes("reject") && (
+                      <Link to="/dashboard/offer-management">
+                        <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700">
+                          Offer Management
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))
+          )}
+        </RecruitmentTable>
+      </div>
 
       <Dialog open={viewOpen} onOpenChange={(open) => { setViewOpen(open); if (!open) setSelectedApplication(null) }}>
         <DialogContent className="sm:max-w-[700px]">
@@ -446,7 +797,7 @@ const CandidateApplications = () => {
                 </div>
                 <div className="rounded-lg border border-white/10 bg-muted/10 p-3">
                   <div className="text-xs text-muted-foreground">Position</div>
-                  <div className="font-medium">{selectedApplication.jobId?.jobTitle || "N/A"}</div>
+                  <div className="font-medium">{selectedApplication.selectedPositionTitle || selectedApplication.hiringRoleName || selectedApplication.jobId?.jobTitle || "N/A"}</div>
                 </div>
               </div>
 

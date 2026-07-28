@@ -54,6 +54,8 @@ const requisitionSchema = new mongoose.Schema(
 
     approvalDate: Date,
 
+    applicationDeadline: Date,
+
     recommendations: [
       {
         text: { type: String, required: true },
@@ -70,6 +72,31 @@ const requisitionSchema = new mongoose.Schema(
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         role: { type: String },
       },
+    ],
+    numberOfPositions: {
+      type: Number,
+      default: 1,
+    },
+
+    jobDescription: {
+      type: String,
+      default: "",
+    },
+
+    requirements: {
+      type: String,
+      default: "",
+    },
+
+    hiringRoles: [
+      {
+        roleName: { type: String, required: true },
+        openings: { type: Number, required: true, min: 1 },
+        minSalary: { type: Number },
+        maxSalary: { type: Number },
+        experience: { type: String, default: "" },
+        skills: { type: String, default: "" },
+      }
     ],
   },
   { timestamps: true }

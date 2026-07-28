@@ -210,10 +210,10 @@ export function RecruitmentSkeleton({ type = "cards", rows = 5 }) {
 
 export function RecruitmentTable({ columns, children, className }) {
   return (
-    <div className={cn("overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 bg-card/80 shadow-sm", className)}>
-      <div className="overflow-x-auto custom-scrollbar">
+    <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 bg-card/80 shadow-sm">
+      <div className={cn("overflow-x-auto overflow-y-auto custom-scrollbar", className)}>
         <table className="min-w-full text-sm">
-          <thead className="sticky top-0 z-10 bg-muted/80 text-xs uppercase tracking-wide text-muted-foreground backdrop-blur">
+          <thead className="sticky top-0 z-10 bg-muted/95 text-xs uppercase tracking-wide text-muted-foreground backdrop-blur">
             <tr>
               {columns.map((column) => (
                 <th key={column} className="whitespace-nowrap px-5 py-3 text-left font-semibold">

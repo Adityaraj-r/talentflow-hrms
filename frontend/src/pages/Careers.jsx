@@ -10,6 +10,39 @@ const Careers = () => {
 
   const navigate = useNavigate()
 
+  const getHiringRoles = (job) => {
+    if (Array.isArray(job.hiringRoles) && job.hiringRoles.length > 0) {
+      return job.hiringRoles
+    }
+    return [{
+      _id: "default",
+      roleName: job.jobTitle,
+      openings: job.positions || 1,
+      filled: 0,
+      skills: job.description || "",
+      status: job.status === "Closed" ? "Closed" : "Open",
+    }]
+  }
+
+  const formatDeadline = (dateVal) => {
+    if (!dateVal) return "N/A";
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return "N/A";
+    const day = d.getDate();
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
+    return `${day} ${month} ${year}`;
+  };
+
+  const isDeadlinePassed = (deadline) => {
+    if (!deadline) return false;
+    const d = new Date(deadline);
+    d.setHours(23, 59, 59, 999);
+    const today = new Date();
+    return today > d;
+  };
+
   useEffect(()=>{
 
     if(dark){
@@ -67,7 +100,7 @@ const Careers = () => {
               />
 
              <span className="text-sm text-slate-600 dark:text-slate-300">
-                {jobs.length} Open Position{jobs.length !== 1 && "s"}
+                {jobs.length} Open Job Opening{jobs.length !== 1 && "s"}
               </span>
               </div>
 
@@ -96,24 +129,29 @@ const Careers = () => {
 
         <div className="space-y-7">
 
-          {jobs.map((job) => (
-
-            <div
-              key={job._id}
-              className="
-              bg-white
-              dark:bg-slate-900
-              border
-              border-gray-200
-              dark:border-slate-800
-              rounded-3xl
-              p-7
-              hover:-translate-y-1
-              hover:shadow-xl
-              transition-all
-              duration-300
-              "
-            >
+          {jobs.map((job) => {
+            const roles = getHiringRoles(job);
+            const isSingleRole = roles.length <= 1;
+            const firstRole = roles[0];
+            const isClosed = firstRole?.status === "Closed" || (Number(firstRole?.openings) - Number(firstRole?.filled) <= 0);
+            const deadlinePassed = isDeadlinePassed(job.deadline);
+            return (
+              <div
+                key={job._id}
+                className="
+                bg-white
+                dark:bg-slate-900
+                border
+                border-gray-200
+                dark:border-slate-800
+                rounded-3xl
+                p-7
+                hover:-translate-y-1
+                hover:shadow-xl
+                transition-all
+                duration-300
+                "
+              >
 
               <div className="flex justify-between items-start gap-6">
 
@@ -184,7 +222,7 @@ const Careers = () => {
                     </p>
 
                     <p className="font-medium text-gray-900 dark:text-white">
-                      {new Date(job.deadline).toLocaleDateString()}
+                      {formatDeadline(job.deadline)}
                     </p>
 
                   </div>
@@ -193,29 +231,99 @@ const Careers = () => {
 
                 {/* Apply */}
 
-                <button
-                  onClick={() => navigate(`/apply/${job._id}`)}
-                  className="
-                  bg-blue-600
-                  hover:bg-blue-700
-                  hover:scale-105
-                  transition-all
-                  text-white
-                  font-medium
-                  px-7
-                  py-3
-                  rounded-xl
-                  whitespace-nowrap
-                  "
-                >
-                  Apply Now →
-                </button>
+                {isSingleRole && (
+                  <button
+                    onClick={() => {
+                      navigate(`/apply/${job._id}?roleId=${firstRole?._id || ""}`)
+                    }}
+                    disabled={deadlinePassed || isClosed}
+                    className={`
+                    bg-blue-600
+                    transition-all
+                    text-white
+                    font-medium
+                    px-7
+                    py-3
+                    rounded-xl
+                    whitespace-nowrap
+                    ${(deadlinePassed || isClosed) ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 hover:scale-105"}
+                    `}
+                  >
+                    {deadlinePassed ? "Applications Closed" : (isClosed ? "Positions Filled" : "Apply Now →")}
+                  </button>
+                )}
 
               </div>
 
+              {!isSingleRole && (
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  {roles.map((role) => {
+                    const filled = Number(role.filled) || 0
+                    const openings = Number(role.openings) || 0
+                    const remaining = Math.max(0, openings - filled)
+                    const isClosed = role.status === "Closed" || remaining === 0
+                    return (
+                      <div
+                        key={role._id || role.roleName}
+                        className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/60"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="space-y-1">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{role.roleName}</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                              {remaining} Opening{remaining !== 1 && "s"} Available
+                            </p>
+                            {(role.minSalary || role.maxSalary) ? (
+                              <p className="text-sm text-slate-600 dark:text-slate-300">
+                                <strong className="text-gray-900 dark:text-white">Salary:</strong> {role.minSalary || 0} - {role.maxSalary || 0}
+                              </p>
+                            ) : (
+                              job.salaryRange && (
+                                <p className="text-sm text-slate-600 dark:text-slate-300">
+                                  <strong className="text-gray-900 dark:text-white">Salary:</strong> {job.salaryRange}
+                                </p>
+                              )
+                            )}
+                            {role.experience && (
+                              <p className="text-sm text-slate-600 dark:text-slate-300">
+                                <strong className="text-gray-900 dark:text-white">Experience:</strong> {role.experience}
+                              </p>
+                            )}
+                            {role.skills && (
+                              <p className="text-sm text-slate-600 dark:text-slate-300">
+                                <strong className="text-gray-900 dark:text-white">Skills:</strong> {role.skills}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => navigate(`/apply/${job._id}?roleId=${role._id}`)}
+                            disabled={isClosed || deadlinePassed}
+                            className="
+                            rounded-xl
+                            bg-blue-600
+                            px-5
+                            py-2.5
+                            text-sm
+                            font-medium
+                            text-white
+                            transition-all
+                            hover:scale-105
+                            hover:bg-blue-700
+                            disabled:cursor-not-allowed
+                            disabled:opacity-50
+                            "
+                          >
+                            {deadlinePassed ? "Applications Closed" : (isClosed ? "Positions Filled" : "Apply")}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
-
-          ))}
+          )
+        })}
 
         </div>
 

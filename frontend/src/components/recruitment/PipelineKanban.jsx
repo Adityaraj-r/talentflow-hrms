@@ -111,7 +111,7 @@ export const normalizePipelineStage = (status) => {
 
 export const enrichCandidate = (app) => {
   const job = app?.jobId || {}
-  const role = job?.jobTitle || "Open Role"
+  const role = app?.selectedPositionTitle || app?.hiringRoleName || job?.jobTitle || "Open Role"
   const department = job?.department || app?.department || "Unassigned"
   const matchedSkills = Array.isArray(app?.matchedSkills) ? app.matchedSkills : []
   const missingSkills = Array.isArray(app?.missingSkills) ? app.missingSkills : []

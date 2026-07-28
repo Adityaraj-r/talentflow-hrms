@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate, useSearchParams } from "react-router-dom"
 import { useState, useEffect } from "react"
 import axios from "axios"
 import { Briefcase, Building, Clock, MapPin, ArrowLeft } from "lucide-react"
@@ -7,7 +7,17 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api"
 
 const ApplyJob = () => {
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
+  const roleId = searchParams.get("roleId") || ""
   const navigate = useNavigate()
+
+  const isDeadlinePassed = (deadline) => {
+    if (!deadline) return false;
+    const d = new Date(deadline);
+    d.setHours(23, 59, 59, 999);
+    const today = new Date();
+    return today > d;
+  };
 
   const [job, setJob] = useState(null)
   const [loadingJob, setLoadingJob] = useState(true)
@@ -21,6 +31,7 @@ const ApplyJob = () => {
   const [applicationId, setApplicationId] = useState(null)
   const [resume, setResume] = useState(null)
   const [error, setError] = useState("")
+  const selectedRole = job?.hiringRoles?.find((role) => String(role._id) === String(roleId)) || null
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -57,9 +68,14 @@ const ApplyJob = () => {
     e.preventDefault()
     setError("")
 
+    if (job?.deadline && isDeadlinePassed(job.deadline)) {
+      setError("Applications for this position are closed.");
+      return;
+    }
+
     if (!resume) {
       setError("Please upload your resume before submitting the application.")
-      return
+      return;
     }
 
     try {
@@ -67,6 +83,7 @@ const ApplyJob = () => {
 
       const formData = new FormData()
       formData.append("jobId", id)
+      formData.append("hiringRoleId", roleId)
       formData.append("name", name)
       formData.append("email", email)
       formData.append("phone", phone)
@@ -146,8 +163,42 @@ const ApplyJob = () => {
                 
                 <div className="mb-4 text-gray-800 dark:text-gray-200">
                   <strong className="text-gray-900 dark:text-white">Role: </strong> 
-                  {job?.jobTitle || "Not specified"}
+                  {selectedRole?.roleName || job?.jobTitle || "Not specified"}
                 </div>
+
+                {selectedRole && (
+                  <>
+                    <div className="mb-4 text-gray-800 dark:text-gray-200">
+                      <strong className="text-gray-900 dark:text-white">Openings: </strong>
+                      {Math.max(0, (Number(selectedRole.openings) || 0) - (Number(selectedRole.filled) || 0))}
+                    </div>
+                    {(selectedRole.minSalary || selectedRole.maxSalary) ? (
+                      <div className="mb-4 text-gray-800 dark:text-gray-200">
+                        <strong className="text-gray-900 dark:text-white">Salary Range: </strong>
+                        {selectedRole.minSalary || 0} - {selectedRole.maxSalary || 0}
+                      </div>
+                    ) : (
+                      job?.salaryRange && (
+                        <div className="mb-4 text-gray-800 dark:text-gray-200">
+                          <strong className="text-gray-900 dark:text-white">Salary Range: </strong>
+                          {job.salaryRange}
+                        </div>
+                      )
+                    )}
+                    {selectedRole.experience && (
+                      <div className="mb-4 text-gray-800 dark:text-gray-200">
+                        <strong className="text-gray-900 dark:text-white">Experience: </strong>
+                        {selectedRole.experience}
+                      </div>
+                    )}
+                    {selectedRole.skills && (
+                      <div className="mb-4 text-gray-800 dark:text-gray-200">
+                        <strong className="text-gray-900 dark:text-white">Skills/Requirements: </strong>
+                        {selectedRole.skills}
+                      </div>
+                    )}
+                  </>
+                )}
 
                 <div className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                   {job?.description ? job.description : (
@@ -175,7 +226,7 @@ const ApplyJob = () => {
                 Apply Now
               </h2>
               <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
-                Submit your application for this position.
+                Submit your application for {selectedRole?.roleName || "this position"}.
               </p>
 
               {success && (
@@ -198,74 +249,83 @@ const ApplyJob = () => {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="John Doe"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                  />
+              {isDeadlinePassed(job?.deadline) ? (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 p-6 rounded-2xl text-center space-y-3">
+                  <p className="font-semibold text-lg">Applications Closed</p>
+                  <p className="text-sm">
+                    The deadline for this job opening has passed ({new Date(job.deadline).toLocaleDateString()}). New applications are no longer being accepted.
+                  </p>
                 </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="John Doe"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="john@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="john@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="e.g. 7896675734"
-                    pattern="[6-9][0-9]{9}"
-                    title="Please enter exactly 10 digits starting with 6, 7, 8, or 9"
-                    value={phone}
-                    onChange={handlePhoneChange}
-                    required
-                    maxLength={10}
-                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                  />
-                  {phoneError && <p className="text-red-500 dark:text-red-400 text-sm mt-1.5 font-medium">{phoneError}</p>}
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="e.g. 7896675734"
+                      pattern="[6-9][0-9]{9}"
+                      title="Please enter exactly 10 digits starting with 6, 7, 8, or 9"
+                      value={phone}
+                      onChange={handlePhoneChange}
+                      required
+                      maxLength={10}
+                      className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    />
+                    {phoneError && <p className="text-red-500 dark:text-red-400 text-sm mt-1.5 font-medium">{phoneError}</p>}
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Upload Resume
-                  </label>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.txt"
-                    onChange={(e) => setResume(e.target.files[0])}
-                    required
-                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-500 dark:text-gray-400 rounded-xl px-4 py-2.5 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:transition transition"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                      Upload Resume
+                    </label>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.txt"
+                      onChange={(e) => setResume(e.target.files[0])}
+                      required
+                      className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-500 dark:text-gray-400 rounded-xl px-4 py-2.5 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:transition transition"
+                    />
+                  </div>
 
-                <button
-                  type="submit"
-                  disabled={loading || !!phoneError || phone.length !== 10}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition duration-200 mt-4 disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {loading ? "Submitting..." : "Submit Application"}
-                </button>
-              </form>
+                  <button
+                    type="submit"
+                    disabled={loading || !!phoneError || phone.length !== 10}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition duration-200 mt-4 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {loading ? "Submitting..." : "Submit Application"}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
 

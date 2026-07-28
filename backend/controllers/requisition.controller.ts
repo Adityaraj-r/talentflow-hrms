@@ -1,4 +1,5 @@
 import Requisition from "../models/Requisition.model";
+import Job from "../models/job.model";
 import { Request, Response } from "express";
 
 const parseMaxSalary = (salaryRange?: string): number => {
@@ -36,8 +37,30 @@ const normalizeUrgency = (raw?: string): "High" | "Normal" | "Low" => {
 
 export const createRequisition = async (req: Request, res: Response) => {
   try {
-    const { position, department, experience, salaryRange, reason, urgency } =
-      req.body;
+    const {
+      position,
+      department,
+      experience,
+      salaryRange,
+      reason,
+      urgency,
+      numberOfPositions,
+      hiringRoles,
+      jobDescription,
+      requirements,
+      applicationDeadline,
+    } = req.body;
+
+    if (!applicationDeadline) {
+      return res.status(400).json({ message: "Application deadline is required" });
+    }
+    const selectedDate = new Date(applicationDeadline);
+    selectedDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate < today) {
+      return res.status(400).json({ message: "Application deadline cannot be in the past" });
+    }
 
     const requisition = await Requisition.create({
       position,
@@ -46,7 +69,12 @@ export const createRequisition = async (req: Request, res: Response) => {
       salaryRange,
       reason,
       urgency: normalizeUrgency(urgency),
-      requestedBy: (req as any).user?.id, 
+      numberOfPositions: numberOfPositions ? Number(numberOfPositions) : 1,
+      hiringRoles: hiringRoles || [],
+      jobDescription,
+      requirements,
+      applicationDeadline: selectedDate,
+      requestedBy: (req as any).user?.id,
     });
 
     res.status(201).json(requisition);
@@ -152,6 +180,54 @@ export const approveRequisition = async (
     });
 
     await requisition.save();
+
+    // Automatically create or update the Job Opening from the approved Requisition
+    const existingJob = await Job.findOne({ requisitionId: requisition._id });
+    if (!existingJob) {
+      const jobTitle = requisition.position;
+      const department = requisition.department;
+      const positions = requisition.numberOfPositions || 1;
+      
+      const hiringRoles = (requisition.hiringRoles || []).map((role: any) => ({
+        roleName: role.roleName,
+        openings: role.openings,
+        minSalary: role.minSalary,
+        maxSalary: role.maxSalary,
+        experience: role.experience,
+        skills: role.skills,
+        filled: 0,
+        status: "Open",
+      }));
+
+      // Fallback for Single Role where hiringRoles array might be empty
+      if (hiringRoles.length === 0) {
+        hiringRoles.push({
+          roleName: jobTitle,
+          openings: positions,
+          minSalary: requisition.salaryRange ? Number(requisition.salaryRange.split("-")[0]) || 0 : 0,
+          maxSalary: requisition.salaryRange ? Number(requisition.salaryRange.split("-")[1]) || 0 : 0,
+          experience: requisition.experience || "",
+          skills: requisition.requirements || "",
+          filled: 0,
+          status: "Open",
+        });
+      }
+
+      await Job.create({
+        jobTitle,
+        requisitionId: requisition._id,
+        department,
+        positions,
+        hiringRoles,
+        employmentType: requisition.experience || "Full-Time",
+        description: requisition.jobDescription || "",
+        deadline: requisition.applicationDeadline,
+        status: "Published",
+      });
+    } else {
+      existingJob.deadline = requisition.applicationDeadline;
+      await existingJob.save();
+    }
 
     res.json(requisition);
 

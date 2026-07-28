@@ -55,6 +55,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/contexts/UserContext";
 import {
   ApprovalTimeline,
   enrichOffer,
@@ -165,13 +166,66 @@ export function OfferLifecycleTracker({ offer }) {
   );
 }
 
+function MoreActionsDropdown({ onAction, offer }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClose = () => setIsOpen(false);
+    window.addEventListener("click", handleClose);
+    return () => window.removeEventListener("click", handleClose);
+  }, [isOpen]);
+
+  return (
+    <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
+      <Button 
+        variant="outline" 
+        onClick={() => setIsOpen(!isOpen)}
+        className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"
+      >
+        More Actions <span className="ml-1.5 text-[10px]">▼</span>
+      </Button>
+      {isOpen && (
+        <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 py-1 z-50 ring-1 ring-black ring-opacity-5">
+          <button
+            onClick={() => { onAction("send", offer); setIsOpen(false); }}
+            className="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+          >
+            Send Offer
+          </button>
+          <button
+            onClick={() => { onAction("negotiate", offer); setIsOpen(false); }}
+            className="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+          >
+            Negotiate Offer
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function OfferApprovalTimeline({ offer, onAction, canWrite }) {
+  const { user } = useUser();
+  const currentUserId = user?.id || user?._id;
+  
+  const hasApproved = offer?.approvalHistory?.some(item => 
+    String(item.approverId || '') === String(currentUserId || '') && item.action === 'Approved'
+  );
+
+  const myApproval = offer?.approvalHistory?.find(item => 
+    String(item.approverId || '') === String(currentUserId || '') && item.action === 'Approved'
+  );
+  
+  const approvalTimestamp = myApproval ? new Date(myApproval.at).toLocaleString() : '';
+
   const approvals = offer?.approvalHistory?.length ? offer.approvalHistory : [
     { role: "Recruiter", action: "Submitted", comments: "Offer package submitted", at: offer?.createdAt },
     { role: "HR Manager", action: "Approved", comments: "Policy reviewed", at: offer?.createdAt },
     { role: "Finance Manager", action: "Approved", comments: "Budget verified", at: offer?.createdAt },
     { role: "HR Manager", action: offer?.status === "Pending CEO Approval" || offer?.status === "Pending HR Manager Approval" ? "Pending" : "Approved", comments: "Offer approval checkpoint", at: offer?.updatedAt },
   ];
+
   return (
     <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-5 shadow-xl shadow-black/10">
       <div className="mb-5 flex items-center justify-between gap-3">
@@ -203,11 +257,55 @@ export function OfferApprovalTimeline({ offer, onAction, canWrite }) {
         ))}
       </div>
       {canWrite && offer?._id && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button onClick={() => onAction("approve", offer)} className="bg-emerald-400 text-white dark:text-slate-950 hover:bg-emerald-300"><CheckCircle2 className="mr-2 h-4 w-4" />Approve</Button>
-          <Button variant="outline" onClick={() => onAction("reject", offer)} className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"><XCircle className="mr-2 h-4 w-4" />Reject</Button>
-          <Button variant="outline" onClick={() => onAction("changes", offer)} className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"><PenLine className="mr-2 h-4 w-4" />Request Changes</Button>
-          <Button variant="outline" onClick={() => onAction("escalate", offer)} className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"><AlertTriangle className="mr-2 h-4 w-4" />Escalate</Button>
+        <div className="mt-4 space-y-4">
+          {hasApproved ? (
+            <>
+              {/* Success Indicator & Contextual Status Message */}
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 space-y-2">
+                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold">
+                  <CheckCircle2 className="h-5 w-5 shrink-0" />
+                  <span>Approved by You {approvalTimestamp && `on ${approvalTimestamp}`}</span>
+                </div>
+                <div className="text-sm text-slate-600 dark:text-slate-300 space-y-1 pl-7">
+                  <p>Offer approved and moved to the Offer Sent stage.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Additional approvals can be requested later through Escalate if required.</p>
+                </div>
+              </div>
+              
+              {/* Actions valid after approval */}
+              <div className="flex flex-wrap gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => onAction("reject", offer)} 
+                  className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"
+                >
+                  <XCircle className="mr-2 h-4 w-4" />Reject
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => onAction("changes", offer)} 
+                  className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"
+                >
+                  <PenLine className="mr-2 h-4 w-4" />Request Changes
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => onAction("escalate", offer)} 
+                  className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"
+                >
+                  <AlertTriangle className="mr-2 h-4 w-4" />Escalate
+                </Button>
+                <MoreActionsDropdown onAction={onAction} offer={offer} />
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => onAction("approve", offer)} className="bg-emerald-400 text-white dark:text-slate-950 hover:bg-emerald-300"><CheckCircle2 className="mr-2 h-4 w-4" />Approve</Button>
+              <Button variant="outline" onClick={() => onAction("reject", offer)} className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"><XCircle className="mr-2 h-4 w-4" />Reject</Button>
+              <Button variant="outline" onClick={() => onAction("changes", offer)} className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"><PenLine className="mr-2 h-4 w-4" />Request Changes</Button>
+              <Button variant="outline" onClick={() => onAction("escalate", offer)} className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"><AlertTriangle className="mr-2 h-4 w-4" />Escalate</Button>
+            </div>
+          )}
         </div>
       )}
     </section>
