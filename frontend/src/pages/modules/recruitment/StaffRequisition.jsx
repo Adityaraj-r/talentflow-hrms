@@ -67,7 +67,7 @@ const StaffRequisition = () => {
 
       <Tabs defaultValue={canCreateRequisition ? "create" : "pending"}>
         <TabsList className="h-auto w-full flex-wrap justify-start gap-1 sm:w-fit">
-          {canCreateRequisition && <TabsTrigger value="create">Create Requisition</TabsTrigger>}
+          {canCreateRequisition && <TabsTrigger value="create" className="cursor-pointer">Create Requisition</TabsTrigger>}
           <TabsTrigger value="pending" className="cursor-pointer">Pending Approvals</TabsTrigger>
           <TabsTrigger value="history" className="cursor-pointer">Requisition History</TabsTrigger>
         </TabsList>

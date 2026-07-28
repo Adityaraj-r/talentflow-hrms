@@ -174,7 +174,7 @@ const RecruitmentAnalytics = () => {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button onClick={fetchAnalytics} variant="outline" className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10">
+          <Button onClick={fetchAnalytics} variant="outline" className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-white/10">
             <RefreshCw className="mr-2 h-4 w-4" /> Refresh
           </Button>
           <ExportCenter onExport={handleExport} />

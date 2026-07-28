@@ -193,7 +193,7 @@ const Sidebar = ({
         <button
           onClick={() => toggleGroup(id)}
           className={cn(
-            "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+            "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer",
             isActive
               ? "bg-primary text-primary-foreground shadow-sm"
               : "hover:bg-accent text-foreground"
@@ -229,7 +229,7 @@ const Sidebar = ({
           type="button"
           onClick={() => toggleGroup(id)}
           className={cn(
-            "flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+            "flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors cursor-pointer",
             rowActive
               ? "bg-primary/10 text-primary font-medium"
               : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -252,7 +252,7 @@ const Sidebar = ({
       <Link
         to={to}
         className={cn(
-          "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+          "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors cursor-pointer",
           location.pathname === to
             ? "bg-primary/10 text-primary font-medium"
             : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -486,7 +486,6 @@ const Sidebar = ({
 
           <SidebarGroup id="documentRequests" icon={FileCheck} label="Documents">
             <SubLink to="/role/hr_manager/document-requests" label="Document Requests" />
-            <SubLink to="/role/employee/my-documents" label="My Documents" />
             <SubLink to="/documents/employee-documents" label="Employee Documents" />
           </SidebarGroup>
         </>
@@ -540,7 +539,6 @@ const Sidebar = ({
 
           <SidebarGroup id="documentRequests" icon={FileCheck} label="Documents">
             <SubLink to="/role/hr_officer/document-requests" label="Document Requests" />
-            <SubLink to="/role/employee/my-documents" label="My Documents" />
             <SubLink to="/documents/employee-documents" label="Employee Documents" />
           </SidebarGroup>
 

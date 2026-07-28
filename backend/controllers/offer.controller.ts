@@ -6,6 +6,7 @@ import { createLog } from './audit.controller';
 const CEO_OFFER_THRESHOLD = () => Number(process.env.CEO_OFFER_SALARY_THRESHOLD || 250000);
 const PENDING_OFFER_APPROVAL_STATUSES = ['Pending HR Manager Approval', 'Pending CEO Approval'];
 const isPendingOfferApproval = (status?: string) => PENDING_OFFER_APPROVAL_STATUSES.includes(String(status || ''));
+const canReleaseOffer = (status?: string) => !isPendingOfferApproval(status) && status !== 'Changes Requested' && status !== 'Under Review';
 
 const normalizeRole = (role?: string) =>
   (role || '').toString().toUpperCase().replace(/\s+/g, '_');
@@ -51,6 +52,16 @@ const compensationFor = (salary: number, body: any = {}) => {
   };
 };
 
+const parseBenefits = (benefits: unknown) =>
+  Array.isArray(benefits)
+    ? benefits.map((item) => String(item).trim()).filter(Boolean)
+    : typeof benefits === 'string'
+    ? benefits.split(',').map((item: string) => item.trim()).filter(Boolean)
+    : [];
+
+const approvalStatusForSalary = (salary: number) =>
+  Number.isFinite(salary) && salary >= CEO_OFFER_THRESHOLD() ? 'Pending HR Manager Approval' : 'Offered';
+
 const buildOfferAnalytics = async () => {
   const now = new Date();
   const start = new Date(now.getTime() - 90 * dayMs);
@@ -63,7 +74,8 @@ const buildOfferAnalytics = async () => {
   const allOffers = await Offer.find().sort({ createdAt: -1 }).populate('createdBy', 'firstName lastName').lean();
   const accepted = offers.filter((offer: any) => offer.status === 'Accepted').length;
   const rejected = offers.filter((offer: any) => offer.status === 'Declined').length;
-  const pending = offers.filter((offer: any) => isPendingOfferApproval(offer.status)).length;
+  const pending = offers.filter((offer: any) => isPendingOfferApproval(offer.status) || offer.status === 'Under Review' || offer.status === 'Changes Requested').length;
+  const changesRequested = offers.filter((offer: any) => offer.status === 'Changes Requested').length;
   const sent = offers.filter((offer: any) => offer.status === 'Offered' || offer.sentAt).length;
   const expiryAlerts = offers.filter((offer: any) => {
     const expiry = offer.expiryDate ? new Date(offer.expiryDate) : new Date(new Date(offer.createdAt).getTime() + 7 * dayMs);
@@ -72,10 +84,16 @@ const buildOfferAnalytics = async () => {
   }).length;
   const avgSalary = offers.length ? Math.round(offers.reduce((sum: number, offer: any) => sum + Number(offer.salary || 0), 0) / offers.length) : 0;
   const previousAccepted = previousOffers.filter((offer: any) => offer.status === 'Accepted').length;
+  const pendingBeyondSla = allOffers.filter((offer: any) => {
+    if (!isPendingOfferApproval(offer.status) && offer.status !== 'Under Review' && offer.status !== 'Changes Requested') return false;
+    const updatedAt = new Date(offer.updatedAt || offer.createdAt).getTime();
+    return Number.isFinite(updatedAt) && (now.getTime() - updatedAt) / dayMs > 2;
+  }).length;
+  const highValueOpen = allOffers.filter((offer: any) => Number(offer.salary || 0) >= CEO_OFFER_THRESHOLD() && ['Offered', 'Pending HR Manager Approval', 'Changes Requested', 'Under Review'].includes(offer.status)).length;
 
   const overview = [
     { key: 'generated', label: 'Offers Generated', value: offers.length, suffix: '', trend: trend(offers.length, previousOffers.length), comparison: 'vs previous period', status: 'active', sparkline: [4, 6, 8, 7, 10, offers.length] },
-    { key: 'pending', label: 'Offers Pending Approval', value: pending, suffix: '', trend: trend(pending, previousOffers.filter((offer: any) => isPendingOfferApproval(offer.status)).length), comparison: 'approval queue', status: pending ? 'warning' : 'healthy', sparkline: [2, 3, 2, 4, 3, pending] },
+    { key: 'pending', label: 'Offers Pending Approval', value: pending, suffix: '', trend: trend(pending, previousOffers.filter((offer: any) => isPendingOfferApproval(offer.status) || offer.status === 'Under Review' || offer.status === 'Changes Requested').length), comparison: 'approval queue', status: pending ? 'warning' : 'healthy', sparkline: [2, 3, 2, 4, 3, pending] },
     { key: 'sent', label: 'Offers Sent', value: sent, suffix: '', trend: trend(sent, previousOffers.filter((offer: any) => offer.status === 'Offered').length), comparison: 'released offers', status: 'active', sparkline: [3, 4, 5, 6, 7, sent] },
     { key: 'accepted', label: 'Offers Accepted', value: accepted, suffix: '', trend: trend(accepted, previousAccepted), comparison: 'candidate wins', status: 'success', sparkline: [1, 2, 3, 3, 4, accepted] },
     { key: 'rejected', label: 'Offers Rejected', value: rejected, suffix: '', trend: -trend(rejected, previousOffers.filter((offer: any) => offer.status === 'Declined').length), comparison: 'loss control', status: rejected ? 'risk' : 'healthy', sparkline: [1, 1, 2, 1, 2, rejected] },
@@ -103,7 +121,7 @@ const buildOfferAnalytics = async () => {
     return acc;
   }, []);
 
-  const approvals = allOffers.filter((offer: any) => isPendingOfferApproval(offer.status) || offer.approvalStage?.includes('Approval'));
+  const approvals = allOffers.filter((offer: any) => isPendingOfferApproval(offer.status) || offer.status === 'Changes Requested' || offer.status === 'Under Review' || offer.approvalStage?.includes('Approval'));
   const activity = allOffers.flatMap((offer: any) => {
     const history = Array.isArray(offer.activityHistory) && offer.activityHistory.length ? offer.activityHistory : [
       { type: 'offer-created', message: `Offer created for ${offer.candidateName}`, actor: 'Recruitment', at: offer.createdAt, priority: 'normal' },
@@ -114,14 +132,15 @@ const buildOfferAnalytics = async () => {
 
   const notifications = [
     ...approvals.slice(0, 5).map((offer: any) => ({ type: 'approval', priority: 'high', title: 'Offer awaiting approval', message: `${offer.candidateName} requires approval action.`, at: offer.updatedAt || offer.createdAt })),
+    ...allOffers.filter((offer: any) => offer.status === 'Changes Requested').slice(0, 3).map((offer: any) => ({ type: 'changes', priority: 'high', title: 'Offer changes requested', message: `${offer.candidateName} needs a revised offer package.`, at: offer.updatedAt })),
     ...allOffers.filter((offer: any) => offer.status === 'Accepted').slice(0, 3).map((offer: any) => ({ type: 'accepted', priority: 'success', title: 'Candidate accepted offer', message: `${offer.candidateName} accepted ${offer.offerId}.`, at: offer.updatedAt })),
     ...allOffers.filter((offer: any) => offer.status === 'Offered').slice(0, 4).map((offer: any) => ({ type: 'reminder', priority: 'medium', title: 'Offer follow-up due', message: `${offer.candidateName} offer response should be monitored.`, at: offer.updatedAt })),
   ];
 
   const insights = [
     { type: 'success', title: 'Offer package competitive', description: `Current acceptance rate is ${percent(accepted, offers.length)}%.`, recommendation: 'Keep approval turnaround under 48 hours for high-demand roles.' },
-    { type: pending ? 'warning' : 'success', title: pending ? 'Approval queue needs attention' : 'Approval flow healthy', description: `${pending} offers are waiting for approval.`, recommendation: pending ? 'Escalate packages pending beyond SLA.' : 'Maintain current approval cadence.' },
-    { type: 'risk', title: 'Negotiation risk monitor', description: 'High salary deltas and delayed responses are tracked for offer risk scoring.', recommendation: 'Review packages below department benchmarks before release.' },
+    { type: pending ? 'warning' : 'success', title: pending ? 'Approval queue needs attention' : 'Approval flow healthy', description: `${pending} offers are waiting for approval or package updates.`, recommendation: pendingBeyondSla ? `${pendingBeyondSla} offers are beyond the 48-hour approval SLA.` : 'Maintain current approval cadence.' },
+    { type: changesRequested ? 'warning' : 'risk', title: 'Negotiation risk monitor', description: `${changesRequested} offers currently require package changes.`, recommendation: highValueOpen ? `Review ${highValueOpen} high-value open packages before release.` : 'Review packages below department benchmarks before release.' },
     { type: 'opportunity', title: 'Pre-onboarding readiness', description: 'Accepted offers can flow into employee creation, documents, payroll, and department setup.', recommendation: 'Trigger onboarding tasks immediately after acceptance.' },
   ];
 
@@ -140,6 +159,9 @@ const buildOfferAnalytics = async () => {
       joiningConversion: percent(allOffers.filter((offer: any) => offer.preOnboarding?.some((step: any) => step.step === 'Department Assignment' && step.status === 'Completed')).length, accepted),
       averageCompensation: avgSalary,
       approvalTurnaroundTime: 2.8,
+      pendingBeyondSla,
+      highValueOpen,
+      changesRequested,
     },
   };
 };
@@ -179,9 +201,12 @@ export const createOffer = async (req: AuthRequest, res: Response) => {
       });
      }
     const numSalary = Number(salary);
+    if (!Number.isFinite(numSalary) || numSalary <= 0) {
+      return res.status(400).json({ success: false, error: 'Salary must be a valid positive amount.' });
+    }
     const offerId = `OFF-${Date.now()}`;
-    const needsCeo = Number.isFinite(numSalary) && numSalary >= CEO_OFFER_THRESHOLD();
-    const status = needsCeo ? 'Pending HR Manager Approval' : 'Offered';
+    const status = approvalStatusForSalary(numSalary);
+    const needsApproval = isPendingOfferApproval(status);
     const expiryDate = req.body.expiryDate ? new Date(req.body.expiryDate) : new Date(Date.now() + 7 * dayMs);
     const compensation = compensationFor(numSalary, req.body);
     const query = candidateId 
@@ -200,16 +225,30 @@ if (existingOffer) {
   existingOffer.expiryDate = expiryDate;
   existingOffer.noticeBuyout = Number(noticeBuyout || 0);
   existingOffer.bonus = Number(req.body.bonus || compensation.bonus);
-  existingOffer.benefits = Array.isArray(benefits)
-    ? benefits
-    : typeof benefits === 'string'
-    ? benefits.split(',').map((item: string) => item.trim()).filter(Boolean)
-    : [];
+  existingOffer.benefits = parseBenefits(benefits);
   existingOffer.probationDetails = probationDetails;
   existingOffer.templateId = templateId;
   existingOffer.compensation = compensation;
+  existingOffer.status = status as any;
+  existingOffer.approvalStage = needsApproval ? 'HR Manager Approval' : 'Ready to Send';
+  existingOffer.set('approvalHistory', [...((existingOffer.get('approvalHistory') as any[]) || []), {
+    role: 'Recruiter',
+    approverName: userName(req),
+    approverId: req.user?.id,
+    action: 'Submitted',
+    comments: 'Offer package revised and resubmitted',
+    at: new Date(),
+  }]);
+  existingOffer.set('activityHistory', [...((existingOffer.get('activityHistory') as any[]) || []), {
+    type: 'offer-resubmitted',
+    message: `Offer package revised for ${candidateName}`,
+    actor: userName(req),
+    priority: needsApproval ? 'high' : 'normal',
+    at: new Date(),
+  }]);
 
   await existingOffer.save();
+  await logOfferAction(req, 'Update Offer', `Updated offer ${existingOffer.offerId} for ${candidateName}`, null, existingOffer.toObject());
 
   return res.status(200).json({
     success: true,
@@ -228,14 +267,14 @@ if (existingOffer) {
       expiryDate,
       noticeBuyout: Number(noticeBuyout || 0),
       bonus: Number(req.body.bonus || compensation.bonus),
-      benefits: Array.isArray(benefits) ? benefits : typeof benefits === 'string' ? benefits.split(',').map((item) => item.trim()).filter(Boolean) : [],
+      benefits: parseBenefits(benefits),
       probationDetails,
       reportingManager: reportingManager || '',
       templateId,
-      approvalStage: needsCeo ? 'HR Manager Approval' : 'Sent',
+      approvalStage: needsApproval ? 'HR Manager Approval' : 'Ready to Send',
       compensation,
       approvalHistory: [{ role: 'Recruiter', approverName: userName(req), approverId: req.user?.id, action: 'Submitted', comments: 'Offer package submitted', at: new Date() }],
-      activityHistory: [{ type: 'offer-created', message: `Recruiter submitted offer for ${candidateName}`, actor: userName(req), priority: needsCeo ? 'high' : 'normal', at: new Date() }],
+      activityHistory: [{ type: 'offer-created', message: `Recruiter submitted offer for ${candidateName}`, actor: userName(req), priority: needsApproval ? 'high' : 'normal', at: new Date() }],
       automationRules: [
         { name: 'Offer expiry reminder', cadence: '2 days before expiry', enabled: true },
         { name: 'Approval reminder', cadence: 'Every 24 hours while pending', enabled: true },
@@ -263,13 +302,16 @@ export const updateOfferStatus = async (req: AuthRequest, res: Response) => {
     const { status } = req.body;
     const offer = await Offer.findById(req.params.id);
     if (!offer) return res.status(404).json({ success: false, error: 'Offer not found' });
-    if (isPendingOfferApproval(offer.status)) {
+    if (!canReleaseOffer(offer.status)) {
       return res.status(403).json({
         success: false,
-        error: 'Offer is pending HR Manager approval',
+        error: 'Offer must be approved before candidate response status can be updated',
       });
     }
-    offer.status = status as 'Offered' | 'Accepted' | 'Declined';
+    if (!['Offered', 'Accepted', 'Declined', 'Expired'].includes(status)) {
+      return res.status(400).json({ success: false, error: 'Unsupported offer status' });
+    }
+    offer.status = status as any;
     if (status === 'Accepted') {
       offer.set('preOnboarding', [
         { step: 'Employee Creation', owner: 'HR Operations', status: 'In Progress' },
@@ -299,7 +341,7 @@ export const ceoApproveOffer = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ success: false, error: 'Offer is not pending HR Manager approval' });
     }
     offer.status = 'Offered';
-    offer.approvalStage = 'Sent' as any;
+    offer.approvalStage = 'Ready to Send' as any;
     offer.ceoApprovedBy = req.user?.id as any;
     offer.ceoApprovedAt = new Date();
     offer.set('approvalHistory', [...((offer.get('approvalHistory') as any[]) || []), { role: 'HR_MANAGER', approverName: userName(req), approverId: req.user?.id, action: 'Approved', comments: req.body?.comments || 'HR Manager approved package', at: new Date() }]);
@@ -344,7 +386,7 @@ export const approveOffer = async (req: AuthRequest, res: Response) => {
     if (!offer) return res.status(404).json({ success: false, error: 'Offer not found' });
     const before = offer.toObject();
     offer.status = 'Offered';
-    offer.approvalStage = 'Sent' as any;
+    offer.approvalStage = 'Ready to Send' as any;
     offer.set('approvalHistory', [...((offer.get('approvalHistory') as any[]) || []), { role: req.user?.role || 'Approver', approverName: userName(req), approverId: req.user?.id, action: 'Approved', comments: req.body?.comments || 'Approved', at: new Date() }]);
     offer.set('activityHistory', [...((offer.get('activityHistory') as any[]) || []), { type: 'approval', message: `Offer approved by ${req.user?.role || 'approver'}`, actor: userName(req), priority: 'success', at: new Date() }]);
     await offer.save();
@@ -360,12 +402,13 @@ export const rejectOffer = async (req: AuthRequest, res: Response) => {
     const offer = await Offer.findById(req.params.id);
     if (!offer) return res.status(404).json({ success: false, error: 'Offer not found' });
     const before = offer.toObject();
-    offer.status = 'Declined';
-    offer.approvalStage = 'Rejected' as any;
-    offer.set('approvalHistory', [...((offer.get('approvalHistory') as any[]) || []), { role: req.user?.role || 'Approver', approverName: userName(req), approverId: req.user?.id, action: req.body?.requestChanges ? 'Changes Requested' : 'Rejected', comments: req.body?.comments || 'Rejected', at: new Date() }]);
-    offer.set('activityHistory', [...((offer.get('activityHistory') as any[]) || []), { type: 'rejection', message: req.body?.requestChanges ? 'Offer changes requested' : 'Offer rejected', actor: userName(req), priority: 'high', at: new Date() }]);
+    const requestChanges = Boolean(req.body?.requestChanges);
+    offer.status = requestChanges ? 'Changes Requested' as any : 'Declined';
+    offer.approvalStage = requestChanges ? 'Changes Requested' as any : 'Rejected' as any;
+    offer.set('approvalHistory', [...((offer.get('approvalHistory') as any[]) || []), { role: req.user?.role || 'Approver', approverName: userName(req), approverId: req.user?.id, action: requestChanges ? 'Changes Requested' : 'Rejected', comments: req.body?.comments || (requestChanges ? 'Changes requested' : 'Rejected'), at: new Date() }]);
+    offer.set('activityHistory', [...((offer.get('activityHistory') as any[]) || []), { type: requestChanges ? 'changes-requested' : 'rejection', message: requestChanges ? 'Offer changes requested by approver' : 'Offer rejected', actor: userName(req), priority: 'high', at: new Date() }]);
     await offer.save();
-    await logOfferAction(req, 'Reject Offer', `Rejected ${offer.offerId}`, before, offer.toObject());
+    await logOfferAction(req, requestChanges ? 'Request Offer Changes' : 'Reject Offer', requestChanges ? `Requested changes for ${offer.offerId}` : `Rejected ${offer.offerId}`, before, offer.toObject());
     res.status(200).json({ success: true, data: offer });
   } catch {
     res.status(400).json({ success: false, error: 'Rejection failed' });
@@ -379,8 +422,14 @@ export const negotiateOffer = async (req: AuthRequest, res: Response) => {
     const before = offer.toObject();
     const rounds = ((offer.get('negotiationRounds') as any[]) || []);
     const revisedOffer = Number(req.body.revisedOffer || offer.salary);
+    if (!Number.isFinite(revisedOffer) || revisedOffer <= 0) {
+      return res.status(400).json({ success: false, error: 'Revised offer must be a valid positive amount.' });
+    }
     offer.salary = revisedOffer;
     offer.set('compensation', compensationFor(revisedOffer, req.body));
+    const status = approvalStatusForSalary(revisedOffer);
+    offer.status = status as any;
+    offer.approvalStage = isPendingOfferApproval(status) ? 'HR Manager Approval' as any : 'Ready to Send' as any;
     offer.set('negotiationRounds', [...rounds, { round: rounds.length + 1, originalOffer: before.salary, requestedSalary: Number(req.body.requestedSalary || 0), revisedOffer, notes: req.body.notes || 'Negotiation recorded', status: 'Open', at: new Date() }]);
     offer.set('activityHistory', [...((offer.get('activityHistory') as any[]) || []), { type: 'negotiation', message: `Negotiation round ${rounds.length + 1} recorded`, actor: userName(req), priority: 'medium', at: new Date() }]);
     await offer.save();
@@ -395,6 +444,9 @@ export const sendOffer = async (req: AuthRequest, res: Response) => {
   try {
     const offer = await Offer.findById(req.params.id);
     if (!offer) return res.status(404).json({ success: false, error: 'Offer not found' });
+    if (!canReleaseOffer(offer.status)) {
+      return res.status(409).json({ success: false, error: 'Offer must be approved before it can be sent.' });
+    }
     const before = offer.toObject();
     offer.status = 'Offered';
     offer.approvalStage = 'Sent' as any;

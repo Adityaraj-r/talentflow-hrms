@@ -4,11 +4,27 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { Link, useLocation } from "react-router-dom";
-import { ArrowLeft, BriefcaseBusiness, RefreshCw, Send, CheckCircle2, XCircle, BadgeCheck, Clock3 } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, RefreshCw, Send, CheckCircle2, XCircle, BadgeCheck, Clock3, AlertTriangle, CircleDollarSign, Eye, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import offerOperationsService from "@/services/offerOperationsService";
 import { useUser } from "@/contexts/UserContext";
-import { enrichOffer, formatMoney } from "@/components/recruitment/OfferWorkflow";
+import { enrichOffer, formatMoney, OfferStatusBadge } from "@/components/recruitment/OfferWorkflow";
+
+const executiveDesignationPattern = /\b(executive|manager|director|head|chief|vp|vice president|president|lead|principal|architect)\b/i;
+
+const getActiveTemplateName = (offer) => {
+  if (!offer) return "Standard Employment Offer";
+  const tid = (offer.templateId || "").toLowerCase().trim();
+  if (tid === "executive" || tid === "executive-offer") {
+    return "Executive Employment Offer";
+  }
+  if (tid === "standard" || tid === "standard-offer") {
+    return "Standard Employment Offer";
+  }
+  const designation = (offer.position || "").trim();
+  return executiveDesignationPattern.test(designation) ? "Executive Employment Offer" : "Standard Employment Offer";
+};
+
 import { cn } from "@/lib/utils";
 import {
   CandidateComparisonPanel,
@@ -17,19 +33,18 @@ import {
   HiringActivityFeed,
   NegotiationTimeline,
   NotificationCenter,
-  OfferAnalyticsDashboard,
   OfferApprovalTimeline,
   OfferAutomationRules,
-  OfferGenerator,
   OfferInsightsPanel,
   OfferLifecycleTracker,
   OfferLetterPreview,
-  OfferOperationsKpiCard,
   PreOnboardingWorkflow,
   TemplatesPanel,
 } from "@/components/recruitment/OfferOperationsPlatform";
 
 const payload = (res) => res?.data || res || {};
+const approvalStatuses = ["Pending HR Manager Approval", "Pending CEO Approval", "Under Review", "Changes Requested"];
+const canSendOffer = (offer) => offer?._id && offer.status === "Offered";
 
 const OfferOperations = () => {
   const { user } = useUser();
@@ -68,29 +83,19 @@ const OfferOperations = () => {
   const offers = useMemo(() => (data?.offers || []).map(enrichOffer), [data]);
   const selectedOffer = useMemo(() => offers.find((offer) => offer._id === selectedOfferId) || offers[0], [offers, selectedOfferId]);
 
-  const handleCreate = async (form) => {
-    if (!canWrite) {
-      toast.error("You do not have permission to generate offers");
-      return;
-    }
-    try {
-      await offerOperationsService.createOffer({
-        ...form,
-        salary: Number(form.salary),
-        noticeBuyout: Number(form.noticeBuyout || 0),
-        bonus: Number(form.bonus || 0),
-      });
-      toast.success("Offer draft created and routed");
-      await loadDashboard();
-    } catch (error) {
-      toast.error(error?.error || error?.message || "Offer creation failed");
-    }
-  };
-
   const handleAction = async (action, offer) => {
     if (!offer?._id) return;
-    if (!canApproveOffers) {
+    const isReleaseAction = action === "send" || action === "escalate";
+    if (isReleaseAction && !canWrite) {
+      toast.error("You do not have permission to send offers");
+      return;
+    }
+    if (!isReleaseAction && !canApproveOffers) {
       toast.error("Only HR Manager can perform offer approval and release actions");
+      return;
+    }
+    if (isReleaseAction && !canSendOffer(offer)) {
+      toast.error("Offer must be approved before it can be sent");
       return;
     }
     try {
@@ -129,11 +134,10 @@ const OfferOperations = () => {
     doc.save(type === "reports" ? "offer-reports.pdf" : "offer-operations.pdf");
   };
 
-  const showAnalyticsOnly = section === "analytics";
   const showApprovalsOnly = section === "approvals";
   const showTemplatesOnly = section === "templates";
 
-  const pendingHr = useMemo(() => offers.filter(o => o.status === "Pending HR Manager Approval" || o.status === "Under Review").length, [offers]);
+  const pendingHr = useMemo(() => offers.filter(o => approvalStatuses.includes(o.status)).length, [offers]);
   const pendingMgr = useMemo(() => offers.filter(o => o.status === "Manager Approval" || o.status === "Pending Manager Approval").length, [offers]);
   const expiringSoon = useMemo(() => offers.filter(o => {
     if (o.status !== "Offered") return false;
@@ -181,7 +185,7 @@ const OfferOperations = () => {
     });
     return list
       .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
-      .slice(0, 10);
+      .slice(0, 6);
   }, [offers]);
 
   const groupedActivities = useMemo(() => {
@@ -209,76 +213,122 @@ const OfferOperations = () => {
   }, [recentActivities]);
 
   return (
-    <div className="min-h-screen space-y-6 bg-slate-50 dark:bg-slate-950 p-4 text-slate-900 dark:text-slate-100 md:p-6">
+    <div className="min-h-screen space-y-6 bg-slate-50 dark:bg-slate-950 p-5 text-slate-900 dark:text-slate-100 md:p-7">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-700 dark:text-cyan-200">
             <BriefcaseBusiness className="h-3.5 w-3.5" />
             Enterprise Hiring Operations
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white md:text-4xl">Offer Workflow & Hiring Operations</h1>
-          <p className="mt-2 max-w-3xl text-sm text-slate-500 dark:text-slate-400">
-            Manage selection, offer creation, approvals, release, negotiation, acceptance, and pre-onboarding from a single enterprise command center.
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white md:text-3xl">Offer Operations</h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+            Prioritize approvals, releases, responses, and offer follow-through from one workspace.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2.5">
           <Link to="/dashboard/offer-management">
-            <Button variant="outline" className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"><ArrowLeft className="mr-2 h-4 w-4" />Classic Offers</Button>
+            <Button variant="outline" className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm"><ArrowLeft className="mr-2 h-4 w-4" />Classic Offers</Button>
           </Link>
-          <Button onClick={loadDashboard} variant="outline" className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
+          <Button onClick={loadDashboard} variant="outline" className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm"><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
           <ExportCenter onExport={handleExport} />
         </div>
       </div>
 
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, index) => <div key={index} className="dark-shimmer h-40 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70" />)}
+          {Array.from({ length: 4 }).map((_, index) => <div key={index} className="dark-shimmer h-32 rounded-xl border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900/60" />)}
         </div>
       ) : error ? (
-        <div className="rounded-lg border border-rose-400/20 bg-rose-500/10 p-6 text-center">
-          <p className="font-semibold text-slate-900 dark:text-white">Offer operations could not be loaded</p>
-          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">{error}</p>
-          <Button onClick={loadDashboard} className="mt-4 bg-cyan-600 dark:bg-cyan-300 text-white dark:text-slate-950 hover:bg-cyan-700 dark:hover:bg-cyan-200">Retry</Button>
+        <div className="rounded-xl border border-rose-200 dark:border-rose-900/30 bg-rose-50 dark:bg-rose-950/5 p-8 text-center max-w-lg mx-auto">
+          <p className="font-semibold text-slate-900 dark:text-white text-lg">Offer operations could not be loaded</p>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{error}</p>
+          <Button onClick={loadDashboard} className="mt-5 rounded-lg bg-cyan-600 dark:bg-cyan-500 text-white hover:bg-cyan-700 dark:hover:bg-cyan-600 transition-all shadow-sm">Retry</Button>
         </div>
       ) : (
         <>
           {!showApprovalsOnly && !showTemplatesOnly && (
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {(data?.overview || []).map((metric) => <OfferOperationsKpiCard key={metric.key} metric={metric} />)}
+            <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+              <div className="mb-4 flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-cyan-500 dark:text-cyan-400 mt-1 shrink-0" strokeWidth={2} />
+                  <div>
+                    <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Needs Attention</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Approval blockers, expiry risk, and pending candidate responses.</p>
+                  </div>
+                </div>
+                <Link to="/dashboard/offer-management">
+                  <Button variant="outline" size="sm" className="rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-semibold transition-all hover:-translate-y-0.5 hover:shadow-sm">
+                    <Eye className="mr-2 h-3.5 w-3.5" />View All
+                  </Button>
+                </Link>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Link to="/dashboard/offer-management?status=Pending Approval" className="rounded-lg border border-amber-200 dark:border-amber-500/20 bg-amber-50/35 dark:bg-amber-500/5 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber-100/45 dark:hover:bg-amber-500/10 hover:shadow-sm">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">HR Approval</p>
+                  <p className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white font-mono">{pendingHr}</p>
+                </Link>
+                <Link to="/dashboard/offer-management?status=Pending Approval" className="rounded-lg border border-blue-200 dark:border-blue-500/20 bg-blue-50/35 dark:bg-blue-500/5 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-100/45 dark:hover:bg-blue-500/10 hover:shadow-sm">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">Manager Approval</p>
+                  <p className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white font-mono">{pendingMgr}</p>
+                </Link>
+                <Link to="/dashboard/offer-management?expiry=Due soon" className="rounded-lg border border-rose-200 dark:border-rose-500/20 bg-rose-50/35 dark:bg-rose-500/5 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100/45 dark:hover:bg-rose-500/10 hover:shadow-sm">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300">Expiring Soon</p>
+                  <p className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white font-mono">{expiringSoon}</p>
+                </Link>
+                <Link to="/dashboard/offer-management?status=Released" className="rounded-lg border border-violet-200 dark:border-violet-500/20 bg-violet-50/35 dark:bg-violet-500/5 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet-100/45 dark:hover:bg-violet-500/10 hover:shadow-sm">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300">Response Due</p>
+                  <p className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white font-mono">{responsePending}</p>
+                </Link>
+              </div>
             </section>
           )}
 
           {offers.length > 0 && (
-            <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-4 shadow-xl shadow-black/10">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <h2 className="font-semibold text-slate-900 dark:text-white">Active Offer Work Queue</h2>
-                {selectedOffer && canApproveOffers && <Button onClick={() => handleAction("send", selectedOffer)} className="bg-cyan-600 dark:bg-cyan-300 text-white dark:text-slate-950 hover:bg-cyan-700 dark:hover:bg-cyan-200"><Send className="mr-2 h-4 w-4" />Send Selected Offer</Button>}
+            <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <BriefcaseBusiness className="h-5 w-5 text-cyan-500 dark:text-cyan-400 mt-1 shrink-0" strokeWidth={2} />
+                  <div>
+                    <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Active Offer Work Queue</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Open candidate packages and release-ready offers.</p>
+                  </div>
+                </div>
+                {selectedOffer && canWrite && canSendOffer(selectedOffer) && <Button onClick={() => handleAction("send", selectedOffer)} className="rounded-lg bg-cyan-600 dark:bg-cyan-500 text-white hover:bg-cyan-700 dark:hover:bg-cyan-600 transition-all shadow-sm"><Send className="mr-2 h-4 w-4" />Send Selected Offer</Button>}
               </div>
-              <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-1.5">
+              <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-3 pt-1">
                 {offers.map((offer) => {
                   const priority = offer.priority || (Number(offer.salary) >= 250000 ? "High" : Number(offer.salary) < 120000 ? "Low" : "Medium");
-                  const priorityColor = priority === "High" ? "text-rose-500 border-rose-500/20 bg-rose-500/10" : priority === "Low" ? "text-emerald-500 border-emerald-500/20 bg-emerald-500/10" : "text-amber-500 border-amber-500/20 bg-amber-500/10";
+                  const priorityColor = priority === "High" ? "text-rose-700 border-rose-200 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-500/10" : priority === "Low" ? "text-emerald-700 border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10" : "text-amber-700 border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10";
+                  const isSelected = selectedOffer?._id === offer._id;
+                  const initials = (offer.candidateName || "").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+
                   return (
                     <button
                       key={offer._id || offer.offerId}
                       onClick={() => setSelectedOfferId(offer._id)}
                       className={cn(
-                        "min-w-72 rounded-md border p-4 text-left flex flex-col justify-between gap-2.5 transition-all duration-200 hover:scale-[1.01] cursor-pointer",
-                        selectedOffer?._id === offer._id
-                          ? "border-cyan-300/40 bg-cyan-500/10 shadow-lg shadow-cyan-500/5"
-                          : "border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] hover:bg-slate-100 dark:hover:bg-white/5"
+                        "relative overflow-hidden min-w-72 rounded-lg text-left flex flex-col justify-between gap-3 transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-md",
+                        isSelected
+                          ? "border-2 border-cyan-500 dark:border-cyan-500/60 bg-cyan-500/[0.025] dark:bg-cyan-500/[0.035] p-[15px] shadow-md shadow-cyan-500/[0.05] dark:shadow-cyan-900/10"
+                          : "border border-slate-200 dark:border-slate-850 bg-slate-50/50 dark:bg-white/[0.01] p-4 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-100/50 dark:hover:bg-white/[0.02]"
                       )}
                     >
-                      <div>
-                        <p className="truncate font-semibold text-slate-900 dark:text-white text-base">{offer.candidateName}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">{offer.offerId}</p>
+                      {isSelected && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-cyan-500 dark:bg-cyan-400" />}
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 shrink-0 grid place-items-center rounded-full bg-cyan-500/10 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 font-bold text-xs border border-cyan-500/20">
+                          {initials}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-slate-800 dark:text-slate-205 text-sm">{offer.candidateName}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">{offer.offerId}</p>
+                        </div>
                       </div>
-                      <div className="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
-                        <p>Status: <span className="font-semibold text-slate-900 dark:text-white">{offer.status}</span></p>
-                        <p>Stage: <span className="font-semibold text-slate-900 dark:text-white">{offer.approvalStage || "Draft"}</span></p>
+                      <div className="flex flex-col gap-1 text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-850">
+                        <p className="truncate"><span className="font-semibold text-slate-700 dark:text-slate-300">{offer.status}</span></p>
+                        <p className="truncate">{offer.approvalStage || "Draft"}</p>
                       </div>
-                      <div className="flex items-center justify-between mt-1 pt-2 border-t border-slate-200/50 dark:border-white/5">
-                        <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide", priorityColor)}>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider", priorityColor)}>
                           {priority} Priority
                         </span>
                       </div>
@@ -290,61 +340,38 @@ const OfferOperations = () => {
           )}
 
           {showTemplatesOnly ? (
-            <TemplatesPanel offers={offers} />
-          ) : showAnalyticsOnly ? (
-            <OfferAnalyticsDashboard data={data} />
+            <TemplatesPanel offers={offers} selectedOffer={selectedOffer} onPreview={(templateId) => setPreviewOffer({ ...selectedOffer, previewTemplateId: templateId })} />
           ) : showApprovalsOnly ? (
             <OfferApprovalTimeline offer={selectedOffer} onAction={handleAction} canWrite={canApproveOffers} />
           ) : (
             <>
-              {/* Offers Requiring Attention */}
-              <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-5 shadow-xl shadow-black/10">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Offers Requiring Attention</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Actionable items requiring HR or manager intervention.</p>
-                  </div>
-                  <Link to="/dashboard/offer-management">
-                    <Button variant="outline" size="sm" className="border-slate-200 dark:border-white/10 text-xs font-semibold">
-                      View All
-                    </Button>
-                  </Link>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <Link to="/dashboard/offer-management?status=Pending Approval" className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 hover:bg-amber-500/10 transition-colors block">
-                    <p className="text-xs font-semibold uppercase text-amber-600 dark:text-amber-400">Pending HR Approval</p>
-                    <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{pendingHr}</p>
-                  </Link>
-                  <Link to="/dashboard/offer-management?status=Pending Approval" className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4 hover:bg-blue-500/10 transition-colors block">
-                    <p className="text-xs font-semibold uppercase text-blue-600 dark:text-blue-400">Pending Manager Approval</p>
-                    <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{pendingMgr}</p>
-                  </Link>
-                  <Link to="/dashboard/offer-management?expiry=Due soon" className="rounded-lg border border-rose-500/20 bg-rose-500/5 p-4 hover:bg-rose-500/10 transition-colors block">
-                    <p className="text-xs font-semibold uppercase text-rose-600 dark:text-rose-400">Offers Expiring Soon</p>
-                    <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{expiringSoon}</p>
-                  </Link>
-                  <Link to="/dashboard/offer-management?status=Released" className="rounded-lg border border-purple-500/20 bg-purple-500/5 p-4 hover:bg-purple-500/10 transition-colors block">
-                    <p className="text-xs font-semibold uppercase text-purple-600 dark:text-purple-400">Candidate Response Pending</p>
-                    <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{responsePending}</p>
-                  </Link>
-                </div>
-              </section>
-
               {/* Recent Offer Activities & Operational Summary */}
-              <div className="grid gap-6 lg:grid-cols-2">
+              <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
                 {/* Recent Offer Activities */}
-                <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-5 shadow-xl shadow-black/10">
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Recent Offer Activities</h2>
-                  <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">Real-time status updates and operations history log.</p>
-                  <div className="custom-scrollbar max-h-[340px] overflow-y-auto space-y-4 pr-1">
+                <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                  <div className="mb-4 flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <Clock3 className="h-5 w-5 text-cyan-500 dark:text-cyan-400 mt-1 shrink-0" strokeWidth={2} />
+                      <div>
+                        <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Recent Activity</h2>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Latest offer events only.</p>
+                      </div>
+                    </div>
+                    <Link to="/dashboard/offer-management">
+                      <Button variant="outline" size="sm" className="rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-semibold transition-all hover:-translate-y-0.5 hover:shadow-sm">
+                        <Eye className="mr-2 h-3.5 w-3.5" />View All
+                      </Button>
+                    </Link>
+                  </div>
+                  <div className="custom-scrollbar max-h-[300px] overflow-y-auto space-y-3 pr-1">
                     {recentActivities.length === 0 ? (
-                      <p className="text-sm text-slate-500">No recent activities available.</p>
+                      <p className="text-sm text-slate-400 dark:text-slate-500">No recent activities available.</p>
                     ) : (
                       Object.entries(groupedActivities).map(([groupName, items]) => {
                         if (items.length === 0) return null;
                         return (
-                          <div key={groupName} className="space-y-2">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">{groupName}</h3>
+                          <div key={groupName} className="space-y-3">
+                            <h3 className="text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">{groupName}</h3>
                             <div className="space-y-2">
                               {items.map((act, index) => {
                                 const lowerAction = act.action.toLowerCase();
@@ -361,20 +388,19 @@ const OfferOperations = () => {
                                 const timeFormatted = dateObj.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 
                                 return (
-                                  <div key={index} className="flex gap-3 items-start border-b border-slate-100 dark:border-white/5 pb-2.5">
+                                  <div key={index} className="flex gap-3 items-start rounded-lg border border-transparent p-2.5 transition-colors duration-150 hover:border-slate-200 dark:hover:border-slate-800 hover:bg-slate-50 dark:hover:bg-white/[0.015]">
                                     <Icon className={cn("h-5 w-5 mt-0.5 shrink-0", iconColor)} />
-                                    <div className="min-w-0 flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                    <div className="min-w-0 flex-1 grid grid-cols-1 sm:grid-cols-[0.9fr_1.2fr_auto] gap-2">
                                       <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{act.candidateName}</p>
-                                        <p className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-0.5">{act.offerId}</p>
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-205 truncate">{act.candidateName}</p>
+                                        <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500 mt-0.5">{act.offerId}</p>
                                       </div>
                                       <div className="min-w-0 text-xs">
-                                        <span className="text-slate-500 dark:text-slate-400">Action:</span>
-                                        <p className="font-medium text-slate-800 dark:text-slate-200 truncate">{act.action}</p>
+                                        <p className="font-medium text-slate-700 dark:text-slate-300 truncate">{act.action}</p>
                                       </div>
                                       <div className="text-xs sm:text-right shrink-0">
-                                        <p className="text-slate-500 dark:text-slate-400">Performed by: <span className="font-semibold text-slate-800 dark:text-slate-200">{act.actor}</span></p>
-                                        <p className="text-slate-400 text-3xs mt-0.5">{dateFormatted} · {timeFormatted}</p>
+                                        <p className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold">{act.actor}</p>
+                                        <p className="text-slate-400 dark:text-slate-500 text-[9px] mt-0.5">{dateFormatted} · {timeFormatted}</p>
                                       </div>
                                     </div>
                                   </div>
@@ -387,33 +413,69 @@ const OfferOperations = () => {
                     )}
                   </div>
                 </section>
-
-                {/* Operational Summary */}
-                <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-5 shadow-xl shadow-black/10">
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Operational Summary</h2>
-                  <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">Key metrics outlining compensation ranges, efficiency, and pipeline velocity.</p>
-                  <div className="grid gap-3 sm:grid-cols-2 text-sm">
-                    <div className="rounded-md border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-3">
-                      <span className="text-xs text-slate-500 dark:text-slate-400">Highest Offer</span>
-                      <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">{formatMoney(highestOffer)}</p>
-                    </div>
-                    <div className="rounded-md border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-3">
-                      <span className="text-xs text-slate-500 dark:text-slate-400">Lowest Offer</span>
-                      <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">{formatMoney(lowestOffer)}</p>
-                    </div>
-                    <div className="rounded-md border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-3">
-                      <span className="text-xs text-slate-500 dark:text-slate-400">Average Offer CTC</span>
-                      <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">{formatMoney(avgOfferValue)}</p>
-                    </div>
-                    <div className="rounded-md border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-3">
-                      <span className="text-xs text-slate-500 dark:text-slate-400">Avg Response Time</span>
-                      <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">{avgResponseTime} days</p>
-                    </div>
-                    <div className="rounded-md border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-3 sm:col-span-2">
-                      <span className="text-xs text-slate-500 dark:text-slate-400">Offers This Month</span>
-                      <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">{offersThisMonth}</p>
+                {/* Selected Candidate Overview */}
+                <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                  <div className="mb-4 flex items-start gap-3">
+                    <UserCheck className="h-5 w-5 text-cyan-500 dark:text-cyan-400 mt-1 shrink-0" strokeWidth={2} />
+                    <div>
+                      <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Selected Candidate Overview</h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Review the active candidate and offer information before proceeding with offer actions.</p>
                     </div>
                   </div>
+                  {selectedOffer ? (
+                    (() => {
+                      const initials = (selectedOffer.candidateName || "").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+                      const isAutoRecommended = !selectedOffer.templateId || selectedOffer.templateId === "executive-standard";
+                      const empType = selectedOffer.employmentType || selectedOffer.candidateId?.jobId?.employmentType || "Full-Time";
+                      
+                      return (
+                        <div className="space-y-4 mt-4">
+                          {/* Candidate Identity (Primary Focus) */}
+                          <div className="space-y-3.5">
+                            <div className="h-10 w-10 rounded-full bg-cyan-500/10 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 font-bold text-xs border border-cyan-500/20 grid place-items-center shrink-0">
+                              {initials}
+                            </div>
+                            <div className="space-y-1">
+                              <h3 className="text-base font-bold text-slate-850 dark:text-slate-100">{selectedOffer.candidateName}</h3>
+                              <p className="text-sm font-semibold text-slate-700 dark:text-slate-350">{selectedOffer.position}</p>
+                              <p className="text-xs text-slate-450 dark:text-slate-500">
+                                {selectedOffer.department} &bull; {empType}
+                              </p>
+                            </div>
+                          </div>
+
+                          <hr className="border-slate-100 dark:border-slate-850" />
+
+                          {/* Key-Value Information Grid */}
+                          <div className="grid grid-cols-[120px_1fr] gap-y-3.5 text-xs">
+                            <span className="text-slate-400 dark:text-slate-500 font-semibold py-0.5">Offer status</span>
+                            <div className="py-0.5">
+                              <OfferStatusBadge status={selectedOffer.status} />
+                            </div>
+
+                            <span className="text-slate-400 dark:text-slate-500 font-semibold">Template</span>
+                            <div>
+                              <p className="font-semibold text-slate-800 dark:text-slate-200">{getActiveTemplateName(selectedOffer)}</p>
+                              {isAutoRecommended && (
+                                <p className="text-[10px] text-slate-450 dark:text-slate-500 mt-0.5 font-medium">Auto Recommended</p>
+                              )}
+                            </div>
+
+                            <span className="text-slate-400 dark:text-slate-500 font-semibold">Joining Date</span>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedOffer.joiningDate || "N/A"}</span>
+
+                            <span className="text-slate-400 dark:text-slate-500 font-semibold">Annual CTC</span>
+                            <span className="font-bold text-slate-900 dark:text-white text-sm">{formatMoney(selectedOffer.compensation?.total || selectedOffer.salary)}</span>
+                          </div>
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <UserCheck className="h-10 w-10 text-slate-300 dark:text-slate-700 mb-3" />
+                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Select a candidate from the Active Offer Work Queue above to view their details.</p>
+                    </div>
+                  )}
                 </section>
               </div>
               <OfferLifecycleTracker offer={selectedOffer} />
@@ -430,18 +492,20 @@ const OfferOperations = () => {
                 <CandidateComparisonPanel offers={offers} />
               </div>
               <OfferInsightsPanel insights={data?.insights || []} />
-              <OfferAnalyticsDashboard data={data} />
               <OfferAutomationRules rules={selectedOffer?.automationRules || []} />
-              <TemplatesPanel offers={offers} />
+              <TemplatesPanel offers={offers} selectedOffer={selectedOffer} onPreview={(templateId) => setPreviewOffer({ ...selectedOffer, previewTemplateId: templateId })} />
               <PreOnboardingWorkflow offer={selectedOffer} />
               {selectedOffer && (
-                <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Offer Letter Preview</h2>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">Professional offer letter with compensation, terms, and digital signature placeholders.</p>
+                <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <BadgeCheck className="h-5 w-5 text-cyan-500 dark:text-cyan-400 mt-1 shrink-0" strokeWidth={2} />
+                      <div>
+                        <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Offer Letter Preview</h2>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Review the selected candidate letter.</p>
+                      </div>
                     </div>
-                    <Button onClick={() => setPreviewOffer(selectedOffer)} className="bg-cyan-600 dark:bg-cyan-300 text-white dark:text-slate-950 hover:bg-cyan-700 dark:hover:bg-cyan-200">Preview Offer</Button>
+                    <Button onClick={() => setPreviewOffer(selectedOffer)} className="rounded-lg bg-cyan-600 dark:bg-cyan-500 text-white hover:bg-cyan-700 dark:hover:bg-cyan-600 transition-all shadow-sm hover:-translate-y-0.5">Preview Offer</Button>
                   </div>
                 </section>
               )}
