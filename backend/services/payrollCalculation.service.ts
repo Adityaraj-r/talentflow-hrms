@@ -273,7 +273,7 @@ export async function computeEmployeePayrollLine(params: {
   const overtimeExtra = Math.round(Number(adjustments.overtime) || 0)
   const overtime = overtimeFromHours + overtimeExtra
 
- const bonus = Math.round(Number(adjustments.bonus) || 0)
+  const bonus = Math.round(Number(adjustments.bonus) || 0)
   const bonusReason = bonus > 0 ? String(adjustments.bonusReason || "").trim().slice(0, 300) : ""
 
   const mIdx = new Date(`${period.month} 1, ${period.year}`).getMonth()
@@ -297,7 +297,7 @@ export async function computeEmployeePayrollLine(params: {
 
   const perfBonus = await performanceBonusForUser(uid)
 
-const earnings = {
+  const earnings = {
     basic,
     hra,
     allowances,
@@ -323,17 +323,21 @@ const earnings = {
   const fixedOther = (Number(employee.salary?.deductions?.other) || 0) / 12
   const fixedTax = (Number(employee.salary?.deductions?.tax) || 0) / 12
 
-  const stat = applyStatutoryDeductions(settings, {
-    basic: basic,
-    gross: grossPay,
-    fixedPf,
-    fixedEsi: 0,
-    fixedPt: 0,
-    fixedTds: fixedTax,
-    insurance: fixedInsurance,
-    other: fixedOther,
-  })
-
+  const stat = await applyStatutoryDeductions(
+    settings,
+    {
+      basic: basic,
+      gross: grossPay,
+      fixedPf,
+      fixedEsi: 0,
+      fixedPt: 0,
+      fixedTds: fixedTax,
+      insurance: fixedInsurance,
+      other: fixedOther,
+    },
+    periodStart,
+    employee.address?.state   // <-- nested under address, not top-level
+  )
   const preAdvanceTotal =
     stat.pf +
     stat.esi +

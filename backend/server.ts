@@ -53,6 +53,7 @@ import disciplinaryRoutes from './routes/disciplinary.routes';
 import User from './models/User.model';
 import { initCronJobs } from './scripts/cronJobs';
 import dns from 'dns'
+import payrollPolicyRoutes from './routes/payrollPolicy.routes';
 
 
 const app = express();
@@ -164,6 +165,7 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/document-requests', documentRequestRoutes);
 app.use('/api/salary-structure', salaryRoutes);
 app.use('/api/payroll', payrollRoutes);
+app.use('/api/payroll', payrollPolicyRoutes);
 app.use('/api/ceo', ceoRoutes);
 app.use('/api/pms/cycles', appraisalCycleRoutes);
 app.use('/api/pms/bonus', bonusRoutes);

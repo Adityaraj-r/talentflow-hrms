@@ -30,7 +30,7 @@ router.get(
 router.get(
   "/",
   protect,
-  allowRoles("ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "COUNTRY_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"),
+  allowRoles("ADMIN",'SUPER_ADMIN', "HR_MANAGER", "HR_OFFICER", "CEO", "COUNTRY_MANAGER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"),
   getAllEmployees
 );
 
