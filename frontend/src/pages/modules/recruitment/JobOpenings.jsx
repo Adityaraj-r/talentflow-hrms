@@ -38,6 +38,20 @@ const JobOpenings = () => {
   const [confirmType, setConfirmType] = useState("")
   const [jobToActOn, setJobToActOn] = useState(null)
 
+  const getHiringRoles = (job) => {
+    if (Array.isArray(job?.hiringRoles) && job.hiringRoles.length > 0) {
+      return job.hiringRoles
+    }
+    return [{
+      _id: "default",
+      roleName: job?.jobTitle || "Hiring Role",
+      openings: job?.positions || 1,
+      filled: 0,
+      skills: job?.description || "",
+      status: job?.status === "Closed" ? "Closed" : "Open",
+    }]
+  }
+
   const fetchJobs = async () => {
     setLoading(true)
     try {
@@ -234,7 +248,7 @@ const JobOpenings = () => {
               <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
                   <h3 className="truncate text-lg font-semibold">{job.jobTitle}</h3>
-                  <p className="text-sm text-muted-foreground">{job.department} · {job.positions} positions · {job.employmentType}</p>
+                  <p className="text-sm text-muted-foreground">{job.department} · {job.positions} positions · {getHiringRoles(job).length} hiring role{getHiringRoles(job).length !== 1 && "s"} · {job.employmentType}</p>
                   <p className="text-sm text-muted-foreground">
                     Deadline: {job.deadline ? new Date(job.deadline).toLocaleDateString() : "N/A"}
                   </p>
@@ -303,6 +317,35 @@ const JobOpenings = () => {
               <div className="rounded-lg border border-white/10 bg-muted/10 p-3">
                 <div className="text-xs text-muted-foreground">Deadline</div>
                 <div className="font-medium">{selectedJob.deadline ? new Date(selectedJob.deadline).toLocaleDateString() : "N/A"}</div>
+              </div>
+              <div className="md:col-span-2 rounded-lg border border-white/10 bg-muted/10 p-3">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="text-xs text-muted-foreground">Hiring Progress</div>
+                  <div className="text-xs text-muted-foreground">Required / Filled / Remaining</div>
+                </div>
+                <div className="space-y-2">
+                  {getHiringRoles(selectedJob).map((role) => {
+                    const required = Number(role.openings) || 0
+                    const filled = Number(role.filled) || 0
+                    const remaining = Math.max(0, required - filled)
+                    return (
+                      <div key={role._id || role.roleName} className="rounded-md border border-white/10 bg-background/60 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <div className="font-medium">{role.roleName}</div>
+                            {role.skills && <div className="mt-1 text-xs text-muted-foreground">{role.skills}</div>}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full border border-white/10 px-2 py-1 text-xs">{required} required</span>
+                            <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300">{filled} filled</span>
+                            <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-xs text-amber-300">{remaining} remaining</span>
+                            <RecruitmentStatusBadge status={role.status || (remaining === 0 ? "Closed" : "Open")} />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             </div>
           ) : (

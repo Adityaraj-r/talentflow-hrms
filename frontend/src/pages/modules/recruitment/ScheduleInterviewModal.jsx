@@ -74,16 +74,16 @@ const ScheduleInterviewModal = ({ isOpen, onClose, candidateEmail, jobTitle }) =
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="sm:max-w-[750px] p-8">
+        <DialogHeader className="mb-2">
+          <DialogTitle className="flex items-center gap-2 text-xl">
             <Video className="h-5 w-5 text-blue-600" />
             Schedule Interview
           </DialogTitle>
         </DialogHeader>
 
         {!meetLink ? (
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-6 py-4">
             <div className="grid gap-2">
               <Label>Summary</Label>
               <Input 
@@ -91,7 +91,7 @@ const ScheduleInterviewModal = ({ isOpen, onClose, candidateEmail, jobTitle }) =
                 onChange={(e) => setFormData({...formData, summary: e.target.value})}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-5">
               <div className="grid gap-2">
                 <Label>Date</Label>
                 <div className="relative">
@@ -125,7 +125,8 @@ const ScheduleInterviewModal = ({ isOpen, onClose, candidateEmail, jobTitle }) =
               <Textarea 
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
-                className="h-20"
+                rows={6}
+                className="resize-none"
               />
             </div>
           </div>
@@ -144,9 +145,9 @@ const ScheduleInterviewModal = ({ isOpen, onClose, candidateEmail, jobTitle }) =
           </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="pt-2">
           {!meetLink && (
-            <Button onClick={handleGenerate} disabled={loading}>
+            <Button onClick={handleGenerate} disabled={loading} size="lg">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Generate Link
             </Button>

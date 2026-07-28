@@ -1,6 +1,43 @@
 import { Request, Response } from "express";
 import Job from "../models/job.model";
 
+const normalizeHiringRoles = (roles: any, fallbackRoleName: string, fallbackOpenings: any) => {
+  const rows = Array.isArray(roles) ? roles : [];
+  const normalized = rows
+    .map((role) => {
+      const openings = Number(role?.openings);
+      const filled = Math.min(Math.max(0, Number(role?.filled) || 0), Math.max(0, openings || 0));
+      return {
+        _id: role?._id,
+        roleName: (role?.roleName || role?.name || "").toString().trim(),
+        openings,
+        minSalary: role?.minSalary !== undefined && role?.minSalary !== null ? Number(role.minSalary) : undefined,
+        maxSalary: role?.maxSalary !== undefined && role?.maxSalary !== null ? Number(role.maxSalary) : undefined,
+        experience: (role?.experience || "").toString().trim(),
+        skills: (role?.skills || role?.requirements || "").toString().trim(),
+        filled,
+        status: filled >= openings ? "Closed" : (role?.status === "Closed" ? "Closed" : "Open"),
+      };
+    })
+    .filter((role) => role.roleName && Number.isInteger(role.openings) && role.openings > 0);
+
+  if (normalized.length > 0) return normalized;
+
+  return [
+    {
+      roleName: fallbackRoleName || "Hiring Role",
+      openings: Math.max(1, Number(fallbackOpenings) || 1),
+      experience: "",
+      skills: "",
+      filled: 0,
+      status: "Open",
+    },
+  ];
+};
+
+const totalOpenings = (roles: any[]) =>
+  roles.reduce((sum, role) => sum + (Number(role.openings) || 0), 0);
+
 export const getAllJobs = async (req: Request, res: Response) => {
   try {
     const now = new Date();
@@ -35,10 +72,12 @@ export const createJob = async (req: Request, res: Response) => {
 
     console.log("Incoming Job Data:", req.body);
 
+    const hiringRoles = normalizeHiringRoles(req.body.hiringRoles, req.body.jobTitle, req.body.positions);
     const jobData = {
       jobTitle: req.body.jobTitle,
       department: req.body.department,
-      positions: Number(req.body.positions),
+      positions: totalOpenings(hiringRoles),
+      hiringRoles,
       employmentType: req.body.employmentType,
       description: req.body.description,
       deadline: req.body.deadline,
@@ -74,7 +113,15 @@ export const updateJob = async (req: Request, res: Response) => {
       }
     }
 
-    const updatedJob = await Job.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updateData: any = { ...req.body };
+    if (Object.prototype.hasOwnProperty.call(req.body, "hiringRoles")) {
+      updateData.hiringRoles = normalizeHiringRoles(req.body.hiringRoles, req.body.jobTitle || job.jobTitle, req.body.positions || job.positions);
+      updateData.positions = totalOpenings(updateData.hiringRoles);
+    } else if (Object.prototype.hasOwnProperty.call(req.body, "positions")) {
+      updateData.positions = Number(req.body.positions);
+    }
+
+    const updatedJob = await Job.findByIdAndUpdate(req.params.id, updateData, { new: true });
     res.json(updatedJob);
   } catch (error: any) {
     res.status(400).json({ success: false, message: error.message });
@@ -101,7 +148,7 @@ export const closeJob = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: "Job not found" });
     }
 
-    const updateData: any = { status: "Closed" };
+    const updateData: any = { status: "Closed", autoClosedByHiringProgress: false };
     if (job.deadline) {
       updateData.deadline = new Date(Date.now() - 24 * 60 * 60 * 1000);
     }
