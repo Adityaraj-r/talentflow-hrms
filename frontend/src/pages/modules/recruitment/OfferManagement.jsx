@@ -249,6 +249,31 @@ const OfferManagement = () => {
     setPendingAction({ action, offer })
   }
 
+  const handleDownloadOfferPdf = async (offer) => {
+    if (!offer?._id) return
+    const toastId = toast.loading("Generating official Offer Letter PDF...")
+    try {
+      const res = await apiClient.get(`/offers/${offer._id}/pdf`, { responseType: "blob" })
+      const blob = new Blob([res.data || res], { type: "application/pdf" })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      const formattedName = (offer.candidateName || "Candidate").replace(/[^a-zA-Z0-9_-]/g, "_")
+      const version = offer.negotiationRounds?.length ? `_V${offer.negotiationRounds.length + 1}` : ""
+      link.href = url
+      link.download = `Offer_Letter_${formattedName}${version}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      toast.dismiss(toastId)
+      toast.success("Official Offer Letter PDF downloaded successfully")
+    } catch (e) {
+      console.error("PDF download error:", e)
+      toast.dismiss(toastId)
+      toast.error(e?.response?.data?.error || "Failed to download Offer Letter PDF")
+    }
+  }
+
   const confirmAction = async () => {
     const action = pendingAction?.action
     const offer = pendingAction?.offer
@@ -257,9 +282,15 @@ const OfferManagement = () => {
     if (action === "approve" && offer?._id) return handleManagerApprove(offer._id)
     if (action === "accepted" && offer?._id) return handleStatusUpdate(offer._id, "Accepted")
     if (action === "declined" && offer?._id) return handleStatusUpdate(offer._id, "Declined")
-    if (action === "download") {
-      toast.success("Offer letter prepared for download")
-      window.print()
+    if (action === "download" && offer?._id) return handleDownloadOfferPdf(offer)
+    if (action === "send" && offer?._id) {
+      try {
+        await apiClient.patch(`/offers/${offer._id}/send`, { comments: "Sent from offer management" })
+        toast.success("Offer email sent to candidate successfully")
+        await loadOffers()
+      } catch (e) {
+        toast.error(e?.response?.data?.error || e?.message || "Failed to send offer email")
+      }
       return
     }
     if (action === "export") {

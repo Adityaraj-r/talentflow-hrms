@@ -12,6 +12,7 @@ import {
   rejectOffer,
   negotiateOffer,
   sendOffer,
+  getOfferPdf,
 } from '../controllers/offer.controller';
 import { protect } from '../middleware/auth.middleware';
 import { authorizeByMatrix, MODULE_KEYS } from '../middleware/role.middleware';
@@ -29,6 +30,7 @@ router.get('/dashboard', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read'), req
 router.get('/analytics', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read'), requireRecruitmentReadRole, getOfferAnalytics);
 router.get('/approvals', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read'), requireRecruitmentReadRole, getOfferApprovals);
 router.get('/', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read'), requireRecruitmentReadRole, getOffers);
+router.get('/:id/pdf', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read'), requireRecruitmentReadRole, getOfferPdf);
 router.get('/:id', authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'read'), requireRecruitmentReadRole, getOfferById);
 router.post(
   '/',

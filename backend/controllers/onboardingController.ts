@@ -4,6 +4,8 @@ import path from 'path';
 import { v2 as cloudinary } from 'cloudinary';
 import Employee from '../models/Employee.model';
 import Document from '../models/Document.model';
+import Offer from '../models/Offer.model';
+import { syncOfferJoinedStatus } from './offer.controller';
 
 const getLocalDocumentPath = (file: Express.Multer.File): string => {
   return `/uploads/onboarding/${path.basename(file.path)}`;
@@ -151,6 +153,17 @@ console.log("STEP 2 - Saving employee");
       }
     }
 console.log("STEP 4 - Save completed");
+
+    // STEP 5 - Bridge to Offer Lifecycle: Synchronize offer to "Joined" when employee record is active/created
+    if (employee && normalizedEmail) {
+      try {
+        await syncOfferJoinedStatus(normalizedEmail);
+        console.log(`STEP 5 - Offer status synchronized to Joined for ${normalizedEmail}`);
+      } catch (offerError: any) {
+        console.warn('Could not update linked offer to Joined:', offerError?.message);
+      }
+    }
+
     res.status(200).json({ success: true, data: employee });
   }  catch (error: any) {
   console.log("=======================================");

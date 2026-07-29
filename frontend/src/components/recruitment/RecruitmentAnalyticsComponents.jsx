@@ -92,12 +92,14 @@ export function AnalyticsKpiCard({ metric, onClick, active }) {
         <TooltipTrigger asChild>
           <Motion.motion.button
             type="button"
-            whileHover={{ y: -4 }}
+            whileHover={{ y: -2 }}
             onClick={onClick}
             className={cn(
-              "group relative min-h-[172px] overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 p-4 text-left shadow-xl shadow-black/10 backdrop-blur transition-all",
-              "hover:border-cyan-300/30 hover:bg-slate-900/80",
-              active && "border-cyan-300/40 ring-1 ring-cyan-300/25"
+              "group relative min-h-[172px] overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 p-4 text-left shadow-xl shadow-black/10 backdrop-blur transition-all duration-300",
+              "hover:bg-[#F8FAFC] dark:hover:bg-slate-900/80 hover:border-cyan-400 dark:hover:border-cyan-300/30 hover:shadow-2xl",
+              active
+                ? "border-cyan-400 dark:border-cyan-300/40 ring-1 ring-cyan-400/25 dark:ring-cyan-300/25"
+                : "hover:shadow-cyan-400/5 dark:hover:shadow-cyan-300/5"
             )}
           >
             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-emerald-400 to-amber-300" />

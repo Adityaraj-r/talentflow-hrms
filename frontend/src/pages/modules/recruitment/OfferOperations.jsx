@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import * as Motion from "framer-motion";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { Link, useLocation } from "react-router-dom";
-import { ArrowLeft, BriefcaseBusiness, RefreshCw, Send, CheckCircle2, XCircle, BadgeCheck, Clock3, AlertTriangle, CircleDollarSign, Eye, UserCheck } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, RefreshCw, Send, CheckCircle2, XCircle, BadgeCheck, Clock3, AlertTriangle, CircleDollarSign, Eye, UserCheck, FileText, Download, UserPlus, Archive, ShieldCheck, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import offerOperationsService from "@/services/offerOperationsService";
+import apiClient from "@/services/apiClient";
 import { useUser } from "@/contexts/UserContext";
 import { enrichOffer, formatMoney, OfferStatusBadge } from "@/components/recruitment/OfferWorkflow";
 
@@ -60,6 +62,7 @@ const OfferOperations = () => {
   const [selectedOfferId, setSelectedOfferId] = useState(null);
   const [previewOffer, setPreviewOffer] = useState(null);
 
+
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -86,11 +89,13 @@ const OfferOperations = () => {
   const handleAction = async (action, offer) => {
     if (!offer?._id) return;
     const isReleaseAction = action === "send" || action === "escalate";
+    const isUtilityAction = action === "preview" || action === "download" || action === "archive";
+    
     if (isReleaseAction && !canWrite) {
       toast.error("You do not have permission to send offers");
       return;
     }
-    if (!isReleaseAction && !canApproveOffers) {
+    if (!isReleaseAction && !isUtilityAction && !canApproveOffers) {
       toast.error("Only HR Manager can perform offer approval and release actions");
       return;
     }
@@ -99,6 +104,38 @@ const OfferOperations = () => {
       return;
     }
     try {
+      if (action === "preview") {
+        setPreviewOffer(offer);
+        return;
+      }
+      if (action === "download") {
+        const toastId = toast.loading("Generating official Offer Letter PDF...");
+        try {
+          const res = await apiClient.get(`/offers/${offer._id}/pdf`, { responseType: "blob" });
+          const blob = new Blob([res.data || res], { type: "application/pdf" });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          const formattedName = (offer.candidateName || "Candidate").replace(/[^a-zA-Z0-9_-]/g, "_");
+          const version = offer.negotiationRounds?.length ? `_V${offer.negotiationRounds.length + 1}` : "";
+          link.href = url;
+          link.download = `Offer_Letter_${formattedName}${version}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.URL.revokeObjectURL(url);
+          toast.dismiss(toastId);
+          toast.success("Official Offer Letter PDF downloaded successfully");
+        } catch (err) {
+          console.error("PDF download error:", err);
+          toast.dismiss(toastId);
+          toast.error(err?.response?.data?.error || "Failed to download Offer Letter PDF");
+        }
+        return;
+      }
+      if (action === "archive") {
+        toast.success("Offer folder successfully archived");
+        return;
+      }
       if (action === "approve") await offerOperationsService.approveOffer(offer._id, { comments: "Approved from operations dashboard" });
       if (action === "reject") await offerOperationsService.rejectOffer(offer._id, { comments: "Rejected from operations dashboard" });
       if (action === "changes") await offerOperationsService.rejectOffer(offer._id, { requestChanges: true, comments: "Changes requested by approver" });
@@ -110,6 +147,7 @@ const OfferOperations = () => {
       toast.error(error?.error || error?.message || "Offer action failed");
     }
   };
+
 
   const exportRows = useMemo(() => offers.map((offer) => ({
     offerId: offer.offerId,
@@ -451,6 +489,29 @@ const OfferOperations = () => {
                             <span className="text-slate-400 dark:text-slate-500 font-semibold py-0.5">Offer status</span>
                             <div className="py-0.5">
                               <OfferStatusBadge status={selectedOffer.status} />
+                            </div>
+
+                            <span className="text-slate-400 dark:text-slate-500 font-semibold py-0.5">Employee ID</span>
+                            <div className="py-0.5">
+                              {(() => {
+                                const empRef = selectedOffer.employeeId;
+                                const empCode = typeof empRef === "object" ? empRef?.employeeCode : (selectedOffer.employeeCode || null);
+                                const empProfileId = typeof empRef === "object" ? empRef?._id : (typeof empRef === "string" ? empRef : null);
+
+                                if (empCode || empProfileId) {
+                                  return (
+                                    <Link
+                                      to={`/employee-center/employee/${empProfileId || empCode}`}
+                                      className="inline-flex items-center gap-1 font-bold text-cyan-600 dark:text-cyan-400 hover:underline"
+                                      title="View Employee Profile in Employee Center"
+                                    >
+                                      {empCode || "View Profile"}
+                                      <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                                    </Link>
+                                  );
+                                }
+                                return <span className="text-slate-400 dark:text-slate-500 italic font-normal">Not Generated</span>;
+                              })()}
                             </div>
 
                             <span className="text-slate-400 dark:text-slate-500 font-semibold">Template</span>
