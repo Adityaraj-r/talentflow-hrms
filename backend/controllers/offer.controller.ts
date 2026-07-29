@@ -1,7 +1,12 @@
 import { Response } from 'express'; //
+import mongoose from 'mongoose';
 import Offer from '../models/Offer.model';
+import Employee from '../models/Employee.model';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { createLog } from './audit.controller';
+import User from '../models/User.model';
+import { generateOfferLetterPdfBuffer } from '../utils/pdfGenerator';
+import { sendOfferEmail } from '../utils/sendEmail';
 
 const CEO_OFFER_THRESHOLD = () => Number(process.env.CEO_OFFER_SALARY_THRESHOLD || 250000);
 const PENDING_OFFER_APPROVAL_STATUSES = ['Pending HR Manager Approval', 'Pending CEO Approval'];
@@ -71,7 +76,11 @@ const buildOfferAnalytics = async () => {
     Offer.find({ createdAt: { $gte: previousStart, $lt: start } }).lean(),
   ]);
 
-  const allOffers = await Offer.find().sort({ createdAt: -1 }).populate('createdBy', 'firstName lastName').lean();
+  const allOffers = await Offer.find()
+    .sort({ createdAt: -1 })
+    .populate('createdBy', 'firstName lastName')
+    .populate('employeeId', 'employeeCode name email status department designation')
+    .lean();
   const accepted = offers.filter((offer: any) => offer.status === 'Accepted').length;
   const rejected = offers.filter((offer: any) => offer.status === 'Declined').length;
   const pending = offers.filter((offer: any) => isPendingOfferApproval(offer.status) || offer.status === 'Under Review' || offer.status === 'Changes Requested').length;
@@ -166,9 +175,95 @@ const buildOfferAnalytics = async () => {
   };
 };
 
+export const syncOfferJoinedStatus = async (targetEmail?: string) => {
+  try {
+    const filter: any = {};
+    if (targetEmail) {
+      filter.candidateEmail = { $regex: new RegExp(`^${targetEmail.trim()}$`, 'i') };
+    } else {
+      filter.status = { $in: ['Accepted', 'Joined'] };
+    }
+
+    const offers = await Offer.find(filter);
+    for (const offer of offers) {
+      if (!offer.candidateEmail) continue;
+      const normalizedEmail = offer.candidateEmail.toLowerCase().trim();
+
+      const employee = await Employee.findOne({
+        email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') }
+      });
+
+      if (employee) {
+        const isEmployeeActive = employee.status === 'Active' || employee.onboardingStatus === 'Completed' || Boolean(employee.employeeCode);
+        if (isEmployeeActive) {
+          let updated = false;
+
+          if (String(offer.employeeId || '') !== String(employee._id)) {
+            offer.employeeId = employee._id as any;
+            updated = true;
+          }
+
+          if (offer.status !== 'Joined' || offer.approvalStage !== 'Completed') {
+            offer.status = 'Joined' as any;
+            offer.approvalStage = 'Completed' as any;
+            updated = true;
+          }
+
+          const existingHistory = (offer.get('activityHistory') as any[]) || [];
+          const historyTypes = new Set(existingHistory.map((h: any) => h.type));
+
+          const newEvents: any[] = [];
+          if (!historyTypes.has('employee-created')) {
+            newEvents.push({
+              type: 'employee-created',
+              message: `Employee Record Created (${employee.employeeCode || 'Registered'}).`,
+              actor: 'Employee Center',
+              priority: 'normal',
+              at: (employee as any).createdAt || new Date(),
+            });
+          }
+          if (!historyTypes.has('employee-onboarded')) {
+            newEvents.push({
+              type: 'employee-onboarded',
+              message: `Employee Successfully Onboarded into ${employee.department || 'Department'}.`,
+              actor: 'Onboarding System',
+              priority: 'normal',
+              at: new Date(),
+            });
+          }
+          if (!historyTypes.has('candidate-joined')) {
+            newEvents.push({
+              type: 'candidate-joined',
+              message: `Employee Joined Organization as ${employee.designation || offer.position || 'Employee'} (${employee.employeeCode || 'EMP'}). Offer lifecycle complete.`,
+              actor: 'HRMS System',
+              priority: 'normal',
+              at: new Date(),
+            });
+          }
+
+          if (newEvents.length > 0) {
+            offer.set('activityHistory', [...existingHistory, ...newEvents]);
+            updated = true;
+          }
+
+          if (updated) {
+            await offer.save();
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error syncing offer joined status:', err);
+  }
+};
+
 export const getOffers = async (req: AuthRequest, res: Response) => {
   try {
-    const offers = await Offer.find().sort({ createdAt: -1 }).populate('createdBy', 'firstName lastName');
+    await syncOfferJoinedStatus();
+    const offers = await Offer.find()
+      .sort({ createdAt: -1 })
+      .populate('createdBy', 'firstName lastName')
+      .populate('employeeId', 'employeeCode name email status department designation');
     res.status(200).json({ success: true, data: offers });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Server Error' });
@@ -177,7 +272,10 @@ export const getOffers = async (req: AuthRequest, res: Response) => {
 
 export const getOfferById = async (req: AuthRequest, res: Response) => {
   try {
-    const offer = await Offer.findById(req.params.id).populate('createdBy', 'firstName lastName');
+    await syncOfferJoinedStatus();
+    const offer = await Offer.findById(req.params.id)
+      .populate('createdBy', 'firstName lastName')
+      .populate('employeeId', 'employeeCode name email status department designation');
     if (!offer) return res.status(404).json({ success: false, error: 'Offer not found' });
     res.status(200).json({ success: true, data: offer });
   } catch (error) {
@@ -448,15 +546,147 @@ export const sendOffer = async (req: AuthRequest, res: Response) => {
       return res.status(409).json({ success: false, error: 'Offer must be approved before it can be sent.' });
     }
     const before = offer.toObject();
-    offer.status = 'Offered';
-    offer.approvalStage = 'Sent' as any;
-    offer.sentAt = new Date();
-    offer.secureLink = offer.secureLink || `/offers/secure/${offer.offerId}`;
-    offer.set('activityHistory', [...((offer.get('activityHistory') as any[]) || []), { type: 'offer-sent', message: 'Offer sent to candidate', actor: userName(req), priority: 'normal', at: new Date() }]);
+
+    // 1. Fetch the application to resolve the correct position mapping
+    let application: any = null;
+    if (offer.candidateId) {
+      application = await mongoose.model('Application').findById(offer.candidateId);
+    }
+    if (!application && offer.candidateEmail) {
+      application = await mongoose.model('Application').findOne({ email: offer.candidateEmail });
+    }
+    if (!application && offer.candidateName) {
+      application = await mongoose.model('Application').findOne({ name: offer.candidateName });
+    }
+
+    // Resolve position: Priority:
+    // 1. application.selectedPositionTitle
+    // 2. application.positionTitle
+    // 3. application.selectedPositionName
+    // 4. Job Opening title (fallback only for legacy records)
+    let resolvedPosition = offer.position || 'the position';
+    if (application) {
+      const appPos = application.selectedPositionTitle
+        || application.positionTitle
+        || application.selectedPositionName;
+      if (appPos) {
+        resolvedPosition = appPos;
+      } else if (application.jobId) {
+        const job = await mongoose.model('Job').findById(application.jobId);
+        if (job && (job as any).jobTitle) {
+          resolvedPosition = (job as any).jobTitle;
+        }
+      }
+    }
+
+    // Get recruiter/HR user contact details
+    let hrUser = await User.findById(offer.createdBy);
+    if (!hrUser) {
+      hrUser = req.user as any; // Fallback to current user
+    }
+
+    const companyName = 'InternsLand';
+    const expiryDateString = offer.expiryDate ? new Date(offer.expiryDate).toLocaleDateString() : 'N/A';
+
+    // Update state to Sending/Attempting
+    offer.emailStatus = 'Sending';
+    offer.lastEmailAttempt = new Date();
     await offer.save();
-    await logOfferAction(req, 'Send Offer', `Sent ${offer.offerId}`, before, offer.toObject());
-    res.status(200).json({ success: true, data: offer });
-  } catch {
-    res.status(400).json({ success: false, error: 'Send failed' });
+
+    // Temporarily overlay resolved position on the offer document for the PDF generator
+    const originalPos = offer.position;
+    offer.position = resolvedPosition;
+
+    let pdfBuffer: Buffer;
+    try {
+      // 2. Generate PDF using resolved position
+      pdfBuffer = await generateOfferLetterPdfBuffer(offer, hrUser);
+    } catch (pdfError: any) {
+      console.error('PDF Generation Failed:', pdfError);
+      // Restore original position
+      offer.position = originalPos;
+      offer.emailStatus = 'Failed';
+      offer.emailFailureReason = pdfError?.message || 'PDF Generation failed';
+      offer.set('activityHistory', [...((offer.get('activityHistory') as any[]) || []), { type: 'offer-failed', message: 'Offer email delivery failed.', actor: userName(req), priority: 'high', at: new Date() }]);
+      await offer.save();
+      return res.status(500).json({ success: false, error: 'PDF generation failed: ' + (pdfError?.message || '') });
+    }
+
+    // Restore original position
+    offer.position = originalPos;
+
+    try {
+      // 3. Deliver Email with PDF attachment using resolved position
+      const emailPayload = {
+        companyName,
+        candidateName: offer.candidateName,
+        position: resolvedPosition,
+        department: offer.department || '',
+        recruiterName: hrUser ? `${hrUser.firstName} ${hrUser.lastName || ''}`.trim() : 'HR Team',
+        expiryDate: expiryDateString,
+        joiningDate: offer.joiningDate || '',
+        secureLink: offer.secureLink || `/offers/secure/${offer.offerId}`,
+        hrPhone: hrUser?.phoneNumber || '',
+        hrEmail: hrUser?.email || '',
+      };
+
+      const mailResult = await sendOfferEmail(offer.candidateEmail || '', emailPayload, pdfBuffer);
+
+      if (!mailResult.success) {
+        throw new Error(mailResult.reason || 'SMTP transmission failure');
+      }
+
+      // 4. Successful State Update
+      offer.status = 'Offered';
+      offer.approvalStage = 'Sent' as any;
+      offer.sentAt = new Date();
+      offer.emailStatus = 'Sent';
+      offer.emailSentAt = new Date();
+      offer.emailFailureReason = '';
+      offer.emailMessageId = mailResult.messageId || '';
+      offer.set('activityHistory', [...((offer.get('activityHistory') as any[]) || []), { type: 'offer-sent', message: 'Offer email successfully sent to candidate.', actor: userName(req), priority: 'normal', at: new Date() }]);
+      
+      await offer.save();
+      await logOfferAction(req, 'Send Offer', `Sent ${offer.offerId}`, before, offer.toObject());
+
+      return res.status(200).json({ success: true, data: offer });
+    } catch (emailError: any) {
+      console.error('Email Transmission Failed:', emailError);
+      offer.emailStatus = 'Failed';
+      offer.emailFailureReason = emailError?.message || 'SMTP transmission failure';
+      offer.set('activityHistory', [...((offer.get('activityHistory') as any[]) || []), { type: 'offer-failed', message: 'Offer email delivery failed.', actor: userName(req), priority: 'high', at: new Date() }]);
+      await offer.save();
+
+      return res.status(500).json({ success: false, error: 'Email delivery failed: ' + (emailError?.message || '') });
+    }
+  } catch (error: any) {
+    console.error('Send Offer overall error:', error);
+    return res.status(400).json({ success: false, error: error?.message || 'Send failed' });
+  }
+};
+
+export const getOfferPdf = async (req: AuthRequest, res: Response) => {
+  try {
+    const offer = await Offer.findById(req.params.id);
+    if (!offer) return res.status(404).json({ success: false, error: 'Offer not found' });
+
+    let hrUser = await User.findById(offer.createdBy);
+    if (!hrUser) {
+      hrUser = req.user as any;
+    }
+
+    const pdfBuffer = await generateOfferLetterPdfBuffer(offer, hrUser);
+
+    const formattedName = (offer.candidateName || 'Candidate').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const version = offer.negotiationRounds?.length ? `_V${offer.negotiationRounds.length + 1}` : '';
+    const filename = `Offer_Letter_${formattedName}${version}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    return res.status(200).send(pdfBuffer);
+  } catch (error: any) {
+    console.error('Download Offer PDF error:', error);
+    return res.status(500).json({ success: false, error: 'PDF generation failed: ' + (error?.message || '') });
   }
 };

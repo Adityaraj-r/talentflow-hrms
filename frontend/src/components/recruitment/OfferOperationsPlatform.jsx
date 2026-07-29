@@ -111,7 +111,7 @@ export function OfferOperationsKpiCard({ metric }) {
 export function OfferLifecycleTracker({ offer }) {
   const steps = ["Draft", "HR Review", "Manager Review", "Finance Approval", "HR Manager Approval", "Sent", "Viewed", "Negotiation", "Accepted / Rejected", "Joined"];
   const status = offer?.status || "Draft";
-  const activeIndex = status === "Pending CEO Approval" || status === "Pending HR Manager Approval" ? 4 : status === "Offered" ? 5 : status === "Accepted" ? 8 : status === "Declined" ? 8 : 2;
+  const activeIndex = status === "Joined" ? 9 : status === "Pending CEO Approval" || status === "Pending HR Manager Approval" ? 4 : status === "Offered" ? (offer?.emailStatus === "Sent" ? 5 : 4) : status === "Accepted" ? 8 : status === "Declined" ? 8 : 2;
   return (
     <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-5 shadow-xl shadow-black/10">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -124,8 +124,9 @@ export function OfferLifecycleTracker({ offer }) {
       <div className="custom-scrollbar overflow-x-auto pb-2">
         <div className="flex min-w-[1120px] items-start">
           {steps.map((step, index) => {
-            const complete = index < activeIndex || status === "Accepted";
-            const active = index === activeIndex;
+            const isJoined = status === "Joined";
+            const complete = index < activeIndex || status === "Accepted" || isJoined;
+            const active = index === activeIndex && !isJoined;
             return (
               <div key={step} className="flex flex-1 items-center">
                 <div className="flex flex-col items-center text-center">
@@ -136,7 +137,7 @@ export function OfferLifecycleTracker({ offer }) {
                       active
                         ? "h-14 w-14 border-[3px] border-cyan-500 dark:border-cyan-400 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 shadow-lg shadow-cyan-500/20"
                         : "h-11 w-11",
-                      complete && !active && "border-emerald-400 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400",
+                      complete && "border-emerald-400 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400",
                       !complete && !active && "border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-400 dark:text-slate-600"
                     )}
                   >
@@ -209,6 +210,7 @@ export function OfferApprovalTimeline({ offer, onAction, canWrite }) {
   const { user } = useUser();
   const currentUserId = user?.id || user?._id;
   
+
   const hasApproved = offer?.approvalHistory?.some(item => 
     String(item.approverId || '') === String(currentUserId || '') && item.action === 'Approved'
   );

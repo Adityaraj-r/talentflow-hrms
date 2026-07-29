@@ -1,10 +1,11 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type OfferStatus = 'Under Review' | 'Changes Requested' | 'Pending HR Manager Approval' | 'Pending CEO Approval' | 'Offered' | 'Accepted' | 'Declined' | 'Expired';
+export type OfferStatus = 'Under Review' | 'Changes Requested' | 'Pending HR Manager Approval' | 'Pending CEO Approval' | 'Offered' | 'Accepted' | 'Declined' | 'Expired' | 'Joined';
 
 export interface IOffer extends Document {
   offerId: string;
   candidateId?: mongoose.Types.ObjectId;
+  employeeId?: mongoose.Types.ObjectId | any;
   candidateEmail?: string;
   candidateName: string;
   position?: string;
@@ -32,6 +33,11 @@ export interface IOffer extends Document {
   createdBy: mongoose.Types.ObjectId;
   ceoApprovedBy?: mongoose.Types.ObjectId;
   ceoApprovedAt?: Date;
+  emailStatus?: 'Pending' | 'Sending' | 'Sent' | 'Failed';
+  emailSentAt?: Date;
+  lastEmailAttempt?: Date;
+  emailFailureReason?: string;
+  emailMessageId?: string;
 }
 
 const ApprovalHistorySchema = new Schema(
@@ -93,6 +99,7 @@ const PreOnboardingStepSchema = new Schema(
 const OfferSchema: Schema = new Schema({
   offerId: { type: String, required: true, unique: true },
   candidateId: { type: Schema.Types.ObjectId, ref: 'Application' },
+  employeeId: { type: Schema.Types.ObjectId, ref: 'Employee' },
   candidateEmail: { type: String, default: '' },
   candidateName: { type: String, required: true },
   position: { type: String, default: '' },
@@ -126,12 +133,21 @@ const OfferSchema: Schema = new Schema({
   preOnboarding: [PreOnboardingStepSchema],
   status: {
     type: String,
-    enum: ['Under Review', 'Changes Requested', 'Pending HR Manager Approval', 'Pending CEO Approval', 'Offered', 'Accepted', 'Declined', 'Expired'],
+    enum: ['Under Review', 'Changes Requested', 'Pending HR Manager Approval', 'Pending CEO Approval', 'Offered', 'Accepted', 'Declined', 'Expired', 'Joined'],
     default: 'Offered',
   },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   ceoApprovedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   ceoApprovedAt: Date,
+  emailStatus: {
+    type: String,
+    enum: ['Pending', 'Sending', 'Sent', 'Failed'],
+    default: 'Pending',
+  },
+  emailSentAt: Date,
+  lastEmailAttempt: Date,
+  emailFailureReason: { type: String, default: '' },
+  emailMessageId: { type: String, default: '' },
 }, { timestamps: true });
 
 export default mongoose.model<IOffer>('Offer', OfferSchema);

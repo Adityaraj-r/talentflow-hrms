@@ -400,7 +400,7 @@ const CandidateApplications = () => {
         summary={`${rankedNew.length + rankedCompleted.length} visible candidates - ${stats.applied} applied - ${stats.shortlisted} shortlisted - ${stats.interview} in interview - ${stats.selected} selected - ${stats.rejected} rejected`}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         {stageCards.map((card) => (
           <RecruitmentKpiCard
             key={card.title}

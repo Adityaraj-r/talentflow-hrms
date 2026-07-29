@@ -82,7 +82,8 @@ export const sendTerminationEmail = async (
 export const sendApplicationStatusEmail = async (
   candidateEmail: string,
   candidateName: string,
-  status: 'Shortlisted' | 'Rejected' | 'Selected'
+  status: string,
+  positionTitle: string = 'the position'
 ) => {
   if (status === 'Shortlisted') {
     return sendEmail({
@@ -90,21 +91,39 @@ export const sendApplicationStatusEmail = async (
       subject: 'You are Shortlisted',
       html: renderEmailTemplate('applicantShortlisted', {
         name: candidateName,
+        position: positionTitle,
       }),
     });
   }
 
-  const message =
-    status === 'Selected'
-      ? 'Congratulations. You have been selected for the position. The HR team will contact you with onboarding details.'
-      : 'Thank you for applying. We regret to inform you that you were not selected. We wish you all the best for your future.';
+  let title = 'Application Update';
+  let subject = 'Application Update';
+  let message = '';
+
+  if (status === 'Selected') {
+    title = 'Application Selected';
+    subject = 'You are Selected';
+    message = `Congratulations! You have been selected for the ${positionTitle} position. The HR team will contact you with onboarding details.`;
+  } else if (status === 'Rejected') {
+    message = `Thank you for applying for the ${positionTitle} position. We regret to inform you that you were not selected. We wish you all the best for your future.`;
+  } else if (status === 'Applied') {
+    title = 'Application Received';
+    subject = 'Application Received';
+    message = `Thank you for applying for the ${positionTitle} position. Your application has been successfully received. We will review it and get back to you shortly.`;
+  } else if (status === 'Under Review') {
+    title = 'Application Under Review';
+    subject = 'Application Under Review';
+    message = `Your application for the ${positionTitle} position is currently under review. We will update you as soon as the next steps are decided.`;
+  } else {
+    message = `Your application for the ${positionTitle} position has been updated to status: ${status}.`;
+  }
 
   return sendEmail({
     to: candidateEmail,
-    subject: status === 'Selected' ? 'You are Selected' : 'Application Update',
+    subject: subject,
     html: renderEmailTemplate('genericNotification', {
       name: candidateName,
-      title: status === 'Selected' ? 'Application Selected' : 'Application Update',
+      title: title,
       message,
     }),
   });
@@ -126,5 +145,35 @@ export const sendExitBlockedEmail = async (
       title: 'Employee Exit Blocked',
       message,
     }),
+  });
+};
+
+export const sendOfferEmail = async (
+  candidateEmail: string,
+  payload: {
+    companyName: string;
+    candidateName: string;
+    position: string;
+    department: string;
+    recruiterName: string;
+    expiryDate: string;
+    joiningDate?: string;
+    secureLink?: string;
+    hrPhone?: string;
+    hrEmail?: string;
+  },
+  pdfBuffer: Buffer
+) => {
+  return sendEmail({
+    to: candidateEmail,
+    subject: `Congratulations! Your Offer Letter from ${payload.companyName}`,
+    html: renderEmailTemplate('offerEmail', payload as any),
+    attachments: [
+      {
+        filename: `InternsLand_Offer_${payload.candidateName.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_')}.pdf`,
+        content: pdfBuffer,
+        contentType: 'application/pdf',
+      },
+    ],
   });
 };
