@@ -378,7 +378,7 @@ export const getAllAttendance = async (req: Request, res: Response) => {
     if (userId) query.userId = userId;
 
     const records = await Attendance.find(query)
-      .populate("userId", "firstName lastName email employeeId department")
+      .populate("userId", "firstName lastName email employeeCode department")
       .sort({ createdAt: -1 });
 
     res.json({ success: true, count: records.length, data: records });
@@ -844,7 +844,7 @@ export const getCorrectionRequests = async (req: Request, res: Response) => {
       )
     ) {
       requests = await CorrectionRequest.find(filter)
-        .populate("requestedBy", "firstName lastName email department")
+        .populate("requestedBy", "firstName lastName email department employeeCode")
         .populate("attendanceId")
         .populate("reviewedBy", "firstName lastName")
         .sort({ createdAt: -1 });
@@ -862,7 +862,7 @@ export const getCorrectionRequests = async (req: Request, res: Response) => {
       filter.requestedBy = { $in: teamIds };
 
       requests = await CorrectionRequest.find(filter)
-        .populate("requestedBy", "firstName lastName email department")
+        .populate("requestedBy", "firstName lastName email department employeeCode")
         .populate("attendanceId")
         .populate("reviewedBy", "firstName lastName")
         .sort({ createdAt: -1 });

@@ -379,7 +379,7 @@ export const getAllLeaves = async (req: Request, res: Response) => {
 
     if (["HRMANAGER", "ADMIN", "SUPERADMIN"].includes(userRole)) {
       leaves = await Leave.find(filter)
-        .populate("userId", "firstName lastName email department")
+        .populate("userId", "firstName lastName email department employeeCode")
         .sort({ createdAt: -1 });
     } else if (["DEPARTMENTMANAGER", "DIRECTMANAGER"].includes(userRole)) {
       const currentUser = await User.findById(userId);
@@ -393,11 +393,11 @@ export const getAllLeaves = async (req: Request, res: Response) => {
       filter.userId = { $in: teamIds };
 
       leaves = await Leave.find(filter)
-        .populate("userId", "firstName lastName email department")
+        .populate("userId", "firstName lastName email department employeeCode")
         .sort({ createdAt: -1 });
     } else if (userRole === "HROFFICER") {
       leaves = await Leave.find(filter)
-        .populate("userId", "firstName lastName email department")
+        .populate("userId", "firstName lastName email department employeeCode")
         .sort({ createdAt: -1 });
     } else {
       return res

@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import Role from '../models/Role.model';
+import User from '../models/User.model';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { MODULE_KEYS, ModuleKey } from '../middleware/role.middleware';
 import { createLog } from './audit.controller';
@@ -149,6 +150,14 @@ export const deleteRole = async (req: AuthRequest, res: Response) => {
     if (!role) return res.status(404).json({ success: false, message: 'Role not found' });
     if (role.isSystemRole) {
       return res.status(403).json({ success: false, message: 'Cannot delete system roles' });
+    }
+
+    const assignedUsersCount = await User.countDocuments({ role: role.name, isDeleted: false });
+    if (assignedUsersCount > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'This role is assigned to one or more users. Reassign or remove those users before deleting the role.' 
+      });
     }
 
     const snap = { name: role.name };

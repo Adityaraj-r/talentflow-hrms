@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { SearchableRoleSelect } from "@/components/ui/searchable-role-select"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import {
@@ -20,6 +21,7 @@ import apiClient from "@/services/apiClient"
 import { useUser } from "@/contexts/UserContext"
 import { ROLES } from "@/constants/roles"
 import { cn } from "@/lib/utils"
+import { StatsCard } from "@/components/ui/stats-card"
 
 const EMPTY_FORM = {
   firstName: '', lastName: '', email: '', password: '',
@@ -49,6 +51,7 @@ const UserManagement = () => {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [formData, setFormData] = useState(EMPTY_FORM)
+  const [activeCard, setActiveCard] = useState("total")
 
   const [onboardedList, setOnboardedList] = useState([])
 
@@ -95,6 +98,7 @@ const UserManagement = () => {
         department: u.department || 'N/A',
         phoneNumber: u.phoneNumber || '',
         gender: u.gender || 'N/A',
+        employeeCode: u.employeeCode || 'N/A',
         status: u.isActive ? 'Active' : 'Inactive',
         avatar: (u.firstName?.[0] || 'U').toUpperCase()
       }))
@@ -264,6 +268,13 @@ const UserManagement = () => {
     active: users.filter(u => u.status === 'Active').length,
     inactive: users.filter(u => u.status === 'Inactive').length
   }), [users])
+
+  const filteredUsers = useMemo(() => {
+    let res = users;
+    if (activeCard === 'active') res = res.filter(u => u.status === 'Active');
+    if (activeCard === 'inactive') res = res.filter(u => u.status === 'Inactive');
+    return res;
+  }, [users, activeCard]);
 
   const renderSalarySection = () => (
     <div className="space-y-3 border rounded-lg p-4 bg-muted/20">
@@ -591,34 +602,38 @@ const UserManagement = () => {
 
           <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
             <DialogContent className="sm:max-w-[420px]">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-red-600">
-                  <Trash2 className="h-5 w-5" /> Remove Employee
-                </DialogTitle>
-                <DialogDescription className="pt-2">
-                  Are you sure you want to remove{" "}
-                  <span className="font-semibold text-foreground">{deleteTarget?.name}</span>{" "}
-                  from the system?
-                  <br /><br />
-                  <span className="text-xs text-muted-foreground">
+              <div className="flex flex-col items-center text-center space-y-4 pt-2">
+                <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 shrink-0">
+                  <Trash2 className="h-6 w-6 text-red-600" />
+                </div>
+                <div className="space-y-3 px-2 max-w-[340px] mx-auto">
+                  <DialogTitle className="text-xl font-bold text-red-600 sm:text-center">
+                    Remove Employee
+                  </DialogTitle>
+                  <DialogDescription className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed sm:text-center">
+                    Are you sure you want to remove{" "}
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">{deleteTarget?.name}</span>{" "}
+                    from the system?
+                  </DialogDescription>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/50 p-3 rounded-md text-center mt-2 border border-slate-200 dark:border-slate-800">
                     This is a soft delete — the employee's payroll history, audit logs,
                     and documents are preserved. Their account will be deactivated and
-                    their Employee status set to <strong>Terminated</strong>.
-                  </span>
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter className="pt-2">
-                <Button variant="outline" onClick={() => { setIsDeleteOpen(false); setDeleteTarget(null) }} disabled={isDeleting}>
+                    their Employee status set to <strong className="text-slate-700 dark:text-slate-300">Terminated</strong>.
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-center w-full gap-3 pt-4 border-t border-slate-200 dark:border-slate-800 mt-4">
+                <Button variant="outline" className="min-w-[120px]" onClick={() => { setIsDeleteOpen(false); setDeleteTarget(null) }} disabled={isDeleting}>
                   Cancel
                 </Button>
                 <Button variant="destructive" onClick={handleDeleteUser} disabled={isDeleting}
-                  className="bg-red-600 hover:bg-red-700">
+                  className="bg-red-600 hover:bg-red-700 min-w-[120px]">
                   {isDeleting
                     ? <><RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Removing...</>
                     : <><Trash2 className="mr-2 h-4 w-4" /> Yes, Remove</>
                   }
                 </Button>
-              </DialogFooter>
+              </div>
             </DialogContent>
           </Dialog>
 
@@ -626,10 +641,36 @@ const UserManagement = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <StatsCard title="Total Staff" value={stats.total} icon={<Users className="h-8 w-8" />} variant="blue" />
-        <StatsCard title="Active" value={stats.active} icon={<UserCheck className="h-8 w-8" />} variant="green" />
-        <StatsCard title="Inactive" value={stats.inactive} icon={<ShieldAlert className="h-8 w-8" />} variant="orange" />
-        <StatsCard title="Security Flags" value="0" icon={<ShieldAlert className="h-8 w-8" />} variant="red" />
+        <StatsCard 
+          title="Total Staff" 
+          value={stats.total} 
+          icon={<Users className="h-8 w-8" />} 
+          variant="blue" 
+          isActive={activeCard === 'total'}
+          onClick={() => setActiveCard(activeCard === 'total' ? 'total' : 'total')}
+        />
+        <StatsCard 
+          title="Active" 
+          value={stats.active} 
+          icon={<UserCheck className="h-8 w-8" />} 
+          variant="green" 
+          isActive={activeCard === 'active'}
+          onClick={() => setActiveCard(activeCard === 'active' ? 'total' : 'active')}
+        />
+        <StatsCard 
+          title="Inactive" 
+          value={stats.inactive} 
+          icon={<ShieldAlert className="h-8 w-8" />} 
+          variant="orange" 
+          isActive={activeCard === 'inactive'}
+          onClick={() => setActiveCard(activeCard === 'inactive' ? 'total' : 'inactive')}
+        />
+        <StatsCard 
+          title="Security Flags" 
+          value="0" 
+          icon={<ShieldAlert className="h-8 w-8" />} 
+          variant="red" 
+        />
       </div>
 
       <Card>
@@ -638,18 +679,18 @@ const UserManagement = () => {
             <div className="relative flex-1 md:w-80">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name, email or ID..."
+                placeholder="Search by Name, ID, Dept, Email..."
                 className="pl-10"
                 onChange={(e) => setFilters(p => ({ ...p, search: e.target.value }))}
               />
             </div>
-            <Select onValueChange={(v) => setFilters(p => ({ ...p, role: v }))}>
-              <SelectTrigger className="w-40"><SelectValue placeholder="All Roles" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                {Object.entries(ROLES).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <SearchableRoleSelect 
+              value={filters.role}
+              onChange={(v) => setFilters(p => ({ ...p, role: v }))}
+              options={[{value: 'all', label: 'All Roles'}, ...Object.entries(ROLES).map(([k, v]) => ({value: k, label: v}))]}
+              placeholder="All Roles"
+              className="w-40"
+            />
           </div>
           <Button variant="outline" size="sm" onClick={fetchUsers} disabled={isLoading}>
             <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
@@ -661,6 +702,7 @@ const UserManagement = () => {
             <TableHeader>
               <TableRow className="bg-muted/30">
                 <TableHead className="font-bold">Employee</TableHead>
+                <TableHead className="font-bold hidden md:table-cell">Employee ID</TableHead>
                 <TableHead className="font-bold">Department</TableHead>
                 <TableHead className="font-bold">Access Role</TableHead>
                 <TableHead className="font-bold w-[120px]">Gender</TableHead>
@@ -671,18 +713,18 @@ const UserManagement = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-64 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-64 text-center text-muted-foreground">
                     Refreshing employee records...
                   </TableCell>
                 </TableRow>
-              ) : users.length === 0 ? (
+              ) : filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-64 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-64 text-center text-muted-foreground">
                     No matching records found.
                   </TableCell>
                 </TableRow>
               ) : (
-                users.map((user) => (
+                filteredUsers.map((user) => (
                   <TableRow key={user.id} className="hover:bg-muted/10 transition-colors">
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -691,9 +733,13 @@ const UserManagement = () => {
                         </div>
                         <div className="flex flex-col">
                           <span className="font-semibold text-sm">{user.name}</span>
+                          <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">{user.employeeCode}</span>
                           <span className="text-xs text-muted-foreground">{user.email}</span>
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
+                      {user.employeeCode}
                     </TableCell>
                     <TableCell><span className="text-sm">{user.department}</span></TableCell>
                     <TableCell>
@@ -748,7 +794,7 @@ const UserManagement = () => {
             </TableBody>
           </Table>
           <div className="p-4 border-t flex items-center justify-between text-xs text-muted-foreground font-medium">
-            <span>Displaying {users.length} active records from MongoDB</span>
+            <span>Displaying {filteredUsers.length} records from MongoDB</span>
             <span>System Status: Stable</span>
           </div>
         </CardContent>
@@ -757,25 +803,5 @@ const UserManagement = () => {
   )
 }
 
-const StatsCard = ({ title, value, icon, variant }) => {
-  const styles = {
-    blue: { card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30", icon: "text-blue-600 dark:text-blue-400", label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },
-    green: { card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30", icon: "text-green-600 dark:text-green-400", label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },
-    orange: { card: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30", icon: "text-orange-600 dark:text-orange-400", label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },
-    red: { card: "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30", icon: "text-purple-600 dark:text-purple-400", label: "text-gray-600 dark:text-gray-400", value: "text-gray-900 dark:text-white" },
-  }
-  const s = styles[variant]
-  return (
-    <div className={cn("rounded-xl border p-6 transition-all duration-200 hover:scale-105", s.card)}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={cn("text-sm", s.label)}>{title}</p>
-          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
-        </div>
-        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
-      </div>
-    </div>
-  )
-}
 
 export default UserManagement

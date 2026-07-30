@@ -1121,8 +1121,18 @@ export const getTickets = async (req: AuthRequest, res: Response) => {
     if (status) filter.status = status
     if (type) filter.type = type
 
-    const tickets = await Ticket.find(filter).sort({ createdAt: -1 })
-    res.json({ success: true, data: tickets })
+    const tickets = await Ticket.find(filter).sort({ createdAt: -1 }).lean()
+    
+    const userIds = tickets.map(t => t.employeeId).filter(id => mongoose.Types.ObjectId.isValid(id))
+    const users = await User.find({ _id: { $in: userIds } }).select('employeeCode')
+    const userMap = new Map(users.map(u => [u._id.toString(), u.employeeCode]))
+    
+    const data = tickets.map(t => ({
+      ...t,
+      employeeCode: userMap.get(t.employeeId as string) || 'N/A'
+    }))
+
+    res.json({ success: true, data })
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message })
   }
@@ -1272,8 +1282,18 @@ export const getIndemnities = async (req: AuthRequest, res: Response) => {
     const filter: Record<string, unknown> = {}
     if (status) filter.status = status
 
-    const records = await Indemnity.find(filter).sort({ createdAt: -1 })
-    res.json({ success: true, data: records })
+    const records = await Indemnity.find(filter).sort({ createdAt: -1 }).lean()
+    
+    const userIds = records.map(r => r.employeeId).filter(id => mongoose.Types.ObjectId.isValid(id))
+    const users = await User.find({ _id: { $in: userIds } }).select('employeeCode')
+    const userMap = new Map(users.map(u => [u._id.toString(), u.employeeCode]))
+    
+    const data = records.map(r => ({
+      ...r,
+      employeeCode: userMap.get(r.employeeId as string) || 'N/A'
+    }))
+
+    res.json({ success: true, data })
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message })
   }

@@ -5,12 +5,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { SearchableRoleSelect } from "@/components/ui/searchable-role-select"
 import { Search, UserCheck, ShieldAlert, Users, RefreshCw, ChevronRight, Download, Loader2, UserMinus } from "lucide-react"
 import adminService from "@/services/adminService"
 import { ROLES } from "@/constants/roles"
 import { useAuth } from "@/contexts/AuthContext"
 import { cn } from "@/lib/utils"
+import { StatsCard } from "@/components/ui/stats-card"
 
 const AllEmployees = () => {
   const navigate = useNavigate()
@@ -157,7 +158,7 @@ const AllEmployees = () => {
           icon={<UserCheck className="h-8 w-8" />} 
           variant="green" 
           isActive={activeCard === 'active'}
-          onClick={() => setActiveCard('active')}
+          onClick={() => setActiveCard(activeCard === 'active' ? 'total' : 'active')}
         />
         <StatsCard 
           title="On Notice Period" 
@@ -165,7 +166,7 @@ const AllEmployees = () => {
           icon={<ShieldAlert className="h-8 w-8" />} 
           variant="yellow" 
           isActive={activeCard === 'onNotice'}
-          onClick={() => setActiveCard('onNotice')}
+          onClick={() => setActiveCard(activeCard === 'onNotice' ? 'total' : 'onNotice')}
         />
         <StatsCard 
           title="Exited Employees" 
@@ -173,7 +174,7 @@ const AllEmployees = () => {
           icon={<UserMinus className="h-8 w-8" />} 
           variant="red" 
           isActive={activeCard === 'exited'}
-          onClick={() => setActiveCard('exited')}
+          onClick={() => setActiveCard(activeCard === 'exited' ? 'total' : 'exited')}
         />
         <StatsCard 
           title="Roles Assigned" 
@@ -181,7 +182,7 @@ const AllEmployees = () => {
           icon={<ShieldAlert className="h-8 w-8" />} 
           variant="purple" 
           isActive={activeCard === 'rolesAssigned'}
-          onClick={() => setActiveCard('rolesAssigned')}
+          onClick={() => setActiveCard(activeCard === 'rolesAssigned' ? 'total' : 'rolesAssigned')}
         />
       </div>
 
@@ -197,15 +198,13 @@ const AllEmployees = () => {
                 onChange={e => setFilters(p => ({ ...p, search: e.target.value, page: 1 }))}
               />
             </div>
-            <Select value={filters.role} onValueChange={v => setFilters(p => ({ ...p, role: v, page: 1 }))}>
-              <SelectTrigger className="w-40"><SelectValue placeholder="All Roles" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                {Object.entries(ROLES).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableRoleSelect 
+              value={filters.role}
+              onChange={v => setFilters(p => ({ ...p, role: v, page: 1 }))}
+              options={[{value: 'all', label: 'All Roles'}, ...Object.entries(ROLES).map(([k, v]) => ({value: k, label: v}))]}
+              placeholder="All Roles"
+              className="w-40"
+            />
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={exportToCSV} disabled={employees.length === 0 || isExporting}>
@@ -340,73 +339,6 @@ const AllEmployees = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
-  )
-}
-
-const StatsCard = ({ title, value, icon, variant, isActive, onClick }) => {
-  const styles = {
-    blue: {
-      card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
-      icon: "text-blue-600 dark:text-blue-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-background"
-    },
-    green: {
-      card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
-      icon: "text-green-600 dark:text-green-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-green-500 ring-offset-2 dark:ring-offset-background"
-    },
-    orange: {
-      card: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30",
-      icon: "text-orange-600 dark:text-orange-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-orange-500 ring-offset-2 dark:ring-offset-background"
-    },
-    yellow: {
-      card: "bg-yellow-50 dark:bg-yellow-500/10 border-yellow-200 dark:border-yellow-500/30",
-      icon: "text-yellow-600 dark:text-yellow-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-yellow-500 ring-offset-2 dark:ring-offset-background"
-    },
-    red: {
-      card: "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30",
-      icon: "text-red-600 dark:text-red-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-red-500 ring-offset-2 dark:ring-offset-background"
-    },
-    purple: {
-      card: "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30",
-      icon: "text-purple-600 dark:text-purple-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-purple-500 ring-offset-2 dark:ring-offset-background"
-    },
-  }
-  const s = styles[variant]
-  return (
-    <div 
-      onClick={onClick}
-      className={cn(
-        "rounded-xl border p-6 transition-all duration-200 hover:scale-105 cursor-pointer", 
-        s.card,
-        isActive && s.activeRing,
-        !isActive && "opacity-80 hover:opacity-100"
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={cn("text-sm", s.label)}>{title}</p>
-          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
-        </div>
-        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
-      </div>
     </div>
   )
 }

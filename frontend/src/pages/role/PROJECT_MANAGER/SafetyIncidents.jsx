@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { AlertTriangle, Plus, FileText } from "lucide-react"
 import { toast } from "sonner"
+import { StatsCard } from "@/components/ui/stats-card"
 
 const SafetyIncidents = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -20,6 +21,15 @@ const SafetyIncidents = () => {
     { id: "INC-003", date: "2026-01-12", type: "Minor Injury", severity: "Medium", location: "Workshop C", status: "Resolved" },
     { id: "INC-004", date: "2026-01-10", type: "Spill", severity: "High", location: "Storage Tank 5", status: "Under Investigation" },
   ])
+  const [activeCard, setActiveCard] = useState("total")
+
+  const filteredIncidents = incidents.filter(inc => {
+    if (activeCard === "total") return true;
+    if (activeCard === "resolved") return inc.status === "Resolved";
+    if (activeCard === "in_progress") return inc.status === "In Progress";
+    if (activeCard === "investigation") return inc.status === "Under Investigation";
+    return true;
+  })
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -142,10 +152,34 @@ const SafetyIncidents = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <StatsCard title="Total Incidents" value="24" color="text-red-600" />
-        <StatsCard title="Resolved" value="18" color="text-green-600" />
-        <StatsCard title="In Progress" value="4" color="text-blue-600" />
-        <StatsCard title="Under Investigation" value="2" color="text-orange-600" />
+        <StatsCard 
+          title="Total Incidents" 
+          value={incidents.length} 
+          variant="red" 
+          isActive={activeCard === 'total'}
+          onClick={() => setActiveCard(activeCard === 'total' ? 'total' : 'total')}
+        />
+        <StatsCard 
+          title="Resolved" 
+          value={incidents.filter(i => i.status === 'Resolved').length} 
+          variant="green" 
+          isActive={activeCard === 'resolved'}
+          onClick={() => setActiveCard(activeCard === 'resolved' ? 'total' : 'resolved')}
+        />
+        <StatsCard 
+          title="In Progress" 
+          value={incidents.filter(i => i.status === 'In Progress').length} 
+          variant="amber" 
+          isActive={activeCard === 'in_progress'}
+          onClick={() => setActiveCard(activeCard === 'in_progress' ? 'total' : 'in_progress')}
+        />
+        <StatsCard 
+          title="Under Investigation" 
+          value={incidents.filter(i => i.status === 'Under Investigation').length} 
+          variant="orange" 
+          isActive={activeCard === 'investigation'}
+          onClick={() => setActiveCard(activeCard === 'investigation' ? 'total' : 'investigation')}
+        />
       </div>
 
       <Card>
@@ -166,7 +200,7 @@ const SafetyIncidents = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {incidents.map((incident) => (
+              {filteredIncidents.map((incident) => (
                 <TableRow key={incident.id}>
                   <TableCell className="font-medium">{incident.id}</TableCell>
                   <TableCell>{incident.date}</TableCell>
@@ -196,14 +230,5 @@ const SafetyIncidents = () => {
     </div>
   )
 }
-
-const StatsCard = ({ title, value, color }) => (
-  <Card>
-    <CardContent className="p-6">
-      <p className="text-sm font-medium text-muted-foreground">{title}</p>
-      <p className={`text-3xl font-bold ${color}`}>{value}</p>
-    </CardContent>
-  </Card>
-)
 
 export default SafetyIncidents

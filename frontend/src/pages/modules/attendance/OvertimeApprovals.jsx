@@ -117,11 +117,13 @@ const OvertimeApprovals = () => {
     const name = `${record.userId?.firstName || ""} ${record.userId?.lastName || ""}`.toLowerCase();
     const email = (record.userId?.email || "").toLowerCase();
     const dept = (record.userId?.department || "").toLowerCase();
+    const empCode = (record.userId?.employeeCode || "").toLowerCase();
     const search = searchTerm.toLowerCase();
     return (
       name.includes(search) ||
       email.includes(search) ||
-      dept.includes(search)
+      dept.includes(search) ||
+      empCode.includes(search)
     );
   });
 
@@ -138,14 +140,14 @@ const OvertimeApprovals = () => {
             Overtime Approvals
           </h1>
           <p className="text-muted-foreground">
-            Review and approve employee overtime beyond their scheduled shift hours.
+            Review and approve overtime hours logged by employees.
           </p>
         </div>
 
         {records.length > 0 && (
-          <Badge className="bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800 px-3 py-1.5 text-sm">
+          <Badge className="bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800 px-3 py-1.5 text-sm">
             <Timer className="w-3.5 h-3.5 mr-1.5" />
-            {records.length} pending · {formatOTHours(totalOTPending)} total OT
+            {totalOTPending.toFixed(1)} hrs total pending
           </Badge>
         )}
       </div>
@@ -173,10 +175,10 @@ const OvertimeApprovals = () => {
             className="h-9 text-sm w-40"
           />
         </div>
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full sm:w-96">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name or dept..."
+            placeholder="Search by Name, ID, Dept, Email..."
             className="pl-8 h-9 text-sm bg-background"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -204,6 +206,7 @@ const OvertimeApprovals = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Employee</TableHead>
+                  <TableHead className="hidden md:table-cell">Employee ID</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Shift End</TableHead>
                   <TableHead>Clocked Out</TableHead>
@@ -218,7 +221,7 @@ const OvertimeApprovals = () => {
                 {loading ? (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={8}
                       className="text-center py-10 text-muted-foreground"
                     >
                       Loading overtime records...
@@ -226,7 +229,7 @@ const OvertimeApprovals = () => {
                   </TableRow>
                 ) : filteredRecords.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10">
+                    <TableCell colSpan={8} className="py-10">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <AlertCircle className="w-8 h-8 text-slate-300 dark:text-slate-600" />
                         <p className="text-sm">
@@ -246,6 +249,9 @@ const OvertimeApprovals = () => {
                           <span className="font-medium text-sm text-slate-900 dark:text-white">
                             {record.userId?.firstName} {record.userId?.lastName}
                           </span>
+                          <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
+                            {record.userId?.employeeCode || "N/A"}
+                          </span>
                           <span className="text-xs text-muted-foreground">
                             {record.userId?.email}
                           </span>
@@ -253,6 +259,9 @@ const OvertimeApprovals = () => {
                             {record.userId?.department || "No Department"}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
+                        {record.userId?.employeeCode || "-"}
                       </TableCell>
 
                       <TableCell>
