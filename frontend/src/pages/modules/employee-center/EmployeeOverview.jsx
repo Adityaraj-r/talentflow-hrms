@@ -112,146 +112,172 @@ const EmployeeOverview = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="border-l-4 border-l-green-500">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <Award className="h-5 w-5 text-green-500" />
-              <span className="text-sm font-medium text-muted-foreground">Top Performers</span>
+      <div className="grid gap-5 md:grid-cols-3">
+        <Card className="border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Award className="w-16 h-16 text-green-600" />
+          </div>
+          <CardContent className="p-6 relative z-10 flex flex-col gap-4">
+            <div className="p-2.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg w-fit">
+              <Award className="h-5 w-5" />
             </div>
-            <div className="text-3xl font-bold text-green-500">{topPerformers}</div>
-            <p className="text-xs text-muted-foreground mt-1">Rating &gt;= 4.5</p>
+            <div>
+              <div className="text-3xl font-bold text-foreground">{topPerformers}</div>
+              <p className="text-sm font-medium text-muted-foreground mt-1">Top Performers</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Rating &gt;= 4.5</p>
+            </div>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-blue-500">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <Users className="h-5 w-5 text-blue-500" />
-              <span className="text-sm font-medium text-muted-foreground">Total Employees</span>
+        <Card className="border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Users className="w-16 h-16 text-blue-600" />
+          </div>
+          <CardContent className="p-6 relative z-10 flex flex-col gap-4">
+            <div className="p-2.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg w-fit">
+              <Users className="h-5 w-5" />
             </div>
-            <div className="text-3xl font-bold text-blue-500">{employeeData.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Across all departments</p>
+            <div>
+              <div className="text-3xl font-bold text-foreground">{employeeData.length}</div>
+              <p className="text-sm font-medium text-muted-foreground mt-1">Total Employees</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Across all departments</p>
+            </div>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-red-500">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingDown className="h-5 w-5 text-red-500" />
-              <span className="text-sm font-medium text-muted-foreground">Needs Improvement</span>
+        <Card className="border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <TrendingDown className="w-16 h-16 text-red-600" />
+          </div>
+          <CardContent className="p-6 relative z-10 flex flex-col gap-4">
+            <div className="p-2.5 bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg w-fit">
+              <TrendingDown className="h-5 w-5" />
             </div>
-            <div className="text-3xl font-bold text-red-500">{needsImprovement}</div>
-            <p className="text-xs text-muted-foreground mt-1">Rating &lt; 3.0</p>
+            <div>
+              <div className="text-3xl font-bold text-foreground">{needsImprovement}</div>
+              <p className="text-sm font-medium text-muted-foreground mt-1">Needs Improvement</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Rating &lt; 3.0</p>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <CardTitle>All Employees Performance</CardTitle>
-            <Button onClick={handleExport} variant="outline" size="sm">
+      <Card className="border-border/50 shadow-sm rounded-xl overflow-hidden flex flex-col">
+        <CardHeader className="bg-muted/20 border-b border-border/50 px-6 py-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-lg">All Employees Performance</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Detailed performance metrics across the organization</p>
+            </div>
+            <Button onClick={handleExport} variant="outline" size="sm" className="bg-background shadow-sm h-9">
               <Download className="h-4 w-4 mr-2" />
               Export CSV
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-4 mb-6">
-            <div className="relative md:col-span-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search name, email, position..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+        <CardContent className="p-0 flex flex-col">
+          <div className="p-6 border-b border-border/50 bg-background/50">
+            <div className="flex flex-col md:flex-row gap-4 w-full">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search name, email, position..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 h-10 bg-background shadow-sm"
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 flex-wrap md:flex-nowrap">
+                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                  <SelectTrigger className="w-full sm:w-[200px] h-10 shadow-sm"><SelectValue placeholder="All Departments" /></SelectTrigger>
+                  <SelectContent>
+                    {departments.map(dept => (
+                      <SelectItem key={dept} value={dept}>
+                        {dept === "all" ? "All Departments" : dept}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px] h-10 shadow-sm"><SelectValue placeholder="All Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="outstanding">Outstanding</SelectItem>
+                    <SelectItem value="exceeds">Exceeds</SelectItem>
+                    <SelectItem value="meets">Meets</SelectItem>
+                    <SelectItem value="below">Below</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger><SelectValue placeholder="All Departments" /></SelectTrigger>
-              <SelectContent>
-                {departments.map(dept => (
-                  <SelectItem key={dept} value={dept}>
-                    {dept === "all" ? "All Departments" : dept}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger><SelectValue placeholder="All Status" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="outstanding">Outstanding</SelectItem>
-                <SelectItem value="exceeds">Exceeds</SelectItem>
-                <SelectItem value="meets">Meets</SelectItem>
-                <SelectItem value="below">Below</SelectItem>
-              </SelectContent>
-            </Select>
+
+            <div className="flex items-center gap-4 pt-4 mt-2 border-t border-border/30">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-muted-foreground">Sort by:</span>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[180px] h-8 text-xs bg-muted/30 border-transparent hover:bg-muted/50 transition-colors"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="rating-desc">Rating High-Low</SelectItem>
+                  <SelectItem value="rating-asc">Rating Low-High</SelectItem>
+                  <SelectItem value="name-asc">Name A-Z</SelectItem>
+                  <SelectItem value="name-desc">Name Z-A</SelectItem>
+                  <SelectItem value="reviews-desc">Most Reviews</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm font-medium text-muted-foreground ml-auto bg-muted/40 px-3 py-1 rounded-full">
+                {filteredEmployees.length} of {employeeData.length}
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4 mb-4">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Sort by:</span>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="rating-desc">Rating High-Low</SelectItem>
-                <SelectItem value="rating-asc">Rating Low-High</SelectItem>
-                <SelectItem value="name-asc">Name A-Z</SelectItem>
-                <SelectItem value="name-desc">Name Z-A</SelectItem>
-                <SelectItem value="reviews-desc">Most Reviews</SelectItem>
-              </SelectContent>
-            </Select>
-            <span className="text-sm text-muted-foreground ml-auto">
-              {filteredEmployees.length} of {employeeData.length} employees
-            </span>
-          </div>
-
-          <div className="overflow-x-auto border rounded-lg">
-            <table className="w-full">
-              <thead className="bg-muted/50">
+          <div className="overflow-auto custom-scrollbar relative max-h-[600px]">
+            <table className="w-full text-left border-separate border-spacing-0">
+              <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur-md">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Employee</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Department</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Position</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Avg Rating</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Trend</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Reviews</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold">Actions</th>
+                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Employee</th>
+                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Department</th>
+                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Position</th>
+                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Avg Rating</th>
+                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Trend</th>
+                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Reviews</th>
+                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Status</th>
+                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody>
                 {filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-muted-foreground">
-                      No employees found
+                    <td colSpan={8} className="px-6 py-12 text-center text-muted-foreground bg-background">
+                      No employees found matching the filters.
                     </td>
                   </tr>
                 ) : (
                   filteredEmployees.map((employee) => (
-                    <tr key={employee.id} className="hover:bg-muted/50">
-                      <td className="px-6 py-4">
-                        <div className="font-medium">{employee.name}</div>
-                        <div className="text-sm text-muted-foreground">{employee.email}</div>
+                    <tr key={employee.id} className="group hover:bg-blue-600/5 dark:hover:bg-blue-500/10 transition-colors bg-background">
+                      <td className="px-6 py-4 border-b border-border/50 align-middle">
+                        <div className="font-semibold text-sm text-foreground">{employee.name}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{employee.email}</div>
                       </td>
-                      <td className="px-6 py-4 text-muted-foreground">{employee.department}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{employee.position}</td>
-                      <td className="px-6 py-4">
-                        <span className="text-lg font-bold text-orange-600">
-                          {(employee.avgRating || 0).toFixed(1)}/5
+                      <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground align-middle">{employee.department}</td>
+                      <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground align-middle">{employee.position}</td>
+                      <td className="px-6 py-4 border-b border-border/50 align-middle text-center">
+                        <span className="text-lg font-bold text-orange-600 dark:text-orange-500">
+                          {(employee.avgRating || 0).toFixed(1)}<span className="text-xs font-medium text-muted-foreground">/5</span>
                         </span>
                       </td>
-                      <td className="px-6 py-4">{getTrendIcon(employee.trend)}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{employee.totalReviews}</td>
-                      <td className="px-6 py-4">
-                        <Badge className={getStatusBadge(employee.status)}>
-                          {employee.status.toUpperCase()}
-                        </Badge>
+                      <td className="px-6 py-4 border-b border-border/50 align-middle text-center">
+                        <div className="flex justify-center">{getTrendIcon(employee.trend)}</div>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
-                          View Details
-                        </Button>
+                      <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground align-middle text-center">{employee.totalReviews}</td>
+                      <td className="px-6 py-4 border-b border-border/50 align-middle text-center">
+                        <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase border ${getStatusBadge(employee.status)}`}>
+                          {employee.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 border-b border-border/50 text-right align-middle whitespace-nowrap">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 hover:bg-primary/5 h-8">
+                            View Details
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))

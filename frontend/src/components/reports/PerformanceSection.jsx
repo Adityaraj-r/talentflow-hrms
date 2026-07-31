@@ -67,19 +67,20 @@ export default function PerformanceSection({
       <Card className="rounded-2xl shadow-sm border">
         <CardContent className="p-5">
 
-          <div className="overflow-x-auto rounded-xl">
-            <Table>
+          <div className="w-full">
+            <Table className="w-full table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Attendance</TableHead>
-                  <TableHead>Leaves</TableHead>
-                  <TableHead>Late</TableHead>
-                  <TableHead>Compliance</TableHead>
-                  <TableHead>Score</TableHead>
-                  <TableHead>Grade</TableHead>
+                  <TableHead className="w-[20%]">Employee</TableHead>
+                  <TableHead className="w-[12%]">Employee ID</TableHead>
+                  <TableHead className="w-[14%]">Department</TableHead>
+                  <TableHead className="w-[12%]">Role</TableHead>
+                  <TableHead className="w-[9%] text-center">Attendance</TableHead>
+                  <TableHead className="w-[7%] text-center">Leaves</TableHead>
+                  <TableHead className="w-[7%] text-center">Late</TableHead>
+                  <TableHead className="w-[10%] text-center">Compliance</TableHead>
+                  <TableHead className="w-[7%] text-center">Score</TableHead>
+                  <TableHead className="w-[7%] text-center">Grade</TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -89,7 +90,7 @@ export default function PerformanceSection({
                 {loading ? (
                   [...Array(5)].map((_, i) => (
                     <TableRow key={i}>
-                      {[...Array(9)].map((_, j) => (
+                      {[...Array(10)].map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-4 w-full" />
                         </TableCell>
@@ -97,122 +98,140 @@ export default function PerformanceSection({
                     </TableRow>
                   ))
                 ) : error ? (
-
                   /* Error */
                   <TableRow>
                     <TableCell
-                      colSpan={9}
+                      colSpan={10}
                       className="text-center text-red-500 py-10"
                     >
                       {error}
                     </TableCell>
                   </TableRow>
-
                 ) : data.length === 0 ? (
-
                   /* Empty */
                   <TableRow>
                     <TableCell
-                      colSpan={9}
+                      colSpan={10}
                       className="text-center text-muted-foreground py-12"
                     >
-                      {isDept
-                        ? "No team performance records available."
-                        : "No employee performance records available."}
+                      No employees found
                     </TableCell>
                   </TableRow>
-
                 ) : (
-
                   /* Data Rows */
                   data.map((emp, index) => (
-                    <TableRow
-                      key={emp?._id || index}
-                    >
-                      <TableCell className="font-medium">
+                    <TableRow key={emp?._id || index}>
+                      <TableCell className="font-medium truncate">
                         {emp?.firstName || "-"} {emp?.lastName || ""}
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell className="text-muted-foreground truncate">
+                        {emp?.employeeCode || `EMP${String(index + 1).padStart(3, '0')}`}
+                      </TableCell>
+
+                      <TableCell className="truncate">
                         {emp?.department || "-"}
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell className="truncate">
                         <span className="capitalize">{emp?.role ? emp.role.replace(/_/g, ' ').toLowerCase() : "-"}</span>
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell className="text-center">
                         {emp?.attendance}%
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell className="text-center">
                         {emp?.leaves}
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell className="text-center">
                         {emp?.lateMarks}
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell className="text-center">
                         {emp?.compliance}%
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell className="text-center">
                         {emp?.performanceScore}
                       </TableCell>
 
-                      <TableCell>
-                        <span className="px-2 py-1 rounded-full text-xs bg-slate-100">
+                      <TableCell className="text-center">
+                        <span className="px-2 py-1 rounded-full text-xs bg-slate-100 dark:bg-slate-800">
                           {emp?.grade || "-"}
                         </span>
                       </TableCell>
                     </TableRow>
                   ))
-
                 )}
-
               </TableBody>
             </Table>
           </div>
 
-          {/* Pagination */}
-          <div className="flex justify-end gap-3 mt-5">
+          {/* Pagination Footer */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border/50 bg-muted/20">
+            {/* Left: Showing X-Y of Z */}
+            <div className="text-sm text-muted-foreground">
+              Showing{" "}
+              <span className="font-medium text-foreground">
+                {data.length > 0 ? (pagination?.page - 1) * 10 + 1 : 0}
+              </span>
+              –
+              <span className="font-medium text-foreground">
+                {data.length > 0
+                  ? Math.min(
+                      pagination?.page * 10,
+                      pagination?.total
+                    )
+                  : 0}
+              </span>{" "}
+              of{" "}
+              <span className="font-medium text-foreground">
+                {pagination?.total || 0}
+              </span>{" "}
+              employees
+            </div>
 
-            <Button
-              variant="outline"
-              disabled={
-                !pagination ||
-                (filters?.page || 1) <= 1
-              }
-              onClick={() =>
-                setFilters((prev) => ({
-                  ...prev,
-                  page: (prev?.page || 1) - 1,
-                }))
-              }
-            >
-              Previous
-            </Button>
+            {/* Center: Page P of T */}
+            <div className="text-sm font-medium text-muted-foreground hidden sm:block">
+              Page {pagination?.page || 1} of {pagination?.pages || 1}
+            </div>
 
-            <Button
-              variant="outline"
-              disabled={
-                !pagination ||
-                (filters?.page || 1) >=
-                  (pagination?.pages || 1)
-              }
-              onClick={() =>
-                setFilters((prev) => ({
-                  ...prev,
-                  page: (prev?.page || 1) + 1,
-                }))
-              }
-            >
-              Next
-            </Button>
+            {/* Right: Buttons */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!pagination || (filters?.page || 1) <= 1}
+                onClick={() =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    page: (prev?.page || 1) - 1,
+                  }))
+                }
+              >
+                Previous
+              </Button>
 
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={
+                  !pagination ||
+                  (filters?.page || 1) >= (pagination?.pages || 1)
+                }
+                onClick={() =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    page: (prev?.page || 1) + 1,
+                  }))
+                }
+              >
+                Next
+              </Button>
+            </div>
           </div>
-
         </CardContent>
       </Card>
     </div>

@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils"; 
+import { StatsCard } from "@/components/ui/stats-card";
 
 const LEAVE_TYPES = [
   "Annual",
@@ -258,6 +259,7 @@ const LeavePolicyManagement = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editPolicy, setEditPolicy] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [activeCard, setActiveCard] = useState("total");
 
   const fetchPolicies = async () => {
     try {
@@ -329,6 +331,13 @@ const LeavePolicyManagement = () => {
     .filter((p) => p.isActive)
     .reduce((sum, p) => sum + p.annualLimit, 0);
 
+  const filteredPolicies = policies.filter(p => {
+    if (activeCard === 'total') return true;
+    if (activeCard === 'active') return p.isActive;
+    if (activeCard === 'total_days') return p.isActive;
+    return true;
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -367,18 +376,24 @@ const LeavePolicyManagement = () => {
           value={policies.length}
           icon={<ShieldCheck className="h-8 w-8" />}
           variant="blue"
+          isActive={activeCard === 'total'}
+          onClick={() => setActiveCard(activeCard === 'total' ? 'total' : 'total')}
         />
         <StatsCard
           title="Active Policies"
           value={activeCount}
           icon={<Users className="h-8 w-8" />}
           variant="green"
+          isActive={activeCard === 'active'}
+          onClick={() => setActiveCard(activeCard === 'active' ? 'total' : 'active')}
         />
         <StatsCard
           title="Total Days / Year"
           value={totalDays}
           icon={<CalendarDays className="h-8 w-8" />}
           variant="amber"
+          isActive={activeCard === 'total_days'}
+          onClick={() => setActiveCard(activeCard === 'total_days' ? 'total' : 'total_days')}
         />
       </div>
 
@@ -415,14 +430,14 @@ const LeavePolicyManagement = () => {
                       Loading policies...
                     </TableCell>
                   </TableRow>
-                ) : policies.length === 0 ? (
+                ) : filteredPolicies.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                       No policies configured yet. Click Add Policy to get started.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  policies.map((policy) => (
+                  filteredPolicies.map((policy) => (
                     <TableRow
                       key={policy._id}
                       className="hover:bg-slate-50 dark:hover:bg-slate-800/50"
@@ -550,48 +565,6 @@ const LeavePolicyManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-};
-
-const StatsCard = ({ title, value, icon, variant }) => {
-  const styles = {
-    blue: {
-      card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
-      icon: "text-blue-600 dark:text-blue-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    green: {
-      card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
-      icon: "text-green-600 dark:text-green-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    amber: {
-      card: "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30",
-      icon: "text-amber-600 dark:text-amber-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-  };
-
-  const s = styles[variant] || styles.blue;
-
-  return (
-    <div
-      className={cn(
-        "rounded-xl border p-6 transition-all duration-200 hover:scale-105",
-        s.card
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={cn("text-sm", s.label)}>{title}</p>
-          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
-        </div>
-        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
-      </div>
     </div>
   );
 };

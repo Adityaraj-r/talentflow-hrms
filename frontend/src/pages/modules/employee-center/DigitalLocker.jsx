@@ -11,8 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { DocumentPreviewDialog } from "@/components/ui/DocumentViewer";
+import { useConfirm } from "@/contexts/ConfirmContext";
 
 const DigitalLocker = () => {
+  const { confirm } = useConfirm();
   const { user } = useAuth();
   const userRole = user?.role?.toUpperCase() || "";
   const isDeptManager = userRole === "DEPARTMENT_MANAGER";
@@ -112,15 +114,21 @@ const DigitalLocker = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this document?")) return;
-    try {
-      await apiClient.delete(`/documents/${id}`);
-      toast.success("Document deleted");
-      fetchDocuments();
-    } catch (error) {
-      toast.error("Delete failed");
-    }
+  const handleDelete = (id) => {
+    confirm({
+      title: "Delete Document?",
+      message: "Are you sure you want to delete this document?",
+      action: async () => {
+        try {
+          await apiClient.delete(`/documents/${id}`);
+          toast.success("Document deleted");
+          fetchDocuments();
+        } catch (error) {
+          toast.error("Delete failed");
+          throw error;
+        }
+      }
+    });
   };
 
   const handleStatusChange = async (id, newStatus) => {

@@ -1,5 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import api from "@/services/apiClient";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 import KPISection from "@/components/reports/KPISection";
 import AttendanceCharts from "@/components/reports/AttendanceCharts";
@@ -8,6 +10,8 @@ import PerformanceSection from "@/components/reports/PerformanceSection";
 import ProductivityCards from "@/components/reports/ProductivityCards";
 import TopLowPerformers from "@/components/reports/TopLowPerformers";
 import AbsenteeismCard from "@/components/reports/AbsenteeismCard";
+import { Button } from "@/components/ui/button";
+import { Download, FileText } from "lucide-react";
 
 export default function DashboardSection({
   data,
@@ -20,6 +24,188 @@ export default function DashboardSection({
   performanceHook,
 }) {
   const { user } = useAuth();
+
+
+
+  const handleExportPDF = async () => {
+    try {
+      const response = await api.get("/reports/performance", {
+        params: { ...performanceFilters, page: 1, limit: 10000 },
+      });
+      const allData = response.data || [];
+      const { summary } = data;
+
+      const doc = new jsPDF("portrait", "mm", "a4");
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+      const margin = 14;
+      const generatedDate = new Date().toLocaleString();
+
+      const appliedFilters = [
+        performanceFilters.department && performanceFilters.department !== "all" 
+          ? `Dept: ${performanceFilters.department}` : "",
+        performanceFilters.role && performanceFilters.role !== "all" 
+          ? `Role: ${performanceFilters.role}` : "",
+        performanceFilters.search 
+          ? `Search: ${performanceFilters.search}` : ""
+      ].filter(Boolean).join(" | ") || "None";
+
+      // 1. Centered Title
+      doc.setFontSize(22);
+      doc.setTextColor(30, 41, 59);
+      doc.setFont("helvetica", "bold");
+      doc.text("HRMS Performance Report", pageWidth / 2, 25, { align: "center" });
+
+      // 2. Compact Report Info Section
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.5);
+      doc.rect(margin, 35, pageWidth - margin * 2, 22);
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("Report Type:", margin + 5, 42);
+      doc.setFont("helvetica", "normal");
+      doc.text("Employee Performance & KPIs", margin + 32, 42);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Generated:", pageWidth / 2 + 5, 42);
+      doc.setFont("helvetica", "normal");
+      doc.text(generatedDate, pageWidth / 2 + 28, 42);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Filters Applied:", margin + 5, 52);
+      doc.setFont("helvetica", "normal");
+      doc.text(appliedFilters, margin + 32, 52);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Total Employees:", pageWidth / 2 + 5, 52);
+      doc.setFont("helvetica", "normal");
+      doc.text(allData.length.toString(), pageWidth / 2 + 38, 52);
+
+      // 3. Dashboard Summary
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Dashboard Summary", margin, 70);
+
+      autoTable(doc, {
+        startY: 75,
+        head: [["Metric", "Value"]],
+        body: [
+          ["Total Headcount", summary?.headcount || "N/A"],
+          ["Avg Working Hours", `${summary?.avgWorkingHours || "N/A"} hrs`],
+          ["Workforce Health", `${summary?.workforceHealthScore || "N/A"}%`],
+          ["Total Payroll", `Rs. ${summary?.totalPayroll || "N/A"}`],
+          ["Attrition Rate", `${summary?.attritionRate || "N/A"}%`],
+          ["Open Positions", summary?.openPositions || "0"],
+        ],
+        theme: "grid",
+        headStyles: {
+          fillColor: [30, 58, 138],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1,
+        },
+        bodyStyles: {
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1,
+          textColor: [51, 65, 85],
+        },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        margin: { left: margin, right: margin },
+      });
+
+      // 4. Employee Performance Data
+      const finalY = doc.lastAutoTable.finalY || 75;
+      
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Employee Performance Data", margin, finalY + 15);
+
+      const tableDataFull = allData.map((emp) => [
+        emp.employeeCode || emp.userId?.toString().slice(-6) || "N/A",
+        `${emp.firstName || ""} ${emp.lastName || ""}`.trim() || "N/A",
+        emp.department || "N/A",
+        emp.designation || "N/A",
+        `${emp.attendance ?? 0}%`,
+        `${emp.leaves ?? 0}`,
+        `${emp.lateMarks ?? 0}`,
+        `${emp.compliance ?? 0}%`,
+        `${emp.performanceScore ?? 0}%`,
+        emp.grade || "N/A",
+      ]);
+
+      autoTable(doc, {
+        startY: finalY + 20,
+        head: [
+          [
+            "Emp ID",
+            "Name",
+            "Department",
+            "Role",
+            "Attn.",
+            "Leaves",
+            "Late",
+            "Comp.",
+            "Score",
+            "Grade",
+          ],
+        ],
+        body: tableDataFull,
+        theme: "grid",
+        headStyles: {
+          fillColor: [30, 58, 138],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1,
+        },
+        bodyStyles: {
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1,
+          textColor: [51, 65, 85],
+        },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        margin: { left: margin, right: margin, bottom: 25 },
+        styles: { fontSize: 7, cellPadding: 2 },
+      });
+
+      // 5. Page Borders and Footers
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        
+        // Outer Page Border
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.5);
+        doc.rect(10, 10, pageWidth - 20, pageHeight - 20);
+
+        // Footer Text
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(150, 150, 150);
+        
+        // Left
+        doc.text(generatedDate, 14, pageHeight - 14);
+        
+        // Center
+        doc.text("HRMS Performance Report", pageWidth / 2, pageHeight - 14, { align: "center" });
+
+        // Right
+        doc.text(
+          `Page ${i} of ${pageCount}`,
+          pageWidth - 14,
+          pageHeight - 14,
+          { align: "right" }
+        );
+      }
+
+      doc.save(`HRMS_Report_${new Date().toISOString().split("T")[0]}.pdf`);
+    } catch (err) {
+      console.error("Export PDF failed:", err);
+      alert("Failed to export PDF. Please try again.");
+    }
+  };
 
   const role =
     typeof user?.role === "string"
@@ -230,54 +416,37 @@ export default function DashboardSection({
           </div>
 
           {/* Export Actions */}
-          {/* Export Actions */}
           <div className="flex gap-4">
 
-  <button
-    onClick={async () => {
-      const blob = await api.get(
-        "/reports/export?type=csv",
-        { responseType: "blob" }
-      );
+            <Button
+              onClick={async () => {
+                const blob = await api.get(
+                  "/reports/export?type=csv",
+                  { responseType: "blob", params: performanceFilters }
+                );
 
-      const url =
-        window.URL.createObjectURL(blob);
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = "reports.csv";
+                link.click();
+              }}
+              variant="outline"
+              className="bg-background shadow-sm hover:bg-muted/50 transition-all flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Export CSV
+            </Button>
 
-      const link =
-        document.createElement("a");
+            <Button
+              onClick={handleExportPDF}
+              className="bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 transition-all flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4" />
+              Export PDF
+            </Button>
 
-      link.href = url;
-      link.download = "reports.csv";
-      link.click();
-    }}
-    className="px-4 py-2 rounded-xl bg-black text-white"
-  >
-    Export CSV
-  </button>
-
-  <button
-    onClick={async () => {
-      const blob = await api.get(
-        "/reports/export?type=pdf",
-        { responseType: "blob" }
-      );
-
-      const url =
-        window.URL.createObjectURL(blob);
-
-      const link =
-        document.createElement("a");
-
-      link.href = url;
-      link.download = "reports.pdf";
-      link.click();
-    }}
-    className="px-4 py-2 rounded-xl bg-slate-700 text-white"
-  >
-    Export PDF
-  </button>
-
-</div>
+          </div>
 
           {/* Absenteeism */}
           <AbsenteeismCard

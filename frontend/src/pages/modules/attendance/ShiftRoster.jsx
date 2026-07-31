@@ -49,8 +49,10 @@ const ShiftRoster = () => {
   const filteredEmployees = employees.filter((emp) => {
     const search = searchTerm.toLowerCase();
     const nameMatch = `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(search);
+    const emailMatch = (emp.email || "").toLowerCase().includes(search);
     const deptMatch = (emp.department || "").toLowerCase().includes(search);
-    return nameMatch || deptMatch;
+    const empCodeMatch = (emp.employeeCode || "").toLowerCase().includes(search);
+    return nameMatch || emailMatch || deptMatch || empCodeMatch;
   });
 
   return (
@@ -79,10 +81,10 @@ const ShiftRoster = () => {
               <Briefcase className="w-5 h-5 text-blue-600" />
               Current Assignments
             </CardTitle>
-            <div className="relative w-full md:w-72">
+            <div className="relative w-full md:w-96">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name or department..."
+                placeholder="Search by Name, ID, Dept, Email..."
                 className="pl-8 bg-background"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -96,6 +98,7 @@ const ShiftRoster = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Employee</TableHead>
+                  <TableHead className="hidden md:table-cell">Employee ID</TableHead>
                   <TableHead>Department</TableHead>
                   <TableHead>Assigned Shift</TableHead>
                   <TableHead>Working Hours</TableHead>
@@ -105,13 +108,13 @@ const ShiftRoster = () => {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                       Loading roster...
                     </TableCell>
                   </TableRow>
                 ) : filteredEmployees.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                       No employees found.
                     </TableCell>
                   </TableRow>
@@ -125,8 +128,14 @@ const ShiftRoster = () => {
                             <span className="font-medium text-sm text-slate-900 dark:text-white">
                               {emp.firstName} {emp.lastName}
                             </span>
+                            <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
+                              {emp.employeeCode || "N/A"}
+                            </span>
                             <span className="text-xs text-muted-foreground">{emp.email}</span>
                           </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
+                          {emp.employeeCode || "-"}
                         </TableCell>
                         <TableCell>
                           <span className="text-sm text-slate-600 dark:text-slate-300">

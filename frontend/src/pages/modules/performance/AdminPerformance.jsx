@@ -12,6 +12,7 @@ import EmployeeOverview from "@/pages/modules/employee-center/EmployeeOverview"
 import PerformanceAnalytics from "@/pages/modules/performance/PerformanceAnalytics"
 import { performanceApi } from "@/services/performanceApi";
 import { useUser } from "@/contexts/UserContext";
+import { useConfirm } from "@/contexts/ConfirmContext";
 
 function pickApiError(error) {
   if (error && typeof error === "object" && error.error != null)
@@ -33,6 +34,7 @@ function toDateInputValue(value) {
 
 const AdminPerformance = () => {
   const { user } = useUser();
+  const { confirm } = useConfirm();
   const canPmsCycleStruct = user?.can?.("performance", "delete");
   const canPmsWrite = user?.can?.("performance", "write");
   const navigate = useNavigate();
@@ -207,19 +209,22 @@ const AdminPerformance = () => {
     }
   };
 
-  const handleDeleteCycle = async (cycleId, cycleName) => {
-    if (window.confirm(`Are you sure you want to delete "${cycleName}"?\n\nThis action cannot be undone.`)) {
-      try {
-        await performanceApi.deleteCycle(cycleId);
-        
-        toast.success(`Cycle "${cycleName}" deleted successfully!`);
-        
-        await loadPerformanceData();
-      } catch (error) {
-        console.error('Failed to delete cycle:', error);
-        toast.error(pickApiError(error) || 'Failed to delete cycle');
+  const handleDeleteCycle = (cycleId, cycleName) => {
+    confirm({
+      title: "Delete Cycle?",
+      message: `Are you sure you want to delete "${cycleName}"?\n\nThis action cannot be undone.`,
+      action: async () => {
+        try {
+          await performanceApi.deleteCycle(cycleId);
+          toast.success(`Cycle "${cycleName}" deleted successfully!`);
+          await loadPerformanceData();
+        } catch (error) {
+          console.error('Failed to delete cycle:', error);
+          toast.error(pickApiError(error) || 'Failed to delete cycle');
+          throw error;
+        }
       }
-    }
+    });
   };
 
   const handleCloseModal = () => {
@@ -245,172 +250,182 @@ const AdminPerformance = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto space-y-8">
         
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Performance Management (PMS)</h1>
-            <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Performance Management</h1>
+            <p className="text-muted-foreground text-sm mt-1.5">
               Track appraisal cycles, reviews, and employee performance metrics
             </p>
           </div>
           
           {canPmsCycleStruct && (
-          <button
+          <Button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 px-4 py-2 rounded-lg transition-colors font-medium"
+            className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             New Cycle
-          </button>
+          </Button>
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 backdrop-blur-sm rounded-xl p-6 transition-all duration-200 hover:scale-105">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">Total Cycles</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{performanceData.totalCycles}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="bg-card border border-border/50 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+               <Calendar className="w-16 h-16 text-blue-600" />
+            </div>
+            <div className="flex flex-col gap-4 relative z-10">
+              <div className="p-2.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg w-fit">
+                <Calendar className="w-5 h-5" />
               </div>
-              <Calendar className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+              <div>
+                <p className="text-muted-foreground text-sm font-medium">Total Cycles</p>
+                <p className="text-3xl font-bold text-foreground mt-1">{performanceData.totalCycles}</p>
+              </div>
             </div>
           </div>
 
-          <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 backdrop-blur-sm rounded-xl p-6 transition-all duration-200 hover:scale-105">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">Active Cycles</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{performanceData.activeCycles}</p>
+          <div className="bg-card border border-border/50 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+               <TrendingUp className="w-16 h-16 text-green-600" />
+            </div>
+            <div className="flex flex-col gap-4 relative z-10">
+              <div className="p-2.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg w-fit">
+                <TrendingUp className="w-5 h-5" />
               </div>
-              <TrendingUp className="w-8 h-8 text-green-600 dark:text-green-400" />
+              <div>
+                <p className="text-muted-foreground text-sm font-medium">Active Cycles</p>
+                <p className="text-3xl font-bold text-foreground mt-1">{performanceData.activeCycles}</p>
+              </div>
             </div>
           </div>
 
-          <div className="bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 backdrop-blur-sm rounded-xl p-6 transition-all duration-200 hover:scale-105">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">Total Reviews</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{performanceData.totalReviews}</p>
+          <div className="bg-card border border-border/50 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+               <FileText className="w-16 h-16 text-purple-600" />
+            </div>
+            <div className="flex flex-col gap-4 relative z-10">
+              <div className="p-2.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg w-fit">
+                <FileText className="w-5 h-5" />
               </div>
-              <FileText className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+              <div>
+                <p className="text-muted-foreground text-sm font-medium">Total Reviews</p>
+                <p className="text-3xl font-bold text-foreground mt-1">{performanceData.totalReviews}</p>
+              </div>
             </div>
           </div>
 
-          <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 backdrop-blur-sm rounded-xl p-6 transition-all duration-200 hover:scale-105">
-            <div className="flex items-center justify-between">
+          <div className="bg-card border border-border/50 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+               <Award className="w-16 h-16 text-amber-600" />
+            </div>
+            <div className="flex flex-col gap-4 relative z-10">
+              <div className="p-2.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg w-fit">
+                <Award className="w-5 h-5" />
+              </div>
               <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">Avg Score</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                <p className="text-muted-foreground text-sm font-medium">Avg Score</p>
+                <p className="text-3xl font-bold text-foreground mt-1">
                   {performanceData.avgScore > 0 ? performanceData.avgScore.toFixed(1) : "—"}
                 </p>
               </div>
-              <Award className="w-8 h-8 text-orange-600 dark:text-orange-400" />
             </div>
           </div>
         </div>
 
-        <div className="flex gap-4 mb-6 border-b border-gray-200 dark:border-gray-800">
-          <button
-            onClick={() => setActiveTab("cycles")}
-            className={`pb-3 px-2 font-medium transition-colors border-b-2 ${
-              activeTab === "cycles"
-                ? "text-gray-900 dark:text-white border-gray-900 dark:border-white"
-                : "text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300"
-            }`}
-          >
-            Appraisal Cycles
-          </button>
-          <button
-            onClick={() => setActiveTab("analytics")}
-            className={`pb-3 px-2 font-medium transition-colors border-b-2 ${
-              activeTab === "analytics"
-                ? "text-gray-900 dark:text-white border-gray-900 dark:border-white"
-                : "text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300"
-            }`}
-          >
-            Analytics & Insights
-          </button>
-          <button
-            onClick={() => setActiveTab("employees")}
-            className={`pb-3 px-2 font-medium transition-colors border-b-2 ${
-              activeTab === "employees"
-                ? "text-gray-900 dark:text-white border-gray-900 dark:border-white"
-                : "text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300"
-            }`}
-          >
-            Employee Overview
-          </button>
+        <div className="flex flex-wrap gap-2 mb-6 border-b border-border/50 pb-px">
+          {["cycles", "analytics", "employees"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all relative ${
+                activeTab === tab
+                  ? "text-primary bg-primary/5"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+            >
+              {tab === "cycles" ? "Appraisal Cycles" : tab === "analytics" ? "Analytics & Insights" : "Employee Overview"}
+              {activeTab === tab && (
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary shadow-[0_-2px_10px_rgba(37,99,235,0.4)]" />
+              )}
+            </button>
+          ))}
         </div>
 
         {activeTab === "cycles" ? (
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Appraisal Cycles</h2>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">Manage performance review periods</p>
+          <div className="bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden flex flex-col max-h-[600px]">
+            <div className="p-5 border-b border-border/50 bg-muted/20 backdrop-blur-md">
+              <h2 className="text-lg font-bold text-foreground">Appraisal Cycles</h2>
+              <p className="text-muted-foreground text-sm mt-1">Manage performance review periods</p>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-800/50">
+            <div className="overflow-auto custom-scrollbar flex-1 relative">
+              <table className="w-full text-left border-separate border-spacing-0">
+                <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur-md">
                   <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Cycle Name</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Period</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Status</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Reviews</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Avg Score</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Actions</th>
+                    <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cycle Name</th>
+                    <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Period</th>
+                    <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Reviews</th>
+                    <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Avg Score</th>
+                    <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                <tbody>
                   {performanceData.cycles.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                      <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground bg-background">
                         No performance cycles found. Create your first cycle to get started.
                       </td>
                     </tr>
                   ) : (
                     performanceData.cycles.map((cycle) => (
-                      <tr key={cycle._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{cycle.name}</td>
-                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                      <tr key={cycle._id} className="group hover:bg-blue-600/5 dark:hover:bg-blue-500/10 transition-colors bg-background">
+                        <td className="px-6 py-4 border-b border-border/50 align-middle">
+                          <span className="font-semibold text-sm text-foreground">{cycle.name}</span>
+                        </td>
+                        <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground align-middle">
                           {new Date(cycle.startDate).toLocaleDateString()} - {new Date(cycle.endDate).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        <td className="px-6 py-4 border-b border-border/50 align-middle">
+                          <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase ${
                             cycle.status === 'active' 
-                              ? 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/30' 
+                              ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400 border border-green-200 dark:border-green-500/30' 
                               : cycle.status === 'completed'
-                              ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30'
-                              : 'bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400 border border-gray-200 dark:border-gray-500/30'
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30'
+                              : 'bg-muted text-muted-foreground border border-border/50'
                           }`}>
-                            {cycle.status.toUpperCase()}
+                            {cycle.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{cycle.totalReviews}</td>
-                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{cycle.avgScore ? `${cycle.avgScore}/5` : '—'}</td>
-                        <td className="px-6 py-4 text-right space-x-2">
-                          <button 
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium transition-colors"
-                            onClick={() => handleViewCycle(cycle)}
-                          >
-                            View
-                          </button>
-                          {canPmsWrite && (
-                          <button 
-                            className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm font-medium transition-colors"
-                            onClick={() => handleEditClick(cycle)}
-                          >
-                            Edit
-                          </button>
-                          )}
-                          {canPmsCycleStruct && (
-                          <button 
-                            className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm font-medium transition-colors"
-                            onClick={() => handleDeleteCycle(cycle._id, cycle.name)}
-                          >
-                            Delete
-                          </button>
-                          )}
+                        <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground text-center align-middle">{cycle.totalReviews}</td>
+                        <td className="px-6 py-4 border-b border-border/50 text-sm text-foreground font-medium text-center align-middle">{cycle.avgScore ? `${cycle.avgScore}/5` : '—'}</td>
+                        <td className="px-6 py-4 border-b border-border/50 text-right align-middle whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              className="text-primary hover:text-primary/80 text-sm font-medium transition-colors"
+                              onClick={() => handleViewCycle(cycle)}
+                            >
+                              View
+                            </button>
+                            {canPmsWrite && (
+                            <button 
+                              className="text-amber-600 hover:text-amber-700 dark:text-amber-500 dark:hover:text-amber-400 text-sm font-medium transition-colors"
+                              onClick={() => handleEditClick(cycle)}
+                            >
+                              Edit
+                            </button>
+                            )}
+                            {canPmsCycleStruct && (
+                            <button 
+                              className="text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 text-sm font-medium transition-colors"
+                              onClick={() => handleDeleteCycle(cycle._id, cycle.name)}
+                            >
+                              Delete
+                            </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))

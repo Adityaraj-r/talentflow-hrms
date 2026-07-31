@@ -365,6 +365,8 @@ export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void
         { firstName: { $regex: search, $options: 'i' } },
         { lastName:  { $regex: search, $options: 'i' } },
         { email:     { $regex: search, $options: 'i' } },
+        { department: { $regex: search, $options: 'i' } },
+        { employeeCode: { $regex: search, $options: 'i' } },
       ];
     }
 

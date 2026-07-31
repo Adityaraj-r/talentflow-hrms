@@ -24,6 +24,7 @@ import {
   Sun,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StatsCard } from "@/components/ui/stats-card";
 
 const formatDate = (dateString) => {
   if (!dateString) return "-";
@@ -99,59 +100,7 @@ const statusConfig = {
   },
 };
 
-const StatsCard = ({ title, value, icon, variant }) => {
-  const styles = {
-    blue: {
-      card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
-      icon: "text-blue-600 dark:text-blue-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    green: {
-      card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
-      icon: "text-green-600 dark:text-green-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    orange: {
-      card: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30",
-      icon: "text-orange-600 dark:text-orange-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    red: {
-      card: "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30",
-      icon: "text-purple-600 dark:text-purple-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    amber: {
-      card: "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30",
-      icon: "text-amber-600 dark:text-amber-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-  };
 
-  const s = styles[variant] || styles.blue;
-
-  return (
-    <div
-      className={cn(
-        "rounded-xl border p-6 transition-all duration-200 hover:scale-105",
-        s.card
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={cn("text-sm", s.label)}>{title}</p>
-          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
-        </div>
-        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
-      </div>
-    </div>
-  );
-};
 
 const MyAttendance = () => {
   const { user } = useUser();
@@ -169,6 +118,7 @@ const MyAttendance = () => {
     absent: 0,
     overtimeDays: 0,
   });
+  const [activeCard, setActiveCard] = useState("total");
 
   const employeeType = user?.employeeType || "Full-Time";
   const todayStr = new Date().toLocaleDateString("en-GB", {
@@ -245,6 +195,15 @@ const MyAttendance = () => {
     (h) => new Date(h.date) >= new Date()
   ).slice(0, 5);
 
+  const filteredHistory = history.filter((day) => {
+    if (activeCard === "total") return true;
+    if (activeCard === "present" && day.status !== "Present" && day.status !== "Half Day") return false;
+    if (activeCard === "late" && day.status !== "Late") return false;
+    if (activeCard === "absent" && day.status !== "Absent") return false;
+    if (activeCard === "ot" && !(day.overtimeHours > 0)) return false;
+    return true;
+  });
+
   return (
     <div className="space-y-6 max-w-full">
 
@@ -283,30 +242,40 @@ const MyAttendance = () => {
           value={stats.workingDays}
           icon={<CalendarDays className="h-8 w-8" />}
           variant="blue"
+          isActive={activeCard === "total"}
+          onClick={() => setActiveCard(activeCard === "total" ? "total" : "total")}
         />
         <StatsCard
           title="Present"
           value={stats.present}
           icon={<CheckCircle className="h-8 w-8" />}
           variant="green"
+          isActive={activeCard === "present"}
+          onClick={() => setActiveCard(activeCard === "present" ? "total" : "present")}
         />
         <StatsCard
           title="Late Arrivals"
           value={stats.late}
           icon={<Clock className="h-8 w-8" />}
           variant="red"
+          isActive={activeCard === "late"}
+          onClick={() => setActiveCard(activeCard === "late" ? "total" : "late")}
         />
         <StatsCard
           title="Absent"
           value={stats.absent}
           icon={<XCircle className="h-8 w-8" />}
           variant="orange"
+          isActive={activeCard === "absent"}
+          onClick={() => setActiveCard(activeCard === "absent" ? "total" : "absent")}
         />
         <StatsCard
           title="OT Days"
           value={stats.overtimeDays}
           icon={<Timer className="h-8 w-8" />}
           variant="amber"
+          isActive={activeCard === "ot"}
+          onClick={() => setActiveCard(activeCard === "ot" ? "total" : "ot")}
         />
       </div>
 
@@ -341,7 +310,7 @@ const MyAttendance = () => {
             </CardHeader>
 
             <CardContent className="p-0">
-              {history.length === 0 ? (
+              {filteredHistory.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                   <CalendarDays className="w-10 h-10 mb-3 opacity-30" />
                   <p className="text-sm">No attendance records yet.</p>
@@ -365,7 +334,7 @@ const MyAttendance = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
-                      {history.map((day, i) => {
+                      {filteredHistory.map((day, i) => {
                         const sc = statusConfig[day.status] || statusConfig["Present"];
                         const otFmt = formatOTHours(day.overtimeHours);
                         const isToday = day.date === new Date().toISOString().split("T")[0];

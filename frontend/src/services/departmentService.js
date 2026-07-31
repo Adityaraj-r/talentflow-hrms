@@ -1,28 +1,21 @@
-import axios from "axios";
-
-const DEPT_URL = "http://localhost:5001/api/departments";
-const USERS_URL = "http://localhost:5001/api/users";
-
-const authHeader = () => ({
-  headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-});
+import apiClient from "./apiClient";
 
 export const getDepartments = async () => {
-  const res = await axios.get(DEPT_URL, authHeader());
-  return Array.isArray(res.data.data) ? res.data.data : [];
+  const res = await apiClient.get("/departments");
+  return Array.isArray(res.data) ? res.data : [];
 };
 
 export const getDepartmentDetails = async (id) => {
   const [deptRes, usersRes] = await Promise.all([
-    axios.get(`${DEPT_URL}/${id}`, authHeader()),
-    axios.get(USERS_URL, authHeader()),
+    apiClient.get(`/departments/${id}`),
+    apiClient.get("/users"),
   ]);
 
-  const department = deptRes.data.data;
-  const allUsers = Array.isArray(usersRes.data.data)
-    ? usersRes.data.data
-    : Array.isArray(usersRes.data.users)
-    ? usersRes.data.users
+  const department = deptRes.data;
+  const allUsers = Array.isArray(usersRes.data)
+    ? usersRes.data
+    : Array.isArray(usersRes.users)
+    ? usersRes.users
     : [];
 
   const employees = allUsers.filter((u) => u.department === department.name);
@@ -31,34 +24,30 @@ export const getDepartmentDetails = async (id) => {
 };
 
 export const getPotentialManagers = async () => {
-  const res = await axios.get(USERS_URL, authHeader());
-  return Array.isArray(res.data.data)
-    ? res.data.data
-    : Array.isArray(res.data.users)
-    ? res.data.users
+  const res = await apiClient.get("/users");
+  return Array.isArray(res.data)
+    ? res.data
+    : Array.isArray(res.users)
+    ? res.users
     : [];
 };
 
 export const addDepartment = async (payload) => {
-  const res = await axios.post(DEPT_URL, payload, authHeader());
-  return res.data;
+  const res = await apiClient.post("/departments", payload);
+  return res;
 };
 
 export const updateDepartment = async (id, payload) => {
-  const res = await axios.put(`${DEPT_URL}/${id}`, payload, authHeader());
-  return res.data;
+  const res = await apiClient.put(`/departments/${id}`, payload);
+  return res;
 };
 
 export const deleteDepartment = async (id) => {
-  const res = await axios.delete(`${DEPT_URL}/${id}`, authHeader());
-  return res.data;
+  const res = await apiClient.delete(`/departments/${id}`);
+  return res;
 };
 
 export const assignManager = async (deptId, managerId) => {
-  const res = await axios.put(
-    `${DEPT_URL}/${deptId}`,
-    { manager: managerId },
-    authHeader()
-  );
-  return res.data;
+  const res = await apiClient.put(`/departments/${deptId}`, { manager: managerId });
+  return res;
 };

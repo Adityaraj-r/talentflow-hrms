@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FileText, Download, ShieldCheck, GraduationCap, Briefcase, User, Loader2, FolderOpen, Eye, FileDigit, Clock, XCircle, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { DocumentPreviewDialog } from "@/components/ui/DocumentViewer"
+import { DocumentPreviewDialog, forceCloudinaryDownload } from "@/components/ui/DocumentViewer"
 
 const getDocumentIcon = (category) => {
   switch (category) {

@@ -25,6 +25,7 @@ import {
   Timer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StatsCard } from "@/components/ui/stats-card";
 
 const formatBreakTime = (totalMinutes) => {
   if (!totalMinutes) return "0m";
@@ -58,6 +59,7 @@ const AttendanceRecord = () => {
     absent: 0,
     overtime: 0,
   });
+  const [activeCard, setActiveCard] = useState("total");
 
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -128,9 +130,26 @@ const AttendanceRecord = () => {
 
   const filteredRecords = safeRecords.filter((record) => {
     const fullName = `${record.userId?.firstName || ""} ${record.userId?.lastName || ""}`.toLowerCase();
+    const email = (record.userId?.email || "").toLowerCase();
     const department = (record.userId?.department || "").toLowerCase();
+    const empCode = (record.userId?.employeeCode || "").toLowerCase();
     const search = searchTerm.toLowerCase();
-    return fullName.includes(search) || department.includes(search);
+
+    const searchMatch = fullName.includes(search) ||
+      email.includes(search) ||
+      department.includes(search) ||
+      empCode.includes(search);
+      
+    if (!searchMatch) return false;
+
+    if (activeCard !== "total") {
+      if (activeCard === "on_time" && record.status !== "Present" && record.status !== "Half Day") return false;
+      if (activeCard === "late" && record.status !== "Late") return false;
+      if (activeCard === "absent" && record.status !== "Absent") return false;
+      if (activeCard === "ot" && !(record.overtimeHours > 0)) return false;
+    }
+
+    return true;
   });
 
   const getStatusColor = (status) => {
@@ -181,30 +200,40 @@ const AttendanceRecord = () => {
           value={stats.total}
           icon={<Users className="h-8 w-8" />}
           variant="blue"
+          isActive={activeCard === 'total'}
+          onClick={() => setActiveCard(activeCard === 'total' ? 'total' : 'total')}
         />
         <StatsCard
           title="On Time"
           value={stats.present}
           icon={<CheckCircle className="h-8 w-8" />}
           variant="green"
+          isActive={activeCard === 'on_time'}
+          onClick={() => setActiveCard(activeCard === 'on_time' ? 'total' : 'on_time')}
         />
         <StatsCard
           title="Late Arrivals"
           value={stats.late}
           icon={<Clock className="h-8 w-8" />}
           variant="red"
+          isActive={activeCard === 'late'}
+          onClick={() => setActiveCard(activeCard === 'late' ? 'total' : 'late')}
         />
         <StatsCard
           title="Absent"
           value={stats.absent}
           icon={<XCircle className="h-8 w-8" />}
           variant="orange"
+          isActive={activeCard === 'absent'}
+          onClick={() => setActiveCard(activeCard === 'absent' ? 'total' : 'absent')}
         />
         <StatsCard
           title="Working OT Today"
           value={stats.overtime}
           icon={<Timer className="h-8 w-8" />}
           variant="amber"
+          isActive={activeCard === 'ot'}
+          onClick={() => setActiveCard(activeCard === 'ot' ? 'total' : 'ot')}
         />
       </div>
 
@@ -221,10 +250,10 @@ const AttendanceRecord = () => {
                   className="w-full md:w-40 rounded-md bg-background"
                 />
               </div>
-              <div className="relative w-full md:w-64">
+              <div className="relative w-full md:w-96">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name or dept..."
+                  placeholder="Search by Name, ID, Dept, Email..."
                   className="pl-8 bg-background"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -240,6 +269,7 @@ const AttendanceRecord = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Employee</TableHead>
+                  <TableHead className="hidden md:table-cell">Employee ID</TableHead>
                   <TableHead>Department</TableHead>
                   <TableHead>Clock In</TableHead>
                   <TableHead>Clock Out</TableHead>
@@ -257,7 +287,7 @@ const AttendanceRecord = () => {
                 {loading ? (
                   <TableRow>
                     <TableCell
-                      colSpan={canEdit ? 10 : 9}
+                      colSpan={canEdit ? 11 : 10}
                       className="text-center py-8 text-muted-foreground"
                     >
                       Loading organizational data...
@@ -266,7 +296,7 @@ const AttendanceRecord = () => {
                 ) : filteredRecords.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={canEdit ? 10 : 9}
+                      colSpan={canEdit ? 11 : 10}
                       className="text-center py-8 text-muted-foreground"
                     >
                       No records found for the selected date.
@@ -286,10 +316,16 @@ const AttendanceRecord = () => {
                               {record.userId?.firstName}{" "}
                               {record.userId?.lastName}
                             </span>
+                            <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
+                              {record.userId?.employeeCode || "N/A"}
+                            </span>
                             <span className="text-xs text-muted-foreground">
                               {record.userId?.email}
                             </span>
                           </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
+                          {record.userId?.employeeCode || "-"}
                         </TableCell>
                         <TableCell>
                           <span className="text-sm text-slate-600 dark:text-slate-300">
@@ -386,60 +422,6 @@ const AttendanceRecord = () => {
         record={selectedRecord}
         onSuccess={fetchRecords}
       />
-    </div>
-  );
-};
-
-const StatsCard = ({ title, value, icon, variant }) => {
-  const styles = {
-    blue: {
-      card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
-      icon: "text-blue-600 dark:text-blue-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    green: {
-      card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
-      icon: "text-green-600 dark:text-green-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    orange: {
-      card: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30",
-      icon: "text-orange-600 dark:text-orange-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    red: {
-      card: "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30",
-      icon: "text-purple-600 dark:text-purple-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    amber: {
-      card: "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30",
-      icon: "text-amber-600 dark:text-amber-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-  };
-
-  const s = styles[variant] || styles.blue;
-
-  return (
-    <div
-      className={cn(
-        "rounded-xl border p-6 transition-all duration-200 hover:scale-105",
-        s.card
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={cn("text-sm", s.label)}>{title}</p>
-          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
-        </div>
-        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
-      </div>
     </div>
   );
 };

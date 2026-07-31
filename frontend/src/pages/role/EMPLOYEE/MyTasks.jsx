@@ -35,7 +35,7 @@ import {
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import CreateTaskModal from "@/components/ui/CreateTaskModal"
-
+import { StatsCard } from "@/components/ui/stats-card"
 const TASK_STATUS = {
   TO_DO:       "TO_DO",
   IN_PROGRESS: "IN_PROGRESS",
@@ -72,6 +72,7 @@ const MyTasks = () => {
   const [filterStatus, setFilterStatus] = useState("ALL")
   const [filterPriority, setFilterPriority] = useState("ALL")
   const [sortBy, setSortBy]             = useState("dueDate")
+  const [activeCard, setActiveCard]     = useState("total")
 
   const [statusDialog, setStatusDialog] = useState({ open: false, task: null, newStatus: null })
   const [detailsDialog, setDetailsDialog] = useState({ open: false, task: null, intData: null })
@@ -125,6 +126,18 @@ const MyTasks = () => {
       result = result.filter(t => t.priority?.toUpperCase() === filterPriority)
     }
 
+    if (activeCard === "completed") {
+      result = result.filter(t => t.status === TASK_STATUS.DONE)
+    }
+    if (activeCard === "inProgress") {
+      result = result.filter(t => t.status === TASK_STATUS.IN_PROGRESS)
+    }
+    if (activeCard === "overdue") {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      result = result.filter(t => t.status !== TASK_STATUS.DONE && t.dueDate && new Date(t.dueDate) < today)
+    }
+
     result.sort((a, b) => {
       if (sortBy === "dueDate") {
         if (!a.dueDate) return 1
@@ -139,7 +152,7 @@ const MyTasks = () => {
     })
 
     return result
-  }, [tasks, searchQuery, filterStatus, filterPriority, sortBy])
+  }, [tasks, searchQuery, filterStatus, filterPriority, sortBy, activeCard])
 
   const handleStatusUpdate = async () => {
     const { task, newStatus } = statusDialog
@@ -268,7 +281,7 @@ const MyTasks = () => {
     )
   }
 
-  const hasActiveFilters = filterStatus !== "ALL" || filterPriority !== "ALL" || searchQuery.trim()
+  const hasActiveFilters = filterStatus !== "ALL" || filterPriority !== "ALL" || searchQuery.trim() || activeCard !== "total"
 
   return (
     <div className="space-y-6">
@@ -304,24 +317,32 @@ const MyTasks = () => {
           value={stats.total}
           icon={<ListTodo className="h-8 w-8" />}
           variant="blue"
+          isActive={activeCard === "total"}
+          onClick={() => setActiveCard(activeCard === "total" ? "total" : "total")}
         />
         <StatsCard
           title="Completed"
           value={stats.completed}
           icon={<CheckCircle2 className="h-8 w-8" />}
           variant="green"
+          isActive={activeCard === "completed"}
+          onClick={() => setActiveCard(activeCard === "completed" ? "total" : "completed")}
         />
         <StatsCard
           title="In Progress"
           value={stats.inProgress}
           icon={<Clock className="h-8 w-8" />}
           variant="amber"
+          isActive={activeCard === "inProgress"}
+          onClick={() => setActiveCard(activeCard === "inProgress" ? "total" : "inProgress")}
         />
         <StatsCard
           title="Overdue"
           value={stats.overdue}
           icon={<AlertCircle className="h-8 w-8" />}
           variant="orange"
+          isActive={activeCard === "overdue"}
+          onClick={() => setActiveCard(activeCard === "overdue" ? "total" : "overdue")}
         />
       </div>
 
@@ -696,52 +717,4 @@ const MyTasks = () => {
   )
 }
 
-const StatsCard = ({ title, value, icon, variant }) => {
-  const styles = {
-    blue: {
-      card:  "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
-      icon:  "text-blue-600 dark:text-blue-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    green: {
-      card:  "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
-      icon:  "text-green-600 dark:text-green-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    orange: {
-      card:  "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30",
-      icon:  "text-orange-600 dark:text-orange-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    red: {
-      card:  "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30",
-      icon:  "text-purple-600 dark:text-purple-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    amber: {
-      card:  "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30",
-      icon:  "text-amber-600 dark:text-amber-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-  }
-
-  const s = styles[variant] || styles.blue
-
-  return (
-    <div className={cn("rounded-xl border p-6 transition-all duration-200 hover:scale-105", s.card)}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={cn("text-sm", s.label)}>{title}</p>
-          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
-        </div>
-        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
-      </div>
-    </div>
-  )
-}
 export default MyTasks
