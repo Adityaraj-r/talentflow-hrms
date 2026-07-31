@@ -1,78 +1,120 @@
-import { cn } from "@/lib/utils";
+import React from "react"
+import { cn } from "@/lib/utils"
 
-export const StatsCard = ({ title, value, icon, variant = "blue", isActive, onClick }) => {
+export const StatsCard = ({
+  title,
+  value,
+  subtitle,
+  trend,
+  trendLabel,
+  icon: Icon,
+  variant = "blue",
+  isActive = false,
+  onClick,
+}) => {
   const styles = {
     blue: {
-      card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
+      card: "border-blue-200/50 dark:border-blue-500/20",
+      active: "ring-2 ring-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)] dark:shadow-[0_0_15px_rgba(59,130,246,0.1)] border-transparent",
+      iconBg: "bg-blue-100 dark:bg-blue-500/20",
       icon: "text-blue-600 dark:text-blue-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-background",
-    },
-    green: {
-      card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
-      icon: "text-green-600 dark:text-green-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-green-500 ring-offset-2 dark:ring-offset-background",
-    },
-    orange: {
-      card: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30",
-      icon: "text-orange-600 dark:text-orange-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-orange-500 ring-offset-2 dark:ring-offset-background",
-    },
-    yellow: {
-      card: "bg-yellow-50 dark:bg-yellow-500/10 border-yellow-200 dark:border-yellow-500/30",
-      icon: "text-yellow-600 dark:text-yellow-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-yellow-500 ring-offset-2 dark:ring-offset-background",
-    },
-    red: {
-      card: "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30",
-      icon: "text-red-600 dark:text-red-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-red-500 ring-offset-2 dark:ring-offset-background",
-    },
-    purple: {
-      card: "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30",
-      icon: "text-purple-600 dark:text-purple-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-purple-500 ring-offset-2 dark:ring-offset-background",
+      progress: "bg-blue-500",
+      trendPositive: "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20",
+      trendNegative: "text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/20",
     },
     amber: {
-      card: "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30",
+      card: "border-amber-200/50 dark:border-amber-500/20",
+      active: "ring-2 ring-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.15)] dark:shadow-[0_0_15px_rgba(245,158,11,0.1)] border-transparent",
+      iconBg: "bg-amber-100 dark:bg-amber-500/20",
       icon: "text-amber-600 dark:text-amber-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-amber-500 ring-offset-2 dark:ring-offset-background",
+      progress: "bg-amber-500",
+      trendPositive: "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20",
+      trendNegative: "text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/20",
     },
-  };
+    emerald: {
+      card: "border-emerald-200/50 dark:border-emerald-500/20",
+      active: "ring-2 ring-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)] dark:shadow-[0_0_15px_rgba(16,185,129,0.1)] border-transparent",
+      iconBg: "bg-emerald-100 dark:bg-emerald-500/20",
+      icon: "text-emerald-600 dark:text-emerald-400",
+      progress: "bg-emerald-500",
+      trendPositive: "text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20",
+      trendNegative: "text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/20",
+    },
+    rose: {
+      card: "border-rose-200/50 dark:border-rose-500/20",
+      active: "ring-2 ring-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.15)] dark:shadow-[0_0_15px_rgba(244,63,94,0.1)] border-transparent",
+      iconBg: "bg-rose-100 dark:bg-rose-500/20",
+      icon: "text-rose-600 dark:text-rose-400",
+      progress: "bg-rose-500",
+      trendPositive: "text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20",
+      trendNegative: "text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/20",
+    }
+  }
 
-  const s = styles[variant] || styles.blue;
+  // Map common aliases to standard styles
+  styles.green = styles.emerald;
+  styles.red = styles.rose;
+  styles.orange = styles.amber;
+  styles.sky = styles.blue;
+
+  const s = styles[variant] || styles.blue
+  const isTrendPositive = typeof trend === 'number' ? trend >= 0 : true
 
   return (
     <div
       onClick={onClick}
       className={cn(
-        "rounded-xl border p-6 transition-all duration-200",
-        onClick && "cursor-pointer hover:scale-105",
+        "group relative flex flex-col justify-between w-full h-[160px] bg-background rounded-[16px] p-6 border shadow-sm transition-all duration-300 ease-out overflow-hidden",
+        onClick && "cursor-pointer hover:-translate-y-[4px] hover:shadow-md",
         s.card,
-        isActive && s.activeRing,
-        !isActive && onClick && "opacity-80 hover:opacity-100"
+        isActive && s.active,
+        !isActive && onClick && "opacity-90 hover:opacity-100"
       )}
     >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={cn("text-sm", s.label)}>{title}</p>
-          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
+      {/* Top Header Row */}
+      <div className="flex items-start justify-between relative z-10">
+        <h3 className="text-[16px] font-semibold text-muted-foreground tracking-tight">{title}</h3>
+        <div className={cn(
+          "flex items-center justify-center w-10 h-10 rounded-full transition-transform duration-500 group-hover:rotate-[15deg] group-hover:scale-110",
+          s.iconBg
+        )}>
+          {Icon && (
+            React.isValidElement(Icon) 
+              ? React.cloneElement(Icon, { className: cn("w-5 h-5", s.icon) }) 
+              : <Icon className={cn("w-5 h-5", s.icon)} />
+          )}
         </div>
-        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
+      </div>
+
+      {/* Value and Subtitle Row */}
+      <div className="flex flex-col relative z-10 mt-auto">
+        <div className="flex items-end gap-3">
+          <span className="text-[40px] font-bold text-foreground leading-none tracking-tight">{value}</span>
+          {trend !== undefined && (
+            <span className={cn(
+              "flex items-center px-2 py-0.5 rounded-full text-[12px] font-medium mb-1",
+              isTrendPositive ? s.trendPositive : s.trendNegative
+            )}>
+              {isTrendPositive ? '+' : ''}{trend}%
+            </span>
+          )}
+        </div>
+        <p className="text-[14px] font-medium text-muted-foreground mt-1 truncate">
+          {subtitle || trendLabel || "Total records"}
+        </p>
+      </div>
+
+      {/* Animated Bottom Progress Line */}
+      <div className="absolute bottom-0 left-0 h-[3px] w-full bg-muted/30">
+        <div 
+          className={cn(
+            "h-full transition-all duration-1000 ease-out", 
+            s.progress,
+            "w-0 group-hover:w-full",
+            isActive && "w-full"
+          )} 
+        />
       </div>
     </div>
-  );
-};
+  )
+}
