@@ -34,7 +34,7 @@ const applicationStages = {
 const normalizeApplicationStage = (status = "") => {
   const normalized = status.toString().trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ")
   if (normalized.includes("reject")) return "rejected"
-  if (normalized.includes("select") || normalized.includes("hire")) return "selected"
+  if (normalized.includes("select") || normalized.includes("hire") || normalized.includes("offer") || normalized.includes("join") || normalized.includes("accept")) return "selected"
   if (normalized.includes("interview")) return "interview"
   if (normalized.includes("shortlist") || normalized.includes("screen")) return "shortlisted"
   return "applied"
@@ -352,7 +352,7 @@ const CandidateApplications = () => {
     },
     {
       title: "New Applications",
-      value: stats.applied === 0 ? "All candidates processed" : stats.applied,
+      value: stats.applied,
       icon: FileText,
       trend: percentOfTotal(stats.applied),
       helper: stats.applied === 0 ? "All applications reviewed" : "Candidates awaiting first review",

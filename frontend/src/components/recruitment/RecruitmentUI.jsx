@@ -14,6 +14,12 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const statusConfig = {
   pending: { icon: Clock3, className: "border-amber-400/30 bg-amber-500/10 text-amber-300 shadow-amber-500/10" },
@@ -88,8 +94,10 @@ export function RecruitmentKpiCard({
   active,
   chartData,
   className,
+  tooltip,
 }) {
-  const positive = Number(trend) >= 0
+  const safeTrend = isNaN(Number(trend)) ? 0 : Number(trend)
+  const positive = safeTrend >= 0
   const TrendIcon = positive ? ArrowUpRight : ArrowDownRight
   const accentClass = {
     sky: "from-sky-500/20 text-sky-300 ring-sky-400/20",
@@ -106,7 +114,7 @@ export function RecruitmentKpiCard({
     ? chartData.map(val => Math.max((val / maxVal) * 100, 5)) // Min 5% height so 0 values are visible
     : [35, 55, 42, 70, 48, 82, 64] // Fallback
 
-  return (
+  const cardContent = (
     <Motion.motion.button
       type="button"
       onClick={onClick}
@@ -114,7 +122,7 @@ export function RecruitmentKpiCard({
       whileHover={{ y: -3 }}
       transition={{ duration: 0.18 }}
       className={cn(
-        "group relative flex h-full min-h-[128px] min-w-0 flex-col justify-between overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 bg-card/80 p-3.5 text-left shadow-sm transition-all",
+        "group relative flex h-full min-h-[140px] w-full min-w-0 flex-col justify-between gap-3 overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 bg-card/80 p-3.5 text-left shadow-sm transition-all",
         "hover:border-white/20 hover:bg-card hover:shadow-lg hover:shadow-black/10",
         active && "border-primary/40 ring-1 ring-primary/30",
         !onClick && "cursor-default",
@@ -122,11 +130,11 @@ export function RecruitmentKpiCard({
       )}
     >
       <div className={cn("absolute inset-x-0 top-0 h-1 bg-gradient-to-r to-transparent", accentClass.split(" ")[0])} />
-      <div>
+      <div className="flex flex-col gap-1.5">
         <div className="flex min-w-0 items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="break-words text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-            <div className="mt-1.5 break-words text-2xl font-bold leading-none text-foreground sm:text-2xl xl:text-3xl">{value}</div>
+            <div className="mt-1 break-words text-2xl font-bold leading-none text-foreground sm:text-2xl xl:text-3xl">{value}</div>
           </div>
           {Icon && (
             <div className={cn("shrink-0 rounded-md bg-muted/40 p-1.5 ring-1 sm:p-2", accentClass)}>
@@ -134,16 +142,16 @@ export function RecruitmentKpiCard({
             </div>
           )}
         </div>
-        <div className="mt-2.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs">
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs">
           <span className={cn("inline-flex items-center gap-0.5 font-semibold", positive ? "text-emerald-300" : "text-rose-300")}>
             <TrendIcon className="h-3.5 w-3.5" />
-            {Math.abs(Number(trend))}%
+            {Math.abs(safeTrend)}%
           </span>
-          <span className="text-[11px] text-muted-foreground">{trendLabel}</span>
+          {trendLabel && <span className="text-[11px] text-muted-foreground">{trendLabel}</span>}
         </div>
       </div>
-      <div>
-        <div className="mt-2 flex h-5 items-end gap-1">
+      <div className="flex flex-col gap-1.5 pt-0.5">
+        <div className="flex h-4 items-end gap-1">
           {normalizedData.map((height, index) => (
             <span
               key={index}
@@ -152,12 +160,25 @@ export function RecruitmentKpiCard({
             />
           ))}
         </div>
-        <div className="mt-2 flex flex-col gap-1 text-[11px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-          <span className="min-w-0 break-words leading-tight">{helper}</span>
-          <span className="shrink-0 text-[10px] opacity-80">{updated}</span>
+        <div className="flex flex-col gap-0.5 text-[11px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+          {helper && <span className="min-w-0 break-words leading-tight">{helper}</span>}
+          {updated && <span className="shrink-0 text-[10px] opacity-80">{updated}</span>}
         </div>
       </div>
     </Motion.motion.button>
+  )
+
+  if (!tooltip) return cardContent
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{cardContent}</TooltipTrigger>
+        <TooltipContent className="max-w-xs bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+          {tooltip}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 

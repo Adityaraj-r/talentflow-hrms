@@ -336,7 +336,7 @@ const OfferOperations = () => {
               <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-3 pt-1">
                 {offers.map((offer) => {
                   const priority = offer.priority || (Number(offer.salary) >= 250000 ? "High" : Number(offer.salary) < 120000 ? "Low" : "Medium");
-                  const priorityColor = priority === "High" ? "text-rose-700 border-rose-200 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-500/10" : priority === "Low" ? "text-emerald-700 border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10" : "text-amber-700 border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10";
+                  const priorityColor = priority === "High" ? "text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-500/10" : priority === "Low" ? "text-emerald-700 dark:text-[#34D399] border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10" : "text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10";
                   const isSelected = selectedOffer?._id === offer._id;
                   const initials = (offer.candidateName || "").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
@@ -348,22 +348,22 @@ const OfferOperations = () => {
                         "relative overflow-hidden min-w-72 rounded-lg text-left flex flex-col justify-between gap-3 transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-md",
                         isSelected
                           ? "border-2 border-cyan-500 dark:border-cyan-500/60 bg-cyan-500/[0.025] dark:bg-cyan-500/[0.035] p-[15px] shadow-md shadow-cyan-500/[0.05] dark:shadow-cyan-900/10"
-                          : "border border-slate-200 dark:border-slate-850 bg-slate-50/50 dark:bg-white/[0.01] p-4 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-100/50 dark:hover:bg-white/[0.02]"
+                          : "border border-slate-200 dark:border-[rgba(148,163,184,0.20)] bg-slate-50/50 dark:bg-white/[0.01] p-4 shadow-sm hover:border-slate-300 dark:hover:border-[rgba(148,163,184,0.35)] hover:bg-slate-100/50 dark:hover:bg-white/[0.02]"
                       )}
                     >
                       {isSelected && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-cyan-500 dark:bg-cyan-400" />}
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 shrink-0 grid place-items-center rounded-full bg-cyan-500/10 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 font-bold text-xs border border-cyan-500/20">
+                        <div className="h-10 w-10 shrink-0 grid place-items-center rounded-full bg-cyan-500/10 dark:bg-cyan-500/10 text-cyan-700 dark:text-[#38BDF8] font-bold text-xs border border-cyan-500/20">
                           {initials}
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate font-semibold text-slate-800 dark:text-slate-205 text-sm">{offer.candidateName}</p>
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">{offer.offerId}</p>
+                          <p className="truncate text-[15px] font-semibold text-slate-900 dark:text-[#F8FAFC]">{offer.candidateName}</p>
+                          <p className="text-[10px] font-mono text-slate-500 dark:text-[rgba(148,163,184,0.88)] mt-0.5">{offer.offerId}</p>
                         </div>
                       </div>
-                      <div className="flex flex-col gap-1 text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-850">
-                        <p className="truncate"><span className="font-semibold text-slate-700 dark:text-slate-300">{offer.status}</span></p>
-                        <p className="truncate">{offer.approvalStage || "Draft"}</p>
+                      <div className="flex flex-col gap-1 text-[11px] pt-2 border-t border-slate-100 dark:border-[rgba(148,163,184,0.18)]">
+                        <p className="truncate"><span className="font-semibold text-slate-800 dark:text-[#E2E8F0]">{offer.status}</span></p>
+                        <p className="truncate text-slate-600 dark:text-[#CBD5E1]">{offer.approvalStage || "Draft"}</p>
                       </div>
                       <div className="flex items-center justify-between mt-1">
                         <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider", priorityColor)}>
