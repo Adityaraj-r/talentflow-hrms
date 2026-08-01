@@ -109,5 +109,8 @@ export const getIndemnities = (params = {}) =>
 export const createIndemnity = (data) =>
   apiClient.post("/payroll/indemnity", data);
 
-export const updateIndemnityStatus = (id, status) =>
-  apiClient.patch(`/payroll/indemnity/${id}/status`, { status });
+export const updateIndemnityStatus = (id, action, rejectionReason) =>
+  apiClient.patch(`/payroll/indemnity/${id}/status`, { action, rejectionReason });
+
+export const editAndResubmitIndemnity = (id, data) =>
+  apiClient.patch(`/payroll/indemnity/${id}/edit-resubmit`, data);

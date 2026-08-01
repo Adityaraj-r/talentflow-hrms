@@ -269,7 +269,7 @@ const Sidebar = ({
 
   const payrollOpsNestedActiveTeam = (p) => p === "/payroll"
 
-  const payrollOpsNestedActiveExec = (p) => p.startsWith("/payroll")
+  const payrollOpsNestedActiveExec = (p) => p.startsWith("/payroll") || p.startsWith("/indemnity")
 
   const FullPayrollSidebarGroup = ({ label }) =>
     canSee("payroll") ? (
@@ -580,6 +580,7 @@ const Sidebar = ({
                     to="/payroll"
                     label={userRole === ROLES.CEO ? "Processing & approvals" : "Payroll overview"}
                   />
+                  <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
                   <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
                 </SidebarNestedGroup>
               )}
