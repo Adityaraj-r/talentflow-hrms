@@ -19,7 +19,9 @@ const AuditLogs = () => {
   const [logs, setLogs] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isSwitchingCard, setIsSwitchingCard] = useState(false)
   const [page, setPage] = useState(1)
+  const [activeCard, setActiveCard] = useState("total")
   const [filters, setFilters] = useState({
     search: "",
     module: "all",
@@ -108,8 +110,39 @@ const AuditLogs = () => {
       return true
     })()
 
-    return matchesSearch && matchesModule && matchesStatus && matchesDate
+    let matchesCard = true
+    if (activeCard === "security") {
+      const actionText = log.action?.toLowerCase() || ""
+      const detailText = log.details?.toLowerCase() || ""
+      matchesCard = log.status === "Failed" || 
+                    log.module === "Security" || 
+                    actionText.includes("fail") || 
+                    actionText.includes("unauthorized") || 
+                    actionText.includes("violation") ||
+                    detailText.includes("fail")
+    } else if (activeCard === "health") {
+      matchesCard = log.status === "Success"
+    }
+
+    return matchesSearch && matchesModule && matchesStatus && matchesDate && matchesCard
   })
+
+  const handleCardClick = (cardType) => {
+    const newCardType = activeCard === cardType && cardType !== "total" ? "total" : cardType;
+    if (activeCard === newCardType) return;
+    
+    setIsSwitchingCard(true);
+    setActiveCard(newCardType);
+    setPage(1);
+
+    if (newCardType === "total") {
+      setFilters({ search: "", module: "all", status: "all", dateRange: "all" });
+    }
+
+    setTimeout(() => {
+      setIsSwitchingCard(false);
+    }, 400);
+  }
 
   const totalPages = Math.ceil(filteredLogs.length / PAGE_SIZE) || 1
   const paginatedLogs = filteredLogs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -163,20 +196,26 @@ const AuditLogs = () => {
             icon={<Clock className="h-5 w-5 text-blue-500" />}
             description="All logged system events"
             variant="blue"
+            isActive={activeCard === "total"}
+            onClick={() => handleCardClick("total")}
           />
           <StatsSummary
             title="Security Alerts"
-            value={logs.filter(l => l.status === "Failed").length}
+            value={logs.filter(l => l.status === "Failed" || l.module === "Security").length}
             icon={<ShieldAlert className="h-5 w-5 text-red-500" />}
             description="Critical failures detected"
             variant="red"
+            isActive={activeCard === "security"}
+            onClick={() => handleCardClick("security")}
           />
           <StatsSummary
             title="System Health"
-            value="Stable"
+            value={logs.filter(l => l.status === "Success").length}
             icon={<Info className="h-5 w-5 text-green-500" />}
-            description="Monitoring active"
+            description="Successful operations"
             variant="green"
+            isActive={activeCard === "health"}
+            onClick={() => handleCardClick("health")}
           />
         </div>
 
@@ -245,17 +284,28 @@ const AuditLogs = () => {
                 <TableHead className="font-semibold text-gray-700 dark:text-gray-300 text-right">Status</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {isLoading ? (
+            <TableBody className="transition-opacity duration-200 ease-in-out" style={{ opacity: isSwitchingCard ? 0.4 : 1 }}>
+              {isLoading || isSwitchingCard ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-64 text-center text-gray-500 dark:text-gray-400">
-                    Accessing security records...
+                  <TableCell colSpan={6} className="h-64 text-center">
+                    <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 gap-3">
+                      <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
+                      <span>{isSwitchingCard ? "Filtering records..." : "Accessing security records..."}</span>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : paginatedLogs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-64 text-center text-gray-500 dark:text-gray-400">
-                    No audit entries found.
+                  <TableCell colSpan={6} className="h-64 text-center">
+                    <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 gap-3">
+                      <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                        <Search className="h-6 w-6 text-gray-400" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">No matching audit logs found</span>
+                        <span className="text-sm">Try changing your filters or search criteria</span>
+                      </div>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -342,21 +392,49 @@ const AuditLogs = () => {
   )
 }
 
-const StatsSummary = ({ title, value, icon, description, variant }) => {
+const StatsSummary = ({ title, value, icon, description, variant, isActive, onClick }) => {
   const styles = {
-    blue: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
-    red: "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30",
-    green: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
+    blue: {
+      card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
+      icon: "text-blue-600 dark:text-blue-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+      activeRing: "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-background"
+    },
+    red: {
+      card: "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30",
+      icon: "text-red-600 dark:text-red-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+      activeRing: "ring-2 ring-red-500 ring-offset-2 dark:ring-offset-background"
+    },
+    green: {
+      card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
+      icon: "text-green-600 dark:text-green-400",
+      label: "text-gray-600 dark:text-gray-400",
+      value: "text-gray-900 dark:text-white",
+      activeRing: "ring-2 ring-green-500 ring-offset-2 dark:ring-offset-background"
+    }
   }
+  
+  const s = styles[variant]
   return (
-    <div className={cn("rounded-xl border p-6 transition-all duration-200 hover:scale-105", styles[variant])}>
+    <div 
+      onClick={onClick}
+      className={cn(
+        "rounded-xl border p-6 transition-all duration-200 hover:scale-105 cursor-pointer", 
+        s.card,
+        isActive && s.activeRing,
+        !isActive && "opacity-80 hover:opacity-100"
+      )}
+    >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{title}</p>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{value}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{description}</p>
+          <p className={cn("text-sm", s.label)}>{title}</p>
+          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
+          {description && <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{description}</p>}
         </div>
-        <div>{icon}</div>
+        <div className={cn("h-8 w-8 flex items-center justify-center", s.icon)}>{icon}</div>
       </div>
     </div>
   )

@@ -1,3 +1,4 @@
+import { PriorityDot } from "@/components/ui/PriorityDot";
 import { useEffect, useState, useMemo } from "react";
 import apiClient from "@/services/apiClient";
 import CountUp from "react-countup";
@@ -111,7 +112,7 @@ export function OfferOperationsKpiCard({ metric }) {
 export function OfferLifecycleTracker({ offer }) {
   const steps = ["Draft", "HR Review", "Manager Review", "Finance Approval", "HR Manager Approval", "Sent", "Viewed", "Negotiation", "Accepted / Rejected", "Joined"];
   const status = offer?.status || "Draft";
-  const activeIndex = status === "Pending CEO Approval" || status === "Pending HR Manager Approval" ? 4 : status === "Offered" ? 5 : status === "Accepted" ? 8 : status === "Declined" ? 8 : 2;
+  const activeIndex = status === "Joined" ? 9 : status === "Pending CEO Approval" || status === "Pending HR Manager Approval" ? 4 : status === "Offered" ? (offer?.emailStatus === "Sent" ? 5 : 4) : status === "Accepted" ? 8 : status === "Declined" ? 8 : 2;
   return (
     <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-5 shadow-xl shadow-black/10">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -121,11 +122,12 @@ export function OfferLifecycleTracker({ offer }) {
         </div>
         {offer && <OfferStatusBadge status={offer.status} />}
       </div>
-      <div className="custom-scrollbar overflow-x-auto pb-2">
-        <div className="flex min-w-[1120px] items-start">
+      <div className="pb-2">
+        <div className="flex flex-wrap items-start justify-between gap-y-6">
           {steps.map((step, index) => {
-            const complete = index < activeIndex || status === "Accepted";
-            const active = index === activeIndex;
+            const isJoined = status === "Joined";
+            const complete = index < activeIndex || status === "Accepted" || isJoined;
+            const active = index === activeIndex && !isJoined;
             return (
               <div key={step} className="flex flex-1 items-center">
                 <div className="flex flex-col items-center text-center">
@@ -136,7 +138,7 @@ export function OfferLifecycleTracker({ offer }) {
                       active
                         ? "h-14 w-14 border-[3px] border-cyan-500 dark:border-cyan-400 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 shadow-lg shadow-cyan-500/20"
                         : "h-11 w-11",
-                      complete && !active && "border-emerald-400 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400",
+                      complete && "border-emerald-400 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400",
                       !complete && !active && "border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-400 dark:text-slate-600"
                     )}
                   >
@@ -209,6 +211,7 @@ export function OfferApprovalTimeline({ offer, onAction, canWrite }) {
   const { user } = useUser();
   const currentUserId = user?.id || user?._id;
   
+
   const hasApproved = offer?.approvalHistory?.some(item => 
     String(item.approverId || '') === String(currentUserId || '') && item.action === 'Approved'
   );
@@ -527,7 +530,7 @@ export function HiringActivityFeed({ activity = [] }) {
       <div className="mt-5 space-y-3">
         {activity.slice(0, 8).map((item, index) => (
           <div key={`${item.message}-${index}`} className="flex gap-3">
-            <span className={cn("mt-1 h-2.5 w-2.5 rounded-full", item.priority === "high" ? "bg-amber-300" : item.priority === "success" ? "bg-emerald-300" : "bg-cyan-600 dark:bg-cyan-300")} />
+            <PriorityDot priority={item.priority} className="mt-1 w-auto" />
             <div className="border-b border-white/5 pb-3">
               <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.message}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">{item.candidateName || item.actor} · {new Date(item.at || Date.now()).toLocaleString()}</p>
@@ -606,7 +609,7 @@ function NotificationItem({ item }) {
   return (
     <div className="rounded-md border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-3">
       <div className="flex items-start gap-3">
-        <Bell className={cn("mt-0.5 h-4 w-4 shrink-0", item.priority === "high" ? "text-amber-300" : item.priority === "success" ? "text-emerald-300" : "text-cyan-600 dark:text-cyan-300")} />
+        <PriorityDot priority={item.priority} className="mt-0.5 w-auto" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{item.title}</p>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{item.message}</p>
@@ -638,16 +641,16 @@ export function CandidateComparisonPanel({ offers = [] }) {
     <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/75 p-5 shadow-xl shadow-black/10">
       <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Candidate Comparison Panel</h2>
       <p className="mb-5 text-sm text-slate-500 dark:text-slate-400">Side-by-side candidate expected salary, offered salary, difference, and status comparison.</p>
-      <div className="overflow-x-auto custom-scrollbar">
-        <table className="min-w-full text-sm">
+      <div className="overflow-hidden">
+        <table className="w-full text-sm table-fixed">
           <thead className="border-b border-slate-200 dark:border-white/10 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
             <tr>
-              <th className="px-3 py-2 text-left">Candidate</th>
-              <th className="px-3 py-2 text-left">Interview Score</th>
-              <th className="px-3 py-2 text-left">Expected Salary</th>
-              <th className="px-3 py-2 text-left">Offered Salary</th>
-              <th className="px-3 py-2 text-left">Difference</th>
-              <th className="px-3 py-2 text-left">Current Status</th>
+              <th className="w-[20%] px-3 py-2 text-left truncate">Candidate</th>
+              <th className="w-[15%] px-3 py-2 text-left truncate">Interview Score</th>
+              <th className="w-[15%] px-3 py-2 text-left truncate">Expected Salary</th>
+              <th className="w-[15%] px-3 py-2 text-left truncate">Offered Salary</th>
+              <th className="w-[15%] px-3 py-2 text-left truncate">Difference</th>
+              <th className="w-[20%] px-3 py-2 text-left truncate">Current Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -658,14 +661,14 @@ export function CandidateComparisonPanel({ offers = [] }) {
             ) : (
               rows.map((row) => (
                 <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
-                  <td className="px-3 py-3 font-semibold text-slate-900 dark:text-white">{row.name}</td>
-                  <td className="px-3 py-3">{row.interviewScore}</td>
-                  <td className="px-3 py-3 font-mono">{formatMoney(row.expected)}</td>
-                  <td className="px-3 py-3 font-mono font-semibold text-slate-900 dark:text-white">{formatMoney(row.offered)}</td>
-                  <td className={cn("px-3 py-3 font-mono font-semibold", row.difference >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                  <td className="px-3 py-3 font-semibold text-slate-900 dark:text-white truncate">{row.name}</td>
+                  <td className="px-3 py-3 truncate">{row.interviewScore}</td>
+                  <td className="px-3 py-3 font-mono truncate">{formatMoney(row.expected)}</td>
+                  <td className="px-3 py-3 font-mono font-semibold text-slate-900 dark:text-white truncate">{formatMoney(row.offered)}</td>
+                  <td className={cn("px-3 py-3 font-mono font-semibold truncate", row.difference >= 0 ? "text-emerald-500" : "text-rose-500")}>
                     {row.difference >= 0 ? "+" : ""}{formatMoney(row.difference)}
                   </td>
-                  <td className="px-3 py-3">
+                  <td className="px-3 py-3 truncate">
                     <OfferStatusBadge status={row.status} />
                   </td>
                 </tr>

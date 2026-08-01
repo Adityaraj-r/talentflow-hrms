@@ -183,14 +183,19 @@ const LeaveApprovals = () => {
   };
 
   const filteredLeaves = leaves.filter((leave) => {
+    if (statusFilter !== "All" && leave.status !== statusFilter) return false;
+
     const name = `${leave.userId?.firstName || ""} ${leave.userId?.lastName || ""}`.toLowerCase();
     const email = (leave.userId?.email || "").toLowerCase();
     const dept = (leave.userId?.department || "").toLowerCase();
+    const empCode = (leave.userId?.employeeCode || "").toLowerCase();
     const search = searchTerm.toLowerCase();
+
     return (
       name.includes(search) ||
       email.includes(search) ||
-      dept.includes(search)
+      dept.includes(search) ||
+      empCode.includes(search)
     );
   });
 
@@ -233,10 +238,10 @@ const LeaveApprovals = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-              <div className="relative w-full sm:w-56">
+              <div className="relative w-full sm:w-96">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name or dept..."
+                  placeholder="Search by Name, ID, Dept, Email..."
                   className="pl-8 h-9 text-sm bg-background"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -269,6 +274,7 @@ const LeaveApprovals = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Employee</TableHead>
+                  <TableHead className="hidden md:table-cell">Employee ID</TableHead>
                   <TableHead>Leave Type</TableHead>
                   <TableHead>Duration</TableHead>
                   <TableHead>Days</TableHead>
@@ -280,13 +286,13 @@ const LeaveApprovals = () => {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
                       Loading leave requests...
                     </TableCell>
                   </TableRow>
                 ) : filteredLeaves.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
                       No leave requests found.
                     </TableCell>
                   </TableRow>
@@ -301,6 +307,9 @@ const LeaveApprovals = () => {
                           <span className="font-medium text-sm text-slate-900 dark:text-white">
                             {leave.userId?.firstName} {leave.userId?.lastName}
                           </span>
+                          <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
+                            {leave.userId?.employeeCode || "N/A"}
+                          </span>
                           <span className="text-xs text-muted-foreground">
                             {leave.userId?.email}
                           </span>
@@ -308,6 +317,9 @@ const LeaveApprovals = () => {
                             {leave.userId?.department || "No Department"}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
+                        {leave.userId?.employeeCode || "-"}
                       </TableCell>
 
                       <TableCell>

@@ -269,10 +269,16 @@ const TicketListTable = ({ mode }) => {
 
   useEffect(() => { void load(); }, [load]);
 
-  const filtered = tickets.filter(t =>
-    t.employeeName?.toLowerCase().includes(search.toLowerCase()) ||
-    t.reason?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = tickets.filter(t => {
+    const searchLower = search.toLowerCase();
+    const nameMatch = t.employeeName?.toLowerCase().includes(searchLower);
+    const reasonMatch = t.reason?.toLowerCase().includes(searchLower);
+    const emailMatch = t.userId?.email?.toLowerCase().includes(searchLower);
+    const deptMatch = t.userId?.department?.toLowerCase().includes(searchLower);
+    const empCodeMatch = t.userId?.employeeCode?.toLowerCase().includes(searchLower);
+    
+    return nameMatch || reasonMatch || emailMatch || deptMatch || empCodeMatch;
+  });
 
   if (loading) return (
     <Card><CardContent className="flex justify-center py-12">
@@ -289,9 +295,9 @@ const TicketListTable = ({ mode }) => {
             {mode === "all" ? "Travel and advance requests" : "Awaiting your action"}
           </CardDescription>
         </div>
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full sm:w-96">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search…" className="pl-8"
+          <Input placeholder="Search by Name, ID, Dept, Email..." className="pl-8"
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </CardHeader>
@@ -300,6 +306,7 @@ const TicketListTable = ({ mode }) => {
           <TableHeader>
             <TableRow>
               <TableHead>Employee</TableHead>
+              <TableHead className="hidden md:table-cell">Employee ID</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Details</TableHead>
               <TableHead>Reason</TableHead>
@@ -311,13 +318,23 @@ const TicketListTable = ({ mode }) => {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={mode === "all" ? 6 : 6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={mode === "all" ? 7 : 7} className="text-center py-8 text-muted-foreground">
                   No records found.
                 </TableCell>
               </TableRow>
             ) : filtered.map(t => (
               <TableRow key={t._id}>
-                <TableCell className="font-medium align-middle">{t.employeeName}</TableCell>
+                <TableCell className="align-middle">
+                  <div className="flex flex-col">
+                    <span className="font-medium">{t.employeeName}</span>
+                    <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
+                      {t.employeeCode || "N/A"}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground align-middle">
+                  {t.employeeCode || "-"}
+                </TableCell>
                 <TableCell className="align-middle">
                   <Badge variant="outline" className={t.type === "advance"
                     ?"text-sky-600"

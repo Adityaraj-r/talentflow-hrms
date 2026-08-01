@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import apiClient from "@/services/apiClient"
 import { useUser } from "@/contexts/UserContext"
-import { CalendarClock, FileText, Search, UserCheck, Users, UserX } from "lucide-react"
+import { CalendarClock, FileText, Search, UserCheck, Users, UserX, Eye, CheckCircle, XCircle, ChevronDown, ArrowUpRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -34,7 +34,7 @@ const applicationStages = {
 const normalizeApplicationStage = (status = "") => {
   const normalized = status.toString().trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ")
   if (normalized.includes("reject")) return "rejected"
-  if (normalized.includes("select") || normalized.includes("hire")) return "selected"
+  if (normalized.includes("select") || normalized.includes("hire") || normalized.includes("offer") || normalized.includes("join") || normalized.includes("accept")) return "selected"
   if (normalized.includes("interview")) return "interview"
   if (normalized.includes("shortlist") || normalized.includes("screen")) return "shortlisted"
   return "applied"
@@ -79,6 +79,12 @@ const CandidateApplications = () => {
   const [viewOpen, setViewOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 
+  // Pagination state
+  const [pageNew, setPageNew] = useState(1)
+  const [pageCompleted, setPageCompleted] = useState(1)
+  const ITEMS_PER_PAGE = 10
+
+
   // Filters for Section 1 - New Applicants
   const [searchNew, setSearchNew] = useState("")
   const [filterRoleNew, setFilterRoleNew] = useState("All Roles")
@@ -98,6 +104,10 @@ const CandidateApplications = () => {
   const [filterDecisionDateCompleted, setFilterDecisionDateCompleted] = useState("")
   const [filterOfferStatusCompleted, setFilterOfferStatusCompleted] = useState("All")
   const [sortByCompleted, setSortByCompleted] = useState("Newest First")
+
+  // Reset pagination on filter change
+  useEffect(() => setPageNew(1), [searchNew, filterStatusNew, filterRoleNew, filterHiringRoleNew, filterDeptNew, filterAIMatchNew, filterAppliedDateNew, sortByNew])
+  useEffect(() => setPageCompleted(1), [searchCompleted, filterStatusCompleted, filterRoleCompleted, filterHiringRoleCompleted, filterDeptCompleted, filterDecisionDateCompleted, filterOfferStatusCompleted, sortByCompleted])
 
   const uploadBaseUrl = useMemo(
     () => (import.meta.env.VITE_API_URL || "http://localhost:5001/api").replace(/\/api\/?$/, ""),
@@ -332,6 +342,17 @@ const CandidateApplications = () => {
     })
   }, [filteredCompleted, sortByCompleted])
 
+  
+  const paginatedNew = useMemo(() => {
+    const start = (pageNew - 1) * ITEMS_PER_PAGE
+    return rankedNew.slice(start, start + ITEMS_PER_PAGE)
+  }, [rankedNew, pageNew])
+
+  const paginatedCompleted = useMemo(() => {
+    const start = (pageCompleted - 1) * ITEMS_PER_PAGE
+    return rankedCompleted.slice(start, start + ITEMS_PER_PAGE)
+  }, [rankedCompleted, pageCompleted])
+
   const stats = useMemo(() => {
     const result = { total: applications.length, applied: 0, shortlisted: 0, interview: 0, selected: 0, rejected: 0 }
     applications.forEach((app) => {
@@ -352,7 +373,7 @@ const CandidateApplications = () => {
     },
     {
       title: "New Applications",
-      value: stats.applied === 0 ? "All candidates processed" : stats.applied,
+      value: stats.applied,
       icon: FileText,
       trend: percentOfTotal(stats.applied),
       helper: stats.applied === 0 ? "All applications reviewed" : "Candidates awaiting first review",
@@ -396,21 +417,15 @@ const CandidateApplications = () => {
     <div className="space-y-6">
       <RecruitmentPageHeader
         title="Candidate Applications"
-        subtitle="Review candidate profiles, resumes, and stage decisions from a single ATS workspace."
-        summary={`${rankedNew.length + rankedCompleted.length} visible candidates - ${stats.applied} applied - ${stats.shortlisted} shortlisted - ${stats.interview} in interview - ${stats.selected} selected - ${stats.rejected} rejected`}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         {stageCards.map((card) => (
           <RecruitmentKpiCard
             key={card.title}
             title={card.title}
             value={card.value}
             icon={card.icon}
-            trend={card.trend}
-            trendLabel="of applicants"
-            helper={card.helper}
-            updated="Live data"
             accent={card.accent}
           />
         ))}
@@ -418,364 +433,242 @@ const CandidateApplications = () => {
 
       {/* SECTION 1 — NEW APPLICANTS */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between border-b border-white/5 pb-2">
-          <h2 className="text-xl font-bold text-foreground">New Applicants</h2>
-          <span className="text-xs text-muted-foreground bg-white/5 border border-white/10 rounded-full px-3 py-1 font-semibold">
-            {rankedNew.length} Active Candidates
-          </span>
-        </div>
+        
 
         {/* NEW APPLICANTS FILTER BAR */}
-        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-white/10 bg-card/85 p-4 shadow-sm">
-          <div className="flex-1 min-w-[200px]">
-            <Input
-              value={searchNew}
-              onChange={(e) => setSearchNew(e.target.value)}
-              placeholder="Search candidate..."
-              className="w-full text-foreground bg-background"
-            />
+        <div className="rounded-lg border border-border bg-card p-4 shadow-sm mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={searchNew}
+                onChange={(e) => setSearchNew(e.target.value)}
+                placeholder="Search candidate..."
+                className="pl-9 h-9 w-full"
+              />
+            </div>
+            <FilterSelect label="Role" value={filterRoleNew} onChange={setFilterRoleNew} options={jobRoles} />
+            <FilterSelect label="Hiring Role" value={filterHiringRoleNew} onChange={setFilterHiringRoleNew} options={hiringRolesList} />
+            <FilterSelect label="Department" value={filterDeptNew} onChange={setFilterDeptNew} options={departments} />
+            <FilterSelect label="Stage" value={filterStatusNew} onChange={setFilterStatusNew} options={["All Stages", "Applied", "Shortlisted", "Interview"]} />
+            <FilterSelect label="AI Match" value={filterAIMatchNew} onChange={setFilterAIMatchNew} options={["All AI Matches", "Strong Match", "Good Match", "Review Required", "Poor Match"]} />
           </div>
-          <div className="w-full sm:w-auto min-w-[140px]">
-            <select
-              value={filterRoleNew}
-              onChange={(e) => setFilterRoleNew(e.target.value)}
-              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="All Roles">All Job Openings</option>
-              {jobRoles.filter(r => r !== "All Roles").map((role) => (
-                <option key={role} value={role}>{role}</option>
-              ))}
-            </select>
-          </div>
-          <div className="w-full sm:w-auto min-w-[140px]">
-            <select
-              value={filterHiringRoleNew}
-              onChange={(e) => setFilterHiringRoleNew(e.target.value)}
-              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="All Hiring Roles">All Hiring Roles</option>
-              {hiringRolesList.filter(r => r !== "All Hiring Roles").map((role) => (
-                <option key={role} value={role}>{role}</option>
-              ))}
-            </select>
-          </div>
-          <div className="w-full sm:w-auto min-w-[140px]">
-            <select
-              value={filterDeptNew}
-              onChange={(e) => setFilterDeptNew(e.target.value)}
-              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="All Departments">All Departments</option>
-              {departments.filter(d => d !== "All Departments").map((dept) => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
-          </div>
-          <div className="w-full sm:w-auto min-w-[140px]">
-            <select
-              value={filterStatusNew}
-              onChange={(e) => setFilterStatusNew(e.target.value)}
-              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="All">All Stages</option>
-              <option value="Applied">Applied</option>
-              <option value="Shortlisted">Shortlisted</option>
-              <option value="Interview">Interview</option>
-            </select>
-          </div>
-          <div className="w-full sm:w-auto min-w-[140px]">
-            <select
-              value={filterAIMatchNew}
-              onChange={(e) => setFilterAIMatchNew(e.target.value)}
-              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="All">All AI Matches</option>
-              <option value="Strong Match">Strong Match</option>
-              <option value="Good Match">Good Match</option>
-              <option value="Review Required">Review Required</option>
-              <option value="Poor Match">Poor Match</option>
-            </select>
-          </div>
-          <div className="w-full sm:w-auto min-w-[140px] flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">Applied:</span>
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
             <Input
               type="date"
               value={filterAppliedDateNew}
               onChange={(e) => setFilterAppliedDateNew(e.target.value)}
-              className="w-full text-foreground bg-background py-1.5 px-2 text-sm h-[38px]"
+              className="h-9 w-full text-foreground bg-background px-3 text-sm"
             />
-          </div>
-          <div className="w-full sm:w-auto min-w-[140px]">
-            <select
-              value={sortByNew}
-              onChange={(e) => setSortByNew(e.target.value)}
-              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="Newest First">Newest First</option>
-              <option value="Oldest First">Oldest First</option>
-              <option value="Highest AI Match">Highest AI Match</option>
-              <option value="Candidate Name (A–Z)">Candidate Name (A–Z)</option>
-            </select>
-          </div>
-          <div>
+            <FilterSelect label="Sort By" value={sortByNew} onChange={setSortByNew} options={["Newest First", "Oldest First", "Highest AI Match", "Candidate Name (A–Z)"]} />
             <Button
               variant="outline"
               onClick={handleResetFiltersNew}
-              className="w-full sm:w-auto border-white/10 bg-background hover:bg-muted"
+              className="h-9 w-full border-input bg-background hover:bg-muted"
             >
-              Reset
+              Reset Filter
             </Button>
           </div>
         </div>
 
         {/* NEW APPLICANTS TABLE */}
-        <RecruitmentTable
-          columns={["Candidate", "Job Opening", "Hiring Role", "Contact", "Status", "AI Fit", "Progress", "Actions"]}
-          className="h-[400px] overflow-y-auto"
-        >
-          {loading ? (
-            <tr>
-              <td colSpan={8} className="p-0">
-                <div className="p-5 text-sm text-muted-foreground">Loading applications...</div>
-              </td>
-            </tr>
-          ) : filteredNew.length === 0 ? (
-            <tr>
-              <td colSpan={8} className="p-5">
-                <RecruitmentEmptyState
-                  title="No active applications"
-                  description="No new or active candidates match the filters."
-                />
-              </td>
-            </tr>
-          ) : (
-            rankedNew.map((app, index) => (
-              <tr key={app._id} className="transition-colors hover:bg-muted/30 odd:bg-white/[0.02]">
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    <CandidateAvatar name={app.name} />
-                    <div>
-                      <div className="font-medium text-foreground">{app.name}</div>
-                      <div className="text-xs text-muted-foreground">Applicant #{index + 1}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-5 py-4 text-muted-foreground">{app.jobId?.jobTitle || "Unassigned"}</td>
-                <td className="px-5 py-4 text-muted-foreground">{app.hiringRoleName || "N/A"}</td>
-                <td className="px-5 py-4 text-muted-foreground">{app.email}</td>
-                <td className="px-5 py-4">
-                  <RecruitmentStatusBadge status={app.status} />
-                </td>
-                <td className="px-5 py-4">
-                  <div className="space-y-1">
-                    <div className="text-sm font-semibold text-foreground">#{app.aiRank || index + 1} - {Number(app.aiFitScore || app.matchScore || 0)}%</div>
-                    <div className="text-xs text-muted-foreground">{app.aiRecommendationLabel || getMatchLabel(app.aiFitScore || app.matchScore)}</div>
-                  </div>
-                </td>
-                <td className="px-5 py-4">
-                  <ProgressBar value={applicationStages[normalizeApplicationStage(app.status)]?.progress || 18} />
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <Button variant="outline" size="sm" onClick={() => { setSelectedApplication(app); setViewOpen(true) }}>
-                      View
-                    </Button>
-                    {canWrite && (
-                      <>
-                        <Button size="sm" onClick={() => handleShortlist(app._id)} disabled={normalizeApplicationStage(app.status) !== "applied"} className="bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40">
-                          Shortlist
-                        </Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleReject(app._id)} disabled={["selected", "rejected"].includes(normalizeApplicationStage(app.status))} className="disabled:opacity-40">
-                          Reject
-                        </Button>
-                        {canFinalApprove && (
-                          <Button size="sm" onClick={() => handleSelected(app._id)} disabled={normalizeApplicationStage(app.status) !== "interview"} className="bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40">
-                            Selected
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </td>
+        <div className="rounded-lg border border-border bg-card/80 shadow-sm overflow-hidden flex flex-col">
+          <table className="w-full text-sm table-fixed">
+            <thead className="bg-muted/95 text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="w-[20%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Candidate <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="w-[15%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Job Opening <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="w-[15%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Hiring Role <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="w-[15%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Contact <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="w-[10%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Status <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="w-[9%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">AI Fit <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="w-[9%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Progress <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="w-[7%] px-4 py-3 text-right font-semibold truncate"><span className="inline-flex items-center gap-1.5">Actions <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
               </tr>
-            ))
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="p-5 text-center text-sm text-muted-foreground">Loading applications...</td>
+                </tr>
+              ) : filteredNew.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-5">
+                    <RecruitmentEmptyState title="No active applications" description="No new or active candidates match the filters." />
+                  </td>
+                </tr>
+              ) : (
+                paginatedNew.map((app, index) => (
+                  <tr key={app._id} className="transition-colors hover:bg-muted/30 odd:bg-white/[0.02]">
+                    <td className="px-4 py-3 truncate">
+                      <div className="flex items-center gap-3">
+                        <CandidateAvatar name={app.name} />
+                        <div className="min-w-0">
+                          <div className="font-medium text-foreground truncate">{app.name}</div>
+                          <div className="text-xs text-muted-foreground truncate">Applicant #{(pageNew - 1) * ITEMS_PER_PAGE + index + 1}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground truncate">{app.jobId?.jobTitle || "Unassigned"}</td>
+                    <td className="px-4 py-3 text-muted-foreground truncate">{app.hiringRoleName || "N/A"}</td>
+                    <td className="px-4 py-3 text-muted-foreground truncate" title={app.email}>{app.email}</td>
+                    <td className="px-4 py-3 truncate">
+                      <RecruitmentStatusBadge status={app.status} />
+                    </td>
+                    <td className="px-4 py-3 truncate">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-foreground truncate">{Number(app.aiFitScore || app.matchScore || 0)}% Match</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 truncate">
+                      <ProgressBar value={applicationStages[normalizeApplicationStage(app.status)]?.progress || 18} />
+                    </td>
+                    <td className="px-4 py-3 text-right truncate">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 shrink-0" onClick={() => { setSelectedApplication(app); setViewOpen(true) }} title="View Candidate">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {canWrite && (
+                          <>
+                            <Button variant="ghost" size="icon" onClick={() => handleShortlist(app._id)} disabled={normalizeApplicationStage(app.status) !== "applied"} className="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-500/10 shrink-0" title="Approve / Shortlist">
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleReject(app._id)} disabled={["selected", "rejected"].includes(normalizeApplicationStage(app.status))} className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10 shrink-0" title="Reject Candidate">
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                            {canFinalApprove && (
+                              <Button variant="ghost" size="icon" onClick={() => handleSelected(app._id)} disabled={normalizeApplicationStage(app.status) !== "interview"} className="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-500/10 shrink-0" title="Approve Candidate">
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+          {filteredNew.length > 0 && (
+            <Pagination totalItems={filteredNew.length} itemsPerPage={ITEMS_PER_PAGE} currentPage={pageNew} onPageChange={setPageNew} />
           )}
-        </RecruitmentTable>
+        </div>
       </div>
 
       {/* SECTION 2 — COMPLETED APPLICATIONS */}
       <div className="space-y-4 pt-4">
-        <div className="flex items-center justify-between border-b border-white/5 pb-2">
-          <h2 className="text-xl font-bold text-foreground">Completed Applications</h2>
-          <span className="text-xs text-muted-foreground bg-white/5 border border-white/10 rounded-full px-3 py-1 font-semibold">
-            {rankedCompleted.length} Completed Decisions
-          </span>
-        </div>
+        
 
         {/* COMPLETED APPLICATIONS FILTER BAR */}
-        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-white/10 bg-card/85 p-4 shadow-sm">
-          <div className="flex-1 min-w-[200px]">
-            <Input
-              value={searchCompleted}
-              onChange={(e) => setSearchCompleted(e.target.value)}
-              placeholder="Search candidate..."
-              className="w-full text-foreground bg-background"
-            />
+        <div className="rounded-lg border border-border bg-card p-4 shadow-sm mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={searchCompleted}
+                onChange={(e) => setSearchCompleted(e.target.value)}
+                placeholder="Search candidate..."
+                className="pl-9 h-9 w-full"
+              />
+            </div>
+            <FilterSelect label="Role" value={filterRoleCompleted} onChange={setFilterRoleCompleted} options={jobRoles} />
+            <FilterSelect label="Hiring Role" value={filterHiringRoleCompleted} onChange={setFilterHiringRoleCompleted} options={hiringRolesList} />
+            <FilterSelect label="Department" value={filterDeptCompleted} onChange={setFilterDeptCompleted} options={departments} />
+            <FilterSelect label="Stage" value={filterStatusCompleted} onChange={setFilterStatusCompleted} options={["All Statuses", "Selected", "Rejected"]} />
+            <FilterSelect label="Offer Status" value={filterOfferStatusCompleted} onChange={setFilterOfferStatusCompleted} options={["All Offer Statuses", "Draft", "Sent", "Accepted", "Rejected"]} />
           </div>
-          <div className="w-full sm:w-auto min-w-[140px]">
-            <select
-              value={filterStatusCompleted}
-              onChange={(e) => setFilterStatusCompleted(e.target.value)}
-              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="All">All Statuses</option>
-              <option value="Selected">Selected</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-          </div>
-          <div className="w-full sm:w-auto min-w-[140px]">
-            <select
-              value={filterRoleCompleted}
-              onChange={(e) => setFilterRoleCompleted(e.target.value)}
-              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="All Roles">All Job Openings</option>
-              {jobRoles.filter(r => r !== "All Roles").map((role) => (
-                <option key={role} value={role}>{role}</option>
-              ))}
-            </select>
-          </div>
-          <div className="w-full sm:w-auto min-w-[140px]">
-            <select
-              value={filterHiringRoleCompleted}
-              onChange={(e) => setFilterHiringRoleCompleted(e.target.value)}
-              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="All Hiring Roles">All Hiring Roles</option>
-              {hiringRolesList.filter(r => r !== "All Hiring Roles").map((role) => (
-                <option key={role} value={role}>{role}</option>
-              ))}
-            </select>
-          </div>
-          <div className="w-full sm:w-auto min-w-[140px]">
-            <select
-              value={filterDeptCompleted}
-              onChange={(e) => setFilterDeptCompleted(e.target.value)}
-              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="All Departments">All Departments</option>
-              {departments.filter(d => d !== "All Departments").map((dept) => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
-          </div>
-          <div className="w-full sm:w-auto min-w-[140px] flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">Decision:</span>
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
             <Input
               type="date"
               value={filterDecisionDateCompleted}
               onChange={(e) => setFilterDecisionDateCompleted(e.target.value)}
-              className="w-full text-foreground bg-background py-1.5 px-2 text-sm h-[38px]"
+              className="h-9 w-full text-foreground bg-background px-3 text-sm"
             />
-          </div>
-          <div className="w-full sm:w-auto min-w-[140px]">
-            <select
-              value={filterOfferStatusCompleted}
-              onChange={(e) => setFilterOfferStatusCompleted(e.target.value)}
-              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="All">All Offer Statuses</option>
-              <option value="Draft">Draft</option>
-              <option value="Sent">Sent</option>
-              <option value="Accepted">Accepted</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-          </div>
-          <div className="w-full sm:w-auto min-w-[140px]">
-            <select
-              value={sortByCompleted}
-              onChange={(e) => setSortByCompleted(e.target.value)}
-              className="w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="Newest First">Newest First</option>
-              <option value="Oldest First">Oldest First</option>
-              <option value="Highest AI Match">Highest AI Match</option>
-              <option value="Candidate Name (A–Z)">Candidate Name (A–Z)</option>
-            </select>
-          </div>
-          <div>
+            <FilterSelect label="Sort By" value={sortByCompleted} onChange={setSortByCompleted} options={["Newest First", "Oldest First", "Highest AI Match", "Candidate Name (A–Z)"]} />
             <Button
               variant="outline"
               onClick={handleResetFiltersCompleted}
-              className="w-full sm:w-auto border-white/10 bg-background hover:bg-muted"
+              className="h-9 w-full border-input bg-background hover:bg-muted"
             >
-              Reset
+              Reset Filter
             </Button>
           </div>
         </div>
 
         {/* COMPLETED APPLICATIONS TABLE */}
-        <RecruitmentTable
-          columns={["Candidate", "Job Opening", "Hiring Role", "Contact", "Final Status", "Decision Date", "Offer Status", "Actions"]}
-          className="h-[400px] overflow-y-auto"
-        >
-          {loading ? (
-            <tr>
-              <td colSpan={8} className="p-0">
-                <div className="p-5 text-sm text-muted-foreground">Loading applications...</div>
-              </td>
-            </tr>
-          ) : filteredCompleted.length === 0 ? (
-            <tr>
-              <td colSpan={8} className="p-5">
-                <RecruitmentEmptyState
-                  title="No completed applications"
-                  description="No candidates reached a final decision yet."
-                />
-              </td>
-            </tr>
-          ) : (
-            rankedCompleted.map((app, index) => (
-              <tr key={app._id} className="transition-colors hover:bg-muted/30 odd:bg-white/[0.02]">
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    <CandidateAvatar name={app.name} />
-                    <div>
-                      <div className="font-medium text-foreground">{app.name}</div>
-                      <div className="text-xs text-muted-foreground">Applicant #{index + 1}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-5 py-4 text-muted-foreground">{app.jobId?.jobTitle || "Unassigned"}</td>
-                <td className="px-5 py-4 text-muted-foreground">{app.hiringRoleName || "N/A"}</td>
-                <td className="px-5 py-4 text-muted-foreground">{app.email}</td>
-                <td className="px-5 py-4">
-                  <RecruitmentStatusBadge status={app.status} />
-                </td>
-                <td className="px-5 py-4 text-muted-foreground">
-                  {new Date(app.updatedAt || app.createdAt).toLocaleDateString()}
-                </td>
-                <td className="px-5 py-4">
-                  <span className="font-semibold text-foreground">{getOfferStatusLabel(app)}</span>
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <Button variant="outline" size="sm" onClick={() => { setSelectedApplication(app); setViewOpen(true) }}>
-                      View
-                    </Button>
-                    {!(app.status || "").toLowerCase().includes("reject") && (
-                      <Link to="/dashboard/offer-management">
-                        <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700">
-                          Offer Management
-                        </Button>
-                      </Link>
-                    )}
-                  </div>
-                </td>
+        <div className="rounded-lg border border-border bg-card/80 shadow-sm overflow-hidden flex flex-col">
+          <table className="w-full text-sm table-fixed">
+            <thead className="bg-muted/95 text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="w-[20%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Candidate <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="w-[15%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Job Opening <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="w-[15%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Hiring Role <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="w-[15%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Contact <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="w-[10%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Final Status <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="w-[10%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Decision Date <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="w-[10%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Offer Status <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="w-[5%] px-4 py-3 text-right font-semibold truncate"><span className="inline-flex items-center gap-1.5">Actions <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
               </tr>
-            ))
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="p-5 text-center text-sm text-muted-foreground">Loading applications...</td>
+                </tr>
+              ) : filteredCompleted.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-5">
+                    <RecruitmentEmptyState title="No completed applications" description="No candidates reached a final decision yet." />
+                  </td>
+                </tr>
+              ) : (
+                paginatedCompleted.map((app, index) => (
+                  <tr key={app._id} className="transition-colors hover:bg-muted/30 odd:bg-white/[0.02]">
+                    <td className="px-4 py-3 truncate">
+                      <div className="flex items-center gap-3">
+                        <CandidateAvatar name={app.name} />
+                        <div className="min-w-0">
+                          <div className="font-medium text-foreground truncate">{app.name}</div>
+                          <div className="text-xs text-muted-foreground truncate">Applicant #{(pageCompleted - 1) * ITEMS_PER_PAGE + index + 1}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground truncate">{app.jobId?.jobTitle || "Unassigned"}</td>
+                    <td className="px-4 py-3 text-muted-foreground truncate">{app.hiringRoleName || "N/A"}</td>
+                    <td className="px-4 py-3 text-muted-foreground truncate" title={app.email}>{app.email}</td>
+                    <td className="px-4 py-3 truncate">
+                      <RecruitmentStatusBadge status={app.status} />
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground truncate">
+                      {new Date(app.updatedAt || app.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3 truncate">
+                      <span className="font-semibold text-foreground">{getOfferStatusLabel(app)}</span>
+                    </td>
+                    <td className="px-4 py-3 text-right truncate">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 shrink-0" onClick={() => { setSelectedApplication(app); setViewOpen(true) }} title="View Candidate">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {!(app.status || "").toLowerCase().includes("reject") && (
+                          <Link to="/dashboard/offer-management" title="Offer Management">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 shrink-0">
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+          {filteredCompleted.length > 0 && (
+            <Pagination totalItems={filteredCompleted.length} itemsPerPage={ITEMS_PER_PAGE} currentPage={pageCompleted} onPageChange={setPageCompleted} />
           )}
-        </RecruitmentTable>
+        </div>
       </div>
 
       <Dialog open={viewOpen} onOpenChange={(open) => { setViewOpen(open); if (!open) setSelectedApplication(null) }}>
@@ -879,3 +772,78 @@ const CandidateApplications = () => {
 }
 
 export default CandidateApplications
+
+function FilterSelect({ label, value, onChange, options = [] }) {
+  return (
+    <label className="relative block w-full">
+      <span className="sr-only">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="appearance-none h-9 w-full rounded-md border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-[3px] focus:ring-ring/50 cursor-pointer"
+      >
+        <option value={options[0]}>{options[0]}</option>
+        {options.slice(1).map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2 top-2.5 h-4 w-4 text-muted-foreground" />
+    </label>
+  );
+}
+
+function Pagination({ totalItems, itemsPerPage, currentPage, onPageChange }) {
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
+  if (totalPages <= 1) return null
+
+  const startItem = (currentPage - 1) * itemsPerPage + 1
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems)
+
+  const getPages = () => {
+    const pages = []
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+        pages.push(i)
+      } else if (pages[pages.length - 1] !== "...") {
+        pages.push("...")
+      }
+    }
+    return pages
+  }
+
+  return (
+    <div className="flex items-center justify-between border-t border-border px-4 py-3 sm:px-6 bg-card rounded-b-lg">
+      <div className="flex flex-1 justify-between sm:hidden">
+        <Button variant="outline" size="sm" onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>Previous</Button>
+        <Button variant="outline" size="sm" onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}>Next</Button>
+      </div>
+      <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">
+            Showing <span className="font-medium text-foreground">{startItem}</span> to <span className="font-medium text-foreground">{endItem}</span> of <span className="font-medium text-foreground">{totalItems}</span> Candidates
+          </p>
+        </div>
+        <div>
+          <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+            <Button variant="outline" className="rounded-l-md rounded-r-none border-r-0" size="sm" onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>Previous</Button>
+            {getPages().map((page, idx) => (
+              <Button
+                key={idx}
+                variant={currentPage === page ? "default" : "outline"}
+                className={`rounded-none border-r-0 ${currentPage === page ? "z-10" : ""}`}
+                size="sm"
+                disabled={page === "..."}
+                onClick={() => page !== "..." && onPageChange(page)}
+              >
+                {page}
+              </Button>
+            ))}
+            <Button variant="outline" className="rounded-r-md rounded-l-none" size="sm" onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}>Next</Button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  )
+}

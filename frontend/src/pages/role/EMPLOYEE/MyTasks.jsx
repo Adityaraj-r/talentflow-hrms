@@ -1,3 +1,4 @@
+import { PriorityDot } from "@/components/ui/PriorityDot";
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import taskService from "@/services/taskService"
@@ -31,11 +32,28 @@ import {
   ChevronDown,
   X,
   Plus,
+  Eye,
+  Edit2,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  Video,
+  MapPin,
 } from "lucide-react"
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import CreateTaskModal from "@/components/ui/CreateTaskModal"
+import InterviewTaskModal from "@/components/ui/InterviewTaskModal"
 
+import { StatsCard } from "@/components/ui/stats-card"
 const TASK_STATUS = {
   TO_DO:       "TO_DO",
   IN_PROGRESS: "IN_PROGRESS",
@@ -72,9 +90,15 @@ const MyTasks = () => {
   const [filterStatus, setFilterStatus] = useState("ALL")
   const [filterPriority, setFilterPriority] = useState("ALL")
   const [sortBy, setSortBy]             = useState("dueDate")
+  const [activeCard, setActiveCard]     = useState("total")
+  
+  const [currentPage, setCurrentPage] = useState(1)
+  const rowsPerPage = 10
 
   const [statusDialog, setStatusDialog] = useState({ open: false, task: null, newStatus: null })
   const [detailsDialog, setDetailsDialog] = useState({ open: false, task: null, intData: null })
+  const [interviewModal, setInterviewModal] = useState({ open: false, task: null, intData: null })
+
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -125,6 +149,18 @@ const MyTasks = () => {
       result = result.filter(t => t.priority?.toUpperCase() === filterPriority)
     }
 
+    if (activeCard === "completed") {
+      result = result.filter(t => t.status === TASK_STATUS.DONE)
+    }
+    if (activeCard === "inProgress") {
+      result = result.filter(t => t.status === TASK_STATUS.IN_PROGRESS)
+    }
+    if (activeCard === "overdue") {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      result = result.filter(t => t.status !== TASK_STATUS.DONE && t.dueDate && new Date(t.dueDate) < today)
+    }
+
     result.sort((a, b) => {
       if (sortBy === "dueDate") {
         if (!a.dueDate) return 1
@@ -139,7 +175,14 @@ const MyTasks = () => {
     })
 
     return result
-  }, [tasks, searchQuery, filterStatus, filterPriority, sortBy])
+  }, [tasks, searchQuery, filterStatus, filterPriority, sortBy, activeCard])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, filterStatus, filterPriority, sortBy, activeCard])
+  
+  const totalPages = Math.ceil(filteredTasks.length / rowsPerPage)
+  const paginatedTasks = filteredTasks.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
 
   const handleStatusUpdate = async () => {
     const { task, newStatus } = statusDialog
@@ -235,6 +278,15 @@ const MyTasks = () => {
       const endTime = extract("End Time");
       const mode = extract("Interview Mode");
       const meetingLink = extract("Meeting Link");
+      
+      const officeName = extract("Office Name");
+      const fullAddress = extract("Full Address");
+      const buildingFloor = extract("Building/Floor");
+      const roomNumber = extract("Room Number");
+      const city = extract("City");
+      const state = extract("State");
+      const pinCode = extract("PIN Code");
+
       const rawInst = extract("Interview Instructions");
       const instructions = rawInst && rawInst !== "None" ? rawInst.split(',').map(s => s.trim()) : [];
       const interviewStatus = extract("Interview Status") || "Upcoming";
@@ -247,6 +299,13 @@ const MyTasks = () => {
           endTime,
           mode,
           meetingLink,
+          officeName,
+          fullAddress,
+          buildingFloor,
+          roomNumber,
+          city,
+          state,
+          pinCode,
           instructions,
           interviewStatus,
           interviewerName: null, 
@@ -268,7 +327,7 @@ const MyTasks = () => {
     )
   }
 
-  const hasActiveFilters = filterStatus !== "ALL" || filterPriority !== "ALL" || searchQuery.trim()
+  const hasActiveFilters = filterStatus !== "ALL" || filterPriority !== "ALL" || searchQuery.trim() || activeCard !== "total"
 
   return (
     <div className="space-y-6">
@@ -304,24 +363,32 @@ const MyTasks = () => {
           value={stats.total}
           icon={<ListTodo className="h-8 w-8" />}
           variant="blue"
+          isActive={activeCard === "total"}
+          onClick={() => setActiveCard(activeCard === "total" ? "total" : "total")}
         />
         <StatsCard
           title="Completed"
           value={stats.completed}
           icon={<CheckCircle2 className="h-8 w-8" />}
           variant="green"
+          isActive={activeCard === "completed"}
+          onClick={() => setActiveCard(activeCard === "completed" ? "total" : "completed")}
         />
         <StatsCard
           title="In Progress"
           value={stats.inProgress}
           icon={<Clock className="h-8 w-8" />}
           variant="amber"
+          isActive={activeCard === "inProgress"}
+          onClick={() => setActiveCard(activeCard === "inProgress" ? "total" : "inProgress")}
         />
         <StatsCard
           title="Overdue"
           value={stats.overdue}
           icon={<AlertCircle className="h-8 w-8" />}
           variant="orange"
+          isActive={activeCard === "overdue"}
+          onClick={() => setActiveCard(activeCard === "overdue" ? "total" : "overdue")}
         />
       </div>
 
@@ -434,20 +501,18 @@ const MyTasks = () => {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-100 dark:border-slate-800">
-                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Task</th>
-                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Priority</th>
-                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Assigner / Interviewer</th>
-                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Due Date</th>
-                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Int. Date</th>
-                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Int. Time</th>
-                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Int. Mode</th>
-                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-left">Status</th>
-                    <th className="px-2 py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right"></th>
+                  <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left rounded-tl-lg w-[35%]">Task</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center w-[80px]">Priority</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left w-[15%]">Assigner / Interviewer</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left w-[15%]">Due Date</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left w-[15%]">Time</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left w-[100px]">Status</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center w-[150px] rounded-r-xl">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
-                  {filteredTasks.map((task) => {
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                  {paginatedTasks.map((task) => {
                     const overdue = isOverdue(task)
                     const availableTransitions = STATUS_TRANSITIONS[task.status] ?? []
                     const intData = getInterviewData(task)
@@ -457,141 +522,162 @@ const MyTasks = () => {
                         key={task._id}
                         className="group transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/30"
                       >
-                        <td className="px-2 py-3.5 align-top">
-                          <div className="flex flex-col gap-0.5 max-w-[200px]">
-                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-tight whitespace-normal break-words">
+                        <td className="px-4 py-3 align-middle">
+                          <div className="flex flex-col gap-1 max-w-[300px]">
+                            <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-tight whitespace-normal break-words">
                               {intData?.candidateName 
                                 ? `Interview with ${intData.candidateName}`
                                 : task.title}
                             </span>
-                            <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                              {task.description}
+                            <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-full">
+                              {task.description || "No description provided"}
                             </span>
-                            <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 bg-slate-100 dark:bg-slate-800 w-fit px-1.5 py-0.5 rounded font-mono">
-                              {task._id?.slice(-6).toUpperCase()}
-                            </span>
-                          </div>
-                        </td>
-
-                        <td className="px-2 py-3.5 align-top">
-                          <div className="flex items-center gap-1.5">
-                            <span className={cn("w-2 h-2 rounded-full shrink-0", {
-                              "bg-red-500":    task.priority?.toUpperCase() === "HIGH",
-                              "bg-yellow-500": task.priority?.toUpperCase() === "MEDIUM",
-                              "bg-blue-400":   task.priority?.toUpperCase() === "LOW",
-                            })} />
-                            <Badge variant="outline" className={getPriorityStyle(task.priority)}>
-                              {task.priority
-                                ? task.priority.charAt(0).toUpperCase() + task.priority.slice(1).toLowerCase()
-                                : "—"}
-                            </Badge>
-                          </div>
-                        </td>
-
-                        <td className="px-3 py-3.5 align-top">
-                          <div className="flex items-center gap-2">
-                            <div className="h-6 w-6 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 flex items-center justify-center text-[10px] font-bold text-blue-600 dark:text-blue-400 shrink-0">
-                              {(intData?.interviewerName 
-                                ? intData.interviewerName 
-                                : getAssignerName(task.assignedBy)).charAt(0).toUpperCase()}
-                            </div>
-                            <span className="text-sm text-slate-700 dark:text-slate-300">
-                              {intData?.interviewerName 
-                                ? intData.interviewerName 
-                                : getAssignerName(task.assignedBy)}
+                            <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-fit px-1.5 py-0.5 rounded shadow-sm font-mono tracking-wider">
+                              {intData ? "INT-" : "TSK-"}{(task._id || task.id || "000000").slice(-6).toUpperCase()}
                             </span>
                           </div>
                         </td>
 
-                        <td className="px-3 py-3.5 align-top">
-                          <div className={cn("flex items-center gap-1.5 text-sm", overdue ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-400")}>
-                            <Calendar className="h-3.5 w-3.5 shrink-0" />
-                            <span className="tabular-nums font-medium">{formatDate(task.dueDate)}</span>
-                            {overdue && (
-                              <span className="text-[10px] font-semibold bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 px-1.5 py-0.5 rounded">
-                                OVERDUE
-                              </span>
-                            )}
+                        <td className="px-4 py-3 align-middle">
+                          <PriorityDot priority={task.priority} />
+                        </td>
+
+                        <td className="px-4 py-3 align-middle">
+                          <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate max-w-[140px] block cursor-default">
+                                  {intData?.interviewerName 
+                                    ? intData.interviewerName 
+                                    : getAssignerName(task.assignedBy)}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {intData?.interviewerName 
+                                  ? intData.interviewerName 
+                                  : getAssignerName(task.assignedBy)}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </td>
+
+                        <td className="px-4 py-3 align-middle whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-300">
+                            <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                            <span className="tabular-nums font-medium">
+                              {intData?.interviewDate ? formatDate(intData.interviewDate) : formatDate(task.dueDate)}
+                            </span>
                           </div>
                         </td>
 
-                        <td className="px-3 py-3.5 align-top">
-                          {intData?.candidateName ? (
-                            <span className="text-sm font-medium">{formatDate(intData.interviewDate)}</span>
+                        <td className="px-4 py-3 align-middle whitespace-nowrap">
+                          {intData?.startTime && intData?.endTime ? (
+                            <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                              {intData.startTime} &rarr; {intData.endTime}
+                            </span>
                           ) : (
-                            <span className="text-sm text-muted-foreground">—</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-3.5 align-top">
-                          {intData?.candidateName ? (
-                            <span className="text-sm">{intData.startTime} - {intData.endTime}</span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">—</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-3.5 align-top">
-                          {intData?.candidateName ? (
-                            <Badge variant="outline" className="bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-                              {intData.mode}
-                            </Badge>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">—</span>
+                            <span className="text-sm text-slate-400 italic">N/A</span>
                           )}
                         </td>
 
-                        <td className="px-2 py-3.5 align-top">
-                          <div className="flex items-center gap-1.5">
-                            <span className={cn("w-2 h-2 rounded-full shrink-0", {
-                              "bg-emerald-500": task.status === TASK_STATUS.DONE,
-                              "bg-blue-500":    task.status === TASK_STATUS.IN_PROGRESS,
-                              "bg-slate-400":   task.status === TASK_STATUS.TO_DO,
-                            })} />
-                            <Badge variant="outline" className={cn("text-xs px-2 py-0.5 border font-normal", getStatusStyle(task.status))}>
-                              {STATUS_LABELS[task.status] ?? task.status}
-                            </Badge>
-                          </div>
+
+                        <td className="px-4 py-3 align-middle whitespace-nowrap">
+                          <Badge variant="outline" className={cn("text-[11px] px-2.5 py-0.5 border font-semibold shadow-sm w-fit", getStatusStyle(task.status))}>
+                            {STATUS_LABELS[task.status] ?? task.status}
+                          </Badge>
                         </td>
 
-                        <td className="px-2 py-3.5 whitespace-nowrap text-right">
+                        <td className="px-4 py-2.5 whitespace-nowrap">
                           {updating === task._id ? (
-                            <div className="w-5 h-5 rounded-full border-2 border-blue-600 border-t-transparent animate-spin ml-auto" />
+                            <div className="w-5 h-5 rounded-full border-2 border-blue-600 border-t-transparent animate-spin mx-auto" />
                           ) : (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                {intData?.candidateName && (
-                                  <>
-                                    <DropdownMenuItem onClick={() => setDetailsDialog({ open: true, task, intData })}>
-                                      View Details
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                  </>
-                                )}
-                                {availableTransitions.length > 0 ? (
-                                  <>
-                                    <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
-                                      Move to
-                                    </div>
-                                    {availableTransitions.map(s => (
-                                      <DropdownMenuItem
-                                        key={s}
-                                        onClick={() => openStatusDialog(task, s)}
+                            <TooltipProvider delayDuration={200}>
+                              <div className="flex items-center justify-center gap-1.5 transition-opacity">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                      onClick={() => {
+                                        if (intData?.candidateName) {
+                                          setInterviewModal({ open: true, task, intData });
+                                        } else {
+                                          setDetailsDialog({ open: true, task, intData });
+                                        }
+                                      }}
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>View Details</TooltipContent>
+                                </Tooltip>
+
+                                {intData?.mode?.toLowerCase() === "online" && intData?.meetingLink && intData.meetingLink !== "N/A" && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                        onClick={() => window.open(intData.meetingLink, "_blank")}
                                       >
-                                        {STATUS_LABELS[s]}
-                                      </DropdownMenuItem>
-                                    ))}
-                                  </>
-                                ) : (
-                                  <DropdownMenuItem disabled className="text-muted-foreground">
-                                    Task completed
-                                  </DropdownMenuItem>
+                                        <Video className="w-4 h-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Join Meeting</TooltipContent>
+                                  </Tooltip>
                                 )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+
+                                {intData?.mode?.toLowerCase() === "offline" && intData?.location && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                        onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(intData.location)}`, "_blank")}
+                                      >
+                                        <MapPin className="w-4 h-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>View Location</TooltipContent>
+                                  </Tooltip>
+                                )}
+
+                                {availableTransitions.includes(TASK_STATUS.IN_PROGRESS) && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-8 w-8 text-slate-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/30"
+                                        onClick={() => openStatusDialog(task, TASK_STATUS.IN_PROGRESS)}
+                                      >
+                                        <Play className="w-4 h-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Start Task</TooltipContent>
+                                  </Tooltip>
+                                )}
+                                
+                                {availableTransitions.includes(TASK_STATUS.DONE) && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-8 w-8 text-slate-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30"
+                                        onClick={() => openStatusDialog(task, TASK_STATUS.DONE)}
+                                      >
+                                        <Check className="w-4 h-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Mark Complete</TooltipContent>
+                                  </Tooltip>
+                                )}
+                              </div>
+                            </TooltipProvider>
                           )}
                         </td>
                       </tr>
@@ -599,6 +685,44 @@ const MyTasks = () => {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+          {totalPages > 1 && (
+            <div className="border-t border-slate-100 dark:border-slate-800 px-5 py-3 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/30">
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                Showing {((currentPage - 1) * rowsPerPage) + 1}-{Math.min(currentPage * rowsPerPage, filteredTasks.length)} of {filteredTasks.length} Tasks
+              </span>
+              <div className="flex items-center gap-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 px-2"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    className={page === currentPage ? "h-8 w-8 bg-blue-600 hover:bg-blue-700" : "h-8 w-8"}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </Button>
+                ))}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 px-2"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -692,56 +816,17 @@ const MyTasks = () => {
         </DialogContent>
       </Dialog>
 
+      {interviewModal.open && (
+        <InterviewTaskModal 
+          open={interviewModal.open} 
+          onOpenChange={(open) => !open && setInterviewModal({ open: false, task: null, intData: null })}
+          task={interviewModal.task}
+          intData={interviewModal.intData}
+        />
+      )}
+
     </div>
   )
 }
 
-const StatsCard = ({ title, value, icon, variant }) => {
-  const styles = {
-    blue: {
-      card:  "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
-      icon:  "text-blue-600 dark:text-blue-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    green: {
-      card:  "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
-      icon:  "text-green-600 dark:text-green-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    orange: {
-      card:  "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30",
-      icon:  "text-orange-600 dark:text-orange-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    red: {
-      card:  "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30",
-      icon:  "text-purple-600 dark:text-purple-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    amber: {
-      card:  "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30",
-      icon:  "text-amber-600 dark:text-amber-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-  }
-
-  const s = styles[variant] || styles.blue
-
-  return (
-    <div className={cn("rounded-xl border p-6 transition-all duration-200 hover:scale-105", s.card)}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={cn("text-sm", s.label)}>{title}</p>
-          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
-        </div>
-        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
-      </div>
-    </div>
-  )
-}
 export default MyTasks

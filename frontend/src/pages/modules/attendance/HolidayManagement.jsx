@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Pencil } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,13 +7,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/contexts/UserContext";
 import holidayService from "@/services/holidayService";
 import { toast } from "sonner";
+import { useConfirm } from "@/contexts/ConfirmContext";
 
 const HolidayManagement = () => {
+    const { confirm } = useConfirm();
     const { user } = useUser();
     const isAdmin = ["ADMIN", "SUPER_ADMIN", "HR_MANAGER"].includes(user?.role?.toUpperCase());
 
     const [holidays, setHolidays] = useState([]);
     const [formData, setFormData] = useState({ name: "", date: "", type: "National" });
+    const [editingId, setEditingId] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const fetchHolidays = async () => {
@@ -45,24 +48,50 @@ const HolidayManagement = () => {
         if (!formData.name || !formData.date) return;
 
         try {
-            await holidayService.addHoliday(formData);
+            if (editingId) {
+                await holidayService.updateHoliday(editingId, formData);
+                toast.success("Holiday updated successfully");
+            } else {
+                await holidayService.addHoliday(formData);
+                toast.success("Holiday added successfully");
+            }
             setFormData({ name: "", date: "", type: "National" });
-            toast.success("Holiday added successfully");
+            setEditingId(null);
             fetchHolidays();
         } catch (error) {
-            toast.error("Failed to add holiday");
+            toast.error(editingId ? "Failed to update holiday" : "Failed to add holiday");
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm("Are you sure you want to delete this holiday?")) return;
-        try {
-            await holidayService.deleteHoliday(id);
-            toast.success("Holiday deleted");
-            fetchHolidays();
-        } catch (error) {
-            toast.error("Failed to delete holiday");
-        }
+    const handleEdit = (holiday) => {
+        setFormData({
+            name: holiday.name,
+            date: new Date(holiday.date).toISOString().split('T')[0],
+            type: holiday.type
+        });
+        setEditingId(holiday._id);
+    };
+
+    const cancelEdit = () => {
+        setFormData({ name: "", date: "", type: "National" });
+        setEditingId(null);
+    };
+
+    const handleDelete = (id) => {
+        confirm({
+            title: "Delete Holiday?",
+            message: "Are you sure you want to delete this holiday?",
+            action: async () => {
+                try {
+                    await holidayService.deleteHoliday(id);
+                    toast.success("Holiday deleted");
+                    fetchHolidays();
+                } catch (error) {
+                    toast.error("Failed to delete holiday");
+                    throw error;
+                }
+            }
+        });
     };
 
     const formatDate = (dateStr) => {
@@ -90,9 +119,11 @@ const HolidayManagement = () => {
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <Plus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                    Add Holiday
+                                    {editingId ? "Edit Holiday" : "Add Holiday"}
                                 </CardTitle>
-                                <CardDescription>Schedule a new holiday for the year.</CardDescription>
+                                <CardDescription>
+                                    {editingId ? "Update existing holiday details." : "Schedule a new holiday for the year."}
+                                </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -135,9 +166,16 @@ const HolidayManagement = () => {
                                         </select>
                                     </div>
 
-                                    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-2">
-                                        Add to Calendar
-                                    </Button>
+                                    <div className="flex gap-2 mt-2">
+                                        <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+                                            {editingId ? "Update Calendar" : "Add to Calendar"}
+                                        </Button>
+                                        {editingId && (
+                                            <Button type="button" variant="outline" onClick={cancelEdit}>
+                                                Cancel
+                                            </Button>
+                                        )}
+                                    </div>
                                 </form>
                             </CardContent>
                         </Card>
@@ -183,14 +221,24 @@ const HolidayManagement = () => {
                                             </div>
 
                                             {isAdmin && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => handleDelete(holiday._id)}
-                                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
+                                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleEdit(holiday)}
+                                                        className="text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleDelete(holiday._id)}
+                                                        className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
                                             )}
                                         </div>
                                     ))}

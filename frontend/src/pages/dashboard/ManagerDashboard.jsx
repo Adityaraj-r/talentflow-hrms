@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,8 @@ import { Users, Calendar, Check, X, Briefcase, BarChart } from "lucide-react";
 import StatsCard from "@/components/dashboard/StatsCard";
 
 const ManagerDashboard = ({ stats, isLoading }) => {
+  const [activeTab, setActiveTab] = useState("team");
+
   const teamPerformance = [
     { name: "John Smith", performance: 85, tasksCompleted: 12, tasksPending: 3 },
     { name: "Emily Davis", performance: 92, tasksCompleted: 15, tasksPending: 1 },
@@ -50,6 +53,8 @@ const ManagerDashboard = ({ stats, isLoading }) => {
           description="Team members"
           icon={<Users className="h-5 w-5 text-muted-foreground" />}
           isLoading={isLoading}
+          isActive={activeTab === "team"}
+          onClick={() => setActiveTab("team")}
         />
         <StatsCard
           title="Pending Approvals"
@@ -57,6 +62,8 @@ const ManagerDashboard = ({ stats, isLoading }) => {
           description="Requiring action"
           icon={<Calendar className="h-5 w-5 text-muted-foreground" />}
           isLoading={isLoading}
+          isActive={activeTab === "approvals"}
+          onClick={() => setActiveTab("approvals")}
         />
         <StatsCard
           title="Tasks Completed"
@@ -64,6 +71,8 @@ const ManagerDashboard = ({ stats, isLoading }) => {
           description="This month"
           icon={<Check className="h-5 w-5 text-muted-foreground" />}
           isLoading={isLoading}
+          isActive={activeTab === "tasks"}
+          onClick={() => setActiveTab("tasks")}
         />
         <StatsCard
           title="Team Performance"
@@ -71,10 +80,12 @@ const ManagerDashboard = ({ stats, isLoading }) => {
           description="Average score"
           icon={<BarChart className="h-5 w-5 text-muted-foreground" />}
           isLoading={isLoading}
+          isActive={activeTab === "tasks"}
+          onClick={() => setActiveTab("tasks")}
         />
       </div>
 
-      <Tabs defaultValue="team">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="team">Team Overview</TabsTrigger>
           <TabsTrigger value="approvals">Pending Approvals</TabsTrigger>

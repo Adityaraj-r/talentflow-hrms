@@ -85,14 +85,15 @@ export default function ReportsPage() {
       (prev) => ({
         ...prev,
         role: filters.role,
-        department:
-          filters.department,
+        department: filters.department,
+        search: filters.search || "",
         page: 1,
       })
     );
   }, [
     filters.role,
     filters.department,
+    filters.search,
   ]);
 
   const [
@@ -277,20 +278,21 @@ export default function ReportsPage() {
               ) => (
                 <Card
                   key={i}
-                  className="rounded-2xl shadow-sm"
+                  className="rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group h-full bg-card"
                 >
-                  <CardContent className="p-5">
-                    <p className="text-sm text-muted-foreground">
-                      {
-                        item.label
-                      }
-                    </p>
-
-                    <h3 className="text-2xl font-bold mt-2">
-                      {
-                        item.value
-                      }
-                    </h3>
+                  <CardContent className="p-6 relative z-10 flex flex-col h-full justify-between gap-4">
+                    <div>
+                      <h3 className="text-3xl font-bold text-foreground">
+                        {
+                          item.value
+                        }
+                      </h3>
+                      <p className="text-sm font-medium text-muted-foreground mt-1">
+                        {
+                          item.label
+                        }
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               )

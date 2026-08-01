@@ -1,3 +1,4 @@
+import { PriorityDot } from "@/components/ui/PriorityDot";
 import { useMemo, useState } from "react"
 import * as React from "react"
 import { AnimatePresence } from "framer-motion"
@@ -240,134 +241,62 @@ export function MatchScoreBadge({ score = 0, size = "sm" }) {
   )
 }
 
-export function StageAnalyticsCard({ stage, count, total }) {
-  const conversion = total ? Math.round((count / total) * 100) : 0
-  return (
-    <div className="min-w-[180px] rounded-lg border border-white/10 bg-card/70 p-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className={cn("h-2.5 w-2.5 rounded-full", stage.color)} />
-          <span className="text-sm font-semibold">{stage.label}</span>
-        </div>
-        <span className="text-xs text-muted-foreground">{count}</span>
-      </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-        <div className={cn("h-full rounded-full", stage.color)} style={{ width: `${conversion}%` }} />
-      </div>
-      <p className="mt-2 text-xs text-muted-foreground">{conversion}% of visible pipeline</p>
-    </div>
-  )
-}
 
 export function PipelineFilters({ filters, onChange, options, onSaveFilter, savedFilters, onApplySavedFilter }) {
   const set = (key, value) => onChange({ ...filters, [key]: value })
 
   return (
-   <section className="rounded-lg border border-white/10 bg-card/80 p-4">
-  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-
-    {/* Search */}
-    <div className="relative xl:col-span-1">
-      <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-      <Input
-        value={filters.search}
-        onChange={(e) => set("search", e.target.value)}
-        placeholder="Search candidate, role, email, skills..."
-        className="pl-9"
-      />
-    </div>
-
-    <FilterSelect
-      label="Recruiter"
-      value={filters.recruiter}
-      onChange={(value) => set("recruiter", value)}
-      options={options.recruiters}
-    />
-
-    <FilterSelect
-      label="Department"
-      value={filters.department}
-      onChange={(value) => set("department", value)}
-      options={options.departments}
-    />
-
-    <FilterSelect
-      label="Role"
-      value={filters.role}
-      onChange={(value) => set("role", value)}
-      options={options.roles}
-    />
-
-    <FilterSelect
-      label="Stage"
-      value={filters.stage}
-      onChange={(value) => set("stage", value)}
-      options={PIPELINE_STAGES.map((s) => s.id)}
-    />
-
-    <FilterSelect
-      label="Experience"
-      value={filters.experience}
-      onChange={(value) => set("experience", value)}
-      options={["0-2 years", "3-5 years", "6+ years"]}
-    />
-
-    <FilterSelect
-      label="Priority"
-      value={filters.priority}
-      onChange={(value) => set("priority", value)}
-      options={priorities}
-    />
-
-    <Button
-      type="button"
-      variant="outline"
-      onClick={onSaveFilter}
-      className="w-full"
-    >
-      Save Filter
-    </Button>
-
-  </div>
-
-  {savedFilters.length > 0 && (
-    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-      <span>Saved:</span>
-      {savedFilters.map((saved, index) => (
-        <button
-          key={`${saved.label}-${index}`}
-          type="button"
-          onClick={() => onApplySavedFilter(saved.filters)}
-          className="rounded-full border border-white/10 px-3 py-1 transition-colors hover:bg-muted cursor-pointer"
-        >
-          {saved.label}
-        </button>
-      ))}
-    </div>
-  )}
-</section>
+   <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
+     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+       <div className="relative">
+         <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+         <Input
+           value={filters.search}
+           onChange={(e) => set("search", e.target.value)}
+           placeholder="Search candidate, role..."
+           className="pl-9 h-9 w-full"
+         />
+       </div>
+       <FilterSelect label="Recruiter" value={filters.recruiter} onChange={(v) => set("recruiter", v)} options={options.recruiters} />
+       <FilterSelect label="Department" value={filters.department} onChange={(v) => set("department", v)} options={options.departments} />
+       <FilterSelect label="Role" value={filters.role} onChange={(v) => set("role", v)} options={options.roles} />
+     </div>
+     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+       <FilterSelect label="Stage" value={filters.stage} onChange={(v) => set("stage", v)} options={PIPELINE_STAGES.map(s => s.id)} />
+       <FilterSelect label="Experience" value={filters.experience} onChange={(v) => set("experience", v)} options={["0-2 years", "3-5 years", "6+ years"]} />
+       <FilterSelect label="Priority" value={filters.priority} onChange={(v) => set("priority", v)} options={priorities} />
+       <Button type="button" variant="outline" onClick={onSaveFilter} className="h-9 w-full">Save Filter</Button>
+     </div>
+     {savedFilters.length > 0 && (
+       <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-3 border-t border-border">
+         <span>Saved:</span>
+         {savedFilters.map((saved, index) => (
+           <button key={index} type="button" onClick={() => onApplySavedFilter(saved.filters)} className="rounded-full border border-border px-3 py-1 transition-colors hover:bg-muted cursor-pointer">
+             {saved.label}
+           </button>
+         ))}
+       </div>
+     )}
+   </section>
   )
 }
 
 function FilterSelect({ label, value, onChange, options = [] }) {
   return (
-    <label className="relative min-w-[142px]">
+    <label className="relative block">
       <span className="sr-only">{label}</span>
-
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="appearance-none h-9 w-full rounded-md border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-[3px] focus:ring-ring/50 cursor-pointer"
       >
         <option value="All">{label}</option>
-
         {options.map((option) => (
           <option key={option} value={option}>
             {option}
           </option>
         ))}
       </select>
-
       <ChevronDown className="pointer-events-none absolute right-2 top-2.5 h-4 w-4 text-muted-foreground" />
     </label>
   );
@@ -748,7 +677,7 @@ export function CandidateCard({ candidate, onOpen, canDrag = true, dragging = fa
       </button>
 
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/5 pt-3">
-        <span className="text-xs text-muted-foreground">{candidate.interviewDate ? `Interview ${candidate.interviewDate}` : `${candidate.priority} priority`}</span>
+        <span className="text-xs text-muted-foreground flex items-center gap-1">{candidate.interviewDate ? `Interview ${candidate.interviewDate}` : <><PriorityDot priority={candidate.priority} className="w-auto" /> Priority</>}</span>
         <button
           type="button"
           className="text-xs font-medium text-primary outline-none hover:underline focus:ring-2 focus:ring-ring cursor-pointer"
@@ -779,23 +708,23 @@ export function CandidateCard({ candidate, onOpen, canDrag = true, dragging = fa
   )
 }
 
-export function PipelineColumn({ stage, candidates, total, onOpen, activeStage, canWrite }) {
+export function PipelineColumn({ stage, candidates, onOpen, activeStage, canWrite }) {
   const { setNodeRef, isOver } = useDroppable({
     id: stage.id,
     data: { type: "stage", stage },
   })
-  const conversion = total ? Math.round((candidates.length / total) * 100) : 0
+  
 
   return (
     <section
       ref={setNodeRef}
       className={cn(
-        "flex max-h-[calc(100vh-310px)] min-h-[520px] w-[320px] shrink-0 flex-col rounded-lg border border-white/10 bg-card/70 transition-colors",
+        "flex max-h-[calc(100vh-310px)] min-h-[520px] w-[320px] shrink-0 flex-col rounded-lg border border-border bg-card/50 transition-colors",
         (isOver || activeStage === stage.id) && "border-primary/50 bg-primary/5"
       )}
       aria-label={`${stage.label} stage`}
     >
-      <header className="sticky top-0 z-10 rounded-t-lg border-b border-white/10 bg-card/95 p-3 backdrop-blur">
+      <header className="sticky top-0 z-10 rounded-t-lg border-b border-border bg-card/95 p-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className={cn("h-2.5 w-2.5 rounded-full", stage.color)} />
@@ -803,12 +732,7 @@ export function PipelineColumn({ stage, candidates, total, onOpen, activeStage, 
           </div>
           <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold">{candidates.length}</span>
         </div>
-        <div className="mt-3 flex items-center gap-2">
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-            <div className={cn("h-full rounded-full", stage.color)} style={{ width: `${conversion}%` }} />
-          </div>
-          <span className="text-xs text-muted-foreground">{conversion}%</span>
-        </div>
+        
       </header>
       <SortableContext items={candidates.map((candidate) => candidate._id)} strategy={verticalListSortingStrategy}>
         <div className="custom-scrollbar flex-1 space-y-3 overflow-y-auto p-3">
@@ -897,7 +821,6 @@ export function PipelineBoard({ candidates, onMoveCandidate, onOpenCandidate, ca
               key={stage.id}
               stage={stage}
               candidates={grouped[stage.id] || []}
-              total={candidates.length}
               onOpen={onOpenCandidate}
               activeStage={activeStage}
               canWrite={canWrite}
@@ -942,98 +865,15 @@ export function PipelineAnalytics({ candidates }) {
   const interviewSuccess = interview + offer + hired ? Math.round(((offer + hired) / (interview + offer + hired)) * 100) : 0
   const dropOff = total ? Math.round((rejected / total) * 100) : 0
 
-  const metrics = React.useMemo(() => {
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-    const dayMs = 1000 * 60 * 60 * 24
-
-    const isThisMonth = (d) => d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-    const isLastMonth = (d) => {
-      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-      return d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear()
-    }
-
-    let cmTotal = 0, lmTotal = 0
-    let cmSuccess = 0, lmSuccess = 0
-    let cmRejects = 0, lmRejects = 0
-    let cmInterviews = 0, lmInterviews = 0
-
-    const last7Days = Array.from({ length: 7 }, (_, i) => today - (6 - i) * dayMs)
-    const charts = { total: [0,0,0,0,0,0,0], conv: [0,0,0,0,0,0,0], drop: [0,0,0,0,0,0,0], vel: [0,0,0,0,0,0,0], int: [0,0,0,0,0,0,0], age: [0,0,0,0,0,0,0] }
-    const ageCounts = [0,0,0,0,0,0,0]
-
-    candidates.forEach(c => {
-      const created = new Date(c.createdAt || Date.now())
-      const updated = new Date(c.updatedAt || c.createdAt || Date.now())
-      const createdTime = new Date(created.getFullYear(), created.getMonth(), created.getDate()).getTime()
-      const updatedTime = new Date(updated.getFullYear(), updated.getMonth(), updated.getDate()).getTime()
-
-      if (isThisMonth(created)) cmTotal++
-      if (isLastMonth(created)) lmTotal++
-
-      const isWin = c.stage === "Hired" || c.stage === "Offer"
-      if (isWin) {
-        if (isThisMonth(updated)) cmSuccess++
-        if (isLastMonth(updated)) lmSuccess++
-      }
-      if (c.stage === "Rejected") {
-        if (isThisMonth(updated)) cmRejects++
-        if (isLastMonth(updated)) lmRejects++
-      }
-      if (c.stage === "Interview") {
-        if (isThisMonth(updated)) cmInterviews++
-        if (isLastMonth(updated)) lmInterviews++
-      }
-
-      last7Days.forEach((day, i) => {
-        if (createdTime === day) charts.total[i]++
-        if (updatedTime === day) {
-          if (isWin) { charts.conv[i]++; charts.vel[i]++ }
-          if (c.stage === "Rejected") charts.drop[i]++
-          if (c.stage === "Interview") charts.int[i]++
-        }
-        if (createdTime <= day) {
-          charts.age[i] += Math.floor((day - createdTime) / dayMs)
-          ageCounts[i]++
-        }
-      })
-    })
-
-    const calcTrend = (curr, prev) => prev ? Math.round(((curr - prev) / prev) * 100) : curr ? 100 : 0
-    const totalTrend = calcTrend(cmTotal, lmTotal)
-    const velocityTrend = calcTrend(cmSuccess, lmSuccess)
-    
-    const convTrend = Math.round((cmTotal ? cmSuccess/cmTotal : 0) * 100) - Math.round((lmTotal ? lmSuccess/lmTotal : 0) * 100)
-    const dropTrend = Math.round((cmTotal ? cmRejects/cmTotal : 0) * 100) - Math.round((lmTotal ? lmRejects/lmTotal : 0) * 100)
-    
-    const currIntSucc = cmInterviews + cmSuccess ? cmSuccess / (cmInterviews + cmSuccess) : 0
-    const lastIntSucc = lmInterviews + lmSuccess ? lmSuccess / (lmInterviews + lmSuccess) : 0
-    const intSuccessTrend = Math.round((currIntSucc - lastIntSucc) * 100)
-
-    charts.age = charts.age.map((sum, i) => ageCounts[i] ? Math.round(sum / ageCounts[i]) : 0)
-
-    return { totalTrend, velocityTrend, convTrend, dropTrend, intSuccessTrend, charts }
-  }, [candidates])
-
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-        <RecruitmentKpiCard title="Total Candidates" value={total} icon={Users} trend={metrics.totalTrend} chartData={metrics.charts.total} helper="Visible pipeline volume" accent="sky" />
-        <RecruitmentKpiCard title="Conversion Rate" value={`${conversion}%`} icon={BadgeCheck} trend={metrics.convTrend} chartData={metrics.charts.conv} helper="Offer and hire movement" accent="emerald" />
-        <RecruitmentKpiCard title="Avg Stage Age" value={`${averageStageAge(candidates)}d`} icon={Clock3} trend={0} chartData={metrics.charts.age} helper="Average time since application" accent="cyan" />
-        <RecruitmentKpiCard title="Stage Drop-off" value={`${dropOff}%`} icon={TrendingDown} trend={metrics.dropTrend} chartData={metrics.charts.drop} helper="Rejected share" accent="rose" />
-        <RecruitmentKpiCard title="Hiring Velocity" value={`${hired + offer}`} icon={TrendingUp} trend={metrics.velocityTrend} chartData={metrics.charts.vel} helper="Offer and hired candidates" accent="violet" />
-        <RecruitmentKpiCard title="Interview Success" value={`${interviewSuccess}%`} icon={Sparkles} trend={metrics.intSuccessTrend} chartData={metrics.charts.int} helper="Interview to offer/hire" accent="amber" />
-      </div>
-      <div className="custom-scrollbar flex gap-3 overflow-x-auto pb-1">
-        {PIPELINE_STAGES.map((stage) => (
-          <StageAnalyticsCard
-            key={stage.id}
-            stage={stage}
-            count={candidates.filter((candidate) => candidate.stage === stage.id).length}
-            total={total}
-          />
-        ))}
+        <RecruitmentKpiCard title="Total Candidates" value={total} icon={Users} helper="Visible pipeline volume" accent="sky" />
+        <RecruitmentKpiCard title="Conversion Rate" value={`${conversion}%`} icon={BadgeCheck} helper="Offer and hire movement" accent="emerald" />
+        <RecruitmentKpiCard title="Avg Stage Age" value={`${averageStageAge(candidates)}d`} icon={Clock3} helper="Average time since application" accent="cyan" />
+        <RecruitmentKpiCard title="Stage Drop-off" value={`${dropOff}%`} icon={TrendingDown} helper="Rejected share" accent="rose" />
+        <RecruitmentKpiCard title="Hiring Velocity" value={`${hired + offer}`} icon={TrendingUp} helper="Offer and hired candidates" accent="violet" />
+        <RecruitmentKpiCard title="Interview Success" value={`${interviewSuccess}%`} icon={Sparkles} helper="Interview to offer/hire" accent="amber" />
       </div>
     </div>
   )

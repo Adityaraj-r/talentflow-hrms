@@ -1,3 +1,4 @@
+import { PriorityDot } from "@/components/ui/PriorityDot";
 import { useState, useEffect, useCallback } from "react"
 import { useUser } from "@/contexts/UserContext"
 import taskService from "@/services/taskService"
@@ -10,53 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ROLES } from "@/constants/roles"
-
-const StatsCard = ({ title, value, icon, variant }) => {
-  const styles = {
-    blue: {
-      card:  "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
-      icon:  "text-blue-600 dark:text-blue-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    green: {
-      card:  "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
-      icon:  "text-green-600 dark:text-green-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    orange: {
-      card:  "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30",
-      icon:  "text-orange-600 dark:text-orange-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    amber: {
-      card:  "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30",
-      icon:  "text-amber-600 dark:text-amber-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    red: {
-      card:  "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30",
-      icon:  "text-red-600 dark:text-red-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-  }
-  const s = styles[variant] || styles.blue
-  return (
-    <div className={cn("rounded-xl border p-6 transition-all duration-200 hover:scale-105", s.card)}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={cn("text-sm", s.label)}>{title}</p>
-          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
-        </div>
-        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
-      </div>
-    </div>
-  )
-}
+import { StatsCard } from "@/components/ui/stats-card"
 
 const PriorityBar = ({ label, count, total, color }) => {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0

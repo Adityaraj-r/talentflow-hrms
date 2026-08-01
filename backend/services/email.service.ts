@@ -8,6 +8,11 @@ export type SendEmailInput = {
   subject: string;
   html: string;
   text?: string;
+  attachments?: Array<{
+    filename: string;
+    content: Buffer | string;
+    contentType?: string;
+  }>;
 };
 
 export type SendEmailResult = {
@@ -53,7 +58,7 @@ const getTransporter = async (): Promise<{ transporter: Transporter; config: Smt
   return { transporter: cachedTransporter, config };
 };
 
-export const sendEmail = async ({ to, subject, html, text }: SendEmailInput): Promise<SendEmailResult> => {
+export const sendEmail = async ({ to, subject, html, text, attachments }: SendEmailInput): Promise<SendEmailResult> => {
   try {
     const mailer = await getTransporter();
     if (!mailer) {
@@ -68,6 +73,7 @@ export const sendEmail = async ({ to, subject, html, text }: SendEmailInput): Pr
       subject,
       html,
       text,
+      attachments,
     });
 
     logEmailAttempt({ recipient: to, subject, status: 'sent' });

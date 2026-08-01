@@ -19,6 +19,7 @@ import {
   Check,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useConfirm } from "@/contexts/ConfirmContext";
 
 const TimeSelect = ({ value, name, onChange }) => {
   let h12 = "", m = "", ampm = "AM";
@@ -85,6 +86,7 @@ const TimeSelect = ({ value, name, onChange }) => {
 };
 
 const ShiftManagement = () => {
+  const { confirm } = useConfirm();
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -136,16 +138,21 @@ const ShiftManagement = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this shift?")) {
-      try {
-        await shiftService.deleteShift(id);
-        toast.success("Shift deleted");
-        fetchShifts();
-      } catch (error) {
-        toast.error("Failed to delete shift");
+  const handleDelete = (id) => {
+    confirm({
+      title: "Delete Shift?",
+      message: "Are you sure you want to delete this shift?",
+      action: async () => {
+        try {
+          await shiftService.deleteShift(id);
+          toast.success("Shift deleted");
+          fetchShifts();
+        } catch (error) {
+          toast.error("Failed to delete shift");
+          throw error;
+        }
       }
-    }
+    });
   };
 
   const handleEditStart = (shift) => {

@@ -6,14 +6,15 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Check, X, Clock, Users } from "lucide-react"
 import { toast } from "sonner"
+import { StatsCard } from "@/components/ui/stats-card"
 
 const TimesheetApprovals = () => {
   const [timesheets, setTimesheets] = useState([
-    { id: 1, employee: "John Smith", hours: 40, week: "Jan 8-14, 2026", status: "Pending", avatar: "JS" },
-    { id: 2, employee: "Sarah Connor", hours: 38, week: "Jan 8-14, 2026", status: "Pending", avatar: "SC" },
-    { id: 3, employee: "Mike Ross", hours: 42, week: "Jan 8-14, 2026", status: "Pending", avatar: "MR" },
-    { id: 4, employee: "Rachel Green", hours: 40, week: "Jan 8-14, 2026", status: "Approved", avatar: "RG" },
-    { id: 5, employee: "Harvey Specter", hours: 45, week: "Jan 8-14, 2026", status: "Approved", avatar: "HS" },
+    { id: 1, employee: "John Smith", employeeCode: "EMP-001234", hours: 40, week: "Jan 8-14, 2026", status: "Pending", avatar: "JS" },
+    { id: 2, employee: "Sarah Connor", employeeCode: "EMP-001235", hours: 38, week: "Jan 8-14, 2026", status: "Pending", avatar: "SC" },
+    { id: 3, employee: "Mike Ross", employeeCode: "EMP-001236", hours: 42, week: "Jan 8-14, 2026", status: "Pending", avatar: "MR" },
+    { id: 4, employee: "Rachel Green", employeeCode: "EMP-001237", hours: 40, week: "Jan 8-14, 2026", status: "Approved", avatar: "RG" },
+    { id: 5, employee: "Harvey Specter", employeeCode: "EMP-001238", hours: 45, week: "Jan 8-14, 2026", status: "Approved", avatar: "HS" },
   ])
 
   const handleApprove = (id) => {
@@ -36,6 +37,16 @@ const TimesheetApprovals = () => {
     rejected: timesheets.filter(ts => ts.status === "Rejected").length,
     total: timesheets.length
   }
+  
+  const [activeCard, setActiveCard] = useState("total")
+
+  const filteredTimesheets = timesheets.filter(ts => {
+    if (activeCard === "total") return true;
+    if (activeCard === "pending") return ts.status === "Pending";
+    if (activeCard === "approved") return ts.status === "Approved";
+    if (activeCard === "rejected") return ts.status === "Rejected";
+    return true;
+  })
 
   return (
     <div className="space-y-6">
@@ -50,26 +61,34 @@ const TimesheetApprovals = () => {
         <StatsCard 
           title="Total Submissions" 
           value={stats.total} 
-          icon={<Users className="h-4 w-4" />}
-          color="text-blue-600"
+          icon={<Users className="h-6 w-6" />}
+          variant="blue"
+          isActive={activeCard === 'total'}
+          onClick={() => setActiveCard(activeCard === 'total' ? 'total' : 'total')}
         />
         <StatsCard 
           title="Pending Review" 
           value={stats.pending} 
-          icon={<Clock className="h-4 w-4" />}
-          color="text-orange-600"
+          icon={<Clock className="h-6 w-6" />}
+          variant="amber"
+          isActive={activeCard === 'pending'}
+          onClick={() => setActiveCard(activeCard === 'pending' ? 'total' : 'pending')}
         />
         <StatsCard 
           title="Approved" 
           value={stats.approved} 
-          icon={<Check className="h-4 w-4" />}
-          color="text-green-600"
+          icon={<Check className="h-6 w-6" />}
+          variant="green"
+          isActive={activeCard === 'approved'}
+          onClick={() => setActiveCard(activeCard === 'approved' ? 'total' : 'approved')}
         />
         <StatsCard 
           title="Rejected" 
           value={stats.rejected} 
-          icon={<X className="h-4 w-4" />}
-          color="text-red-600"
+          icon={<X className="h-6 w-6" />}
+          variant="red"
+          isActive={activeCard === 'rejected'}
+          onClick={() => setActiveCard(activeCard === 'rejected' ? 'total' : 'rejected')}
         />
       </div>
 
@@ -82,6 +101,7 @@ const TimesheetApprovals = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Employee</TableHead>
+                <TableHead className="hidden md:table-cell">Employee ID</TableHead>
                 <TableHead>Week</TableHead>
                 <TableHead>Hours</TableHead>
                 <TableHead>Status</TableHead>
@@ -89,15 +109,23 @@ const TimesheetApprovals = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {timesheets.map((timesheet) => (
+              {filteredTimesheets.map((timesheet) => (
                 <TableRow key={timesheet.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar>
                         <AvatarFallback>{timesheet.avatar}</AvatarFallback>
                       </Avatar>
-                      <span className="font-medium">{timesheet.employee}</span>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{timesheet.employee}</span>
+                        <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
+                          {timesheet.employeeCode}
+                        </span>
+                      </div>
                     </div>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
+                    {timesheet.employeeCode}
                   </TableCell>
                   <TableCell>{timesheet.week}</TableCell>
                   <TableCell>
@@ -146,21 +174,5 @@ const TimesheetApprovals = () => {
     </div>
   )
 }
-
-const StatsCard = ({ title, value, icon, color }) => (
-  <Card>
-    <CardContent className="p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className={`text-3xl font-bold ${color}`}>{value}</p>
-        </div>
-        <div className={`p-3 rounded-full bg-muted ${color}`}>
-          {icon}
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-)
 
 export default TimesheetApprovals

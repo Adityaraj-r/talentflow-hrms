@@ -321,19 +321,12 @@ const RecruitmentPipeline = () => {
     toast.success("Pipeline exported to PDF successfully")
   }
 
-  const activeSummary = useMemo(() => {
-    const interviews = filteredCandidates.filter((candidate) => candidate.stage === "Interview").length
-    const offers = filteredCandidates.filter((candidate) => candidate.stage === "Offer").length
-    const hires = filteredCandidates.filter((candidate) => candidate.stage === "Hired").length
-    return `${filteredCandidates.length} candidates - ${interviews} interviews - ${offers} offers - ${hires} hires`
-  }, [filteredCandidates])
+
 
   return (
     <div className="space-y-6">
       <RecruitmentPageHeader
         title="Recruitment Pipeline"
-        subtitle="A drag-and-drop ATS workflow for screening, interviews, offers, and hiring decisions."
-        summary={activeSummary}
         actions={
           <>
             <Button type="button" variant="outline" onClick={() => setFilters(defaultFilters)}>

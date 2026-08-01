@@ -4,6 +4,7 @@ import { interviewRescheduledTemplate } from '../templates/interviewRescheduled'
 import { interviewScheduledTemplate } from '../templates/interviewScheduled';
 import { applicantShortlistedTemplate } from '../templates/shortlisted';
 import { welcomeEmailTemplate } from '../templates/welcome';
+import { offerEmailTemplate } from '../templates/offerEmail';
 import { escapeHtml } from '../templates/common';
 
 export type EmailTemplateName =
@@ -12,7 +13,8 @@ export type EmailTemplateName =
   | 'interviewRescheduled'
   | 'interviewCancelled'
   | 'welcome'
-  | 'genericNotification';
+  | 'genericNotification'
+  | 'offerEmail';
 
 const templates: Record<EmailTemplateName, (vars: Record<string, any>) => string> = {
   applicantShortlisted: applicantShortlistedTemplate,
@@ -21,6 +23,7 @@ const templates: Record<EmailTemplateName, (vars: Record<string, any>) => string
   interviewCancelled: interviewCancelledTemplate,
   welcome: welcomeEmailTemplate,
   genericNotification: genericNotificationTemplate,
+  offerEmail: offerEmailTemplate,
 };
 
 export const renderTemplateString = (

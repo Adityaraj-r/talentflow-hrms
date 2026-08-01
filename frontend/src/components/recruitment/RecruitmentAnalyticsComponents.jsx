@@ -21,12 +21,17 @@ import {
   YAxis,
 } from "recharts";
 import {
+  Activity,
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
+  BadgeCheck,
   Brain,
+  BriefcaseBusiness,
+  CalendarClock,
   ChevronLeft,
   ChevronRight,
+  Clock3,
   Download,
   FileSpreadsheet,
   FileText,
@@ -34,6 +39,7 @@ import {
   Search,
   SlidersHorizontal,
   Sparkles,
+  TrendingUp,
   Trophy,
   Users,
   Zap,
@@ -54,6 +60,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { RecruitmentKpiCard } from "@/components/recruitment/RecruitmentUI";
 
 const analyticsColors = ["#38bdf8", "#34d399", "#fbbf24", "#a78bfa", "#fb7185", "#2dd4bf"];
 
@@ -81,60 +88,36 @@ function ChartNoData({ label = "No data available" }) {
   );
 }
 
+const metricConfigs = {
+  openPositions: { icon: BriefcaseBusiness, accent: "sky" },
+  totalCandidates: { icon: Users, accent: "emerald" },
+  timeToHire: { icon: Clock3, accent: "cyan" },
+  timeToFill: { icon: CalendarClock, accent: "amber" },
+  offerAcceptance: { icon: BadgeCheck, accent: "emerald" },
+  candidateConversion: { icon: TrendingUp, accent: "violet" },
+  recruiterEfficiency: { icon: Activity, accent: "sky" },
+  hiringVelocity: { icon: Zap, accent: "rose" },
+};
+
 export function AnalyticsKpiCard({ metric, onClick, active }) {
-  const positive = Number(metric?.trend || 0) >= 0;
-  const TrendIcon = positive ? ArrowUpRight : ArrowDownRight;
-  const sparkline = (metric?.sparkline || []).map((value, index) => ({ index, value }));
+  const config = metricConfigs[metric?.key] || { icon: Activity, accent: "sky" };
+  const valueDisplay = `${metric?.value ?? ""}${metric?.suffix || ""}`;
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Motion.motion.button
-            type="button"
-            whileHover={{ y: -4 }}
-            onClick={onClick}
-            className={cn(
-              "group relative min-h-[172px] overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 p-4 text-left shadow-xl shadow-black/10 backdrop-blur transition-all",
-              "hover:border-cyan-300/30 hover:bg-slate-900/80",
-              active && "border-cyan-300/40 ring-1 ring-cyan-300/25"
-            )}
-          >
-            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-emerald-400 to-amber-300" />
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{metric.label}</p>
-                <div className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">
-                  <CountUp end={Number(metric.value) || 0} duration={0.8} preserveValue />
-                  <span className="text-xl text-slate-700 dark:text-slate-300">{metric.suffix}</span>
-                </div>
-              </div>
-              <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold", positive ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-300" : "border-rose-400/30 bg-rose-500/10 text-rose-300")}>
-                <TrendIcon className="h-3.5 w-3.5" />
-                {Math.abs(Number(metric.trend) || 0)}%
-              </span>
-            </div>
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{metric.comparison}</p>
-            <div className="mt-4 h-12">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={sparkline}>
-                  <defs>
-                    <linearGradient id={`spark-${metric.key}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.65} />
-                      <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <Area type="monotone" dataKey="value" stroke="#22d3ee" strokeWidth={2} fill={`url(#spark-${metric.key})`} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </Motion.motion.button>
-        </TooltipTrigger>
-        <TooltipContent className="max-w-xs bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-          {metric.description}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <RecruitmentKpiCard
+      title={metric?.label}
+      value={valueDisplay}
+      icon={config.icon}
+      trend={metric?.trend}
+      trendLabel={metric?.comparison}
+      helper={metric?.description || "vs previous period"}
+      updated="Live data"
+      accent={config.accent}
+      chartData={metric?.sparkline}
+      onClick={onClick}
+      active={active}
+      tooltip={metric?.description}
+    />
   );
 }
 
@@ -587,10 +570,11 @@ export function AnalyticsLoading() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {Array.from({ length: 8 }).map((_, index) => (
-        <div key={index} className="h-[172px] rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 p-4">
-          <div className="dark-shimmer h-4 w-32 rounded" />
-          <div className="dark-shimmer mt-4 h-8 w-20 rounded" />
-          <div className="dark-shimmer mt-5 h-16 rounded" />
+        <div key={index} className="h-[138px] rounded-lg border border-slate-200 dark:border-white/10 bg-card/70 p-4">
+          <div className="dark-shimmer h-4 w-28 rounded" />
+          <div className="dark-shimmer mt-4 h-8 w-16 rounded" />
+          <div className="dark-shimmer mt-5 h-5 rounded" />
+          <div className="dark-shimmer mt-4 h-3 w-36 rounded" />
         </div>
       ))}
     </div>

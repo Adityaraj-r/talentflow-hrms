@@ -46,16 +46,7 @@ const buildEmployeeFilter = (
     deptValue.toLowerCase() !== "all" &&
     deptValue.toLowerCase() !== "all departments"
   ) {
-    if (
-      mongoose.Types.ObjectId.isValid(
-        deptValue
-      )
-    ) {
-      filter.department =
-        new mongoose.Types.ObjectId(
-          deptValue
-        );
-    }
+    filter.department = { $regex: new RegExp(`^${deptValue}$`, "i") };
   }
 
   if (

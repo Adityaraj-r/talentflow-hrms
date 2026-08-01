@@ -569,6 +569,7 @@ const PendingIndemnities = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Employee</TableHead>
+              <TableHead className="hidden md:table-cell">Employee ID</TableHead>
               <TableHead>Years</TableHead>
               <TableHead>Gratuity Amount</TableHead>
               <TableHead>Reason</TableHead>
@@ -721,10 +722,16 @@ const IndemnityHistory = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = records.filter(r =>
-    r.employeeName?.toLowerCase().includes(search.toLowerCase()) ||
-    r.reason?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = records.filter(r => {
+    const searchLower = search.toLowerCase();
+    const nameMatch = r.employeeName?.toLowerCase().includes(searchLower);
+    const reasonMatch = r.reason?.toLowerCase().includes(searchLower);
+    const emailMatch = r.userId?.email?.toLowerCase().includes(searchLower);
+    const deptMatch = r.userId?.department?.toLowerCase().includes(searchLower);
+    const empCodeMatch = r.userId?.employeeCode?.toLowerCase().includes(searchLower);
+
+    return nameMatch || reasonMatch || emailMatch || deptMatch || empCodeMatch;
+  });
 
   if (loading) return (
     <Card><CardContent className="flex justify-center py-12">
@@ -739,9 +746,9 @@ const IndemnityHistory = () => {
           <CardTitle>All indemnities</CardTitle>
           <CardDescription>All EOSB requests and their status</CardDescription>
         </div>
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full sm:w-96">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search…" className="pl-8"
+          <Input placeholder="Search by Name, ID, Dept, Email..." className="pl-8"
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </CardHeader>
@@ -750,6 +757,7 @@ const IndemnityHistory = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Employee</TableHead>
+              <TableHead className="hidden md:table-cell">Employee ID</TableHead>
               <TableHead>Years</TableHead>
               <TableHead>EOSB Amount</TableHead>
               <TableHead>Reason</TableHead>
@@ -767,7 +775,17 @@ const IndemnityHistory = () => {
               </TableRow>
             ) : filtered.map(r => (
               <TableRow key={r._id}>
-                <TableCell className="font-medium align-middle">{r.employeeName}</TableCell>
+                <TableCell className="align-middle">
+                  <div className="flex flex-col">
+                    <span className="font-medium">{r.employeeName}</span>
+                    <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
+                      {r.employeeCode || "N/A"}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground align-middle">
+                  {r.employeeCode || "-"}
+                </TableCell>
                 <TableCell className="align-middle">{r.yearsOfService} yrs</TableCell>
                 <TableCell className="font-bold text-blue-600 align-middle">
                   ₹ {Number(r.calculatedAmount).toLocaleString()}

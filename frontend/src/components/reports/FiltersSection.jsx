@@ -116,11 +116,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
-} from "@/components/ui/select";
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { SearchableRoleSelect } from "@/components/ui/searchable-role-select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Search } from "lucide-react";
@@ -151,25 +152,47 @@ export default function FiltersSection({ filters, setFilters }) {
   ];
 
   return (
-    <Card className="rounded-2xl shadow-sm mb-6">
-      <CardContent className="p-6 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+    <Card className="rounded-xl shadow-sm border-border/50 mb-6 bg-card overflow-visible">
+      <CardContent className="p-5 flex flex-col md:flex-row md:items-end gap-5">
 
-        {/* LEFT FILTERS */}
-        <div className="flex flex-wrap gap-6">
+        {/* SEARCH */}
+        <div className="relative flex-1 min-w-[200px]">
+          <Label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wider">Search</Label>
+          <div className="relative">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              type="text"
+              placeholder="Search employee..."
+              value={filters.search}
+              onChange={(e) =>
+                setFilters({
+                  ...filters,
+                  search: e.target.value,
+                  page: 1,
+                })
+              }
+              className="pl-9 h-10 shadow-sm"
+            />
+          </div>
+        </div>
 
+        {/* FILTERS */}
+        <div className="flex flex-col sm:flex-row gap-5 flex-wrap md:flex-nowrap">
           {/* Department */}
-          <div className="flex flex-col gap-2 w-52">
-            <Label>Department</Label>
+          <div className="flex flex-col gap-1.5 w-full sm:w-[200px]">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Department</Label>
             <Select
               value={filters.department}
               onValueChange={(value) =>
                 setFilters({ ...filters, department: value, page: 1 })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-10 shadow-sm">
                 <SelectValue placeholder="Select Department" />
               </SelectTrigger>
-
               <SelectContent>
                 {departments.map((dep) => (
                   <SelectItem key={dep} value={dep}>
@@ -181,49 +204,20 @@ export default function FiltersSection({ filters, setFilters }) {
           </div>
 
           {/* Role */}
-          <div className="flex flex-col gap-2 w-60">
-            <Label>Role</Label>
-            <Select
-              value={filters.role}
-              onValueChange={(value) =>
-                setFilters({ ...filters, role: value, page: 1 })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Role" />
-              </SelectTrigger>
-
-              <SelectContent className="max-h-60 overflow-y-auto">
-                {roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {role === "all" ? "All Roles" : role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex flex-col gap-1.5 w-full sm:w-[220px]">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Role</Label>
+            <div className="h-10">
+              <SearchableRoleSelect
+                value={filters.role}
+                onChange={(value) =>
+                  setFilters({ ...filters, role: value, page: 1 })
+                }
+                options={roles.map((role) => ({ value: role, label: role === "all" ? "All Roles" : role }))}
+                placeholder="Select Role"
+                className="w-full shadow-sm"
+              />
+            </div>
           </div>
-        </div>
-
-        {/* SEARCH */}
-        <div className="relative w-full md:w-72">
-          <Label className="mb-2 block">Search</Label>
-          <Search
-            size={16}
-            className="absolute left-3 top-[38px] text-muted-foreground"
-          />
-          <Input
-            type="text"
-            placeholder="Search employee..."
-            value={filters.search}
-            onChange={(e) =>
-              setFilters({
-                ...filters,
-                search: e.target.value,
-                page: 1,
-              })
-            }
-            className="pl-9"
-          />
         </div>
 
       </CardContent>

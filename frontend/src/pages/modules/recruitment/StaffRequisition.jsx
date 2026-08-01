@@ -1,3 +1,4 @@
+import { PriorityDot } from "@/components/ui/PriorityDot";
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from "react"
@@ -5,6 +6,7 @@ import { useSearchParams } from "react-router-dom"
 import { useUser } from "@/contexts/UserContext"
 import apiClient from "@/services/apiClient"
 import { Button } from "@/components/ui/button"
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -12,7 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { CheckCircle2, Clock3, PlusCircle, XCircle } from "lucide-react"
+import { CheckCircle2, Clock3, PlusCircle, XCircle, Eye, Search, Minus, Plus, FileEdit } from "lucide-react"
 import { toast } from "sonner"
 import {
   RecruitmentEmptyState,
@@ -27,7 +29,10 @@ const StaffRequisition = () => {
   const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
   const isRecruitmentOperator = role === "HR_OFFICER" || role === "HR_MANAGER"
   const canCreateRequisition = user?.can?.("recruitment", "write") && isRecruitmentOperator
+  const [activeTab, setActiveTab] = useState(canCreateRequisition ? "create" : "pending")
+  const [activeCardFilter, setActiveCardFilter] = useState("all")
   const [stats, setStats] = useState({ totalOpen: 0, pending: 0, approved: 0, rejected: 0 })
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   const totalRequisitions = stats.totalOpen + stats.rejected
   const percentOfTotal = (count) => totalRequisitions ? Math.round((count / totalRequisitions) * 100) : 0
@@ -52,38 +57,55 @@ const StaffRequisition = () => {
 
   return (
     <div className="space-y-6">
-      <RecruitmentPageHeader
-        title="Staff Requisition"
-        subtitle="Request staffing needs, review approvals, and keep hiring demand visible."
-        summary={canCreateRequisition ? "Create requisitions and monitor approval movement" : "Approval queue and requisition history"}
-      />
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <RecruitmentKpiCard title="New Requests" value={totalRequisitions} icon={PlusCircle} trend={percentOfTotal(totalRequisitions)} trendLabel="of requisitions" helper={`${totalRequisitions} total requests`} updated="Live data" accent="sky" />
-        <RecruitmentKpiCard title="Pending" value={stats.pending} icon={Clock3} trend={percentOfTotal(stats.pending)} trendLabel="of requisitions" helper={`${stats.pending} awaiting approval`} updated="Live data" accent="amber" />
-        <RecruitmentKpiCard title="Approved" value={stats.approved} icon={CheckCircle2} trend={percentOfTotal(stats.approved)} trendLabel="of requisitions" helper={`${stats.approved} ready for hiring`} updated="Live data" accent="emerald" />
-        <RecruitmentKpiCard title="Rejected" value={stats.rejected} icon={XCircle} trend={-percentOfTotal(stats.rejected)} trendLabel="of requisitions" helper={`${stats.rejected} returned with decision`} updated="Live data" accent="rose" />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Staff Requisitions</h1>
+        </div>
       </div>
 
-      <Tabs defaultValue={canCreateRequisition ? "create" : "pending"}>
-        <TabsList className="h-auto w-full flex-wrap justify-start gap-1 sm:w-fit">
-          {canCreateRequisition && <TabsTrigger value="create" className="cursor-pointer">Create Requisition</TabsTrigger>}
-          <TabsTrigger value="pending" className="cursor-pointer">Pending Approvals</TabsTrigger>
-          <TabsTrigger value="history" className="cursor-pointer">Requisition History</TabsTrigger>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <RecruitmentKpiCard title="New Requests" value={totalRequisitions} icon={PlusCircle} trend={percentOfTotal(totalRequisitions)} trendLabel="of requisitions" helper={`${totalRequisitions} total requests`} accent="sky" active={activeCardFilter === "all"} onClick={() => { setActiveTab("history"); setActiveCardFilter("all"); }} />
+        <RecruitmentKpiCard title="Pending" value={stats.pending} icon={Clock3} trend={percentOfTotal(stats.pending)} trendLabel="of requisitions" helper={`${stats.pending} awaiting approval`} accent="amber" active={activeCardFilter === "Pending"} onClick={() => { setActiveTab("pending"); setActiveCardFilter("Pending"); }} />
+        <RecruitmentKpiCard title="Approved" value={stats.approved} icon={CheckCircle2} trend={percentOfTotal(stats.approved)} trendLabel="of requisitions" helper={`${stats.approved} ready for hiring`} accent="emerald" active={activeCardFilter === "Approved"} onClick={() => { setActiveTab("history"); setActiveCardFilter("Approved"); }} />
+        <RecruitmentKpiCard title="Rejected" value={stats.rejected} icon={XCircle} trend={-percentOfTotal(stats.rejected)} trendLabel="of requisitions" helper={`${stats.rejected} returned with decision`} accent="rose" active={activeCardFilter === "Rejected"} onClick={() => { setActiveTab("history"); setActiveCardFilter("Rejected"); }} />
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="w-full flex justify-start gap-6 bg-transparent border-b border-border rounded-none h-auto p-0 mb-6">
+          {canCreateRequisition && (
+            <TabsTrigger 
+              value="create" 
+              className="cursor-pointer bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 py-3 text-[15px] font-medium text-muted-foreground data-[state=active]:text-foreground transition-all"
+            >
+              Create Requisition
+            </TabsTrigger>
+          )}
+          <TabsTrigger 
+            value="pending" 
+            className="cursor-pointer bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 py-3 text-[15px] font-medium text-muted-foreground data-[state=active]:text-foreground transition-all"
+          >
+            Pending Approvals
+          </TabsTrigger>
+          <TabsTrigger 
+            value="history" 
+            className="cursor-pointer bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 py-3 text-[15px] font-medium text-muted-foreground data-[state=active]:text-foreground transition-all"
+          >
+            Requisition History
+          </TabsTrigger>
         </TabsList>
 
         {canCreateRequisition && (
-          <TabsContent value="create">
-            <RequisitionForm onSubmitted={fetchStats} />
+          <TabsContent value="create" forceMount>
+            {activeTab === "create" && <RequisitionForm onSubmitted={() => { fetchStats(); setRefreshTrigger(p => p + 1); setActiveTab("pending"); setActiveCardFilter("Pending"); }} />}
           </TabsContent>
         )}
 
-        <TabsContent value="pending">
-          <PendingRequisitions onChanged={fetchStats} />
+        <TabsContent value="pending" forceMount>
+          {activeTab === "pending" && <PendingRequisitions onChanged={fetchStats} externalFilter={activeCardFilter} refreshTrigger={refreshTrigger} />}
         </TabsContent>
 
-        <TabsContent value="history">
-          <RequisitionHistory />
+        <TabsContent value="history" forceMount>
+          {activeTab === "history" && <RequisitionHistory externalFilter={activeCardFilter} refreshTrigger={refreshTrigger} />}
         </TabsContent>
       </Tabs>
     </div>
@@ -406,10 +428,17 @@ const RequisitionForm = ({ onSubmitted }) => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create Staff Requisition</CardTitle>
-        <CardDescription>Submit a new staff requisition for approval</CardDescription>
+    <Card className="rounded-[16px] border border-border shadow-sm bg-card overflow-hidden">
+      <CardHeader className="pt-6 pb-4 border-b border-border/50 bg-muted/20">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+            <FileEdit className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+        <CardTitle className="text-[28px] font-bold text-foreground tracking-tight">Create Staff Requisition</CardTitle>
+        <CardDescription className="text-[14px] mt-1 text-muted-foreground">Submit a new staff requisition for approval</CardDescription>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -723,504 +752,864 @@ const RequisitionForm = ({ onSubmitted }) => {
   )
 }
 
-const PendingRequisitions = ({ onChanged }) => {
-  const [searchParams] = useSearchParams()
-  const deptFilter = searchParams.get("department")
+const PendingRequisitions = ({ onChanged, externalFilter }) => {
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedReq, setSelectedReq] = useState(null)
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false)
+  const [recommendation, setRecommendation] = useState("")
+  const [savingRecommendation, setSavingRecommendation] = useState(false)
+  const [actionStatus, setActionStatus] = useState(null)
+  const [isActionLoading, setIsActionLoading] = useState(false)
+  
+  // Pagination & Filters
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+  const [searchQuery, setSearchQuery] = useState("")
+  const [filterDepartment, setFilterDepartment] = useState("all")
+  const [filterPriority, setFilterPriority] = useState("all")
+  const [filterDate, setFilterDate] = useState("all")
+  
   const { user } = useUser()
   const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
   const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
-  const canWriteRecruitment = user?.can?.("recruitment", "write")
-  const canApproveRecruitment = canWriteRecruitment && role === "HR_MANAGER"
-  const canRecommend = canWriteRecruitment && (role === "HR_OFFICER" || role === "HR_MANAGER")
-  const [pendingRequisitions, setPendingRequisitions] = useState([]);
-  const [selectedReq, setSelectedReq] = useState(null)
-  const [viewOpen, setViewOpen] = useState(false)
-  const [recommendation, setRecommendation] = useState("")
-  const [savingRecommendation, setSavingRecommendation] = useState(false)
+  const isHR = role === "HR_OFFICER" || role === "HR_MANAGER"
+  const isCEO = role === "CEO"
+  const canRecommend = isHR
+  const canApprove = true // user?.can?.("recruitment", "approve") || isCEO
 
-  const fetchPending = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const data = await apiClient.get("/requisitions/pending");
-      setPendingRequisitions(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error(error);
+      setLoading(true)
+      const res = await apiClient.get("/requisitions/pending")
+      setData(res || [])
+    } catch (err) {
+      toast.error("Failed to fetch pending requisitions")
+    } finally {
+      setLoading(false)
     }
-  };
+  }, [])
 
   useEffect(() => {
-    fetchPending();
-  }, []);
+    fetchData()
+  }, [fetchData])
 
-  const visiblePending = useMemo(() => {
-    if (!deptFilter) return pendingRequisitions
-    return pendingRequisitions.filter((r) => r.department === deptFilter)
-  }, [pendingRequisitions, deptFilter])
+  const filteredData = useMemo(() => {
+    return data.filter(req => {
+      const q = searchQuery.toLowerCase()
+      const reqIdMatch = req.reqId?.toLowerCase().includes(q) || `REQ-2026-${req._id.slice(-4).toLowerCase()}`.includes(q)
+      const matchesSearch = req.position?.toLowerCase().includes(q) || req.department?.toLowerCase().includes(q) || reqIdMatch
+      const matchesDept = filterDepartment === "all" || req.department === filterDepartment
+      const matchesPriority = filterPriority === "all" || req.priority === filterPriority
+      
+      let matchesDate = true
+      if (filterDate !== "all") {
+        const reqDate = new Date(req.createdAt)
+        const now = new Date()
+        const diffTime = Math.abs(now - reqDate)
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        if (filterDate === "today") matchesDate = diffDays <= 1
+        else if (filterDate === "week") matchesDate = diffDays <= 7
+        else if (filterDate === "month") matchesDate = diffDays <= 30
+      }
+      return matchesSearch && matchesDept && matchesPriority && matchesDate
+    })
+  }, [data, searchQuery, filterDepartment, filterPriority, filterDate])
 
-  const handleApprove = async (id) => {
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage)
+  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+  const handleAction = async (id, status) => {
+    if (!id || isActionLoading) return
+    setIsActionLoading(true)
     try {
-      await apiClient.put(`/requisitions/${id}/approve`);
-      toast.success("Requisition approved successfully");
-      fetchPending();
-      onChanged?.()
-    } catch {
-      toast.error("Approval failed");
+      await apiClient.put(`/requisitions/${id}/status`, { status, notes: "Status updated" })
+      toast.success(`Requisition ${status} successfully`)
+      await fetchData()
+      if (onChanged) onChanged()
+      setIsDetailsOpen(false)
+    } catch (err) {
+      toast.error(err.response?.data?.message || `Failed to ${status} requisition`)
+    } finally {
+      setIsActionLoading(false)
+      setActionStatus(null)
     }
-  };
-
-  const handleReject = async (id) => {
-    try {
-      await apiClient.put(`/requisitions/${id}/reject`);
-      toast.success("Requisition rejected successfully");
-      fetchPending();
-      onChanged?.()
-    } catch {
-      toast.error("Rejection failed");
-    }
-  };
+  }
 
   const submitRecommendation = async () => {
-    if (!selectedReq?._id) return
-    const text = recommendation.trim()
-    if (!text) return
-
+    if (!selectedReq || !recommendation.trim()) return
     setSavingRecommendation(true)
     try {
-      const updated = await apiClient.patch(`/requisitions/${selectedReq._id}/recommendations`, { text })
-      setSelectedReq(updated)
+      await apiClient.post(`/requisitions/${selectedReq._id}/recommend`, { recommendation })
+      toast.success("Recommendation added")
       setRecommendation("")
-      toast.success("Recommendation saved")
-      fetchPending()
-    } catch {
-      toast.error("Failed to save recommendation")
+      await fetchData()
+      const updatedReq = data.find((r) => r._id === selectedReq._id)
+      if (updatedReq) setSelectedReq({ ...updatedReq, recommendations: [...(updatedReq.recommendations || []), { text: recommendation, createdByRole: role, createdAt: new Date() }] })
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to add recommendation")
     } finally {
       setSavingRecommendation(false)
     }
   }
+  
+  const getBadgeColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case "approved": return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+      case "rejected": return "bg-red-500/10 text-red-600 dark:text-red-400"
+      case "published": return "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+      case "draft": return "bg-slate-500/10 text-slate-600 dark:text-slate-400"
+      default: return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
+    }
+  }
+  
+  const departments = [...new Set(data.map(req => req.department))].filter(Boolean)
+
+  if (loading) {
+    return (
+      <div className="flex flex-col space-y-4 pt-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="w-full h-[64px] bg-muted/20 animate-pulse rounded-lg" />
+        ))}
+      </div>
+    )
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          Pending Requisition Approvals ({visiblePending.length}
-          {deptFilter ? ` · ${deptFilter}` : ""})
-        </CardTitle>
-        <CardDescription>
-            {canWriteRecruitment
-              ? "Review and approve staff requisitions"
-              : "View mode only. Approvals are handled by authorized roles."}
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-          {visiblePending.length === 0 ? (
-        <RecruitmentEmptyState
-          title="No pending requisitions"
-          description="Approved requisitions and new staffing requests will appear here when they need review."
-        />
-        ) : (
-          visiblePending.map((req) => (
-            <div
-              key={req._id}
-              className="rounded-lg border border-white/10 bg-card/80 p-4 transition-all hover:-translate-y-0.5 hover:border-white/20 hover:shadow-lg">           
-            <div className="flex justify-between items-start">
-            <div className="space-y-1">
-            <h3 className="font-semibold text-lg">
-              {req.position}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {req.department} • {new Date(req.createdAt).toLocaleDateString()}
-            </p>
-            <div className="flex gap-2 mt-2">
-              <RecruitmentStatusBadge status={req.status} />
-              <span
-                className={`px-2 py-1 text-xs rounded-full border ${
-                  req.urgency === "High"
-                    ? "border-red-400/30 bg-red-500/10 text-red-300"
-                    : req.urgency === "Normal"
-                    ? "border-blue-400/30 bg-blue-500/10 text-blue-300"
-                    : "border-green-400/30 bg-green-500/10 text-green-300"
-                }`}
-              >
-                {req.urgency}
-              </span>
+    <Card className="border-border/50 shadow-sm rounded-xl overflow-hidden">
+      <CardHeader className="border-b border-border/50 bg-muted/10 pb-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Clock3 className="h-5 w-5 text-amber-500" />
+            Pending Requisitions
+            <span className="bg-amber-500/10 text-amber-600 text-xs py-0.5 px-2.5 rounded-full font-medium ml-2">
+              {filteredData.length} Action{filteredData.length !== 1 ? 's' : ''} Needed
+            </span>
+          </CardTitle>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-[250px]">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search requisitions..."
+                className="pl-9 bg-background w-full h-[40px]"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
-          </div>
-
-          <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setSelectedReq(req)
-                  setViewOpen(true)
-                }}
-                className="cursor-pointer"
-              >
-                View
-              </Button>
-            {canApproveRecruitment && (
-              <>
-                <Button
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700 text-white cursor-pointer"
-                  onClick={() => handleApprove(req._id)}
-                >
-                  Approve
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  className="cursor-pointer"
-                  onClick={() => handleReject(req._id)}
-                >
-                  Reject
-                </Button>
-              </>
-            )}
           </div>
         </div>
-      </div>
-    ))
-  )}
-</CardContent>
+        
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3 pt-4">
+          <Select value={filterDepartment} onValueChange={setFilterDepartment}>
+            <SelectTrigger className="w-[160px] h-[40px] bg-background">
+              <SelectValue placeholder="Department" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Departments</SelectItem>
+              {departments.map(dept => (
+                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Select value={filterPriority} onValueChange={setFilterPriority}>
+            <SelectTrigger className="w-[140px] h-[40px] bg-background">
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priorities</SelectItem>
+              <SelectItem value="High">High</SelectItem>
+              <SelectItem value="Medium">Medium</SelectItem>
+              <SelectItem value="Low">Low</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={filterDate} onValueChange={setFilterDate}>
+            <SelectTrigger className="w-[140px] h-[40px] bg-background">
+              <SelectValue placeholder="Date Filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Time</SelectItem>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="week">Past Week</SelectItem>
+              <SelectItem value="month">Past Month</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </CardHeader>
 
-      <Dialog
-        open={viewOpen}
-        onOpenChange={(open) => {
-          setViewOpen(open)
-          if (!open) setSelectedReq(null)
-        }}
-      >
-        <DialogContent className="sm:max-w-[650px]">
-          <DialogHeader>
-            <DialogTitle>Requisition Details</DialogTitle>
-            <DialogDescription>
-              Review staff requisition information.
-            </DialogDescription>
-          </DialogHeader>
+      <CardContent className="p-0">
+        <div className="hidden lg:block w-full">
+          <Table className="w-full table-fixed">
+            <TableHeader>
+              <TableRow className="bg-muted/30 hover:bg-muted/30 border-b border-border/50">
+                <TableHead className="w-[20%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Job Details</TableHead>
+                <TableHead className="w-[15%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Department</TableHead>
+                <TableHead className="w-[10%] px-6 h-[52px] align-middle text-center text-[14px] font-semibold text-foreground">Positions</TableHead>
+                <TableHead className="w-[15%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Requested By</TableHead>
+                <TableHead className="w-[10%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-center">Priority</TableHead>
+                <TableHead className="w-[12%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Request Date</TableHead>
+                <TableHead className="w-[10%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-center">Status</TableHead>
+                <TableHead className="w-[13%] px-6 h-[52px] align-middle text-center text-[14px] font-semibold text-foreground">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-64 text-center">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground space-y-4">
+                      <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center">
+                        <CheckCircle2 className="h-8 w-8 opacity-50" />
+                      </div>
+                      <p className="text-[14px] font-medium text-foreground">No Pending Approvals</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedData.map((req) => (
+                  <TableRow key={req._id} className="hover:bg-muted/20 transition-all duration-200 h-[64px] border-b border-border/50">
+                    <TableCell className="px-6 py-3 align-middle text-left">
+                      <div className="flex flex-col max-w-[200px]">
+                        <span className="text-[12px] font-semibold text-muted-foreground mb-0.5">
+                          {req.reqId || `REQ-2026-${req._id.slice(-4).toUpperCase()}`}
+                        </span>
+                        <span className="font-semibold text-[14px] text-foreground truncate" title={req.position}>
+                          {req.position}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-6 py-3 align-middle text-[13px] text-muted-foreground truncate max-w-[150px]" title={req.department}>
+                      {req.department}
+                    </TableCell>
 
-          {selectedReq ? (
-            <div className="space-y-3 text-sm">
-              <div>
-                <div className="text-xs text-muted-foreground">Position</div>
-                <div className="font-medium">{selectedReq.position}</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Department</div>
-                <div className="font-medium">{selectedReq.department}</div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <div className="text-xs text-muted-foreground">Urgency</div>
-                  <div className="font-medium">{selectedReq.urgency || "N/A"}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Status</div>
-                  <div className="font-medium">{selectedReq.status}</div>
-                </div>
-              </div>
-              {selectedReq.salaryRange && (
-                <div>
-                  <div className="text-xs text-muted-foreground">Salary Range</div>
-                  <div className="font-medium">{selectedReq.salaryRange}</div>
-                </div>
-              )}
-              {selectedReq.experience && (
-                <div>
-                  <div className="text-xs text-muted-foreground">Experience</div>
-                  <div className="font-medium">{selectedReq.experience}</div>
-                </div>
-              )}
-              {selectedReq.reason && (
-                <div>
-                  <div className="text-xs text-muted-foreground">Reason</div>
-                  <div className="font-medium whitespace-pre-wrap">{selectedReq.reason}</div>
-                </div>
-              )}
-              <div className="pt-2 text-xs text-muted-foreground">
-                Created:{" "}
-                {selectedReq.createdAt ? new Date(selectedReq.createdAt).toLocaleString() : "N/A"}
-              </div>
+                    <TableCell className="px-6 py-3 align-middle text-center text-[14px] font-medium text-foreground">
+                      {req.numberOfPositions || 1}
+                    </TableCell>
 
-              {Array.isArray(selectedReq.approvalHistory) && selectedReq.approvalHistory.length > 0 && (
-                <div className="pt-3 border-t space-y-2">
-                  <div className="text-sm font-medium">Approval history</div>
-                  <div className="space-y-2">
-                    {selectedReq.approvalHistory
-                      .slice()
-                      .reverse()
-                      .slice(0, 15)
-                      .map((h, idx) => (
-                        <div key={idx} className="rounded-md border p-2 text-xs">
-                          <span className="font-medium capitalize">{h.action}</span>
-                          {h.role ? ` · ${h.role}` : ""}
-                          {h.at ? ` · ${new Date(h.at).toLocaleString()}` : ""}
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
+                    {/* Merged Requested By */}
+                    <TableCell className="px-6 py-3 align-middle text-left">
+                      <div className="flex flex-col max-w-[150px]">
+                        <span className="font-medium text-[14px] text-foreground truncate" title={req.requestedBy?.firstName ? `${req.requestedBy.firstName} ${req.requestedBy.lastName}` : "System"}>
+                          {req.requestedBy?.firstName ? `${req.requestedBy.firstName} ${req.requestedBy.lastName}` : "System"}
+                        </span>
+                        <span className="text-[12px] text-muted-foreground truncate" title={req.requestedBy?.designation || "Hiring Manager"}>
+                          {req.requestedBy?.designation || "Hiring Manager"}
+                        </span>
+                      </div>
+                    </TableCell>
 
-              {Array.isArray(selectedReq.recommendations) && selectedReq.recommendations.length > 0 && (
-                <div className="pt-3 border-t space-y-2">
-                  <div className="text-sm font-medium">Recommendations</div>
-                  <div className="space-y-2">
-                    {selectedReq.recommendations
-                      .slice()
-                      .reverse()
-                      .slice(0, 10)
-                      .map((r, idx) => (
-                        <div key={idx} className="rounded-md border p-2">
-                          <div className="text-xs text-muted-foreground">
-                            {(r.createdByRole || "").toString()}{" "}
-                            {r.createdAt ? `· ${new Date(r.createdAt).toLocaleString()}` : ""}
-                          </div>
-                          <div className="text-sm whitespace-pre-wrap">{r.text}</div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
+                    <TableCell className="px-6 py-3 align-middle text-center">
+                        <PriorityDot priority={req.priority} />
+                      </TableCell>
 
-              {canRecommend && (
-                <div className="pt-3 border-t space-y-2">
-                  <div className="text-sm font-medium">Add recommendation</div>
-                  <Textarea
-                    rows={3}
-                    value={recommendation}
-                    onChange={(e) => setRecommendation(e.target.value)}
-                    placeholder="Write your operational recommendation"
-                  />
-                  <div className="flex justify-end">
-                    <Button
-                      size="sm"
-                      onClick={submitRecommendation}
-                      disabled={savingRecommendation || !recommendation.trim()}
-                    >
-                      {savingRecommendation ? "Saving..." : "Save"}
-                    </Button>
-                  </div>
-                </div>
+                    <TableCell className="px-6 py-3 align-middle text-[14px] font-medium text-foreground text-left whitespace-nowrap">
+                      {new Date(req.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </TableCell>
+
+                    <TableCell className="px-6 py-3 align-middle text-center">
+                      <span className={`inline-flex items-center justify-center px-2.5 py-1 text-[12px] rounded-full font-medium ${getBadgeColor(req.status)}`}>
+                        {req.status || "Pending"}
+                      </span>
+                    </TableCell>
+
+                    <TableCell className="px-6 py-3 align-middle text-center whitespace-nowrap">
+                      <div className="flex justify-center gap-2 items-center">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted" onClick={() => { setSelectedReq(req); setIsDetailsOpen(true); }}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {canApprove && (
+                          <>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-600" onClick={() => { setActionStatus('Approved'); setSelectedReq(req); setIsDetailsOpen(true); }}>
+                              <CheckCircle2 className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:bg-red-500/10 hover:text-red-600" onClick={() => { setActionStatus('Rejected'); setSelectedReq(req); setIsDetailsOpen(true); }}>
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Mobile View: Cards */}
+        <div className="block lg:hidden p-4 space-y-4">
+          {paginatedData.length === 0 ? (
+            <div className="py-12 text-center border rounded-2xl border-dashed border-border">
+              <CheckCircle2 className="h-12 w-12 mx-auto text-emerald-500/30 mb-3" />
+              <h3 className="text-[15px] font-medium">No pending requisitions</h3>
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground">No requisition selected.</div>
+            paginatedData.map(req => (
+              <div key={req._id} className="p-4 rounded-xl border border-border/50 bg-background space-y-4 shadow-sm">
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col">
+                    <span className="text-[12px] font-semibold text-muted-foreground mb-0.5">
+                      {req.reqId || `REQ-2026-${req._id.slice(-4).toUpperCase()}`}
+                    </span>
+                    <h4 className="font-semibold text-[15px] text-foreground">{req.position}</h4>
+                    <span className="text-[13px] text-muted-foreground">{req.department}</span>
+                  </div>
+                  <span className={`px-2.5 py-1 text-[12px] rounded-full font-medium ${getBadgeColor(req.status)}`}>
+                    {req.status || "Pending"}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-y-3 gap-x-4 pt-3 border-t border-border/50">
+                  <div>
+                    <span className="text-[12px] text-muted-foreground block mb-1">Positions</span>
+                    <span className="text-[14px] font-medium text-foreground">{req.numberOfPositions || 1}</span>
+                  </div>
+                  <div>
+                      <span className="text-[12px] text-muted-foreground block mb-1">Priority</span>
+                      <PriorityDot priority={req.priority} className="w-auto justify-start" />
+                    </div>
+                  <div className="col-span-2">
+                    <span className="text-[12px] text-muted-foreground block mb-1">Requested By</span>
+                    <span className="text-[14px] font-medium text-foreground">
+                      {req.requestedBy?.firstName ? `${req.requestedBy.firstName} ${req.requestedBy.lastName}` : "System"}
+                      <span className="text-muted-foreground font-normal ml-1">({req.requestedBy?.designation || "Hiring Manager"})</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-border/50">
+                  <Button variant="outline" size="sm" className="h-8 px-3 rounded-lg flex-1" onClick={() => { setSelectedReq(req); setIsDetailsOpen(true); }}>
+                    <Eye className="h-4 w-4 mr-2" /> View
+                  </Button>
+                  {canApprove && (
+                    <>
+                      <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-lg text-emerald-600 border-emerald-600/20 bg-emerald-500/5 hover:bg-emerald-500/10" onClick={() => { setActionStatus('Approved'); setSelectedReq(req); setIsDetailsOpen(true); }}>
+                        <CheckCircle2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-lg text-red-600 border-red-600/20 bg-red-500/5 hover:bg-red-500/10" onClick={() => { setActionStatus('Rejected'); setSelectedReq(req); setIsDetailsOpen(true); }}>
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))
           )}
-        </DialogContent>
-      </Dialog>
+        </div>
 
-    </Card>
-  );
-};
-
-const RequisitionHistory = () => {
-  const [history, setHistory] = useState([]);
-  const [selectedReq, setSelectedReq] = useState(null)
-  const [viewOpen, setViewOpen] = useState(false)
-  const { user } = useUser()
-  const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
-  const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
-  const canWriteRecruitment = user?.can?.("recruitment", "write")
-  const canRecommend = canWriteRecruitment && (role === "HR_OFFICER" || role === "HR_MANAGER")
-  const [recommendation, setRecommendation] = useState("")
-  const [savingRecommendation, setSavingRecommendation] = useState(false)
-
-  const fetchHistory = async () => {
-    try {
-      const data = await apiClient.get("/requisitions/history");
-      setHistory(Array.isArray(data) ? data : []);
-    } catch (e) {
-      console.error(e);
-      setHistory([]);
-    }
-  };
-
-  useEffect(() => {
-    fetchHistory();
-  }, []);
-
-  const submitRecommendation = async () => {
-    if (!selectedReq?._id) return
-    const text = recommendation.trim()
-    if (!text) return
-
-    setSavingRecommendation(true)
-    try {
-      const updated = await apiClient.patch(`/requisitions/${selectedReq._id}/recommendations`, { text })
-      setSelectedReq(updated)
-      setRecommendation("")
-      toast.success("Recommendation saved")
-      fetchHistory()
-    } catch {
-      toast.error("Failed to save recommendation")
-    } finally {
-      setSavingRecommendation(false)
-    }
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Requisition History</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {history.length === 0 ? (
-          <RecruitmentEmptyState
-            title="No requisition history"
-            description="Completed approvals and rejected requests will be listed here with decision context."
-          />
-        ) : history.map((req) => (
-          <div key={req._id} className="flex justify-between gap-3 rounded-lg border border-white/10 bg-card/70 p-3 transition-colors hover:bg-muted/20">
-            <div>
-              <p className="font-medium">{req.position}</p>
-              <p className="text-sm text-muted-foreground">
-                {req.department}
-              </p>
+        {/* Professional Pagination Footer */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-border/50 bg-background/50 rounded-b-xl">
+            <div className="text-[13px] text-muted-foreground font-medium hidden sm:block">
+              Showing {filteredData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} records
             </div>
-            <div className="flex items-center gap-3">
-              <RecruitmentStatusBadge status={req.status} />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setSelectedReq(req)
-                  setViewOpen(true)
-                }}
-                className="cursor-pointer"
-              >
-                View
+            <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+              <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3 rounded-lg text-[13px]" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}>
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }).map((_, i) => {
+                  const p = i + 1;
+                  if (p === 1 || p === totalPages || Math.abs(currentPage - p) <= 1) {
+                    return (
+                      <Button key={p} variant={currentPage === p ? "default" : "ghost"} className={`h-8 w-8 p-0 rounded-lg text-[13px] font-medium ${currentPage !== p ? "hover:bg-muted" : ""}`} onClick={() => setCurrentPage(p)}>
+                        {p}
+                      </Button>
+                    )
+                  }
+                  if (p === 2 || p === totalPages - 1) return <span key={p} className="px-1 text-muted-foreground text-xs">...</span>
+                  return null
+                })}
+              </div>
+              <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3 rounded-lg text-[13px]" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}>
+                Next
               </Button>
             </div>
           </div>
-        ))}
+        )}
       </CardContent>
 
-      <Dialog
-        open={viewOpen}
-        onOpenChange={(open) => {
-          setViewOpen(open)
-          if (!open) setSelectedReq(null)
-        }}
-      >
-        <DialogContent className="sm:max-w-[650px]">
-          <DialogHeader>
-            <DialogTitle>Requisition Details</DialogTitle>
-            <DialogDescription>
-              Review staff requisition information.
-            </DialogDescription>
-          </DialogHeader>
-
+      <Dialog open={isDetailsOpen} onOpenChange={(open) => { setIsDetailsOpen(open); if (!open) setActionStatus(null); }}>
+        <DialogContent className="sm:max-w-[600px] border-border/50 bg-background p-0 rounded-xl overflow-hidden">
           {selectedReq ? (
-            <div className="space-y-3 text-sm">
-              <div>
-                <div className="text-xs text-muted-foreground">Position</div>
-                <div className="font-medium">{selectedReq.position}</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Department</div>
-                <div className="font-medium">{selectedReq.department}</div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <div className="text-xs text-muted-foreground">Urgency</div>
-                  <div className="font-medium">{selectedReq.urgency || "N/A"}</div>
+            <>
+              <div className="p-6 border-b border-border/50 bg-muted/10 relative">
+                <div className="flex justify-between items-start pr-8">
+                  <div>
+                    <h3 className="text-lg font-bold text-foreground">{selectedReq.position}</h3>
+                    <p className="text-[14px] text-muted-foreground mt-1">
+                      {selectedReq.reqId || `REQ-2026-${selectedReq._id.slice(-4).toUpperCase()}`} • {selectedReq.department}
+                    </p>
+                  </div>
+                  <span className={`px-3 py-1 text-[13px] rounded-full font-medium whitespace-nowrap ${getBadgeColor(selectedReq.status)}`}>
+                    {selectedReq.status || "Pending"}
+                  </span>
                 </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Status</div>
-                  <div className="font-medium">{selectedReq.status}</div>
-                </div>
-              </div>
-              {selectedReq.salaryRange && (
-                <div>
-                  <div className="text-xs text-muted-foreground">Salary Range</div>
-                  <div className="font-medium">{selectedReq.salaryRange}</div>
-                </div>
-              )}
-              {selectedReq.experience && (
-                <div>
-                  <div className="text-xs text-muted-foreground">Experience</div>
-                  <div className="font-medium">{selectedReq.experience}</div>
-                </div>
-              )}
-              {selectedReq.reason && (
-                <div>
-                  <div className="text-xs text-muted-foreground">Reason</div>
-                  <div className="font-medium whitespace-pre-wrap">{selectedReq.reason}</div>
-                </div>
-              )}
-              <div className="pt-2 text-xs text-muted-foreground">
-                Created:{" "}
-                {selectedReq.createdAt ? new Date(selectedReq.createdAt).toLocaleString() : "N/A"}
               </div>
 
-              {Array.isArray(selectedReq.approvalHistory) && selectedReq.approvalHistory.length > 0 && (
-                <div className="pt-3 border-t space-y-2">
-                  <div className="text-sm font-medium">Approval history</div>
-                  <div className="space-y-2">
-                    {selectedReq.approvalHistory
-                      .slice()
-                      .reverse()
-                      .slice(0, 15)
-                      .map((h, idx) => (
-                        <div key={idx} className="rounded-md border p-2 text-xs">
-                          <span className="font-medium capitalize">{h.action}</span>
-                          {h.role ? ` · ${h.role}` : ""}
-                          {h.at ? ` · ${new Date(h.at).toLocaleString()}` : ""}
-                        </div>
-                      ))}
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-muted/5 p-3 rounded-lg border border-border/50">
+                    <span className="text-[12px] font-medium text-muted-foreground block mb-1">Positions</span>
+                    <span className="text-[15px] font-medium text-foreground">{selectedReq.numberOfPositions || 1}</span>
+                  </div>
+                  <div className="bg-muted/5 p-3 rounded-lg border border-border/50">
+                    <span className="text-[12px] font-medium text-muted-foreground block mb-1">Requested By</span>
+                    <span className="text-[15px] font-medium text-foreground">{selectedReq.requestedBy?.firstName ? `${selectedReq.requestedBy.firstName} ${selectedReq.requestedBy.lastName}` : "System"}</span>
+                  </div>
+                  <div className="bg-muted/5 p-3 rounded-lg border border-border/50">
+                      <span className="text-[12px] font-medium text-muted-foreground block mb-1">Priority</span>
+                      <PriorityDot priority={selectedReq.priority} className="w-auto justify-start" />
+                    </div>
+                  <div className="bg-muted/5 p-3 rounded-lg border border-border/50">
+                    <span className="text-[12px] font-medium text-muted-foreground block mb-1">Target Hire Date</span>
+                    <span className="text-[15px] font-medium text-foreground">{selectedReq.targetHireDate ? new Date(selectedReq.targetHireDate).toLocaleDateString() : 'N/A'}</span>
                   </div>
                 </div>
-              )}
 
-              {Array.isArray(selectedReq.recommendations) && selectedReq.recommendations.length > 0 && (
-                <div className="pt-3 border-t space-y-2">
-                  <div className="text-sm font-medium">Recommendations</div>
-                  <div className="space-y-2">
-                    {selectedReq.recommendations
-                      .slice()
-                      .reverse()
-                      .slice(0, 10)
-                      .map((r, idx) => (
-                        <div key={idx} className="rounded-md border p-2">
-                          <div className="text-xs text-muted-foreground">
-                            {(r.createdByRole || "").toString()}{" "}
-                            {r.createdAt ? `· ${new Date(r.createdAt).toLocaleString()}` : ""}
+                {actionStatus && canApprove && (
+                  <div className={`p-4 rounded-xl border ${actionStatus === 'Approved' ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
+                    <h4 className={`text-[14px] font-medium mb-2 ${actionStatus === 'Approved' ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`}>
+                      Confirm {actionStatus}
+                    </h4>
+                    <p className="text-[13px] text-muted-foreground mb-4">
+                      Are you sure you want to {actionStatus.toLowerCase()} this requisition? This action cannot be easily undone.
+                    </p>
+                    <div className="flex gap-3 justify-end">
+                      <Button variant="outline" size="sm" onClick={() => setActionStatus(null)}>Cancel</Button>
+                      <Button size="sm" className={actionStatus === 'Approved' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'} onClick={() => handleAction(selectedReq._id, actionStatus)} disabled={isActionLoading}>
+                        {isActionLoading ? "Processing..." : `Yes, ${actionStatus}`}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {Array.isArray(selectedReq.recommendations) && selectedReq.recommendations.length > 0 && (
+                  <div className="pt-4 border-t border-border/50 space-y-3">
+                    <div className="text-[14px] font-semibold">Recommendations</div>
+                    <div className="space-y-3 max-h-[150px] overflow-y-auto pr-2">
+                      {selectedReq.recommendations.slice().reverse().slice(0, 10).map((r, idx) => (
+                        <div key={idx} className="bg-muted/10 rounded-lg p-3 border border-border/50">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-[12px] font-medium text-foreground">{(r.createdByRole || "System").toString()}</span>
+                            <span className="text-[11px] text-muted-foreground">{r.createdAt ? new Date(r.createdAt).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : ""}</span>
                           </div>
-                          <div className="text-sm whitespace-pre-wrap">{r.text}</div>
+                          <div className="text-[13px] text-muted-foreground whitespace-pre-wrap">{r.text}</div>
                         </div>
                       ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {canRecommend && (
-                <div className="pt-3 border-t space-y-2">
-                  <div className="text-sm font-medium">Add recommendation</div>
-                  <Textarea
-                    rows={3}
-                    value={recommendation}
-                    onChange={(e) => setRecommendation(e.target.value)}
-                    placeholder="Write your operational recommendation"
-                  />
-                  <div className="flex justify-end">
-                    <Button
-                      size="sm"
-                      onClick={submitRecommendation}
-                      disabled={savingRecommendation || !recommendation.trim()}
-                    >
-                      {savingRecommendation ? "Saving..." : "Save"}
-                    </Button>
+                {canRecommend && !actionStatus && (
+                  <div className="pt-4 border-t border-border/50 space-y-3">
+                    <div className="text-[14px] font-semibold">Add Recommendation</div>
+                    <Textarea
+                      rows={2}
+                      className="resize-none text-[13px] bg-background"
+                      value={recommendation}
+                      onChange={(e) => setRecommendation(e.target.value)}
+                      placeholder="Write your operational recommendation..."
+                    />
+                    <div className="flex justify-end">
+                      <Button size="sm" onClick={submitRecommendation} disabled={savingRecommendation || !recommendation.trim()}>
+                        {savingRecommendation ? "Saving..." : "Save"}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </>
           ) : (
-            <div className="text-sm text-muted-foreground">No requisition selected.</div>
+            <div className="p-12 text-center text-[14px] text-muted-foreground">Loading details...</div>
           )}
         </DialogContent>
       </Dialog>
     </Card>
-  );
-};
+  )
+}
+
+const RequisitionHistory = ({ externalFilter }) => {
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedReq, setSelectedReq] = useState(null)
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false)
+  
+  // Pagination & Filters
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+  const [searchQuery, setSearchQuery] = useState("")
+  const [filterDepartment, setFilterDepartment] = useState("all")
+  const [filterStatus, setFilterStatus] = useState("all")
+  useEffect(() => { if (externalFilter && externalFilter !== "all" && externalFilter !== "Pending") setFilterStatus(externalFilter); else if (externalFilter === "all") setFilterStatus("all"); }, [externalFilter])
+  const [filterDate, setFilterDate] = useState("all")
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true)
+      const res = await apiClient.get("/requisitions/history")
+      setData(res || [])
+    } catch (err) {
+      toast.error("Failed to fetch requisition history")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const filteredData = useMemo(() => {
+    return data.filter(req => {
+      const q = searchQuery.toLowerCase()
+      const reqIdMatch = req.reqId?.toLowerCase().includes(q) || `REQ-2026-${req._id.slice(-4).toLowerCase()}`.includes(q)
+      const matchesSearch = req.position?.toLowerCase().includes(q) || req.department?.toLowerCase().includes(q) || reqIdMatch
+      const matchesDept = filterDepartment === "all" || req.department === filterDepartment
+      const matchesStatus = filterStatus === "all" || req.status === filterStatus
+      
+      let matchesDate = true
+      if (filterDate !== "all") {
+        const reqDate = new Date(req.createdAt)
+        const now = new Date()
+        const diffTime = Math.abs(now - reqDate)
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        if (filterDate === "today") matchesDate = diffDays <= 1
+        else if (filterDate === "week") matchesDate = diffDays <= 7
+        else if (filterDate === "month") matchesDate = diffDays <= 30
+      }
+      return matchesSearch && matchesDept && matchesStatus && matchesDate
+    })
+  }, [data, searchQuery, filterDepartment, filterStatus, filterDate])
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage)
+  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+  const getBadgeColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case "approved": return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+      case "rejected": return "bg-red-500/10 text-red-600 dark:text-red-400"
+      case "published": return "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+      case "draft": return "bg-slate-500/10 text-slate-600 dark:text-slate-400"
+      default: return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
+    }
+  }
+
+  const departments = [...new Set(data.map(req => req.department))].filter(Boolean)
+
+  if (loading) {
+    return (
+      <div className="flex flex-col space-y-4 pt-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="w-full h-[64px] bg-muted/20 animate-pulse rounded-lg" />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <Card className="border-border/50 shadow-sm rounded-xl overflow-hidden">
+      <CardHeader className="border-b border-border/50 bg-muted/10 pb-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+            Requisition History
+            <span className="bg-emerald-500/10 text-emerald-600 text-xs py-0.5 px-2.5 rounded-full font-medium ml-2">
+              {filteredData.length} Total
+            </span>
+          </CardTitle>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-[250px]">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search history..."
+                className="pl-9 bg-background w-full h-[40px]"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3 pt-4">
+          <Select value={filterDepartment} onValueChange={setFilterDepartment}>
+            <SelectTrigger className="w-[160px] h-[40px] bg-background">
+              <SelectValue placeholder="Department" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Departments</SelectItem>
+              {departments.map(dept => (
+                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[140px] h-[40px] bg-background">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="Approved">Approved</SelectItem>
+              <SelectItem value="Rejected">Rejected</SelectItem>
+              <SelectItem value="Published">Published</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={filterDate} onValueChange={setFilterDate}>
+            <SelectTrigger className="w-[140px] h-[40px] bg-background">
+              <SelectValue placeholder="Date Filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Time</SelectItem>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="week">Past Week</SelectItem>
+              <SelectItem value="month">Past Month</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-0">
+        <div className="hidden lg:block w-full">
+          <Table className="w-full table-fixed">
+            <TableHeader>
+              <TableRow className="bg-muted/30 hover:bg-muted/30 border-b border-border/50">
+                <TableHead className="w-[20%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Job Details</TableHead>
+                <TableHead className="w-[15%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Department</TableHead>
+                <TableHead className="w-[12%] px-6 h-[52px] align-middle text-center text-[14px] font-semibold text-foreground">Positions</TableHead>
+                <TableHead className="w-[18%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Requested By</TableHead>
+                <TableHead className="w-[15%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Request Date</TableHead>
+                <TableHead className="w-[13%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-center">Status</TableHead>
+                <TableHead className="w-[12%] px-6 h-[52px] align-middle text-center text-[14px] font-semibold text-foreground">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-64 text-center">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground space-y-4">
+                      <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center">
+                        <Search className="h-8 w-8 opacity-50 text-muted-foreground" />
+                      </div>
+                      <p className="text-[14px] font-medium text-foreground">No Requisition History Found</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedData.map((req) => (
+                  <TableRow key={req._id} className="hover:bg-muted/20 transition-all duration-200 h-[64px] border-b border-border/50 cursor-default">
+                    {/* Merged Job Details */}
+                    <TableCell className="px-6 py-3 align-middle text-left">
+                      <div className="flex flex-col max-w-[300px]">
+                        <span className="text-[12px] font-semibold text-muted-foreground mb-0.5">
+                          {req.reqId || `REQ-2026-${req._id.slice(-4).toUpperCase()}`}
+                        </span>
+                        <span className="font-semibold text-[14px] text-foreground truncate" title={req.position}>
+                          {req.position}
+                        </span>
+</div>
+                    </TableCell>
+                      <TableCell className="px-6 py-3 align-middle text-[13px] text-muted-foreground truncate max-w-[150px]" title={req.department}>
+                        {req.department}
+                      </TableCell>
+
+                    <TableCell className="px-6 py-3 align-middle text-center text-[14px] font-medium text-foreground">
+                      {req.numberOfPositions || 1}
+                    </TableCell>
+
+                    {/* Merged Requested By */}
+                    <TableCell className="px-6 py-3 align-middle text-left">
+                      <div className="flex flex-col max-w-[180px]">
+                        <span className="font-medium text-[14px] text-foreground truncate" title={req.requestedBy?.firstName ? `${req.requestedBy.firstName} ${req.requestedBy.lastName}` : "System"}>
+                          {req.requestedBy?.firstName ? `${req.requestedBy.firstName} ${req.requestedBy.lastName}` : "System"}
+                        </span>
+                        <span className="text-[12px] text-muted-foreground truncate" title={req.requestedBy?.designation || "Hiring Manager"}>
+                          {req.requestedBy?.designation || "Hiring Manager"}
+                        </span>
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="px-6 py-3 align-middle text-[14px] font-medium text-foreground text-left whitespace-nowrap">
+                      {new Date(req.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </TableCell>
+
+                    <TableCell className="px-6 py-3 align-middle text-center">
+                      <span className={`inline-flex items-center justify-center px-2.5 py-1 text-[12px] rounded-full font-medium ${getBadgeColor(req.status)}`}>
+                        {req.status || "History"}
+                      </span>
+                    </TableCell>
+
+                    <TableCell className="px-6 py-3 align-middle text-center whitespace-nowrap">
+                      <div className="flex justify-center items-center w-full">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:bg-muted"
+                          onClick={() => { setSelectedReq(req); setIsDetailsOpen(true); }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Mobile View: Cards */}
+        <div className="block lg:hidden p-4 space-y-4">
+          {paginatedData.length === 0 ? (
+            <div className="py-12 text-center border rounded-2xl border-dashed border-border">
+              <Search className="h-12 w-12 mx-auto text-emerald-500/30 mb-3" />
+              <h3 className="text-[15px] font-medium">No history found</h3>
+            </div>
+          ) : (
+            paginatedData.map(req => (
+              <div key={req._id} className="p-4 rounded-xl border border-border/50 bg-background space-y-4 shadow-sm">
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col">
+                    <span className="text-[12px] font-semibold text-muted-foreground mb-0.5">
+                      {req.reqId || `REQ-2026-${req._id.slice(-4).toUpperCase()}`}
+                    </span>
+                    <h4 className="font-semibold text-[15px] text-foreground">{req.position}</h4>
+                    <span className="text-[13px] text-muted-foreground">{req.department}</span>
+                  </div>
+                  <span className={`px-2.5 py-1 text-[12px] rounded-full font-medium ${getBadgeColor(req.status)}`}>
+                    {req.status || "History"}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-y-3 gap-x-4 pt-3 border-t border-border/50">
+                  <div>
+                    <span className="text-[12px] text-muted-foreground block mb-1">Positions</span>
+                    <span className="text-[14px] font-medium text-foreground">{req.numberOfPositions || 1}</span>
+                  </div>
+                  <div>
+                    <span className="text-[12px] text-muted-foreground block mb-1">Date</span>
+                    <span className="text-[14px] font-medium text-foreground">
+                      {new Date(req.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-[12px] text-muted-foreground block mb-1">Requested By</span>
+                    <span className="text-[14px] font-medium text-foreground">
+                      {req.requestedBy?.firstName ? `${req.requestedBy.firstName} ${req.requestedBy.lastName}` : "System"}
+                      <span className="text-muted-foreground font-normal ml-1">({req.requestedBy?.designation || "Hiring Manager"})</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-border/50 flex">
+                  <Button variant="outline" size="sm" className="h-8 px-3 rounded-lg flex-1" onClick={() => { setSelectedReq(req); setIsDetailsOpen(true); }}>
+                    <Eye className="h-4 w-4 mr-2" /> View Details
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Professional Pagination Footer */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-border/50 bg-background/50 rounded-b-xl">
+            <div className="text-[13px] text-muted-foreground font-medium hidden sm:block">
+              Showing {filteredData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} records
+            </div>
+            <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+              <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3 rounded-lg text-[13px]" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}>
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }).map((_, i) => {
+                  const p = i + 1;
+                  if (p === 1 || p === totalPages || Math.abs(currentPage - p) <= 1) {
+                    return (
+                      <Button key={p} variant={currentPage === p ? "default" : "ghost"} className={`h-8 w-8 p-0 rounded-lg text-[13px] font-medium ${currentPage !== p ? "hover:bg-muted" : ""}`} onClick={() => setCurrentPage(p)}>
+                        {p}
+                      </Button>
+                    )
+                  }
+                  if (p === 2 || p === totalPages - 1) return <span key={p} className="px-1 text-muted-foreground text-xs">...</span>
+                  return null
+                })}
+              </div>
+              <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3 rounded-lg text-[13px]" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}>
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="sm:max-w-[600px] border-border/50 bg-background p-0 rounded-xl overflow-hidden">
+          {selectedReq ? (
+            <>
+              <div className="p-6 border-b border-border/50 bg-muted/10 relative">
+                <div className="flex justify-between items-start pr-8">
+                  <div>
+                    <h3 className="text-lg font-bold text-foreground">{selectedReq.position}</h3>
+                    <p className="text-[14px] text-muted-foreground mt-1">
+                      {selectedReq.reqId || `REQ-2026-${selectedReq._id.slice(-4).toUpperCase()}`} • {selectedReq.department}
+                    </p>
+                  </div>
+                  <span className={`px-3 py-1 text-[13px] rounded-full font-medium whitespace-nowrap ${getBadgeColor(selectedReq.status)}`}>
+                    {selectedReq.status || "History"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-muted/5 p-3 rounded-lg border border-border/50">
+                    <span className="text-[12px] font-medium text-muted-foreground block mb-1">Positions</span>
+                    <span className="text-[15px] font-medium text-foreground">{selectedReq.numberOfPositions || 1}</span>
+                  </div>
+                  <div className="bg-muted/5 p-3 rounded-lg border border-border/50">
+                    <span className="text-[12px] font-medium text-muted-foreground block mb-1">Requested By</span>
+                    <span className="text-[15px] font-medium text-foreground">{selectedReq.requestedBy?.firstName ? `${selectedReq.requestedBy.firstName} ${selectedReq.requestedBy.lastName}` : "System"}</span>
+                  </div>
+                  <div className="bg-muted/5 p-3 rounded-lg border border-border/50">
+                    <span className="text-[12px] font-medium text-muted-foreground block mb-1">Date Created</span>
+                    <span className="text-[15px] font-medium text-foreground">{new Date(selectedReq.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <div className="bg-muted/5 p-3 rounded-lg border border-border/50">
+                    <span className="text-[12px] font-medium text-muted-foreground block mb-1">Target Hire Date</span>
+                    <span className="text-[15px] font-medium text-foreground">{selectedReq.targetHireDate ? new Date(selectedReq.targetHireDate).toLocaleDateString() : 'N/A'}</span>
+                  </div>
+                </div>
+
+                {Array.isArray(selectedReq.recommendations) && selectedReq.recommendations.length > 0 && (
+                  <div className="pt-4 border-t border-border/50 space-y-3">
+                    <div className="text-[14px] font-semibold">Recommendations & Notes</div>
+                    <div className="space-y-3 max-h-[150px] overflow-y-auto pr-2">
+                      {selectedReq.recommendations.slice().reverse().slice(0, 10).map((r, idx) => (
+                        <div key={idx} className="bg-muted/10 rounded-lg p-3 border border-border/50">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-[12px] font-medium text-foreground">{(r.createdByRole || "System").toString()}</span>
+                            <span className="text-[11px] text-muted-foreground">{r.createdAt ? new Date(r.createdAt).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : ""}</span>
+                          </div>
+                          <div className="text-[13px] text-muted-foreground whitespace-pre-wrap">{r.text}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="p-12 text-center text-[14px] text-muted-foreground">Loading details...</div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </Card>
+  )
+}
+
 
 export default StaffRequisition

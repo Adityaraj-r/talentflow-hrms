@@ -16,6 +16,7 @@ import {
   YAxis,
 } from "recharts"
 import {
+  AlertTriangle,
   Archive,
   BadgeCheck,
   Banknote,
@@ -37,6 +38,7 @@ import {
   NotebookPen,
   PenLine,
   RefreshCcw,
+  RefreshCw,
   Search,
   Send,
   ShieldCheck,
@@ -82,6 +84,7 @@ export const canonicalOfferStatus = (status = "") => {
   if (value === "declined" || value === "rejected") return "Declined"
   if (value === "changes requested" || value === "change requested") return "Changes Requested"
   if (value === "expired") return "Expired"
+  if (value === "joined") return "Joined"
   if (value === "draft") return "Draft"
   if (value === "under review") return "Under Review"
   return status || "Draft"
@@ -97,14 +100,28 @@ export const enrichOffer = (offer) => {
   const joiningBonus = Number(backendComp.joiningBonus ?? 0)
   const deductions = Number(backendComp.deductions ?? 0)
   const expiryDate = offer?.expiryDate ? new Date(offer.expiryDate) : null
+  const status = canonicalOfferStatus(offer?.status)
+
+  let stage = offer?.approvalStage
+  if (status === "Joined" || status === "Accepted") {
+    stage = "Completed"
+  } else if (status === "Declined" || status === "Expired") {
+    stage = "Closed"
+  } else if (!stage || stage === "Draft") {
+    stage = ["Pending CEO Approval", "Pending HR Manager Approval"].includes(status)
+      ? "HR Manager Approval"
+      : status === "Offered"
+      ? "Sent"
+      : "Draft"
+  }
 
   return {
     ...offer,
-    status: canonicalOfferStatus(offer?.status),
+    status,
     position: offer?.position || "Unassigned role",
     department: offer?.department || "Unassigned",
     recruiter: offer?.recruiterName || offer?.recruiter || offer?.createdBy?.firstName || "Unassigned",
-    approvalStage: offer?.approvalStage || (["Pending CEO Approval", "Pending HR Manager Approval"].includes(offer?.status) ? "HR Manager Approval" : offer?.status === "Offered" ? "Released" : "Completed"),
+    approvalStage: stage,
     lastUpdated: offer?.updatedAt || offer?.createdAt || new Date().toISOString(),
     expiryDate: expiryDate?.toISOString?.() || "",
     responseTimeDays: calculateResponseDays(offer),
@@ -139,7 +156,7 @@ export function OfferStatusBadge({ status, className }) {
     style = "border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300"
   } else if (canonical === "Offered" || canonical === "Sent" || canonical === "Viewed" || canonical === "Released") {
     style = "border-cyan-200 dark:border-cyan-500/20 bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300"
-  } else if (canonical === "Accepted" || canonical === "Approved") {
+  } else if (canonical === "Accepted" || canonical === "Approved" || canonical === "Joined") {
     style = "border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
   } else if (canonical === "Declined" || canonical === "Rejected") {
     style = "border-rose-200 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300"
@@ -149,7 +166,7 @@ export function OfferStatusBadge({ status, className }) {
     style = "border-violet-200 dark:border-violet-500/20 bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300"
   }
 
-  const Icon = canonical === "Accepted" || canonical === "Approved" ? CheckCircle2 : canonical === "Declined" || canonical === "Rejected" ? XCircle : canonical === "Expired" ? Clock3 : canonical === "Offered" || canonical === "Sent" || canonical === "Released" ? Send : Clock3
+  const Icon = canonical === "Accepted" || canonical === "Approved" || canonical === "Joined" ? CheckCircle2 : canonical === "Declined" || canonical === "Rejected" ? XCircle : canonical === "Expired" ? Clock3 : canonical === "Offered" || canonical === "Sent" || canonical === "Released" ? Send : Clock3
 
   return (
     <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors duration-150 h-5", style, className)}>
@@ -191,6 +208,7 @@ export function OfferDashboardAnalytics({ offers }) {
 export function OfferWorkflowTracker({ offer }) {
   const status = canonicalOfferStatus(offer?.status)
   const activeIndex =
+    status === "Joined" ? 6 :
     status === "Pending CEO Approval" || status === "Pending HR Manager Approval" ? 3 :
     status === "Offered" ? 4 :
     status === "Accepted" || status === "Declined" ? 5 :
@@ -208,8 +226,9 @@ export function OfferWorkflowTracker({ offer }) {
       <div className="custom-scrollbar overflow-x-auto pb-2">
         <div className="flex min-w-[860px] items-center">
           {OFFER_WORKFLOW_STEPS.map((step, index) => {
-            const complete = index < activeIndex || status === "Accepted"
-            const active = index === activeIndex
+            const isJoined = status === "Joined"
+            const complete = index < activeIndex || status === "Accepted" || isJoined
+            const active = index === activeIndex && !isJoined
             const Icon = step.icon
             return (
               <div key={step.id} className="flex flex-1 items-center">
@@ -328,7 +347,7 @@ export function OfferStatusTracker({ offer }) {
   const statuses = ["Draft", "Under Review", "Approved", "Sent", "Viewed", "Accepted", "Rejected", "Expired"]
   const current =
     offer.status === "Pending CEO Approval" || offer.status === "Pending HR Manager Approval" ? "Under Review" :
-    offer.status === "Offered" ? "Sent" :
+    offer.status === "Offered" ? (offer.emailStatus === "Sent" ? "Sent" : "Approved") :
     offer.status === "Accepted" ? "Accepted" :
     offer.status === "Declined" ? "Rejected" :
     offer.status
@@ -775,13 +794,49 @@ export function OfferDetailsDrawer({ offer, open, onClose, onAction, isCeo, canW
               <div className="flex min-w-0 items-center gap-3">
                 <CandidateAvatar name={offer.candidateName} />
                 <div className="min-w-0">
-                  <h2 className="truncate text-lg font-semibold">{offer.candidateName}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="truncate text-lg font-semibold">{offer.candidateName}</h2>
+                    {offer.emailStatus && (
+                      <span className={cn(
+                        "rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+                        offer.emailStatus === 'Sent' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" :
+                        offer.emailStatus === 'Sending' ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
+                        offer.emailStatus === 'Failed' ? "bg-rose-500/10 border-rose-500/20 text-rose-500" :
+                        "bg-slate-500/10 border-slate-500/20 text-slate-500"
+                      )}>
+                        {offer.emailStatus === 'Sent' ? '✓ Sent' : offer.emailStatus}
+                      </span>
+                    )}
+                  </div>
                   <p className="truncate text-sm text-muted-foreground">{offer.position} · {offer.department}</p>
                 </div>
               </div>
               <Button size="icon" variant="ghost" onClick={onClose} aria-label="Close offer drawer"><X className="h-4 w-4" /></Button>
             </div>
             <div className="custom-scrollbar flex-1 space-y-5 overflow-y-auto p-5">
+              {offer.emailStatus === 'Failed' && (
+                <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-4 space-y-3">
+                  <div className="flex items-start gap-2.5 text-rose-600 dark:text-rose-400 font-semibold text-sm">
+                    <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p>Offer Email Delivery Failed</p>
+                      <p className="text-xs text-rose-500/70 font-mono font-normal normal-case leading-relaxed">
+                        Reason: {offer.emailFailureReason || "Unknown SMTP Error"}
+                      </p>
+                    </div>
+                  </div>
+                  {canWrite && (
+                    <Button 
+                      size="sm"
+                      onClick={() => onAction("send", offer)} 
+                      className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs"
+                    >
+                      <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                      Retry Send Email
+                    </Button>
+                  )}
+                </div>
+              )}
               <DrawerSection title="Candidate Summary" icon={UserRound}>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
@@ -837,6 +892,27 @@ export function OfferDetailsDrawer({ offer, open, onClose, onAction, isCeo, canW
 
               <DrawerSection title="Offer Status Tracker" icon={MailCheck}>
                 <OfferStatusTracker offer={offer} />
+                {offer.emailStatus && (
+                  <div className="mt-4 border-t border-dashed border-slate-200 dark:border-white/10 pt-3">
+                    <span className="text-xs text-muted-foreground block mb-1">Email Delivery Status</span>
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                        offer.emailStatus === 'Sent' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" :
+                        offer.emailStatus === 'Sending' ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
+                        offer.emailStatus === 'Failed' ? "bg-rose-500/10 border-rose-500/20 text-rose-500" :
+                        "bg-slate-500/10 border-slate-500/20 text-slate-500"
+                      )}>
+                        {offer.emailStatus === 'Sent' ? '✓ Sent' : offer.emailStatus}
+                      </span>
+                      {offer.emailSentAt && (
+                        <span className="text-xs text-muted-foreground">
+                          at {new Date(offer.emailSentAt).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </DrawerSection>
 
               <DrawerSection title="Notes & Comments" icon={NotebookPen}>
@@ -861,7 +937,21 @@ export function OfferDetailsDrawer({ offer, open, onClose, onAction, isCeo, canW
                   <Button variant="destructive" onClick={() => onAction("declined", offer)}>Decline</Button>
                 </>
               )}
-              {canApproveOffers && offer.status === "Offered" && <Button variant="outline" onClick={() => onAction("send", offer)}>Send Offer</Button>}
+              {canApproveOffers && offer.status === "Offered" && (
+                <Button variant="outline" onClick={() => onAction("send", offer)}>
+                  {offer.emailStatus === 'Failed' ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Retry Send Email
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      Send Offer
+                    </>
+                  )}
+                </Button>
+              )}
               {canWrite && offer.status === "Accepted" && (
                 <Button
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-md shadow-emerald-500/10 transition-all hover:scale-[1.02]"
@@ -924,7 +1014,17 @@ const getActiveTemplate = (offer) => {
 };
 
 export function OfferLetterPreview({ offer, open, onClose, onDownload }) {
-  const activeTemplate = getActiveTemplate(offer);
+  const activeTemplate = offer ? getActiveTemplate(offer) : "standard";
+
+  const hrRepName = offer?.createdBy && typeof offer.createdBy === 'object'
+    ? `${offer.createdBy.firstName} ${offer.createdBy.lastName || ''}`.trim()
+    : (offer?.recruiter || "HR Team");
+  const hrRepEmail = offer?.createdBy && typeof offer.createdBy === 'object'
+    ? offer.createdBy.email
+    : "hr@internsland.com";
+  const hrRepPhone = offer?.createdBy && typeof offer.createdBy === 'object'
+    ? offer.createdBy.phoneNumber
+    : "";
 
   return (
     <AnimatePresence>
@@ -1013,6 +1113,52 @@ export function OfferLetterPreview({ offer, open, onClose, onDownload }) {
                   <div className="h-24 rounded-lg border border-dashed border-slate-300 dark:border-white/15 bg-slate-50/40 dark:bg-muted/5 p-3 text-xs text-muted-foreground">Company Signature</div>
                   <div className="h-24 rounded-lg border border-dashed border-slate-300 dark:border-white/15 bg-slate-50/40 dark:bg-muted/5 p-3 text-xs text-muted-foreground">Candidate Digital Signature</div>
                 </div>
+
+                <div className="mt-8 border-t border-slate-200 dark:border-white/10 pt-6 space-y-4 text-left">
+                  <h3 className="text-base font-semibold text-teal-600 dark:text-teal-400">Next Steps</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Congratulations once again on receiving your offer from <strong>InternsLand</strong>.
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Please review the enclosed Offer Letter carefully. If you have any questions regarding your compensation, joining date, employment terms, benefits, or any other aspect of the offer, our HR team will be happy to assist you.
+                  </p>
+
+                  <div className="rounded-lg bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 p-4 space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">Responding to Your Offer</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Please communicate your decision on or before the offer expiry date using any of the following methods:
+                    </p>
+                    <ul className="list-disc pl-4 text-xs text-muted-foreground space-y-2">
+                      <li>
+                        <strong>Accept the Offer:</strong> Reply to the offer email or contact your HR representative to confirm your acceptance.
+                      </li>
+                      <li>
+                        <strong>Discuss or Clarify the Offer:</strong> If you would like to discuss any terms or require additional information, please contact your HR representative before the offer expires.
+                      </li>
+                      <li>
+                        <strong>Decline the Offer:</strong> If you decide not to proceed, kindly inform the HR team by replying to the offer email.
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-left">
+                    <div className="rounded-lg bg-slate-50/50 dark:bg-white/[0.01] border border-slate-200 dark:border-white/5 p-3 text-xs space-y-1">
+                      <p className="font-bold text-slate-700 dark:text-slate-300">HR Contact Details</p>
+                      <p className="text-muted-foreground">Representative: {hrRepName}</p>
+                      <p className="text-muted-foreground">Email: {hrRepEmail}</p>
+                      {hrRepPhone && <p className="text-muted-foreground">Phone: {hrRepPhone}</p>}
+                    </div>
+                    <div className="rounded-lg bg-slate-50/50 dark:bg-white/[0.01] border border-slate-200 dark:border-white/5 p-3 text-xs space-y-1">
+                      <p className="font-bold text-slate-700 dark:text-slate-300">Offer Expiry</p>
+                      <p className="text-muted-foreground">Valid Until: {offer.expiryDate ? new Date(offer.expiryDate).toLocaleDateString() : "N/A"}</p>
+                      <p className="text-[10px] text-rose-500/80 leading-normal">If no response is received by the expiry date, this offer may be considered withdrawn.</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground italic text-center pt-2">
+                    Thank you for considering this opportunity. We look forward to your response and hope to welcome you to the team.
+                  </p>
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 border-t border-slate-200 dark:border-white/10 p-4">
@@ -1036,7 +1182,7 @@ export function OfferActionConfirm({ action, offer, open, onClose, onConfirm }) 
     archive: ["Archive Offer", "This archives the offer from active work queues in the UI."],
     accepted: ["Mark Accepted", "This updates the offer status to Accepted."],
     declined: ["Mark Declined", "This updates the offer status to Declined."],
-    download: ["Download Offer", "This opens the browser print/download flow."],
+    download: ["Download Offer", "This generates and downloads the official Offer Letter PDF."],
     export: ["Export View", "This exports the currently filtered offer view."],
   }
   const [title, description] = labels[action] || ["Confirm Action", "Confirm this offer action."]

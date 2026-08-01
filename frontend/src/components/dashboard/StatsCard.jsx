@@ -1,27 +1,32 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { StatsCard as GlobalStatsCard } from "@/components/ui/stats-card";
 
-const StatsCard = ({ title, value, description, icon, isLoading }) => {
+const StatsCard = ({ title, value, description, icon, isLoading, variant, trend, isActive, onClick }) => {
+  if (isLoading) {
+    return (
+      <div className="bg-card rounded-xl p-6 border shadow-sm h-[140px] flex flex-col justify-between animate-pulse">
+        <div className="flex justify-between items-start">
+          <div className="h-4 w-1/2 bg-muted rounded"></div>
+          <div className="h-10 w-10 bg-muted rounded-full"></div>
+        </div>
+        <div>
+          <div className="h-8 w-1/3 bg-muted rounded mt-2"></div>
+          <div className="h-3 w-2/3 bg-muted rounded mt-2"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        {icon}
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-24" />
-            <Skeleton className="h-4 w-32" />
-          </div>
-        ) : (
-          <>
-            <div className="text-2xl font-bold">{value}</div>
-            <p className="text-xs text-muted-foreground">{description}</p>
-          </>
-        )}
-      </CardContent>
-    </Card>
+    <GlobalStatsCard
+      title={title}
+      value={value}
+      subtitle={description}
+      icon={icon}
+      variant={variant || "blue"}
+      trend={trend}
+      isActive={isActive}
+      onClick={onClick}
+    />
   );
 };
 

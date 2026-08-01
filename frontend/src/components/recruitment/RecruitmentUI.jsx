@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { StatsCard } from "@/components/ui/stats-card"
 
 const statusConfig = {
   pending: { icon: Clock3, className: "border-amber-400/30 bg-amber-500/10 text-amber-300 shadow-amber-500/10" },
@@ -30,6 +31,8 @@ const statusConfig = {
   declined: { icon: XCircle, className: "border-rose-400/30 bg-rose-500/10 text-rose-300 shadow-rose-500/10" },
   closed: { icon: Minus, className: "border-zinc-400/30 bg-zinc-500/10 text-zinc-300 shadow-zinc-500/10" },
   applied: { icon: FileText, className: "border-blue-400/30 bg-blue-500/10 text-blue-300 shadow-blue-500/10" },
+  completed: { icon: CheckCircle2, className: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10" },
+  joined: { icon: CheckCircle2, className: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10" },
 }
 
 const normalizeStatus = (status = "") =>
@@ -80,76 +83,35 @@ export function RecruitmentKpiCard({
   trend = 0,
   trendLabel = "this month",
   helper,
-  updated = "Updated just now",
+  updated,
   accent = "sky",
   onClick,
   active,
   chartData,
+  className,
 }) {
-  const positive = Number(trend) >= 0
-  const TrendIcon = positive ? ArrowUpRight : ArrowDownRight
-  const accentClass = {
-    sky: "from-sky-500/20 text-sky-300 ring-sky-400/20",
-    emerald: "from-emerald-500/20 text-emerald-300 ring-emerald-400/20",
-    amber: "from-amber-500/20 text-amber-300 ring-amber-400/20",
-    rose: "from-rose-500/20 text-rose-300 ring-rose-400/20",
-    violet: "from-violet-500/20 text-violet-300 ring-violet-400/20",
-    cyan: "from-cyan-500/20 text-cyan-600 dark:text-cyan-300 ring-cyan-400/20",
-    slate: "from-slate-500/20 text-slate-700 dark:text-slate-300 ring-slate-400/20",
-  }[accent] || "from-sky-500/20 text-sky-300 ring-sky-400/20"
-
-  const maxVal = Math.max(...(chartData || []), 1)
-  const normalizedData = chartData 
-    ? chartData.map(val => Math.max((val / maxVal) * 100, 5)) // Min 5% height so 0 values are visible
-    : [35, 55, 42, 70, 48, 82, 64] // Fallback
-
+  const variantMap = {
+    sky: 'blue',
+    emerald: 'emerald',
+    amber: 'amber',
+    rose: 'rose',
+    violet: 'blue',
+    cyan: 'blue',
+    slate: 'blue'
+  }
+  
   return (
-    <Motion.motion.button
-      type="button"
-      onClick={onClick}
-      disabled={!onClick}
-      whileHover={{ y: -3 }}
-      transition={{ duration: 0.18 }}
-      className={cn(
-        "group relative min-h-[138px] min-w-0 overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 bg-card/80 p-4 text-left shadow-sm transition-all",
-        "hover:border-white/20 hover:bg-card hover:shadow-lg hover:shadow-black/10",
-        active && "border-primary/40 ring-1 ring-primary/30",
-        !onClick && "cursor-default"
-      )}
-    >
-      <div className={cn("absolute inset-x-0 top-0 h-1 bg-gradient-to-r to-transparent", accentClass.split(" ")[0])} />
-      <div className="flex min-w-0 items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="break-words text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</p>
-          <div className="mt-2 break-words text-2xl font-semibold leading-tight text-foreground sm:text-3xl">{value}</div>
-        </div>
-        {Icon && (
-          <div className={cn("shrink-0 rounded-md bg-muted/40 p-2 ring-1", accentClass)}>
-            {React.createElement(Icon, { className: "h-5 w-5" })}
-          </div>
-        )}
-      </div>
-      <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-        <span className={cn("inline-flex items-center gap-1 font-semibold", positive ? "text-emerald-300" : "text-rose-300")}>
-          <TrendIcon className="h-3.5 w-3.5" />
-          {Math.abs(Number(trend))}%
-        </span>
-        <span className="text-muted-foreground">{trendLabel}</span>
-      </div>
-      <div className="mt-3 flex h-6 items-end gap-1">
-        {normalizedData.map((height, index) => (
-          <span
-            key={index}
-            className={cn("w-full rounded-t bg-muted transition-colors group-hover:bg-primary/40", active && "bg-primary/50")}
-            style={{ height: `${height}%` }}
-          />
-        ))}
-      </div>
-      <div className="mt-3 flex flex-col gap-1 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-        <span className="min-w-0 break-words">{helper}</span>
-        <span className="shrink-0">{updated}</span>
-      </div>
-    </Motion.motion.button>
+    <StatsCard 
+      title={title} 
+      value={value} 
+      subtitle={helper || updated} 
+      trend={trend} 
+      trendLabel={trendLabel} 
+      icon={Icon} 
+      variant={variantMap[accent] || 'blue'} 
+      isActive={active} 
+      onClick={onClick} 
+    />
   )
 }
 

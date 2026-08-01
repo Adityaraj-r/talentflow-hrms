@@ -1,3 +1,4 @@
+import { PriorityDot } from "@/components/ui/PriorityDot";
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
 import { Button } from "@/components/ui/button"
@@ -17,6 +18,7 @@ import {
   MoreHorizontal, Eye, Trash2, ArrowRight,
 } from "lucide-react"
 import CreateTaskModal from "@/components/ui/CreateTaskModal"
+import { StatsCard } from "@/components/ui/stats-card"
 import taskService from "@/services/taskService"
 import { toast } from "sonner"
 import { format, isPast, isToday, differenceInDays } from "date-fns"
@@ -111,65 +113,8 @@ const Avatar = ({ user, size = "sm" }) => {
 }
 
 
-const PriorityBadge = ({ priority }) => {
-  const cfg = PRIORITY_CONFIG[priority?.toUpperCase()] ?? PRIORITY_CONFIG.MEDIUM
-  return (
-    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${cfg.cls}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-      {cfg.label}
-    </span>
-  )
-}
 
 
-const StatsCard = ({ title, value, icon, variant }) => {
-  const styles = {
-    blue: {
-      card:  "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
-      icon:  "text-blue-600 dark:text-blue-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    green: {
-      card:  "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
-      icon:  "text-green-600 dark:text-green-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    orange: {
-      card:  "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30",
-      icon:  "text-orange-600 dark:text-orange-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    red: {
-      card:  "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30",
-      icon:  "text-purple-600 dark:text-purple-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-    amber: {
-      card:  "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30",
-      icon:  "text-amber-600 dark:text-amber-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-    },
-  }
-
-  const s = styles[variant] || styles.blue
-
-  return (
-    <div className={cn("rounded-xl border p-6 transition-all duration-200 hover:scale-105", s.card)}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={cn("text-sm", s.label)}>{title}</p>
-          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
-        </div>
-        <div className={cn("h-8 w-8", s.icon)}>{icon}</div>
-      </div>
-    </div>
-  )
-}
 
 
 const TaskCardItem = ({ task, onView, onDelete }) => {
@@ -181,7 +126,7 @@ const TaskCardItem = ({ task, onView, onDelete }) => {
     <div className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-150 cursor-grab active:cursor-grabbing select-none">
 
       <div className="flex items-center justify-between mb-2">
-        <PriorityBadge priority={task.priority} />
+        <PriorityDot priority={task.priority} className="w-auto justify-start" />
         <div className="flex items-center gap-1">
           <span className="text-[10px] font-mono text-muted-foreground/50">#{shortId}</span>
           <DropdownMenu>
@@ -297,7 +242,7 @@ const TaskDetailDrawer = ({ task, onClose, onStatusChange, onDelete }) => {
               <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${statusCfg.cls}`}>
                 {statusCfg.label}
               </span>
-              <PriorityBadge priority={task.priority} />
+              <PriorityDot priority={task.priority} className="w-auto justify-start" />
               {dueInfo?.overdue && (
                 <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
                   Overdue
@@ -501,6 +446,7 @@ const TaskBoard = () => {
   const [search, setSearch]                   = useState("")
   const [filterPriority, setFilterPriority]   = useState("ALL")
   const [filterAssignee, setFilterAssignee]   = useState("ALL")
+  const [activeCard, setActiveCard]           = useState("total")
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -549,10 +495,18 @@ const TaskBoard = () => {
     }
     if (filterPriority !== "ALL") r = r.filter(t => t.priority?.toUpperCase() === filterPriority)
     if (filterAssignee !== "ALL") r = r.filter(t => t.assignedTo?._id === filterAssignee)
-    return r
-  }, [tasks, search, filterPriority, filterAssignee])
+    
+    if (activeCard === "active") r = r.filter(t => t.status === TASK_STATUS.IN_PROGRESS)
+    if (activeCard === "done") r = r.filter(t => t.status === TASK_STATUS.DONE)
+    if (activeCard === "overdue") {
+      const today = new Date(); today.setHours(0, 0, 0, 0)
+      r = r.filter(t => t.status !== TASK_STATUS.DONE && t.dueDate && new Date(t.dueDate) < today)
+    }
 
-  const hasFilters = search || filterPriority !== "ALL" || filterAssignee !== "ALL"
+    return r
+  }, [tasks, search, filterPriority, filterAssignee, activeCard])
+
+  const hasFilters = search || filterPriority !== "ALL" || filterAssignee !== "ALL" || activeCard !== "total"
 
 
   const handleDragEnd = async (result) => {
@@ -667,24 +621,32 @@ const TaskBoard = () => {
           value={stats.total}
           icon={<BarChart2 className="h-8 w-8" />}
           variant="blue"
+          isActive={activeCard === "total"}
+          onClick={() => setActiveCard(activeCard === "total" ? "total" : "total")}
         />
         <StatsCard
           title="In Progress"
           value={stats.active}
           icon={<Clock className="h-8 w-8" />}
           variant="amber"
+          isActive={activeCard === "active"}
+          onClick={() => setActiveCard(activeCard === "active" ? "total" : "active")}
         />
         <StatsCard
           title="Completed"
           value={stats.done}
           icon={<CheckCircle2 className="h-8 w-8" />}
           variant="green"
+          isActive={activeCard === "done"}
+          onClick={() => setActiveCard(activeCard === "done" ? "total" : "done")}
         />
         <StatsCard
           title="Overdue"
           value={stats.overdue}
           icon={<AlertTriangle className="h-8 w-8" />}
           variant="orange"
+          isActive={activeCard === "overdue"}
+          onClick={() => setActiveCard(activeCard === "overdue" ? "total" : "overdue")}
         />
       </div>
 

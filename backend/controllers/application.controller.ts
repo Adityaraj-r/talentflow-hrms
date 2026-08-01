@@ -195,11 +195,19 @@ export const updateApplicationStatus = async (req: Request, res: Response) => {
     }
 
     // ✅ EMAIL TRIGGER (NEW ADD)
-    if (application && ["Shortlisted", "Rejected", "Selected"].includes(status)) {
+    if (application && ["Applied", "Under Review", "Shortlisted", "Rejected", "Selected"].includes(status)) {
+      let positionTitle = (application as any).selectedPositionTitle 
+        || (application as any).positionTitle 
+        || (application as any).selectedPositionName;
+      if (!positionTitle && (application as any).jobId) {
+        const job = await mongoose.model('Job').findById((application as any).jobId);
+        positionTitle = job ? (job as any).jobTitle : '';
+      }
       await sendApplicationStatusEmail(
         (application as any).email,
         (application as any).name,
-        status
+        status,
+        positionTitle || 'the position'
       )
     }
 
@@ -305,7 +313,8 @@ export const scheduleInterviewAndSendMail = async (req: Request, res: Response) 
     const hrPhone = user.phoneNumber || ""
 
     const jobTitle = (application as any)?.selectedPositionTitle
-      || (application as any)?.hiringRoleName
+      || (application as any)?.positionTitle
+      || (application as any)?.selectedPositionName
       || (application as any)?.jobId?.jobTitle
       || "Position"
     const department = (application as any)?.jobId?.department || "General"

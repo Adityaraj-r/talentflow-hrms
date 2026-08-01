@@ -3,6 +3,7 @@ import { Toaster } from "sonner"
 import { useAuth } from "./contexts/AuthContext"
 import { RoleProvider } from "./contexts/RoleContext"
 import { SettingsProvider } from "./contexts/SettingsContext"
+import { ConfirmProvider } from "./contexts/ConfirmContext"
 import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import { getMyPermissions, can } from "./services/permissionService"
@@ -275,8 +276,9 @@ function App() {
   return (
     <SettingsProvider>
       <RoleProvider>
-        <Router>
-          <Toaster position="top-right" richColors />
+        <ConfirmProvider>
+          <Router>
+            <Toaster position="top-right" richColors />
           <Routes>
 
             <Route path="/login" element={<Login />} />
@@ -876,6 +878,7 @@ function App() {
 
           </Routes>
         </Router>
+        </ConfirmProvider>
       </RoleProvider>
     </SettingsProvider>
   )

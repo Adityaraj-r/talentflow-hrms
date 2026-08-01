@@ -209,8 +209,14 @@ const CorrectionRequests = () => {
     const name = `${req.requestedBy?.firstName || ""} ${req.requestedBy?.lastName || ""}`.toLowerCase();
     const email = (req.requestedBy?.email || "").toLowerCase();
     const dept = (req.requestedBy?.department || "").toLowerCase();
+    const empCode = (req.requestedBy?.employeeCode || "").toLowerCase();
     const search = searchTerm.toLowerCase();
-    return name.includes(search) || email.includes(search) || dept.includes(search);
+    return (
+      name.includes(search) || 
+      email.includes(search) || 
+      dept.includes(search) ||
+      empCode.includes(search)
+    );
   });
 
   const pendingCount = requests.filter((r) => r.status === "Pending").length;
@@ -251,11 +257,11 @@ const CorrectionRequests = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-              <div className="relative w-full sm:w-56">
-                <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <div className="relative w-full sm:w-96">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name or dept..."
-                  className="pl-8 bg-background h-9 text-sm"
+                  placeholder="Search by Name, ID, Dept, Email..."
+                  className="pl-8 h-9 text-sm bg-background"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -288,6 +294,7 @@ const CorrectionRequests = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Employee</TableHead>
+                  <TableHead className="hidden md:table-cell">Employee ID</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Current Times</TableHead>
                   <TableHead>Requested Times</TableHead>
@@ -300,7 +307,7 @@ const CorrectionRequests = () => {
                 {loading ? (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={8}
                       className="text-center py-10 text-muted-foreground"
                     >
                       Loading requests...
@@ -309,7 +316,7 @@ const CorrectionRequests = () => {
                 ) : filteredRequests.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={8}
                       className="text-center py-10 text-muted-foreground"
                     >
                       No correction requests found.
@@ -329,6 +336,9 @@ const CorrectionRequests = () => {
                               {req.requestedBy?.firstName}{" "}
                               {req.requestedBy?.lastName}
                             </span>
+                            <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
+                              {req.requestedBy?.employeeCode || "N/A"}
+                            </span>
                             <span className="text-xs text-muted-foreground">
                               {req.requestedBy?.email}
                             </span>
@@ -336,6 +346,9 @@ const CorrectionRequests = () => {
                               {req.requestedBy?.department || "No Department"}
                             </span>
                           </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
+                          {req.requestedBy?.employeeCode || "-"}
                         </TableCell>
 
                         <TableCell>

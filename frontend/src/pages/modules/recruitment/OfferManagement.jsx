@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
 import { Plus, RefreshCcw, FileSignature, Clock3, Send, CheckCircle2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { StatsCard } from "@/components/ui/stats-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useUser } from "@/contexts/UserContext"
@@ -249,6 +250,31 @@ const OfferManagement = () => {
     setPendingAction({ action, offer })
   }
 
+  const handleDownloadOfferPdf = async (offer) => {
+    if (!offer?._id) return
+    const toastId = toast.loading("Generating official Offer Letter PDF...")
+    try {
+      const res = await apiClient.get(`/offers/${offer._id}/pdf`, { responseType: "blob" })
+      const blob = new Blob([res.data || res], { type: "application/pdf" })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      const formattedName = (offer.candidateName || "Candidate").replace(/[^a-zA-Z0-9_-]/g, "_")
+      const version = offer.negotiationRounds?.length ? `_V${offer.negotiationRounds.length + 1}` : ""
+      link.href = url
+      link.download = `Offer_Letter_${formattedName}${version}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      toast.dismiss(toastId)
+      toast.success("Official Offer Letter PDF downloaded successfully")
+    } catch (e) {
+      console.error("PDF download error:", e)
+      toast.dismiss(toastId)
+      toast.error(e?.response?.data?.error || "Failed to download Offer Letter PDF")
+    }
+  }
+
   const confirmAction = async () => {
     const action = pendingAction?.action
     const offer = pendingAction?.offer
@@ -257,9 +283,15 @@ const OfferManagement = () => {
     if (action === "approve" && offer?._id) return handleManagerApprove(offer._id)
     if (action === "accepted" && offer?._id) return handleStatusUpdate(offer._id, "Accepted")
     if (action === "declined" && offer?._id) return handleStatusUpdate(offer._id, "Declined")
-    if (action === "download") {
-      toast.success("Offer letter prepared for download")
-      window.print()
+    if (action === "download" && offer?._id) return handleDownloadOfferPdf(offer)
+    if (action === "send" && offer?._id) {
+      try {
+        await apiClient.patch(`/offers/${offer._id}/send`, { comments: "Sent from offer management" })
+        toast.success("Offer email sent to candidate successfully")
+        await loadOffers()
+      } catch (e) {
+        toast.error(e?.response?.data?.error || e?.message || "Failed to send offer email")
+      }
       return
     }
     if (action === "export") {
@@ -288,11 +320,11 @@ const OfferManagement = () => {
   if (isGeneratePage) {
     return (
       <div className="space-y-6">
-        <RecruitmentPageHeader
-          title="Generate Offer"
-          subtitle="Create an offer package and route it through the approval workflow."
-          summary="Backend-compatible offer creation"
-        />
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Generate Offer</h1>
+          </div>
+        </div>
         {!canWrite ? (
           <Card className="border-white/10 bg-card/80">
             <CardHeader><CardTitle>Generate Offer</CardTitle></CardHeader>
@@ -398,40 +430,10 @@ const OfferManagement = () => {
         <>
           {/* Four Compact Summary Cards */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="border-white/10 bg-card/80 p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total Offers</p>
-                <FileSignature className="h-4 w-4 text-sky-400" />
-              </div>
-              <p className="mt-2 text-2xl font-bold">{filteredOffers.length}</p>
-            </Card>
-            <Card className="border-white/10 bg-card/80 p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pending Approval</p>
-                <Clock3 className="h-4 w-4 text-amber-400" />
-              </div>
-              <p className="mt-2 text-2xl font-bold">
-                {filteredOffers.filter(o => o.status === "Pending CEO Approval" || o.status === "Pending HR Manager Approval").length}
-              </p>
-            </Card>
-            <Card className="border-white/10 bg-card/80 p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Released Offers</p>
-                <Send className="h-4 w-4 text-violet-400" />
-              </div>
-              <p className="mt-2 text-2xl font-bold">
-                {filteredOffers.filter(o => o.status === "Offered").length}
-              </p>
-            </Card>
-            <Card className="border-white/10 bg-card/80 p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Accepted Offers</p>
-                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-              </div>
-              <p className="mt-2 text-2xl font-bold">
-                {filteredOffers.filter(o => o.status === "Accepted").length}
-              </p>
-            </Card>
+            <StatsCard title="Total Offers" value={filteredOffers.length} icon={FileSignature} />
+            <StatsCard title="Pending Approval" value={filteredOffers.filter(o => o.status === "Pending CEO Approval" || o.status === "Pending HR Manager Approval").length} icon={Clock3} />
+            <StatsCard title="Released Offers" value={filteredOffers.filter(o => o.status === "Offered").length} icon={Send} />
+            <StatsCard title="Accepted Offers" value={filteredOffers.filter(o => o.status === "Accepted").length} icon={CheckCircle2} />
           </div>
 
           {/* Small Filter Chips */}

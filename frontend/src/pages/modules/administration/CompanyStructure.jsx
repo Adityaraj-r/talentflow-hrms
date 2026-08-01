@@ -13,6 +13,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/contexts/ConfirmContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -43,6 +44,7 @@ import {
 } from "@/services/departmentService";
 
 const CompanyStructure = () => {
+  const { confirm } = useConfirm();
   const [view, setView] = useState("list");
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -160,16 +162,22 @@ const CompanyStructure = () => {
     }
   };
 
-  const handleDelete = async (id, e) => {
+  const handleDelete = (id, e) => {
     e.stopPropagation();
-    if (!window.confirm("Delete this department?")) return;
-    try {
-      await deleteDepartment(id);
-      toast.success("Deleted successfully");
-      await fetchDepartments();
-    } catch (error) {
-      toast.error("Delete failed");
-    }
+    confirm({
+      title: "Delete Department?",
+      message: "Are you sure you want to delete this department?",
+      action: async () => {
+        try {
+          await deleteDepartment(id);
+          toast.success("Deleted successfully");
+          await fetchDepartments();
+        } catch (error) {
+          toast.error("Delete failed");
+          throw error;
+        }
+      }
+    });
   };
 
   const handleManageDepartment = async (deptId) => {

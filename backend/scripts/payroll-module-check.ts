@@ -84,7 +84,7 @@ async function runCalculationChecks() {
     esiEmployerPercent: 3.25,
   } as unknown as IPayrollCompanySettings
 
-  const out = applyStatutoryDeductions(settings, {
+  const out = await applyStatutoryDeductions(settings, {
     basic: 20000,
     gross: 25000,
     fixedPf: 100,
@@ -93,7 +93,7 @@ async function runCalculationChecks() {
     fixedTds: 500,
     insurance: 0,
     other: 0,
-  })
+  }, new Date())
   assert(out.pf === Math.round(15000 * 0.12), "Computed PF uses ceiling (12% of 15000)")
   assert(out.tds === 500, "TDS uses fixed when useComputedTds false")
 }
