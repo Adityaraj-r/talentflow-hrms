@@ -73,15 +73,30 @@ export const createJob = async (req: Request, res: Response) => {
     console.log("Incoming Job Data:", req.body);
 
     const hiringRoles = normalizeHiringRoles(req.body.hiringRoles, req.body.jobTitle, req.body.positions);
+    
+    // Auto-generate job code if not provided
+    let jobCode = req.body.jobCode;
+    if (!jobCode) {
+      const datePart = new Date().toISOString().slice(0, 7).replace("-", ""); // YYYYMM
+      const randomPart = Math.floor(1000 + Math.random() * 9000); // 4 digit random
+      jobCode = `JOB-${datePart}-${randomPart}`;
+    }
+
+    let uploadJd = "";
+    let supportingDocuments = "";
+    if (req.files) {
+      if ((req.files as any)["uploadJd"]) uploadJd = (req.files as any)["uploadJd"][0].path;
+      if ((req.files as any)["supportingDocuments"]) supportingDocuments = (req.files as any)["supportingDocuments"][0].path;
+    }
+
     const jobData = {
-      jobTitle: req.body.jobTitle,
-      department: req.body.department,
+      ...req.body,
+      jobCode,
       positions: totalOpenings(hiringRoles),
       hiringRoles,
-      employmentType: req.body.employmentType,
-      description: req.body.description,
-      deadline: req.body.deadline,
-      status: status
+      status: status,
+      uploadJd: uploadJd || req.body.uploadJd,
+      supportingDocuments: supportingDocuments || req.body.supportingDocuments
     };
 
     const job = await Job.create(jobData);
@@ -114,6 +129,20 @@ export const updateJob = async (req: Request, res: Response) => {
     }
 
     const updateData: any = { ...req.body };
+    
+    let uploadJd = "";
+    let supportingDocuments = "";
+    if (req.files) {
+      if ((req.files as any)["uploadJd"]) {
+        uploadJd = (req.files as any)["uploadJd"][0].path;
+        updateData.uploadJd = uploadJd;
+      }
+      if ((req.files as any)["supportingDocuments"]) {
+        supportingDocuments = (req.files as any)["supportingDocuments"][0].path;
+        updateData.supportingDocuments = supportingDocuments;
+      }
+    }
+
     if (Object.prototype.hasOwnProperty.call(req.body, "hiringRoles")) {
       updateData.hiringRoles = normalizeHiringRoles(req.body.hiringRoles, req.body.jobTitle || job.jobTitle, req.body.positions || job.positions);
       updateData.positions = totalOpenings(updateData.hiringRoles);

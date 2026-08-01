@@ -47,6 +47,76 @@ const applicationSchema = new mongoose.Schema(
     type: String
   },
 
+  currentLocation: {
+    type: String,
+    default: ""
+  },
+
+  yearsOfExperience: {
+    type: Number,
+    default: 0
+  },
+
+  currentCompany: {
+    type: String,
+    default: ""
+  },
+
+  currentCtc: {
+    type: String,
+    default: ""
+  },
+
+  expectedCtc: {
+    type: String,
+    default: ""
+  },
+
+  noticePeriod: {
+    type: String,
+    default: ""
+  },
+
+  linkedin: {
+    type: String,
+    default: ""
+  },
+
+  portfolio: {
+    type: String,
+    default: ""
+  },
+
+  coverLetter: {
+    type: String,
+    default: ""
+  },
+
+  currentDesignation: {
+    type: String,
+    default: ""
+  },
+
+  highestEducation: {
+    type: String,
+    default: ""
+  },
+
+  employmentTypePreference: {
+    type: String,
+    default: ""
+  },
+
+  githubProfile: {
+    type: String,
+    default: ""
+  },
+
+  additionalDocuments: {
+    type: String,
+    default: ""
+  },
+
   matchScore: {
     type: Number,
     default: 0

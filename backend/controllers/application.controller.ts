@@ -47,9 +47,30 @@ export const applyJob = async (req: Request, res: Response) => {
 
   try {
 
-    const { jobId, hiringRoleId, name, email, phone } = req.body
+    const { 
+      jobId, 
+      hiringRoleId, 
+      name, 
+      email, 
+      phone,
+      currentLocation,
+      yearsOfExperience,
+      currentCompany,
+      currentCtc,
+      expectedCtc,
+      noticePeriod,
+      linkedin,
+      portfolio,
+      coverLetter,
+      currentDesignation,
+      highestEducation,
+      employmentTypePreference,
+      githubProfile
+    } = req.body
 
-    const resume = (req as any).file?.filename
+    const files = (req as any).files as { [fieldname: string]: Express.Multer.File[] } | undefined
+    const resume = files?.resume?.[0]?.filename || (req as any).file?.filename
+    const additionalDocuments = files?.additionalDocuments?.[0]?.filename
     const job = jobId && mongoose.Types.ObjectId.isValid(jobId)
       ? await Job.findById(jobId).lean()
       : null
@@ -94,7 +115,21 @@ export const applyJob = async (req: Request, res: Response) => {
       name,
       email,
       phone,
+      currentLocation,
+      yearsOfExperience: yearsOfExperience ? Number(yearsOfExperience) : 0,
+      currentCompany,
+      currentCtc,
+      expectedCtc,
+      noticePeriod,
+      linkedin,
+      portfolio,
+      coverLetter,
       resume,
+      currentDesignation,
+      highestEducation,
+      employmentTypePreference,
+      githubProfile,
+      additionalDocuments,
       ...fit,
     })
 

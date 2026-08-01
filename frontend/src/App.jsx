@@ -43,6 +43,7 @@ import Careers from "./pages/Careers"
 import OfferManagement from "./pages/modules/recruitment/OfferManagement"
 import OfferOperations from "./pages/modules/recruitment/OfferOperations"
 import JobOpenings from "./pages/modules/recruitment/JobOpenings"
+import CreateJob from "./pages/modules/recruitment/CreateJob"
 import ApplyJob from "./pages/ApplyJob"
 import CandidateApplications from "./pages/modules/recruitment/CandidateApplications"
 import RecruitmentPipeline from "./pages/modules/recruitment/RecruitmentPipeline"
@@ -462,6 +463,11 @@ function App() {
             <Route path="/dashboard/job-openings" element={
               <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
                 <DashboardLayout><JobOpenings /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/jobs/create" element={
+              <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
+                <DashboardLayout><CreateJob /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/dashboard/offer-management" element={

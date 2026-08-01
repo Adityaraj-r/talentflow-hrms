@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import apiClient from "@/services/apiClient"
 import { useUser } from "@/contexts/UserContext"
 import { Card, CardContent } from "@/components/ui/card"
@@ -22,6 +23,7 @@ const JobOpenings = () => {
   const isRecruitmentOperator = ["HR_OFFICER", "HR_MANAGER", "ADMIN", "SUPER_ADMIN"].includes(role)
   const canWrite = user?.can?.("recruitment", "write") && isRecruitmentOperator
   const canPublish = user?.can?.("recruitment", "write") && ["HR_MANAGER", "ADMIN", "SUPER_ADMIN"].includes(role)
+  const navigate = useNavigate()
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -198,11 +200,7 @@ const JobOpenings = () => {
           <h1 className="text-3xl font-bold tracking-tight">Job Openings</h1>
         </div>
         {canWrite && (
-          <Button onClick={() => {
-            setEditingJobId(null);
-            setFormData({ jobTitle: "", department: "", positions: "", employmentType: "", deadline: "" });
-            setShowForm(true);
-          }}>
+          <Button onClick={() => navigate("/dashboard/jobs/create")}>
             <Plus size={16} className="mr-2" />
             Create Job
           </Button>
@@ -215,34 +213,6 @@ const JobOpenings = () => {
         <RecruitmentKpiCard title="Draft" value={draft} icon={ClipboardList} trend={5} helper="Awaiting publication" accent="amber" active={activeFilter === "draft"} onClick={() => setActiveFilter("draft")} />
         <RecruitmentKpiCard title="Closed" value={closed} icon={DoorClosed} trend={-2} helper="No longer accepting" accent="rose" active={activeFilter === "closed"} onClick={() => setActiveFilter("closed")} />
       </div>
-
-      {canWrite && showForm && (
-        <Card className="border-white/10 bg-card/80">
-          <CardContent className="p-6 space-y-4">
-            <h2 className="text-lg font-semibold">{editingJobId ? "Edit Job Draft" : "Create Job Draft"}</h2>
-            <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-2">
-              <input type="text" name="jobTitle" placeholder="Job Title" value={formData.jobTitle} onChange={handleChange} className="rounded-md border border-input bg-background px-3 py-2 text-sm" />
-              <input type="text" name="department" placeholder="Department" value={formData.department} onChange={handleChange} className="rounded-md border border-input bg-background px-3 py-2 text-sm" />
-              <input type="number" name="positions" placeholder="Positions" value={formData.positions} onChange={handleChange} className="rounded-md border border-input bg-background px-3 py-2 text-sm" />
-              <select name="employmentType" value={formData.employmentType} onChange={handleChange} className="rounded-md border border-input bg-background px-3 py-2 text-sm">
-                <option value="">Select Type</option>
-                <option value="Full-Time">Full-Time</option>
-                <option value="Intern">Intern</option>
-                <option value="Contract">Contract</option>
-              </select>
-              <input type="date" name="deadline" value={formData.deadline} onChange={handleChange} className="rounded-md border border-input bg-background px-3 py-2 text-sm" />
-              <div className="flex gap-3 md:col-span-2">
-                <Button type="submit">{editingJobId ? "Update Draft" : "Save Draft"}</Button>
-                <Button type="button" variant="outline" onClick={() => {
-                  setShowForm(false);
-                  setEditingJobId(null);
-                  setFormData({ jobTitle: "", department: "", positions: "", employmentType: "", deadline: "" });
-                }}>Cancel</Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
 
       <Card>
         <div className="p-4 border-b flex flex-col md:flex-row gap-4 items-center justify-between bg-muted/20">
