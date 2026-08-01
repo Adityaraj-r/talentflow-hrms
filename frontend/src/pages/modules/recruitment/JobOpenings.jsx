@@ -3,7 +3,9 @@ import apiClient from "@/services/apiClient"
 import { useUser } from "@/contexts/UserContext"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { BriefcaseBusiness, ClipboardList, DoorClosed, Plus, Rocket } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Input } from "@/components/ui/input"
+import { BriefcaseBusiness, ClipboardList, DoorClosed, Plus, Rocket, Search, RefreshCw, Eye, Pencil, Trash2, Archive } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import {
@@ -37,6 +39,8 @@ const JobOpenings = () => {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmType, setConfirmType] = useState("")
   const [jobToActOn, setJobToActOn] = useState(null)
+  const [activeFilter, setActiveFilter] = useState("all")
+  const [searchQuery, setSearchQuery] = useState("")
 
   const getHiringRoles = (job) => {
     if (Array.isArray(job?.hiringRoles) && job.hiringRoles.length > 0) {
@@ -172,31 +176,44 @@ const JobOpenings = () => {
   const draft = jobs.filter((j) => j.status === "Draft").length
   const closed = jobs.filter((j) => j.status === "Closed").length
 
+  const filteredJobs = jobs.filter((job) => {
+    let matchesFilter = true
+    if (activeFilter === "published") matchesFilter = job.status === "Published" || job.status === "Open"
+    else if (activeFilter === "draft") matchesFilter = job.status === "Draft"
+    else if (activeFilter === "closed") matchesFilter = job.status === "Closed"
+    
+    let matchesSearch = true
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      matchesSearch = (job.jobTitle?.toLowerCase().includes(q) || job.department?.toLowerCase().includes(q))
+    }
+    
+    return matchesFilter && matchesSearch
+  })
+
   return (
     <div className="space-y-6">
-      <RecruitmentPageHeader
-        title="Job Openings"
-        subtitle="Create, publish, and close hiring openings across departments."
-        summary={`${total} openings · ${active} published · ${draft} drafts`}
-        actions={
-          canWrite && (
-            <Button onClick={() => {
-              setEditingJobId(null);
-              setFormData({ jobTitle: "", department: "", positions: "", employmentType: "", deadline: "" });
-              setShowForm(true);
-            }}>
-              <Plus size={16} className="mr-2" />
-              Create Job
-            </Button>
-          )
-        }
-      />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Job Openings</h1>
+        </div>
+        {canWrite && (
+          <Button onClick={() => {
+            setEditingJobId(null);
+            setFormData({ jobTitle: "", department: "", positions: "", employmentType: "", deadline: "" });
+            setShowForm(true);
+          }}>
+            <Plus size={16} className="mr-2" />
+            Create Job
+          </Button>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <RecruitmentKpiCard title="Total Jobs" value={total} icon={BriefcaseBusiness} trend={10} helper="Openings in workspace" accent="sky" />
-        <RecruitmentKpiCard title="Published" value={active} icon={Rocket} trend={12} helper="Visible on careers portal" accent="emerald" />
-        <RecruitmentKpiCard title="Draft" value={draft} icon={ClipboardList} trend={5} helper="Awaiting publication" accent="amber" />
-        <RecruitmentKpiCard title="Closed" value={closed} icon={DoorClosed} trend={-2} helper="No longer accepting" accent="rose" />
+        <RecruitmentKpiCard title="Total Jobs" value={total} icon={BriefcaseBusiness} trend={10} helper="Openings in workspace" accent="sky" active={activeFilter === "all"} onClick={() => setActiveFilter("all")} />
+        <RecruitmentKpiCard title="Published" value={active} icon={Rocket} trend={12} helper="Visible on careers portal" accent="emerald" active={activeFilter === "published"} onClick={() => setActiveFilter("published")} />
+        <RecruitmentKpiCard title="Draft" value={draft} icon={ClipboardList} trend={5} helper="Awaiting publication" accent="amber" active={activeFilter === "draft"} onClick={() => setActiveFilter("draft")} />
+        <RecruitmentKpiCard title="Closed" value={closed} icon={DoorClosed} trend={-2} helper="No longer accepting" accent="rose" active={activeFilter === "closed"} onClick={() => setActiveFilter("closed")} />
       </div>
 
       {canWrite && showForm && (
@@ -227,69 +244,167 @@ const JobOpenings = () => {
         </Card>
       )}
 
-      <div className="space-y-3">
-        {loading ? (
-          <div className="grid gap-3">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="dark-shimmer h-28 rounded-lg border border-white/10 bg-card/80" />
-            ))}
+      <Card>
+        <div className="p-4 border-b flex flex-col md:flex-row gap-4 items-center justify-between bg-muted/20">
+          <div className="flex flex-wrap gap-2 w-full md:w-auto">
+            <div className="relative flex-1 md:w-80">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search job titles..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
-        ) : jobs.length === 0 ? (
-          <RecruitmentEmptyState
-            title="No job openings yet"
-            description="Create a draft job, then publish it to start collecting applications."
-            actionLabel={canWrite ? "Create Job" : undefined}
-            onAction={() => setShowForm(true)}
-          />
-        ) : jobs.map((job) => {
-          const isOpen = job.status === "Open" || (job.status === "Published" && !job.deadline)
-          return (
-            <Card key={job._id} className="border-white/10 bg-card/80 transition-all hover:-translate-y-0.5 hover:border-white/20 hover:shadow-lg">
-              <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
-                <div className="min-w-0">
-                  <h3 className="truncate text-lg font-semibold">{job.jobTitle}</h3>
-                  <p className="text-sm text-muted-foreground">{job.department} · {job.positions} positions · {getHiringRoles(job).length} hiring role{getHiringRoles(job).length !== 1 && "s"} · {job.employmentType}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Deadline: {job.deadline ? new Date(job.deadline).toLocaleDateString() : "N/A"}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <RecruitmentStatusBadge status={isOpen ? "Open" : job.status} />
-                  {job.status === "Draft" && (
-                    <>
-                      {canWrite && (
-                        <>
-                          <Button size="sm" variant="outline" onClick={() => handleEditClick(job)}>Edit</Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDeleteClick(job)}>Delete</Button>
-                        </>
-                      )}
-                      {canPublish && (
-                        <Button size="sm" onClick={() => publishJob(job._id)}>Publish</Button>
-                      )}
-                    </>
-                  )}
-                  {(job.status === "Published" || job.status === "Open") && (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => { setSelectedJob(job); setViewOpen(true) }}>View</Button>
-                      {canPublish && (
-                        <Button size="sm" variant="destructive" onClick={() => closeJob(job._id)}>Close</Button>
-                      )}
-                    </>
-                  )}
-                  {job.status === "Closed" && (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => { setSelectedJob(job); setViewOpen(true) }}>View</Button>
-                      {canPublish && (
-                        <Button size="sm" variant="destructive" onClick={() => handleRemoveClick(job)}>Remove</Button>
-                      )}
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={fetchJobs} disabled={loading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Sync Data
+            </Button>
+          </div>
+        </div>
+
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+            <thead className="bg-muted/50 text-muted-foreground border-b border-border">
+              <tr>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Job Title</th>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Department</th>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Positions</th>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Type</th>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Deadline</th>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Status</th>
+                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs text-right w-[140px]">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {loading ? (
+                Array.from({ length: 4 }).map((_, index) => (
+                  <tr key={index}>
+                    <td colSpan="7" className="p-4">
+                      <div className="h-10 w-full animate-pulse rounded bg-muted/50" />
+                    </td>
+                  </tr>
+                ))
+              ) : filteredJobs.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="p-8">
+                    <RecruitmentEmptyState
+                      title={activeFilter === "all" ? "No job openings yet" : `No ${activeFilter} job openings`}
+                      description="Create a draft job, then publish it to start collecting applications."
+                      actionLabel={canWrite ? "Create Job" : undefined}
+                      onAction={() => setShowForm(true)}
+                    />
+                  </td>
+                </tr>
+              ) : filteredJobs.map((job) => {
+                const isOpen = job.status === "Open" || (job.status === "Published" && !job.deadline)
+                return (
+                  <tr key={job._id} className="hover:bg-muted/30 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="font-semibold text-foreground">{job.jobTitle}</div>
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground font-medium">{job.department}</td>
+                    <td className="px-6 py-4 text-muted-foreground font-medium">{job.positions}</td>
+                    <td className="px-6 py-4 text-muted-foreground font-medium">{job.employmentType}</td>
+                    <td className="px-6 py-4 text-muted-foreground font-medium">{job.deadline ? new Date(job.deadline).toLocaleDateString() : "N/A"}</td>
+                    <td className="px-6 py-4">
+                      <RecruitmentStatusBadge status={isOpen ? "Open" : job.status} />
+                    </td>
+                    <td className="px-6 py-4 w-[140px]">
+                        <TooltipProvider>
+                          <div className="flex items-center justify-end gap-1">
+                            {job.status === "Draft" && (
+                              <>
+                                {canWrite && (
+                                  <>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleEditClick(job)}>
+                                          <Pencil className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Edit Draft</TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClick(job)}>
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Delete Draft</TooltipContent>
+                                    </Tooltip>
+                                  </>
+                                )}
+                                {canPublish && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10" onClick={() => publishJob(job._id)}>
+                                        <Rocket className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Publish Job</TooltipContent>
+                                  </Tooltip>
+                                )}
+                              </>
+                            )}
+                            {(job.status === "Published" || job.status === "Open") && (
+                              <>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { setSelectedJob(job); setViewOpen(true) }}>
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>View Job</TooltipContent>
+                                </Tooltip>
+                                {canPublish && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10" onClick={() => closeJob(job._id)}>
+                                        <Archive className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Close Job</TooltipContent>
+                                  </Tooltip>
+                                )}
+                              </>
+                            )}
+                            {job.status === "Closed" && (
+                              <>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { setSelectedJob(job); setViewOpen(true) }}>
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>View Job</TooltipContent>
+                                </Tooltip>
+                                {canPublish && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => handleRemoveClick(job)}>
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Remove Job</TooltipContent>
+                                  </Tooltip>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </TooltipProvider>
+                      </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+        </CardContent>
+      </Card>
 
       <Dialog open={viewOpen} onOpenChange={(open) => { setViewOpen(open); if (!open) setSelectedJob(null) }}>
         <DialogContent className="sm:max-w-[700px]">

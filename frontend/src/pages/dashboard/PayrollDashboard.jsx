@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,8 @@ import { useNavigate } from "react-router-dom";
 import StatsCard from "@/components/dashboard/StatsCard";
 import { usePayrollDashboard } from "@/hooks/usePayrollDashboard";
 
-const PayrollDashboard = ({ stats: _stats, isLoading: _isLoading }) => {
+const PayrollDashboard = ({ isLoading: _isLoading }) => {
+  const [activeTab, setActiveTab] = useState("payroll");
   const { dashboard, loading, refreshing, refresh } = usePayrollDashboard();
   const navigate = useNavigate();
   const isLoading = _isLoading || loading;
@@ -64,6 +65,8 @@ const PayrollDashboard = ({ stats: _stats, isLoading: _isLoading }) => {
           description="On payroll"
           icon={<Users className="h-5 w-5 text-muted-foreground" />}
           isLoading={isLoading}
+          isActive={activeTab === "payroll"}
+          onClick={() => setActiveTab("payroll")}
         />
         <StatsCard
           title="Payroll Processed"
@@ -71,6 +74,8 @@ const PayrollDashboard = ({ stats: _stats, isLoading: _isLoading }) => {
           description="This month"
           icon={<IndianRupee className="h-5 w-5 text-muted-foreground" />}
           isLoading={isLoading}
+          isActive={activeTab === "payroll"}
+          onClick={() => setActiveTab("payroll")}
         />
         <StatsCard
           title="Pending Payments"
@@ -78,6 +83,8 @@ const PayrollDashboard = ({ stats: _stats, isLoading: _isLoading }) => {
           description="Awaiting processing"
           icon={<FileText className="h-5 w-5 text-muted-foreground" />}
           isLoading={isLoading}
+          isActive={activeTab === "payroll"}
+          onClick={() => setActiveTab("payroll")}
         />
         <StatsCard
           title="Total Deductions"
@@ -85,10 +92,12 @@ const PayrollDashboard = ({ stats: _stats, isLoading: _isLoading }) => {
           description="This month"
           icon={<IndianRupee className="h-5 w-5 text-muted-foreground" />}
           isLoading={isLoading}
+          isActive={activeTab === "deductions"}
+          onClick={() => setActiveTab("deductions")}
         />
       </div>
 
-      <Tabs defaultValue="payroll">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="payroll">Payroll Status</TabsTrigger>
           <TabsTrigger value="deductions">Deductions</TabsTrigger>

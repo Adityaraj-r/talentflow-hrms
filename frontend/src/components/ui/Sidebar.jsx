@@ -4,7 +4,7 @@ import {
   Users, Calendar, RefreshCw, DollarSign, Award, AlertTriangle,
   FileCheck, Home, ChevronDown, ChevronRight, ChevronLeft,
   Briefcase, Plane, Calculator, LogOut, Clock, Settings,
-  FileText, ArrowLeftRight, TrendingUp, Shield, Layers, Database, Building,
+  FileText, ArrowLeftRight, TrendingUp, Shield, Layers, Database, Building, Building2,
   LayoutDashboard, CircleDollarSign, Target, Network, FileBadge, BarChart2, FileSignature
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -831,7 +831,9 @@ const Sidebar = ({
           isCollapsed ? "justify-center" : "justify-between"
         )}>
           <div className="flex items-center gap-2 overflow-hidden">
-            <Briefcase className="h-8 w-8 text-primary shrink-0" />
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-lg shadow-sm shrink-0">
+              <Building2 className="h-6 w-6 text-white" />
+            </div>
             <span className={cn(
               "text-lg font-bold truncate transition-all duration-300",
               isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
