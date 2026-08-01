@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Save, RefreshCw, Plus, Eye } from 'lucide-react';
+import { Save, RefreshCw, Plus, Eye, Pencil, Ban, Percent, MapPin, Receipt, Landmark } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,13 @@ import {
 } from "@/components/ui/dialog";
 
 const POLICY_TYPES = ['PF_RATE', 'ESI_RATE', 'PT_SLAB', 'TAX_SLAB'];
+
+const POLICY_TYPE_META = {
+  PF_RATE:   { label: 'Provident Fund', icon: Percent,  color: 'text-blue-600 bg-blue-50 dark:bg-blue-950' },
+  ESI_RATE:  { label: 'ESI',            icon: Percent,  color: 'text-purple-600 bg-purple-50 dark:bg-purple-950' },
+  PT_SLAB:   { label: 'Professional Tax', icon: MapPin, color: 'text-amber-600 bg-amber-50 dark:bg-amber-950' },
+  TAX_SLAB:  { label: 'Income Tax',     icon: Receipt,  color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950' },
+};
 
 const PayrollPolicyManagement = () => {
     const [policies, setPolicies] = useState([]);
@@ -451,84 +458,107 @@ const PayrollPolicyManagement = () => {
                         <CardTitle className="text-lg">Current Policies</CardTitle>
                         <CardDescription>All policy versions, most recent first</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-0">
                         {policies.length === 0 ? (
-                            <p className="text-sm text-muted-foreground py-8 text-center">
+                            <p className="text-sm text-muted-foreground py-12 text-center">
                                 No policies yet. Create one to get started.
                             </p>
                         ) : (
                             <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b text-left text-muted-foreground">
-                                            <th className="py-2 pr-4">Type</th>
-                                            <th className="py-2 pr-4">State</th>
-                                            <th className="py-2 pr-4">Version</th>
-                                            <th className="py-2 pr-4">Effective From</th>
-                                            <th className="py-2 pr-4">Effective To</th>
-                                            <th className="py-2 pr-4">Status</th>
-                                            <th className="py-2 pr-4">Note</th>
-                                            <th className="py-2 pr-4"></th>
+                                <table className="w-full text-sm min-w-[880px]">
+                                    <thead className="sticky top-0 bg-gray-50 dark:bg-gray-900 z-10">
+                                        <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
+                                            <th className="py-3 px-4 text-centre">Version</th>
+                                            <th className="py-3 px-4 text-centre">Policy</th>
+                                            <th className="py-3 px-4 text-centre">Effective Period</th>
+                                            <th className="py-3 px-4 text-centre">Status</th>
+                                            <th className="py-3 px-4 text-centre">Note</th>
+                                            <th className="py-3 px-4 text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {policies.map((p) => (
-                                            <tr key={p._id} className="border-b hover:bg-accent/50">
-                                                <td className="py-3 pr-4 font-medium">{p.policyType}</td>
-                                                <td className="py-3 pr-4 capitalize">{p.state || '—'}</td>
-                                                <td className="py-3 pr-4">v{p.version}</td>
-                                                <td className="py-3 pr-4">
-                                                    {new Date(p.effectiveFrom).toLocaleDateString()}
-                                                </td>
-                                                <td className="py-3 pr-4">
-                                                    {p.effectiveTo ? new Date(p.effectiveTo).toLocaleDateString() : '—'}
-                                                </td>
-                                                <td className="py-3 pr-4">
-                                                    <span
-                                                        className={`px-2 py-1 rounded-full text-xs font-medium ${p.isActive
-                                                                ? 'bg-green-100 text-green-700'
-                                                                : 'bg-gray-100 text-gray-500'
+                                        {policies.map((p) => {
+                                            const meta = POLICY_TYPE_META[p.policyType] || {};
+                                            const TypeIcon = meta.icon || Landmark;
+                                            return (
+                                                <tr
+                                                    key={p._id}
+                                                    className={`border-b hover:bg-accent/40 transition-colors ${p.isActive ? 'border-l-2 border-l-emerald-500' : ''}`}
+                                                >
+                                                    <td className="py-3 px-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className={`flex h-9 w-9 items-center justify-center rounded-lg shrink-0 ${meta.color || 'bg-gray-100 text-gray-500'}`}>
+                                                                <TypeIcon className="h-4 w-4" />
+                                                            </span>
+                                                            <div>
+                                                                <p className="font-medium leading-tight">{meta.label || p.policyType}</p>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {p.policyType}{p.state ? ` · ${p.state}` : ''}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 font-mono text-xs">
+                                                            v{p.version}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">
+                                                        {new Date(p.effectiveFrom).toLocaleDateString()}
+                                                        <span className="text-muted-foreground mx-1">→</span>
+                                                        {p.effectiveTo ? new Date(p.effectiveTo).toLocaleDateString() : (
+                                                            <span className="text-muted-foreground">Ongoing</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${p.isActive
+                                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
+                                                                : 'bg-gray-100 text-gray-500 dark:bg-gray-800'
                                                             }`}
-                                                    >
-                                                        {p.isActive ? 'Active' : 'Inactive'}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 pr-4 text-muted-foreground">{p.changeNote || '—'}</td>
-                                                <td className="py-3 pr-4 flex gap-2">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleViewPolicy(p)}
-                                                        className="cursor-pointer"
-                                                    >
-                                                        <Eye className="w-4 h-4 mr-1" />
-                                                        View
-                                                    </Button>
-
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleEdit(p)}
-                                                        className="cursor-pointer"
-                                                    >
-                                                        Edit
-                                                    </Button>
-
-                                                    {p.isActive && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => handleDeactivate(p._id)}
-                                                            className="cursor-pointer"
                                                         >
-                                                            Deactivate
-                                                        </Button>
-                                                    )}
-
-
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                            <span className={`h-1.5 w-1.5 rounded-full ${p.isActive ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                                                            {p.isActive ? 'Active' : 'Inactive'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-muted-foreground max-w-[220px] truncate" title={p.changeNote || ''}>
+                                                        {p.changeNote || '—'}
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <div className="flex justify-end gap-1">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => handleViewPolicy(p)}
+                                                                className="h-8 w-8 cursor-pointer"
+                                                                title="View details"
+                                                            >
+                                                                <Eye className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => handleEdit(p)}
+                                                                className="h-8 w-8 cursor-pointer"
+                                                                title="Edit"
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                            {p.isActive && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => handleDeactivate(p._id)}
+                                                                    className="h-8 w-8 cursor-pointer text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                                                    title="Deactivate"
+                                                                >
+                                                                    <Ban className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
