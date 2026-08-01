@@ -6,6 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter, Download, TrendingUp, TrendingDown, Minus, Award, Users } from "lucide-react";
 import apiClient from "@/services/apiClient";
+import { FileText } from "lucide-react";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const EmployeeOverview = () => {
   const [employeeData, setEmployeeData] = useState([]);
@@ -14,6 +22,8 @@ const EmployeeOverview = () => {
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("rating-desc");
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -273,12 +283,15 @@ const EmployeeOverview = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 border-b border-border/50 text-right align-middle whitespace-nowrap">
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 hover:bg-primary/5 h-8">
-                            View Details
-                          </Button>
-                        </div>
-                      </td>
+                      <Button   variant="ghost" size="icon" className="h-9 w-9 rounded-lg hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/30"
+                      onClick={() => {
+                        setSelectedEmployee(employee);
+                        setIsDetailsOpen(true);
+    }}
+  >
+    <FileText className="h-4 w-4" />
+  </Button>
+</td>
                     </tr>
                   ))
                 )}
@@ -287,6 +300,54 @@ const EmployeeOverview = () => {
           </div>
         </CardContent>
       </Card>
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+  <DialogContent className="max-w-lg">
+    <DialogHeader>
+      <DialogTitle>Employee Performance Details</DialogTitle>
+    </DialogHeader>
+
+    {selectedEmployee && (
+      <div className="space-y-3">
+        <div className="flex justify-between">
+          <span className="font-medium">Name</span>
+          <span>{selectedEmployee.name}</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span className="font-medium">Email</span>
+          <span>{selectedEmployee.email}</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span className="font-medium">Department</span>
+          <span>{selectedEmployee.department}</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span className="font-medium">Position</span>
+          <span>{selectedEmployee.position}</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span className="font-medium">Average Rating</span>
+          <span>{selectedEmployee.avgRating.toFixed(1)}/5</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span className="font-medium">Total Reviews</span>
+          <span>{selectedEmployee.totalReviews}</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span className="font-medium">Status</span>
+          <Badge className={getStatusBadge(selectedEmployee.status)}>
+            {selectedEmployee.status}
+          </Badge>
+        </div>
+      </div>
+    )}
+  </DialogContent>
+</Dialog>
     </div>
   );
 };

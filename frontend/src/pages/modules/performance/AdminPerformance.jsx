@@ -272,7 +272,7 @@ const AdminPerformance = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <div className="bg-card border border-border/50 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+         <div className="bg-gradient-to-br from-background via-background to-blue-50 dark:to-blue-950/20 border border-blue-200/40 dark:border-blue-800/40 rounded-xl p-6 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                <Calendar className="w-16 h-16 text-blue-600" />
             </div>
@@ -287,7 +287,7 @@ const AdminPerformance = () => {
             </div>
           </div>
 
-          <div className="bg-card border border-border/50 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+          <div className="bg-gradient-to-br from-background via-background to-blue-50 dark:to-blue-950/20 border border-blue-200/40 dark:border-blue-800/40 rounded-xl p-6 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                <TrendingUp className="w-16 h-16 text-green-600" />
             </div>
@@ -302,7 +302,7 @@ const AdminPerformance = () => {
             </div>
           </div>
 
-          <div className="bg-card border border-border/50 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+       <div className="bg-gradient-to-br from-background via-background to-blue-50 dark:to-blue-950/20 border border-blue-200/40 dark:border-blue-800/40 rounded-xl p-6 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                <FileText className="w-16 h-16 text-purple-600" />
             </div>
@@ -317,7 +317,7 @@ const AdminPerformance = () => {
             </div>
           </div>
 
-          <div className="bg-card border border-border/50 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+         <div className="bg-gradient-to-br from-background via-background to-blue-50 dark:to-blue-950/20 border border-blue-200/40 dark:border-blue-800/40 rounded-xl p-6 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                <Award className="w-16 h-16 text-amber-600" />
             </div>
@@ -402,7 +402,7 @@ const AdminPerformance = () => {
                         <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground text-center align-middle">{cycle.totalReviews}</td>
                         <td className="px-6 py-4 border-b border-border/50 text-sm text-foreground font-medium text-center align-middle">{cycle.avgScore ? `${cycle.avgScore}/5` : '—'}</td>
                         <td className="px-6 py-4 border-b border-border/50 text-right align-middle whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center justify-end gap-2">
                             <button 
                               className="text-primary hover:text-primary/80 text-sm font-medium transition-colors"
                               onClick={() => handleViewCycle(cycle)}
