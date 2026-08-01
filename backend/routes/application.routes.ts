@@ -9,7 +9,10 @@ const router = express.Router()
 
 router.post(
   "/apply",
-  upload.single("resume"),
+  upload.fields([
+    { name: "resume", maxCount: 1 },
+    { name: "additionalDocuments", maxCount: 1 }
+  ]),
   applyJob
 )
 
