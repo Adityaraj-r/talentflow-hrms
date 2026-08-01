@@ -103,8 +103,7 @@ const InterviewScheduling = () => {
       })
   }, [applications, search])
 
-  const hourOptions = useMemo(() => Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")), [])
-  const minuteOptions = useMemo(() => ["00", "15", "30", "45"], [])
+
 
   const setField = (k, v) => setForm((p) => ({ ...p, [k]: v }))
 
@@ -269,72 +268,89 @@ const InterviewScheduling = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Interview Scheduling</h1>
-        <p className="text-muted-foreground">Schedule interviews and send dedicated candidate emails</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Interview Scheduling</h1>
+        </div>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Candidates ready for interviews</CardTitle>
-          <CardDescription>Only shortlisted or interview-stage applications are shown</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="relative w-full md:w-96">
+        <div className="p-4 border-b flex flex-col md:flex-row gap-4 items-center justify-between bg-muted/20">
+          <div className="relative flex-1 md:w-80">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              className="pl-9"
+              className="pl-10"
               placeholder="Search candidate..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-
-          {candidates.length === 0 ? (
-            <div className="text-sm text-muted-foreground py-6">No candidates available for scheduling.</div>
-          ) : (
-            <div className="space-y-3">
-              {candidates.map((c) => (
-                <div key={c._id} className="border rounded-lg p-4 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">{c.name}</div>
-                    <div className="text-sm text-muted-foreground">{c.email}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {c.selectedPositionTitle || c.hiringRoleName || c.jobId?.jobTitle || "Role"} · {c.status}
-                    </div>
-                  </div>
-                  {canWrite && (
-                    <Button
-                      onClick={() => {
-                        setSelected(c)
-                        setForm({
-                          interviewDate: "",
-                          startHour: "",
-                          startMinute: "",
-                          startPeriod: "AM",
-                          endHour: "",
-                          endMinute: "",
-                          endPeriod: "AM",
-                          mode: "",
-                          location: "",
-                          meetingLink: "",
-                          instructionsText: "",
-                          interviewerName: "",
-                          interviewerDesignation: "",
-                          officeAddress: "",
-                          customAddress: "",
-                        })
-                        setOpen(true)
-                      }}
-                    >
-                      <Calendar className="mr-2 h-4 w-4" />
-                      Schedule
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+        </div>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-muted/50 text-muted-foreground border-b border-border">
+                <tr>
+                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Candidate Name</th>
+                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Email</th>
+                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Applied Role</th>
+                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Current Stage</th>
+                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {candidates.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="p-8 text-center text-sm text-muted-foreground">
+                      No candidates available for scheduling.
+                    </td>
+                  </tr>
+                ) : candidates.map((c) => (
+                  <tr key={c._id} className="hover:bg-muted/30 transition-colors group">
+                    <td className="px-6 py-4 font-medium text-foreground">{c.name}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{c.email}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{c.selectedPositionTitle || c.hiringRoleName || c.jobId?.jobTitle || "Role"}</td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center rounded-full border border-white/10 px-2.5 py-0.5 text-xs font-semibold bg-muted/50 text-muted-foreground">
+                        {c.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {canWrite && (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setSelected(c)
+                            setForm({
+                              interviewDate: "",
+                              startHour: "",
+                              startMinute: "",
+                              startPeriod: "AM",
+                              endHour: "",
+                              endMinute: "",
+                              endPeriod: "AM",
+                              mode: "",
+                              location: "",
+                              meetingLink: "",
+                              instructionsText: "",
+                              interviewerName: "",
+                              interviewerDesignation: "",
+                              officeAddress: "",
+                              customAddress: "",
+                            })
+                            setOpen(true)
+                          }}
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          Schedule
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
 

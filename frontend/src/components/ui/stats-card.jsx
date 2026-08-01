@@ -8,74 +8,128 @@ export const StatsCard = ({
   trend,
   trendLabel,
   icon: Icon,
-  variant = "blue",
+  variant,
   isActive = false,
   onClick,
 }) => {
+
   const styles = {
     blue: {
-      card: "border-blue-200/50 dark:border-blue-500/20",
-      active: "ring-2 ring-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)] dark:shadow-[0_0_15px_rgba(59,130,246,0.1)] border-transparent",
-      iconBg: "bg-blue-100 dark:bg-blue-500/20",
-      icon: "text-blue-600 dark:text-blue-400",
-      progress: "bg-blue-500",
-      trendPositive: "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20",
-      trendNegative: "text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/20",
+      card: "bg-blue-500/5 border-blue-500/30",
+      hover: "hover:border-blue-500/60",
+      active: "border-blue-500 bg-blue-500/10",
+      iconBg: "bg-blue-500/20",
+      icon: "text-blue-500",
+      text: "text-blue-500",
+      trendPositive: "text-blue-500 bg-blue-500/20",
+      trendNegative: "text-rose-500 bg-rose-500/20",
     },
     amber: {
-      card: "border-amber-200/50 dark:border-amber-500/20",
-      active: "ring-2 ring-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.15)] dark:shadow-[0_0_15px_rgba(245,158,11,0.1)] border-transparent",
-      iconBg: "bg-amber-100 dark:bg-amber-500/20",
-      icon: "text-amber-600 dark:text-amber-400",
-      progress: "bg-amber-500",
-      trendPositive: "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20",
-      trendNegative: "text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/20",
+      card: "bg-amber-500/5 border-amber-500/30",
+      hover: "hover:border-amber-500/60",
+      active: "border-amber-500 bg-amber-500/10",
+      iconBg: "bg-amber-500/20",
+      icon: "text-amber-500",
+      text: "text-amber-500",
+      trendPositive: "text-amber-500 bg-amber-500/20",
+      trendNegative: "text-rose-500 bg-rose-500/20",
     },
     emerald: {
-      card: "border-emerald-200/50 dark:border-emerald-500/20",
-      active: "ring-2 ring-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)] dark:shadow-[0_0_15px_rgba(16,185,129,0.1)] border-transparent",
-      iconBg: "bg-emerald-100 dark:bg-emerald-500/20",
-      icon: "text-emerald-600 dark:text-emerald-400",
-      progress: "bg-emerald-500",
-      trendPositive: "text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20",
-      trendNegative: "text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/20",
+      card: "bg-emerald-500/5 border-emerald-500/30",
+      hover: "hover:border-emerald-500/60",
+      active: "border-emerald-500 bg-emerald-500/10",
+      iconBg: "bg-emerald-500/20",
+      icon: "text-emerald-500",
+      text: "text-emerald-500",
+      trendPositive: "text-emerald-500 bg-emerald-500/20",
+      trendNegative: "text-rose-500 bg-rose-500/20",
     },
     rose: {
-      card: "border-rose-200/50 dark:border-rose-500/20",
-      active: "ring-2 ring-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.15)] dark:shadow-[0_0_15px_rgba(244,63,94,0.1)] border-transparent",
-      iconBg: "bg-rose-100 dark:bg-rose-500/20",
-      icon: "text-rose-600 dark:text-rose-400",
-      progress: "bg-rose-500",
-      trendPositive: "text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20",
-      trendNegative: "text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/20",
+      card: "bg-rose-500/5 border-rose-500/30",
+      hover: "hover:border-rose-500/60",
+      active: "border-rose-500 bg-rose-500/10",
+      iconBg: "bg-rose-500/20",
+      icon: "text-rose-500",
+      text: "text-rose-500",
+      trendPositive: "text-emerald-500 bg-emerald-500/20",
+      trendNegative: "text-rose-500 bg-rose-500/20",
+    },
+    slate: {
+      card: "bg-slate-500/5 border-slate-500/30",
+      hover: "hover:border-slate-500/60",
+      active: "border-slate-500 bg-slate-500/10",
+      iconBg: "bg-slate-500/20",
+      icon: "text-slate-500",
+      text: "text-slate-500",
+      trendPositive: "text-slate-500 bg-slate-500/20",
+      trendNegative: "text-rose-500 bg-rose-500/20",
+    },
+    yellow: {
+      card: "bg-yellow-500/5 border-yellow-500/30",
+      hover: "hover:border-yellow-500/60",
+      active: "border-yellow-500 bg-yellow-500/10",
+      iconBg: "bg-yellow-500/20",
+      icon: "text-yellow-600 dark:text-yellow-500",
+      text: "text-yellow-600 dark:text-yellow-500",
+      trendPositive: "text-emerald-500 bg-emerald-500/20",
+      trendNegative: "text-rose-500 bg-rose-500/20",
+    },
+    darkred: {
+      card: "bg-red-800/5 border-red-800/30 dark:bg-red-900/10 dark:border-red-900/40",
+      hover: "hover:border-red-800/60",
+      active: "border-red-800 bg-red-800/10",
+      iconBg: "bg-red-800/20 dark:bg-red-900/30",
+      icon: "text-red-700 dark:text-red-500",
+      text: "text-red-700 dark:text-red-500",
+      trendPositive: "text-emerald-500 bg-emerald-500/20",
+      trendNegative: "text-red-700 bg-red-800/20",
     }
   }
-
+  
   // Map common aliases to standard styles
   styles.green = styles.emerald;
   styles.red = styles.rose;
   styles.orange = styles.amber;
   styles.sky = styles.blue;
 
-  const s = styles[variant] || styles.blue
+  let computedVariant = variant || "blue";
+  
+  // Enforce semantic enterprise colors across all dashboards based on meaning
+  const titleLower = (title || "").toLowerCase();
+  
+  if (titleLower.includes("cancel") || titleLower.includes("reject") || titleLower.includes("decline")) {
+    computedVariant = "darkred";
+  } else if (titleLower.includes("overdue") || titleLower.includes("critical") || titleLower.includes("late") || titleLower.includes("absent") || titleLower.includes("expiring")) {
+    computedVariant = "rose";
+  } else if (titleLower.includes("pending") || titleLower.includes("review") || titleLower.includes("draft") || titleLower.includes("waiting") || titleLower.includes("due")) {
+    computedVariant = "yellow";
+  } else if (titleLower.includes("progress") || titleLower.includes("active") || titleLower.includes("ongoing") || titleLower.includes("leave") || titleLower.includes("approval")) {
+    computedVariant = "amber";
+  } else if (titleLower.includes("completed") || titleLower.includes("success") || titleLower.includes("approved") || titleLower.includes("present") || titleLower.includes("accepted") || titleLower.includes("released") || titleLower.includes("done")) {
+    computedVariant = "emerald";
+  } else if (titleLower.includes("total") || titleLower.includes("overview") || titleLower.includes("all")) {
+    computedVariant = "blue";
+  }
+
+  const s = styles[computedVariant] || styles.blue
   const isTrendPositive = typeof trend === 'number' ? trend >= 0 : true
 
   return (
     <div
       onClick={onClick}
       className={cn(
-        "group relative flex flex-col justify-between w-full h-[160px] bg-background rounded-[16px] p-6 border shadow-sm transition-all duration-300 ease-out overflow-hidden",
-        onClick && "cursor-pointer hover:-translate-y-[4px] hover:shadow-md",
+        "group relative flex flex-col justify-between w-full h-[160px] bg-[#0F1629]/90 backdrop-blur-md rounded-[16px] p-6 border shadow-sm transition-all duration-200 ease-in-out",
         s.card,
+        onClick && "cursor-pointer hover:-translate-y-0.5 hover:shadow-md",
+        onClick && !isActive && s.hover,
         isActive && s.active,
-        !isActive && onClick && "opacity-90 hover:opacity-100"
       )}
     >
       {/* Top Header Row */}
       <div className="flex items-start justify-between relative z-10">
         <h3 className="text-[16px] font-semibold text-muted-foreground tracking-tight">{title}</h3>
         <div className={cn(
-          "flex items-center justify-center w-10 h-10 rounded-full transition-transform duration-500 group-hover:rotate-[15deg] group-hover:scale-110",
+          "flex items-center justify-center w-10 h-10 rounded-full transition-transform duration-500 ",
           s.iconBg
         )}>
           {Icon && (
@@ -104,17 +158,6 @@ export const StatsCard = ({
         </p>
       </div>
 
-      {/* Animated Bottom Progress Line */}
-      <div className="absolute bottom-0 left-0 h-[3px] w-full bg-muted/30">
-        <div 
-          className={cn(
-            "h-full transition-all duration-1000 ease-out", 
-            s.progress,
-            "w-0 group-hover:w-full",
-            isActive && "w-full"
-          )} 
-        />
-      </div>
     </div>
   )
 }

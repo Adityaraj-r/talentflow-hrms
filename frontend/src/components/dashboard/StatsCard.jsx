@@ -1,6 +1,6 @@
 import { StatsCard as GlobalStatsCard } from "@/components/ui/stats-card";
 
-const StatsCard = ({ title, value, description, icon, isLoading, variant, trend }) => {
+const StatsCard = ({ title, value, description, icon, isLoading, variant, trend, isActive, onClick }) => {
   if (isLoading) {
     return (
       <div className="bg-card rounded-xl p-6 border shadow-sm h-[140px] flex flex-col justify-between animate-pulse">
@@ -24,6 +24,8 @@ const StatsCard = ({ title, value, description, icon, isLoading, variant, trend 
       icon={icon}
       variant={variant || "blue"}
       trend={trend}
+      isActive={isActive}
+      onClick={onClick}
     />
   );
 };

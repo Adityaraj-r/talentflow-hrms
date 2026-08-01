@@ -1,3 +1,4 @@
+import { PriorityDot } from "@/components/ui/PriorityDot";
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from "react"
@@ -31,6 +32,7 @@ const StaffRequisition = () => {
   const [activeTab, setActiveTab] = useState(canCreateRequisition ? "create" : "pending")
   const [activeCardFilter, setActiveCardFilter] = useState("all")
   const [stats, setStats] = useState({ totalOpen: 0, pending: 0, approved: 0, rejected: 0 })
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   const totalRequisitions = stats.totalOpen + stats.rejected
   const percentOfTotal = (count) => totalRequisitions ? Math.round((count / totalRequisitions) * 100) : 0
@@ -54,11 +56,12 @@ const StaffRequisition = () => {
   }, [fetchStats])
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pb-12 pt-2">
-      <RecruitmentPageHeader
-        title="Staff Requisition"
-        // Removed summary and subtitle as requested
-      />
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Staff Requisitions</h1>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <RecruitmentKpiCard title="New Requests" value={totalRequisitions} icon={PlusCircle} trend={percentOfTotal(totalRequisitions)} trendLabel="of requisitions" helper={`${totalRequisitions} total requests`} accent="sky" active={activeCardFilter === "all"} onClick={() => { setActiveTab("history"); setActiveCardFilter("all"); }} />
@@ -92,17 +95,17 @@ const StaffRequisition = () => {
         </TabsList>
 
         {canCreateRequisition && (
-          <TabsContent value="create">
-            <RequisitionForm onSubmitted={fetchStats} />
+          <TabsContent value="create" forceMount>
+            {activeTab === "create" && <RequisitionForm onSubmitted={() => { fetchStats(); setRefreshTrigger(p => p + 1); setActiveTab("pending"); setActiveCardFilter("Pending"); }} />}
           </TabsContent>
         )}
 
-        <TabsContent value="pending">
-          <PendingRequisitions onChanged={fetchStats} externalFilter={activeCardFilter} />
+        <TabsContent value="pending" forceMount>
+          {activeTab === "pending" && <PendingRequisitions onChanged={fetchStats} externalFilter={activeCardFilter} refreshTrigger={refreshTrigger} />}
         </TabsContent>
 
-        <TabsContent value="history">
-          <RequisitionHistory externalFilter={activeCardFilter} />
+        <TabsContent value="history" forceMount>
+          {activeTab === "history" && <RequisitionHistory externalFilter={activeCardFilter} refreshTrigger={refreshTrigger} />}
         </TabsContent>
       </Tabs>
     </div>
@@ -110,6 +113,7 @@ const StaffRequisition = () => {
 }
 
 const RequisitionForm = ({ onSubmitted }) => {
+  const emptyHiringRole = { roleName: "", openings: 1, minSalary: "", maxSalary: "", experience: "", skills: "" }
   const [formData, setFormData] = useState({
     position: "",
     department: "",
@@ -431,68 +435,114 @@ const RequisitionForm = ({ onSubmitted }) => {
             <FileEdit className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <CardTitle className="text-[28px] font-bold text-foreground tracking-tight">Create Staff Requisition</CardTitle>
-            <CardDescription className="text-[14px] mt-1 text-muted-foreground">Submit a new staff requisition for approval</CardDescription>
+        <CardTitle className="text-[28px] font-bold text-foreground tracking-tight">Create Staff Requisition</CardTitle>
+        <CardDescription className="text-[14px] mt-1 text-muted-foreground">Submit a new staff requisition for approval</CardDescription>
           </div>
         </div>
       </CardHeader>
-      
-      <form onSubmit={handleSubmit} className="p-8 space-y-8">
-        
-        <div className="space-y-4 max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pb-12 pt-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[14px] font-semibold text-foreground flex items-center gap-1">
+              <Label htmlFor="position">
                 Job Opening <span className="text-red-500">*</span>
               </Label>
               <Input
+                id="position"
                 name="position"
+                type="text"
                 placeholder="Enter job opening"
                 value={formData.position}
                 onChange={handleChange}
                 required
-                className="h-12 px-4 text-[15px] border-border/60 bg-background hover:border-border focus:border-primary transition-colors"
               />
             </div>
+
             <div className="space-y-2">
-              <Label className="text-[14px] font-semibold text-foreground flex items-center gap-1">
+              <Label htmlFor="department">
                 Department <span className="text-red-500">*</span>
               </Label>
               <Input
+                id="department"
                 name="department"
+                type="text"
                 placeholder="Enter department"
                 value={formData.department}
                 onChange={handleChange}
                 required
-                className="h-12 px-4 text-[15px] border-border/60 bg-background hover:border-border focus:border-primary transition-colors"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label className="text-[14px] font-semibold text-foreground flex items-center gap-1">
+              <Label htmlFor="jobType">
                 Job Type <span className="text-red-500">*</span>
               </Label>
-              <Select value={formData.jobType} onValueChange={(val) => handleSelectChange("jobType", val)} required>
-                <SelectTrigger className="h-12 px-4 text-[15px] border-border/60 bg-background hover:border-border w-full">
+              <Select value={formData.jobType} onValueChange={(value) => handleSelectChange("jobType", value)} required>
+                <SelectTrigger id="jobType">
                   <SelectValue placeholder="Select job type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Full-time">Full-time</SelectItem>
-                  <SelectItem value="Part-time">Part-time</SelectItem>
-                  <SelectItem value="Contract">Contract</SelectItem>
-                  <SelectItem value="Internship">Internship</SelectItem>
+                  <SelectItem value="full-time">Full Time</SelectItem>
+                  <SelectItem value="part-time">Part Time</SelectItem>
+                  <SelectItem value="contract">Contract</SelectItem>
+                  <SelectItem value="temporary">Temporary</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
             <div className="space-y-2">
-              <Label className="text-[14px] font-semibold text-foreground flex items-center gap-1">
-                Urgency Level
-              </Label>
-              <Select value={formData.urgency} onValueChange={(val) => handleSelectChange("urgency", val)}>
-                <SelectTrigger className="h-12 px-4 text-[15px] border-border/60 bg-background hover:border-border w-full">
-                  <SelectValue placeholder="Select urgency" />
+              <Label htmlFor="numberOfPositions">Number of Positions</Label>
+              <Input
+                id="numberOfPositions"
+                name="numberOfPositions"
+                type="number"
+                min="1"
+                value={formData.hiringType === "single" ? (formData.numberOfPositions !== "" ? String(formData.numberOfPositions) : "") : String(totalPositions)}
+                disabled={formData.hiringType === "multiple"}
+                className={formData.hiringType === "multiple" ? "bg-muted/40 text-muted-foreground cursor-not-allowed" : ""}
+                onChange={formData.hiringType === "single" ? handleChange : undefined}
+                onKeyDown={formData.hiringType === "single" ? handleKeyDownPositions : undefined}
+                required
+              />
+              {formData.hiringType === "single" && numberOfPositionsError && (
+                <p className="text-red-500 text-sm mt-1">{numberOfPositionsError}</p>
+              )}
+            </div>
+
+            {/* HIRING TYPE */}
+            <div className="space-y-2">
+              <Label>Hiring Type</Label>
+              <div className="flex items-center gap-6 pt-1.5">
+                <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                  <input
+                    type="radio"
+                    name="hiringType"
+                    value="single"
+                    checked={formData.hiringType === "single"}
+                    onChange={(e) => handleSelectChange("hiringType", e.target.value)}
+                    className="accent-violet-600 h-4 w-4 cursor-pointer"
+                  />
+                  <span>Single Role</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                  <input
+                    type="radio"
+                    name="hiringType"
+                    value="multiple"
+                    checked={formData.hiringType === "multiple"}
+                    onChange={(e) => handleSelectChange("hiringType", e.target.value)}
+                    className="accent-violet-600 h-4 w-4 cursor-pointer"
+                  />
+                  <span>Multiple Roles</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="urgency">Urgency Level</Label>
+              <Select value={formData.urgency} onValueChange={(value) => handleSelectChange("urgency", value)}>
+                <SelectTrigger id="urgency">
+                  <SelectValue placeholder="Select urgency level" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">Low</SelectItem>
@@ -502,156 +552,202 @@ const RequisitionForm = ({ onSubmitted }) => {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-            <div className="space-y-2">
-              <Label className="text-[14px] font-semibold text-foreground">Hiring Type</Label>
-              <div className="flex bg-muted/50 p-1 rounded-lg border border-border/50 w-full h-12">
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, hiringType: 'single' }))}
-                  className={`flex-1 rounded-md text-[14px] font-semibold transition-all ${formData.hiringType === 'single' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                >
-                  Single Role
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, hiringType: 'multiple' }))}
-                  className={`flex-1 rounded-md text-[14px] font-semibold transition-all ${formData.hiringType === 'multiple' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                >
-                  Multiple Roles
-                </button>
-              </div>
-            </div>
 
             {formData.hiringType === "single" && (
-              <div className="space-y-2">
-                <Label className="text-[14px] font-semibold text-foreground">Number of Positions</Label>
-                <div className="flex items-center w-full h-12 border border-border/60 rounded-md overflow-hidden bg-background">
-                  <button type="button" onClick={() => setFormData(prev => ({ ...prev, numberOfPositions: Math.max(1, Number(prev.numberOfPositions || 1) - 1) }))} className="w-12 h-full flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors border-r border-border/50">
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <input type="number" name="numberOfPositions" value={formData.numberOfPositions} onChange={handleChange} onKeyDown={handleKeyDownPositions} className="flex-1 h-full text-center text-[15px] font-medium bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                  <button type="button" onClick={() => setFormData(prev => ({ ...prev, numberOfPositions: Number(prev.numberOfPositions || 1) + 1 }))} className="w-12 h-full flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors border-l border-border/50">
-                    <Plus className="w-4 h-4" />
-                  </button>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="minSalary">Minimum Salary</Label>
+                  <Input
+                    id="minSalary"
+                    name="minSalary"
+                    type="number"
+                    placeholder="Enter minimum salary"
+                    value={formData.minSalary}
+                    onChange={handleChange}
+                    onKeyDown={handleKeyDownSalary}
+                  />
                 </div>
-                {numberOfPositionsError && <p className="text-[13px] text-red-500 mt-1">{numberOfPositionsError}</p>}
-              </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="maxSalary">Maximum Salary</Label>
+                  <Input
+                    id="maxSalary"
+                    name="maxSalary"
+                    type="number"
+                    placeholder="Enter maximum salary"
+                    value={formData.maxSalary}
+                    onChange={handleChange}
+                    onKeyDown={handleKeyDownSalary}
+                  />
+                  {salaryError && (
+                    <p className="text-red-500 text-sm mt-1">{salaryError}</p>
+                  )}
+                </div>
+              </>
             )}
+
+            <div className="space-y-2">
+              <Label htmlFor="applicationDeadline">
+                Application Deadline <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="applicationDeadline"
+                name="applicationDeadline"
+                type="date"
+                min={todayStr}
+                placeholder="Select application deadline"
+                value={formData.applicationDeadline}
+                onChange={handleChange}
+                onKeyDown={(e) => e.preventDefault()}
+                required
+              />
+              {deadlineError && (
+                <p className="text-red-500 text-sm mt-1">{deadlineError}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reason">
+                Reason for Requisition <span className="text-red-500">*</span>
+              </Label>
+              <Select value={formData.reason} onValueChange={(value) => handleSelectChange("reason", value)} required>
+                <SelectTrigger id="reason">
+                  <SelectValue placeholder="Select reason" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new-position">New Position</SelectItem>
+                  <SelectItem value="replacement">Replacement</SelectItem>
+                  <SelectItem value="additional-headcount">Additional Headcount</SelectItem>
+                  <SelectItem value="project-based">Project Based</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="jobDescription">Job Description</Label>
+            <Textarea
+              id="jobDescription"
+              name="jobDescription"
+              placeholder="Enter job description"
+              value={formData.jobDescription}
+              onChange={handleChange}
+              rows={4}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="requirements">Requirements</Label>
+            <Textarea
+              id="requirements"
+              name="requirements"
+              placeholder="Enter job requirements"
+              value={formData.requirements}
+              onChange={handleChange}
+              rows={4}
+            />
           </div>
 
           {formData.hiringType === "multiple" && (
-            <div className="space-y-4 pt-4 border-t border-border/30">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[16px] font-semibold text-foreground">Multiple Roles Configuration</h4>
-                <Button type="button" variant="outline" size="sm" onClick={addHiringRole} className="h-9">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Add Role
-                </Button>
+            <div className="space-y-3 rounded-lg border border-white/10 bg-muted/10 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold">Hiring Breakdown</h3>
+                  <p className="text-xs text-muted-foreground">Define the roles included in this single requisition.</p>
+                </div>
+                <div className="text-sm font-medium">Total Positions: {totalPositions}</div>
               </div>
-              
-              {formData.hiringRoles.map((role, index) => (
-                <div key={index} className="p-5 border border-border/50 rounded-xl bg-muted/10 relative group">
-                  {index > 0 && (
-                    <button type="button" onClick={() => removeHiringRole(index)} className="absolute top-4 right-4 text-muted-foreground hover:text-red-500 transition-colors">
-                      <XCircle className="h-5 w-5" />
-                    </button>
-                  )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pr-8">
-                    <div className="space-y-2">
-                      <Label className="text-[14px] font-semibold text-foreground flex items-center gap-1">Role Title <span className="text-red-500">*</span></Label>
-                      <Input value={role.roleName} onChange={(e) => updateHiringRole(index, "roleName", e.target.value)} required placeholder="e.g. Frontend Developer" className="h-11 text-[15px]" />
+
+              <div className="space-y-3">
+                {formData.hiringRoles.map((role, index) => (
+                  <div key={index} className="grid gap-3 rounded-md border border-white/10 bg-background/70 p-3 md:grid-cols-12">
+                    <div className="space-y-1 md:col-span-2">
+                      <Label>Role Name</Label>
+                      <Input
+                        value={role.roleName}
+                        onChange={(e) => updateHiringRole(index, "roleName", e.target.value)}
+                        placeholder="Frontend Engineer"
+                      />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-[14px] font-semibold text-foreground">Positions</Label>
-                      <div className="flex items-center w-full h-11 border border-border/60 rounded-md overflow-hidden bg-background">
-                        <button type="button" onClick={() => updateHiringRole(index, "openings", Math.max(1, Number(role.openings || 1) - 1))} className="w-11 h-full flex items-center justify-center hover:bg-muted text-muted-foreground border-r border-border/50"><Minus className="w-4 h-4" /></button>
-                        <input type="number" value={role.openings} onChange={(e) => updateHiringRole(index, "openings", e.target.value)} onKeyDown={handleKeyDownPositions} className="flex-1 h-full text-center text-[15px] font-medium bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                        <button type="button" onClick={() => updateHiringRole(index, "openings", Number(role.openings || 1) + 1)} className="w-11 h-full flex items-center justify-center hover:bg-muted text-muted-foreground border-l border-border/50"><Plus className="w-4 h-4" /></button>
-                      </div>
+                    <div className="space-y-1 md:col-span-1">
+                      <Label>Openings</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={role.openings}
+                        onChange={(e) => updateHiringRole(index, "openings", e.target.value)}
+                        onKeyDown={handleKeyDownPositions}
+                      />
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <Label>Min Salary</Label>
+                      <Input
+                        type="number"
+                        value={role.minSalary}
+                        onChange={(e) => updateHiringRole(index, "minSalary", e.target.value)}
+                        onKeyDown={handleKeyDownSalary}
+                        placeholder="Min"
+                      />
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <Label>Max Salary</Label>
+                      <Input
+                        type="number"
+                        value={role.maxSalary}
+                        onChange={(e) => updateHiringRole(index, "maxSalary", e.target.value)}
+                        onKeyDown={handleKeyDownSalary}
+                        placeholder="Max"
+                      />
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <Label>Experience</Label>
+                      <Input
+                        value={role.experience}
+                        onChange={(e) => updateHiringRole(index, "experience", e.target.value)}
+                        placeholder="Optional"
+                      />
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <Label>Skills/Requirements</Label>
+                      <Input
+                        value={role.skills}
+                        onChange={(e) => updateHiringRole(index, "skills", e.target.value)}
+                        placeholder="Optional"
+                      />
+                    </div>
+                    <div className="flex items-end md:col-span-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeHiringRole(index)}
+                        disabled={formData.hiringRoles.length === 1}
+                        className="w-full"
+                      >
+                        Remove
+                      </Button>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              {hiringBreakdownError && (
+                <p className="text-sm text-red-500">{hiringBreakdownError}</p>
+              )}
+
+              <Button type="button" variant="outline" onClick={addHiringRole}>
+                + Add Role
+              </Button>
             </div>
           )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label className="text-[14px] font-semibold text-foreground">Target Salary (Min)</Label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
-                <Input name="minSalary" value={formData.minSalary} onChange={handleChange} onKeyDown={handleKeyDownSalary} placeholder="0.00" className="pl-8 h-12 text-[15px]" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[14px] font-semibold text-foreground">Target Salary (Max)</Label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
-                <Input name="maxSalary" value={formData.maxSalary} onChange={handleChange} onKeyDown={handleKeyDownSalary} placeholder="0.00" className="pl-8 h-12 text-[15px]" />
-              </div>
-              {salaryError && <p className="text-[13px] text-red-500 mt-1">{salaryError}</p>}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label className="text-[14px] font-semibold text-foreground">Application Deadline</Label>
-              <Input type="date" name="applicationDeadline" value={formData.applicationDeadline} onChange={handleChange} className="h-12 text-[15px] px-4 block w-full" />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-[14px] font-semibold text-foreground flex items-center gap-1">
-              Job Description <span className="text-red-500">*</span>
-            </Label>
-            <Textarea
-              name="jobDescription"
-              placeholder="Outline the primary responsibilities and expectations for this role."
-              value={formData.jobDescription}
-              onChange={handleChange}
-              required
-              className="min-h-[120px] p-4 text-[15px] resize-y border-border/60 bg-background hover:border-border focus:border-primary transition-colors leading-relaxed"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-[14px] font-semibold text-foreground">Requirements & Qualifications</Label>
-            <Textarea
-              name="requirements"
-              placeholder="List specific skills, experience, or educational requirements."
-              value={formData.requirements}
-              onChange={handleChange}
-              className="min-h-[120px] p-4 text-[15px] resize-y border-border/60 bg-background hover:border-border focus:border-primary transition-colors leading-relaxed"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label className="text-[14px] font-semibold text-foreground">Business Justification</Label>
-            <Textarea
-              name="reason"
-              placeholder="Why is this position necessary? (e.g., Replacement, New Project, Growth)"
-              value={formData.reason}
-              onChange={handleChange}
-              className="min-h-[100px] p-4 text-[15px] resize-y border-border/60 bg-background hover:border-border focus:border-primary transition-colors leading-relaxed"
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-end pt-6 border-t border-border/50 gap-4 mt-8">
-          <Button type="button" variant="outline" className="h-12 px-6 rounded-lg text-[15px] font-semibold">
-            Save as Draft
-          </Button>
-          <Button 
-            type="submit" 
-            disabled={isSubmitting || salaryError !== "" || numberOfPositionsError !== ""}
-            className="h-12 px-8 rounded-lg text-[15px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
-          >
-            {isSubmitting ? "Submitting..." : "Submit Requisition"}
-          </Button>
-        </div>
-      </form>
+        </form>
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        <Button variant="outline">Cancel</Button>
+        <Button onClick={handleSubmit} disabled={isSubmitting}>
+          {isSubmitting ? "Submitting..." : "Submit Requisition"}
+        </Button>
+      </CardFooter>
     </Card>
   )
 }
@@ -848,10 +944,11 @@ const PendingRequisitions = ({ onChanged, externalFilter }) => {
           <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30 border-b border-border/50">
-                <TableHead className="w-[30%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Job Details</TableHead>
+                <TableHead className="w-[20%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Job Details</TableHead>
+                <TableHead className="w-[15%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Department</TableHead>
                 <TableHead className="w-[10%] px-6 h-[52px] align-middle text-center text-[14px] font-semibold text-foreground">Positions</TableHead>
                 <TableHead className="w-[15%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Requested By</TableHead>
-                <TableHead className="w-[10%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Priority</TableHead>
+                <TableHead className="w-[10%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-center">Priority</TableHead>
                 <TableHead className="w-[12%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Request Date</TableHead>
                 <TableHead className="w-[10%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-center">Status</TableHead>
                 <TableHead className="w-[13%] px-6 h-[52px] align-middle text-center text-[14px] font-semibold text-foreground">Actions</TableHead>
@@ -860,7 +957,7 @@ const PendingRequisitions = ({ onChanged, externalFilter }) => {
             <TableBody>
               {paginatedData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-64 text-center">
+                  <TableCell colSpan={8} className="h-64 text-center">
                     <div className="flex flex-col items-center justify-center text-muted-foreground space-y-4">
                       <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center">
                         <CheckCircle2 className="h-8 w-8 opacity-50" />
@@ -872,19 +969,18 @@ const PendingRequisitions = ({ onChanged, externalFilter }) => {
               ) : (
                 paginatedData.map((req) => (
                   <TableRow key={req._id} className="hover:bg-muted/20 transition-all duration-200 h-[64px] border-b border-border/50">
-                    {/* Merged Job Details */}
                     <TableCell className="px-6 py-3 align-middle text-left">
-                      <div className="flex flex-col max-w-[280px]">
+                      <div className="flex flex-col max-w-[200px]">
                         <span className="text-[12px] font-semibold text-muted-foreground mb-0.5">
                           {req.reqId || `REQ-2026-${req._id.slice(-4).toUpperCase()}`}
                         </span>
                         <span className="font-semibold text-[14px] text-foreground truncate" title={req.position}>
                           {req.position}
                         </span>
-                        <span className="text-[13px] text-muted-foreground truncate" title={req.department}>
-                          {req.department}
-                        </span>
                       </div>
+                    </TableCell>
+                    <TableCell className="px-6 py-3 align-middle text-[13px] text-muted-foreground truncate max-w-[150px]" title={req.department}>
+                      {req.department}
                     </TableCell>
 
                     <TableCell className="px-6 py-3 align-middle text-center text-[14px] font-medium text-foreground">
@@ -903,14 +999,9 @@ const PendingRequisitions = ({ onChanged, externalFilter }) => {
                       </div>
                     </TableCell>
 
-                    <TableCell className="px-6 py-3 align-middle text-left">
-                      <span className={`inline-flex items-center text-[13px] font-medium ${
-                        req.priority === "High" ? "text-red-500" :
-                        req.priority === "Medium" ? "text-amber-500" : "text-emerald-500"
-                      }`}>
-                        {req.priority || "Medium"}
-                      </span>
-                    </TableCell>
+                    <TableCell className="px-6 py-3 align-middle text-center">
+                        <PriorityDot priority={req.priority} />
+                      </TableCell>
 
                     <TableCell className="px-6 py-3 align-middle text-[14px] font-medium text-foreground text-left whitespace-nowrap">
                       {new Date(req.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -975,14 +1066,9 @@ const PendingRequisitions = ({ onChanged, externalFilter }) => {
                     <span className="text-[14px] font-medium text-foreground">{req.numberOfPositions || 1}</span>
                   </div>
                   <div>
-                    <span className="text-[12px] text-muted-foreground block mb-1">Priority</span>
-                    <span className={`text-[14px] font-medium ${
-                      req.priority === "High" ? "text-red-500" :
-                      req.priority === "Medium" ? "text-amber-500" : "text-emerald-500"
-                    }`}>
-                      {req.priority || "Medium"}
-                    </span>
-                  </div>
+                      <span className="text-[12px] text-muted-foreground block mb-1">Priority</span>
+                      <PriorityDot priority={req.priority} className="w-auto justify-start" />
+                    </div>
                   <div className="col-span-2">
                     <span className="text-[12px] text-muted-foreground block mb-1">Requested By</span>
                     <span className="text-[14px] font-medium text-foreground">
@@ -1073,9 +1159,9 @@ const PendingRequisitions = ({ onChanged, externalFilter }) => {
                     <span className="text-[15px] font-medium text-foreground">{selectedReq.requestedBy?.firstName ? `${selectedReq.requestedBy.firstName} ${selectedReq.requestedBy.lastName}` : "System"}</span>
                   </div>
                   <div className="bg-muted/5 p-3 rounded-lg border border-border/50">
-                    <span className="text-[12px] font-medium text-muted-foreground block mb-1">Priority</span>
-                    <span className={`text-[15px] font-medium ${selectedReq.priority === 'High' ? 'text-red-500' : selectedReq.priority === 'Medium' ? 'text-amber-500' : 'text-emerald-500'}`}>{selectedReq.priority || 'Medium'}</span>
-                  </div>
+                      <span className="text-[12px] font-medium text-muted-foreground block mb-1">Priority</span>
+                      <PriorityDot priority={selectedReq.priority} className="w-auto justify-start" />
+                    </div>
                   <div className="bg-muted/5 p-3 rounded-lg border border-border/50">
                     <span className="text-[12px] font-medium text-muted-foreground block mb-1">Target Hire Date</span>
                     <span className="text-[15px] font-medium text-foreground">{selectedReq.targetHireDate ? new Date(selectedReq.targetHireDate).toLocaleDateString() : 'N/A'}</span>
@@ -1291,7 +1377,8 @@ const RequisitionHistory = ({ externalFilter }) => {
           <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30 border-b border-border/50">
-                <TableHead className="w-[30%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Job Details</TableHead>
+                <TableHead className="w-[20%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Job Details</TableHead>
+                <TableHead className="w-[15%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Department</TableHead>
                 <TableHead className="w-[12%] px-6 h-[52px] align-middle text-center text-[14px] font-semibold text-foreground">Positions</TableHead>
                 <TableHead className="w-[18%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Requested By</TableHead>
                 <TableHead className="w-[15%] px-6 h-[52px] align-middle text-[14px] font-semibold text-foreground text-left">Request Date</TableHead>
@@ -1323,11 +1410,11 @@ const RequisitionHistory = ({ externalFilter }) => {
                         <span className="font-semibold text-[14px] text-foreground truncate" title={req.position}>
                           {req.position}
                         </span>
-                        <span className="text-[13px] text-muted-foreground truncate" title={req.department}>
-                          {req.department}
-                        </span>
-                      </div>
+</div>
                     </TableCell>
+                      <TableCell className="px-6 py-3 align-middle text-[13px] text-muted-foreground truncate max-w-[150px]" title={req.department}>
+                        {req.department}
+                      </TableCell>
 
                     <TableCell className="px-6 py-3 align-middle text-center text-[14px] font-medium text-foreground">
                       {req.numberOfPositions || 1}

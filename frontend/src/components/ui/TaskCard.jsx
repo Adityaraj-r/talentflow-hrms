@@ -1,3 +1,4 @@
+import { PriorityDot } from "@/components/ui/PriorityDot";
 import { Card } from "./card"
 import { Badge } from "./badge"
 import { Calendar, User } from "lucide-react"
@@ -17,9 +18,7 @@ const TaskCard = ({ task }) => {
       <div className="space-y-3">
         <div className="flex items-start justify-between">
           <h4 className="font-semibold text-sm">{task.title}</h4>
-          <Badge variant="outline" className={getPriorityColor(task.priority)}>
-            {task.priority}
-          </Badge>
+          <PriorityDot priority={task.priority} className="justify-start w-auto" />
         </div>
         
         <p className="text-xs text-muted-foreground line-clamp-2">{task.desc}</p>
