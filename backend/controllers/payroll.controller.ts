@@ -758,9 +758,29 @@ export const patchPayrollWorkflow = async (req: AuthRequest, res: Response) => {
 
         let stage: string
         if (payroll.status === "Generated") {
-          if (!isFinanceManager(role) && !isAdmin(role))
-            return res.status(403).json({ success: false, error: "Finance Manager or Admin only" })
-          stage = "verify"
+
+          // Payroll with Finance approval required
+          if (payroll.financeApprovalRequired) {
+
+            if (!isFinanceManager(role) && !isAdmin(role))
+              return res.status(403).json({
+                success: false,
+                error: "Finance Manager or Admin only"
+              })
+
+            stage = "verify"
+
+          } else {
+
+            // Payroll that goes directly to HR
+            if (!isHRManager(role) && !isAdmin(role))
+              return res.status(403).json({
+                success: false,
+                error: "HR Manager or Admin only"
+              })
+
+            stage = "hr_approve"
+          }
         } else if (payroll.status === "Verified") {
           if (!isHRManager(role) && !isAdmin(role))
             return res.status(403).json({ success: false, error: "HR Manager or Admin only" })
