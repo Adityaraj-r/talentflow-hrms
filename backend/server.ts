@@ -54,7 +54,10 @@ import User from './models/User.model';
 import { initCronJobs } from './scripts/cronJobs';
 import dns from 'dns'
 import payrollPolicyRoutes from './routes/payrollPolicy.routes';
-
+dns.setServers([
+  "8.8.8.8",      
+  "1.1.1.1"      
+]);
 
 const app = express();
 const PORT = process.env.PORT || 5001;

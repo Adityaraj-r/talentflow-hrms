@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Award, Check, X, Search, Clock, Loader2, TrendingUp, ShieldCheck, Edit, RefreshCw, CheckCircle } from "lucide-react"
+import { Award, Check, X, Search, Clock, Loader2, TrendingUp, ShieldCheck, Edit, RefreshCw, CheckCircle, Eye } from "lucide-react"
 import { toast } from "sonner"
 import apiClient from "@/services/apiClient"
 import { cn } from "@/lib/utils"
@@ -56,7 +57,14 @@ const ApprovalBoard = ({ userRole }) => {
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState("")
-  const [verifyData, setVerifyData] = useState(null) 
+  const [verifyData, setVerifyData] = useState(null)
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [selectedPromotion, setSelectedPromotion] = useState(null)
+
+  const handleViewDetails = (item) => {
+    setSelectedPromotion(item)
+    setDetailsModalOpen(true)
+  }
 
   const { data: response, isLoading } = useQuery({
     queryKey: ['promotions', page, searchTerm],
@@ -153,9 +161,9 @@ const ApprovalBoard = ({ userRole }) => {
                   <th className="p-4">Current Role & Salary</th>
                   <th className="p-4">Proposed Role & Salary</th>
                   <th className="p-4">Timeline</th>
-                  <th className="p-4 min-w-[150px]">Business Case</th>
+                  <th className="p-4 min-w-[150px] text-center">Business Case</th>
                   <th className="p-4 text-center">Status</th>
-                  {userRole !== "ADMIN" && userRole !== "DIRECT_MANAGER" && <th className="p-4 text-center">Actions</th>}
+                  <th className="p-4 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -203,7 +211,7 @@ const ApprovalBoard = ({ userRole }) => {
 
                       <td className="p-4">
                         <div 
-                          className="max-w-[180px] truncate text-xs text-muted-foreground cursor-help"
+                          className="max-w-[180px] truncate text-xs text-muted-foreground cursor-help mx-auto text-center"
                           title={item.justification}
                         >
                           {item.justification}
@@ -225,47 +233,49 @@ const ApprovalBoard = ({ userRole }) => {
                         </span>
                       </td>
                       
-                      {userRole !== "ADMIN" && userRole !== "DIRECT_MANAGER" && (
-                        <td className="p-4">
-                          <div className="flex justify-center gap-2">
-                            {userRole === "HR_MANAGER" && item.status === "Pending HR Review" && (
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="h-8 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/50 dark:hover:text-blue-300 transition-colors" 
-                                onClick={() => handleAction(item._id, 'Pending Country Manager')}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" /> Verify Compliance
-                              </Button>
-                            )}
-
-                            {userRole === "COUNTRY_MANAGER" && (item.status === "Pending Country Manager" || item.status === "Re-verify") && (
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-100 hover:text-indigo-700 dark:text-indigo-400 dark:border-indigo-800 dark:hover:bg-indigo-900/50 dark:hover:text-indigo-300 transition-colors" 
-                                onClick={() => setVerifyData(item)}
-                              >
-                                <Edit className="h-4 w-4 mr-1" /> Edit & Verify
-                              </Button>
-                            )}
+                      <td className="p-4">
+                        <div className="flex justify-center gap-2">
+                          <Button size="icon" variant="outline" className="h-8 w-8 text-slate-600 border-slate-200 hover:bg-slate-100 dark:text-slate-400 dark:border-slate-800 dark:hover:bg-slate-900 transition-colors" onClick={() => handleViewDetails(item)} title="View Details">
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           
-                            {userRole === "CEO" && item.status === "Pending CEO" && (
-                              <>
-                                <Button size="icon" variant="outline" className="h-8 w-8 text-green-600 border-green-200 hover:bg-green-100 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900/50 transition-colors" onClick={() => handleAction(item._id, 'Approved')} title="Approve">
-                                  <Check className="h-4 w-4" />
-                                </Button>
-                                <Button size="icon" variant="outline" className="h-8 w-8 text-orange-600 border-orange-200 hover:bg-orange-100 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-900/50 transition-colors" onClick={() => handleAction(item._id, 'Re-verify')} title="Send back to Country Manager">
-                                  <RefreshCw className="h-4 w-4" />
-                                </Button>
-                                <Button size="icon" variant="outline" className="h-8 w-8 text-red-600 border-red-200 hover:bg-red-100 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/50 transition-colors" onClick={() => handleAction(item._id, 'Rejected')} title="Reject">
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      )}
+                          {userRole === "HR_MANAGER" && item.status === "Pending HR Review" && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-8 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/50 dark:hover:text-blue-300 transition-colors" 
+                              onClick={() => handleAction(item._id, 'Pending Country Manager')}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" /> Verify Compliance
+                            </Button>
+                          )}
+
+                          {userRole === "COUNTRY_MANAGER" && (item.status === "Pending Country Manager" || item.status === "Re-verify") && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-100 hover:text-indigo-700 dark:text-indigo-400 dark:border-indigo-800 dark:hover:bg-indigo-900/50 dark:hover:text-indigo-300 transition-colors" 
+                              onClick={() => setVerifyData(item)}
+                            >
+                              <Edit className="h-4 w-4 mr-1" /> Edit & Verify
+                            </Button>
+                          )}
+                        
+                          {userRole === "CEO" && item.status === "Pending CEO" && (
+                            <>
+                              <Button size="icon" variant="outline" className="h-8 w-8 text-green-600 border-green-200 hover:bg-green-100 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900/50 transition-colors" onClick={() => handleAction(item._id, 'Approved')} title="Approve">
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="outline" className="h-8 w-8 text-orange-600 border-orange-200 hover:bg-orange-100 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-900/50 transition-colors" onClick={() => handleAction(item._id, 'Re-verify')} title="Send back to Country Manager">
+                                <RefreshCw className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="outline" className="h-8 w-8 text-red-600 border-red-200 hover:bg-red-100 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/50 transition-colors" onClick={() => handleAction(item._id, 'Rejected')} title="Reject">
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -274,6 +284,32 @@ const ApprovalBoard = ({ userRole }) => {
           </div>
         </CardContent>
       </Card>
+      
+      <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Promotion Business Case Details</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-sm bg-muted/20 p-4 rounded-md border">
+              <div><span className="text-muted-foreground block text-xs">Employee Name</span> <span className="font-medium">{selectedPromotion?.employeeName}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Employee ID</span> <span className="font-medium">{selectedPromotion?.employeeId}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Current Role</span> <span className="font-medium">{selectedPromotion?.currentDesignation}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Proposed Role</span> <span className="font-medium">{selectedPromotion?.newDesignation}</span></div>
+            </div>
+            
+            <div>
+              <span className="text-sm font-semibold text-foreground block mb-1">Business Justification:</span>
+              <div className="p-3 bg-muted/50 rounded-md text-sm whitespace-pre-wrap border border-muted">
+                {selectedPromotion?.justification || "No justification provided."}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setDetailsModalOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

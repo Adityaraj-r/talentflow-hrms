@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { FileText, Check, X, Search, Loader2 } from "lucide-react";
+import { FileText, Check, X, Search, Loader2, Eye } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -305,14 +305,14 @@ const TicketListTable = ({ mode }) => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Employee</TableHead>
-              <TableHead className="hidden md:table-cell">Employee ID</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Details</TableHead>
-              <TableHead>Reason</TableHead>
-              {mode === "all" && <TableHead>Status</TableHead>}
-              <TableHead>Date</TableHead>
-              {mode === "pending" && <TableHead className="text-right">Actions</TableHead>}
+              <TableHead className="text-center"><div className="w-full flex justify-center">Employee</div></TableHead>
+              <TableHead className="hidden md:table-cell text-center"><div className="w-full flex justify-center">Employee ID</div></TableHead>
+              <TableHead className="text-center"><div className="w-full flex justify-center">Type</div></TableHead>
+              <TableHead className="text-center"><div className="w-full flex justify-center">Details</div></TableHead>
+              <TableHead className="text-center"><div className="w-full flex justify-center">Reason</div></TableHead>
+              {mode === "all" && <TableHead className="text-center"><div className="w-full flex justify-center">Status</div></TableHead>}
+              <TableHead className="text-center"><div className="w-full flex justify-center">Date</div></TableHead>
+              {mode === "pending" && <TableHead className="text-center"><div className="w-full flex justify-center">Actions</div></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -324,35 +324,41 @@ const TicketListTable = ({ mode }) => {
               </TableRow>
             ) : filtered.map(t => (
               <TableRow key={t._id}>
-                <TableCell className="align-middle">
-                  <div className="flex flex-col">
+                <TableCell className="align-middle text-center">
+                  <div className="w-full flex flex-col items-center justify-center">
                     <span className="font-medium">{t.employeeName}</span>
                     <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
                       {t.employeeCode || "N/A"}
                     </span>
                   </div>
                 </TableCell>
-                <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground align-middle">
-                  {t.employeeCode || "-"}
+                <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground align-middle text-center">
+                  <div className="w-full flex justify-center">
+                    {t.employeeCode || "-"}
+                  </div>
                 </TableCell>
-                <TableCell className="align-middle">
-                  <Badge variant="outline" className={t.type === "advance"
-                    ?"text-sky-600"
-                        : "text-violet-600"}>
-                    {t.type === "advance" ? "Salary Advance" : "Travel Ticket"}
-                  </Badge>
+                <TableCell className="align-middle text-center">
+                  <div className="w-full flex justify-center">
+                    <Badge variant="outline" className={t.type === "advance"
+                      ?"text-sky-600"
+                          : "text-violet-600"}>
+                      {t.type === "advance" ? "Salary Advance" : "Travel Ticket"}
+                    </Badge>
+                  </div>
                 </TableCell>
-              <TableCell className="align-middle">
+              <TableCell className="align-middle text-center">
   {t.type === "advance" ? (
-    <span className="text-black dark:text-white">
-      ₹{Number(t.amount || 0).toLocaleString()}
-    </span>
+    <div className="w-full flex justify-center">
+      <span className="text-black dark:text-white">
+        ₹{Number(t.amount || 0).toLocaleString()}
+      </span>
+    </div>
   ) : (
-    <div className="flex flex-col">
-      <span className="text-sm">
+    <div className="w-full flex flex-col items-center justify-center">
+      <span className="text-sm text-center">
         {t.destination || "—"}
       </span>
-      <span className="text-xs text-muted-foreground">
+      <span className="text-xs text-muted-foreground text-center">
         {t.ticketClass
           ? t.ticketClass
               .split("-")
@@ -363,20 +369,32 @@ const TicketListTable = ({ mode }) => {
     </div>
   )}
 </TableCell>
-                <TableCell className="text-sm align-middle max-w-[200px] truncate" title={t.reason}>{t.reason}</TableCell>
+                <TableCell className="text-sm align-middle text-center">
+                  <div className="w-full flex justify-center">
+                    <div className="max-w-[200px] truncate text-center" title={t.reason}>
+                      {t.reason}
+                    </div>
+                  </div>
+                </TableCell>
                 {mode === "all" && (
-                  <TableCell className="align-middle">
-                    <Badge variant="outline" className={STATUS_COLORS[t.status] || ""}>
-                      {t.status}
-                    </Badge>
+                  <TableCell className="align-middle text-center">
+                    <div className="w-full flex justify-center">
+                      <Badge variant="outline" className={STATUS_COLORS[t.status] || ""}>
+                        {t.status}
+                      </Badge>
+                    </div>
                   </TableCell>
                 )}
-                <TableCell className="text-sm text-muted-foreground align-middle whitespace-nowrap">
-                  {t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "—"}
+                <TableCell className="text-sm text-muted-foreground align-middle whitespace-nowrap text-center">
+                  <div className="w-full flex justify-center">
+                    {t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "—"}
+                  </div>
                 </TableCell>
                 {mode === "pending" && (
-                  <TableCell className="text-right align-middle">
-                    <PendingRowActions ticket={t} onDone={load} />
+                  <TableCell className="align-middle text-center">
+                    <div className="w-full flex justify-center">
+                      <PendingRowActions ticket={t} onDone={load} />
+                    </div>
                   </TableCell>
                 )}
               </TableRow>
@@ -390,9 +408,10 @@ const TicketListTable = ({ mode }) => {
 
 const PendingRowActions = ({ ticket, onDone }) => {
   const { user } = useAuth();
-    const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectLoading, setRejectLoading] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
 
  const role = normStaffRole(user);
  const handleReject = async () => {
@@ -426,7 +445,16 @@ if (
 ) {
 return (
 <>
-  <div className="inline-flex gap-1 justify-end">
+  <div className="inline-flex gap-1 justify-center">
+    <Button
+      size="icon"
+      variant="outline"
+      className="h-8 w-8 text-blue-600 border-blue-200 hover:bg-blue-50"
+      onClick={() => setViewOpen(true)}
+      title="View Details"
+    >
+      <Eye className="h-4 w-4" />
+    </Button>
 
     <Button
       size="icon"
@@ -515,9 +543,55 @@ return (
       </DialogFooter>
 
     </DialogContent>
-
   </Dialog>
-
+  <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+    <DialogContent className="max-w-md">
+      <DialogHeader>
+        <DialogTitle>Ticket Details</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-4 text-sm mt-2">
+        <div className="grid grid-cols-2 gap-y-3">
+          <div className="font-semibold text-muted-foreground">Employee:</div>
+          <div className="font-medium">{ticket.employeeName}</div>
+          <div className="font-semibold text-muted-foreground">Employee ID:</div>
+          <div>{ticket.employeeCode || "N/A"}</div>
+          <div className="font-semibold text-muted-foreground">Type:</div>
+          <div>
+            <Badge variant="outline" className={ticket.type === "advance" ? "text-sky-600" : "text-violet-600"}>
+              {ticket.type === "advance" ? "Salary Advance" : "Travel Ticket"}
+            </Badge>
+          </div>
+          {ticket.type === "advance" ? (
+            <>
+              <div className="font-semibold text-muted-foreground">Amount:</div>
+              <div className="font-bold">₹{Number(ticket.amount || 0).toLocaleString()}</div>
+            </>
+          ) : (
+            <>
+              <div className="font-semibold text-muted-foreground">Destination:</div>
+              <div>{ticket.destination || "—"}</div>
+              <div className="font-semibold text-muted-foreground">Class:</div>
+              <div className="capitalize">{ticket.ticketClass?.replace("-", " ") || "—"}</div>
+            </>
+          )}
+          <div className="font-semibold text-muted-foreground">Date:</div>
+          <div>{ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : "—"}</div>
+          <div className="font-semibold text-muted-foreground">Status:</div>
+          <div>
+            <Badge variant="outline" className={STATUS_COLORS[ticket.status] || ""}>
+              {ticket.status}
+            </Badge>
+          </div>
+        </div>
+        <div className="pt-3 border-t">
+          <div className="font-semibold text-muted-foreground mb-2">Reason:</div>
+          <div className="p-3 bg-muted rounded-md text-sm whitespace-pre-wrap">
+            {ticket.reason || "No reason provided."}
+          </div>
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>
 </>
 );
 }
@@ -535,7 +609,16 @@ return (
         </div>
 
 
-        <div className="inline-flex gap-1 justify-end">
+        <div className="inline-flex gap-1 justify-center">
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-8 w-8 text-blue-600 border-blue-200 hover:bg-blue-50"
+            onClick={() => setViewOpen(true)}
+            title="View Details"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
 
           <Button
             size="icon"
@@ -639,6 +722,54 @@ return (
         </DialogContent>
 
       </Dialog>
+      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ticket Details</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm mt-2">
+            <div className="grid grid-cols-2 gap-y-3">
+              <div className="font-semibold text-muted-foreground">Employee:</div>
+              <div className="font-medium">{ticket.employeeName}</div>
+              <div className="font-semibold text-muted-foreground">Employee ID:</div>
+              <div>{ticket.employeeCode || "N/A"}</div>
+              <div className="font-semibold text-muted-foreground">Type:</div>
+              <div>
+                <Badge variant="outline" className={ticket.type === "advance" ? "text-sky-600" : "text-violet-600"}>
+                  {ticket.type === "advance" ? "Salary Advance" : "Travel Ticket"}
+                </Badge>
+              </div>
+              {ticket.type === "advance" ? (
+                <>
+                  <div className="font-semibold text-muted-foreground">Amount:</div>
+                  <div className="font-bold">₹{Number(ticket.amount || 0).toLocaleString()}</div>
+                </>
+              ) : (
+                <>
+                  <div className="font-semibold text-muted-foreground">Destination:</div>
+                  <div>{ticket.destination || "—"}</div>
+                  <div className="font-semibold text-muted-foreground">Class:</div>
+                  <div className="capitalize">{ticket.ticketClass?.replace("-", " ") || "—"}</div>
+                </>
+              )}
+              <div className="font-semibold text-muted-foreground">Date:</div>
+              <div>{ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : "—"}</div>
+              <div className="font-semibold text-muted-foreground">Status:</div>
+              <div>
+                <Badge variant="outline" className={STATUS_COLORS[ticket.status] || ""}>
+                  {ticket.status}
+                </Badge>
+              </div>
+            </div>
+            <div className="pt-3 border-t">
+              <div className="font-semibold text-muted-foreground mb-2">Reason:</div>
+              <div className="p-3 bg-muted rounded-md text-sm whitespace-pre-wrap">
+                {ticket.reason || "No reason provided."}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
     </>
   );
@@ -650,13 +781,132 @@ return (
     ticket.workflowStage === "PENDING_FINANCE"
   ) {
     return (
-      <span className="text-xs text-orange-600 font-medium">
-        Pending Finance Approval
-      </span>
+      <div className="flex flex-col items-center gap-2">
+        <span className="text-xs text-orange-600 font-medium">
+          Pending Finance Approval
+        </span>
+        <Button
+          size="icon"
+          variant="outline"
+          className="h-8 w-8 text-blue-600 border-blue-200 hover:bg-blue-50"
+          onClick={() => setViewOpen(true)}
+          title="View Details"
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+        <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Ticket Details</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 text-sm mt-2">
+              <div className="grid grid-cols-2 gap-y-3">
+                <div className="font-semibold text-muted-foreground">Employee:</div>
+                <div className="font-medium">{ticket.employeeName}</div>
+                <div className="font-semibold text-muted-foreground">Employee ID:</div>
+                <div>{ticket.employeeCode || "N/A"}</div>
+                <div className="font-semibold text-muted-foreground">Type:</div>
+                <div>
+                  <Badge variant="outline" className={ticket.type === "advance" ? "text-sky-600" : "text-violet-600"}>
+                    {ticket.type === "advance" ? "Salary Advance" : "Travel Ticket"}
+                  </Badge>
+                </div>
+                {ticket.type === "advance" ? (
+                  <>
+                    <div className="font-semibold text-muted-foreground">Amount:</div>
+                    <div className="font-bold">₹{Number(ticket.amount || 0).toLocaleString()}</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="font-semibold text-muted-foreground">Destination:</div>
+                    <div>{ticket.destination || "—"}</div>
+                    <div className="font-semibold text-muted-foreground">Class:</div>
+                    <div className="capitalize">{ticket.ticketClass?.replace("-", " ") || "—"}</div>
+                  </>
+                )}
+                <div className="font-semibold text-muted-foreground">Date:</div>
+                <div>{ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : "—"}</div>
+                <div className="font-semibold text-muted-foreground">Status:</div>
+                <div>
+                  <Badge variant="outline" className={STATUS_COLORS[ticket.status] || ""}>
+                    {ticket.status}
+                  </Badge>
+                </div>
+              </div>
+              <div className="pt-3 border-t">
+                <div className="font-semibold text-muted-foreground mb-2">Reason:</div>
+                <div className="p-3 bg-muted rounded-md text-sm whitespace-pre-wrap">
+                  {ticket.reason || "No reason provided."}
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     );
   }
 
-  return null;
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <Button
+        size="icon"
+        variant="outline"
+        className="h-8 w-8 text-blue-600 border-blue-200 hover:bg-blue-50"
+        onClick={() => setViewOpen(true)}
+        title="View Details"
+      >
+        <Eye className="h-4 w-4" />
+      </Button>
+      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ticket Details</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm mt-2">
+            <div className="grid grid-cols-2 gap-y-3">
+              <div className="font-semibold text-muted-foreground">Employee:</div>
+              <div className="font-medium">{ticket.employeeName}</div>
+              <div className="font-semibold text-muted-foreground">Employee ID:</div>
+              <div>{ticket.employeeCode || "N/A"}</div>
+              <div className="font-semibold text-muted-foreground">Type:</div>
+              <div>
+                <Badge variant="outline" className={ticket.type === "advance" ? "text-sky-600" : "text-violet-600"}>
+                  {ticket.type === "advance" ? "Salary Advance" : "Travel Ticket"}
+                </Badge>
+              </div>
+              {ticket.type === "advance" ? (
+                <>
+                  <div className="font-semibold text-muted-foreground">Amount:</div>
+                  <div className="font-bold">₹{Number(ticket.amount || 0).toLocaleString()}</div>
+                </>
+              ) : (
+                <>
+                  <div className="font-semibold text-muted-foreground">Destination:</div>
+                  <div>{ticket.destination || "—"}</div>
+                  <div className="font-semibold text-muted-foreground">Class:</div>
+                  <div className="capitalize">{ticket.ticketClass?.replace("-", " ") || "—"}</div>
+                </>
+              )}
+              <div className="font-semibold text-muted-foreground">Date:</div>
+              <div>{ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : "—"}</div>
+              <div className="font-semibold text-muted-foreground">Status:</div>
+              <div>
+                <Badge variant="outline" className={STATUS_COLORS[ticket.status] || ""}>
+                  {ticket.status}
+                </Badge>
+              </div>
+            </div>
+            <div className="pt-3 border-t">
+              <div className="font-semibold text-muted-foreground mb-2">Reason:</div>
+              <div className="p-3 bg-muted rounded-md text-sm whitespace-pre-wrap">
+                {ticket.reason || "No reason provided."}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 };
 
 const PendingTicketsPanel = () => <TicketListTable mode="pending" />;
