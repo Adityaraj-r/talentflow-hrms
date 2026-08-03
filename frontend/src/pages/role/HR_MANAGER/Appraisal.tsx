@@ -274,22 +274,18 @@ function CyclesAndReviewsTab() {
                     No reviews assigned in this cycle yet.
                   </div>
                 ) : (
-                  <table className="w-full min-w-[760px] text-sm">
-                    <thead>
-                      <tr className="border-b text-left text-muted-foreground">
-                        <th className="pb-2 pr-3 font-medium">Employee</th>
-                        <th className="pb-2 pr-3 font-medium">Dept</th>
-                        <th className="pb-2 pr-3 font-medium">Designation</th>
-                        <th className="pb-2 pr-3 font-medium">Stage</th>
-                        <th className="pb-2 pr-3 font-medium">Rating</th>
-                        <th className="pb-2 pr-3 text-right font-medium">
-                          Detail
-                        </th>
-                        <th className="pb-2 text-right font-medium">
-                          HR actions
-                        </th>
-                      </tr>
-                    </thead>
+                  <table className="w-full min-w-[900px] table-fixed border-collapse text-sm">
+                  <thead className="bg-muted/40">
+  <tr className="border-b">
+    <th className="w-[22%] px-4 py-3 text-left font-semibold">Employee</th>
+    <th className="w-[15%] px-4 py-3 text-left font-semibold">Dept</th>
+    <th className="w-[18%] px-4 py-3 text-center font-semibold">Designation</th>
+    <th className="w-[18%] px-4 py-3 text-center font-semibold">Stage</th>
+    <th className="w-[10%] px-4 py-3 text-center font-semibold">Rating</th>
+    <th className="w-[8%] px-4 py-3 text-center font-semibold">Detail</th>
+    <th className="w-[9%] px-4 py-3 text-center font-semibold">HR Actions</th>
+  </tr>
+</thead>
                     <tbody className="divide-y">
                       {list.map((r) => {
                         const st = (r.status || "").toLowerCase().replace(/\s+/g, "_");
@@ -303,42 +299,45 @@ function CyclesAndReviewsTab() {
                         const empName = displayPersonName(r.employeeId);
                         const empDept = displayDepartment(r.employeeId);
                         return (
-                          <tr key={r._id}>
-                            <td className="py-3 pr-3 font-medium">{empName}</td>
-                            <td className="py-3 pr-3 text-muted-foreground">
+                         <tr key={r._id} className="transition-colors duration-200 hover:bg-muted/40 even:bg-muted/5"
+>
+                            <td className="py-4 px-4 font-semibold text-foreground">{empName}</td>
+                            <td className="py-4 px-4 text-muted-foreground">
                               {empDept}
                             </td>
-                            <td className="py-3 pr-3 text-muted-foreground">
+                            <td className="py-4 px-4 text-center text-muted-foreground">
                               {r.employeeId?.designation ?? "—"}
                             </td>
-                            <td className="py-3 pr-3">
-                              <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
-                                {formatWorkflowStageLabel(r.status)}
-                              </span>
-                            </td>
-                            <td className="py-3 pr-3 tabular-nums">
+                           <td className="py-4 px-4 text-center">
+                                  <div className="flex items- justify-center">
+                                    <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium">
+                                      {formatWorkflowStageLabel(r.status)}
+                                    </span>
+                                  </div>
+                                </td>
+                            <td className="py-4 px-4 text-center tabular-nums">
                               {r.overallRating != null && r.overallRating > 0
                                 ? `${r.overallRating}/5`
                                 : "—"}
                             </td>
-                            <td className="py-3 pr-3 text-right">
+                            <td className="py-4 px-4 text-center">
                               <Button variant="ghost" size="sm" asChild>
                                 <Link
                                   to={`/role/hr_manager/review/${r._id}`}
-                                  className="gap-1"
+                                  className="inline-flex items-center gap-2"
                                 >
                                   <FileText className="h-4 w-4" />
                                   Open
                                 </Link>
                               </Button>
                             </td>
-                            <td className="py-3 text-right">
-                              <div className="flex justify-end gap-1">
+                            <td className="py-4 px-4 text-center">
+                              <div className="flex items-center justify-center gap-2">
                                 {showCal && (
                                   <Button
                                     size="icon"
                                     variant="outline"
-                                    className="h-8 w-8"
+                                    className="h-8 w-8 rounded-md hover:scale-105 transition-transform"
                                     title="Calibrate"
                                     onClick={() =>
                                       handleHrAction("calibrate", r._id, {
@@ -354,7 +353,7 @@ function CyclesAndReviewsTab() {
                                   <Button
                                     size="icon"
                                     variant="outline"
-                                    className="h-8 w-8"
+                                    className="h-8 w-8 rounded-md hover:scale-105 transition-transform"
                                     title="Final approval"
                                     onClick={() =>
                                       handleHrAction("finalize", r._id)
@@ -367,7 +366,7 @@ function CyclesAndReviewsTab() {
                                   <Button
                                     size="icon"
                                     variant="outline"
-                                    className="h-8 w-8"
+                                    className="h-8 w-8 rounded-md hover:scale-105 transition-transform"
                                     title="Release feedback"
                                     onClick={() =>
                                       handleHrAction("release", r._id)
@@ -612,43 +611,47 @@ function AllReviewsTab() {
               : "No reviews match your filters."}
           </div>
         ) : (
-          <table className="w-full min-w-[800px] text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="pb-2 font-medium">Employee</th>
-                <th className="pb-2 font-medium">Department</th>
-                <th className="pb-2 font-medium">Designation</th>
-                <th className="pb-2 font-medium">Cycle</th>
-                <th className="pb-2 font-medium">Stage</th>
-                <th className="pb-2 font-medium">Rating</th>
-                <th className="pb-2 text-right font-medium">Open</th>
-              </tr>
-            </thead>
+          <table className="w-full min-w-[900px] text-sm">
+          <thead>
+  <tr className="border-b text-muted-foreground">
+    <th className="py-3 px-4 text-left font-medium">Employee</th>
+    <th className="py-3 px-4 text-left font-medium">Department</th>
+    <th className="py-3 px-4 text-center font-medium">Designation</th>
+    <th className="py-3 px-4 text-center font-medium">Cycle</th>
+    <th className="py-3 px-4 text-center font-medium">Stage</th>
+    <th className="py-3 px-4 text-center font-medium">Rating</th>
+    <th className="py-3 px-4 text-center font-medium">Open</th>
+  </tr>
+</thead>
             <tbody className="divide-y">
               {filtered.map((review) => (
-                <tr key={review._id}>
-                  <td className="py-3 font-medium">
+                <tr key={review._id}  className="hover:bg-muted/40 transition-colors">
+                 <td className="py-3 px-4 font-medium text-left">
                     {displayPersonName(review.employeeId)}
                   </td>
-                  <td className="py-3 text-muted-foreground">
+                  <td className="py-3 px-4 text-center text-muted-foreground">
                     {displayDepartment(review.employeeId)}
                   </td>
-                  <td className="py-3 text-muted-foreground">
+                  <td className="py-3 px-4 text-center text-muted-foreground">
                     {review.employeeId?.designation ?? "—"}
                   </td>
-                  <td className="py-3">{review.cycleId?.name ?? "—"}</td>
-                  <td className="py-3">
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
-                      {formatWorkflowStageLabel(review.status)}
-                    </span>
+                  <td className="py-3 px-4 text-center">
+                     {review.cycleId?.name ?? "—"}
+                   </td>
+                    <td className="py-3 px-4 text-center">
+                    <div className="flex justify-center">
+                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs">
+                        {formatWorkflowStageLabel(review.status)}
+                      </span>
+                    </div>
                   </td>
-                  <td className="py-3 tabular-nums">
+                  <td className="py-3 px-4 text-center tabular-nums">
                     {review.overallRating != null && review.overallRating > 0
                       ? `${review.overallRating}/5`
                       : "—"}
                   </td>
-                  <td className="py-3 text-right">
-                    <Button variant="ghost" size="sm" asChild>
+                  <td className="py-3 px-4 text-center">
+                    <Button variant="ghost" size="sm" className="rounded-md hover:scale-105 transition-transform" asChild>
                       <Link to={`/role/hr_manager/review/${review._id}`}>
                         <Gauge className="mr-1 h-4 w-4" />
                         Workflow

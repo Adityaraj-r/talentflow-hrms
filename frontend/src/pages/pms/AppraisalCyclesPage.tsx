@@ -25,7 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Trash2, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Eye } from "lucide-react";
 import { format } from "date-fns";
 import type { AppraisalCycle, AppraisalCycleStatus } from "@/api/pmsApi";
 import { useAppraisalCycles, useDeleteCycle, useTransitionCycle } from "@/hooks/useAppraisalCycles";
@@ -174,22 +174,22 @@ export default function AppraisalCyclesPage() {
             <CardContent className="overflow-x-auto p-0">
               <table className="w-full min-w-[720px] text-sm">
                 <thead>
-                  <tr className="border-b bg-muted/40 text-left text-muted-foreground">
-                    <th className="px-4 py-3 font-medium">Name</th>
-                    <th className="px-4 py-3 font-medium">Dates</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 text-right font-medium">Actions</th>
+                  <tr className="border-b bg-muted/40 text-muted-foreground">
+                    <th className="px-4 py-3 text-left font-medium">Name</th>
+                    <th className="px-4 py-3 text-center font-medium">Dates</th>
+                    <th className="px-4 py-3 text-center font-medium">Status</th>
+                    <th className="px-4 py-3 text-center font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {sorted.map((c) => (
-                    <tr key={c._id} className="hover:bg-muted/30">
-                      <td className="px-4 py-3 font-medium">{c.name}</td>
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                    <tr key={c._id} className="hover:bg-muted/40 transition-colors">
+                      <td className="px-4 py-3 font-medium text-left">{c.name}</td>
+                      <td className="px-4 py-3 text-center text-muted-foreground whitespace-nowrap">
                         {format(new Date(c.startDate), "MMM d, yyyy")} –{" "}
                         {format(new Date(c.endDate), "MMM d, yyyy")}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-center">
                         {canTransition ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -209,24 +209,45 @@ export default function AppraisalCyclesPage() {
                           <Badge variant={statusBadgeVariant(c.status)}>{cycleLabel(c.status)}</Badge>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link to={`/pms/appraisal-cycles/${c._id}`}>
-                              Detail
-                              <ChevronRight className="ml-1 h-4 w-4" />
-                            </Link>
-                          </Button>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex justify-center gap-2">
+                          <Tooltip>
+  <TooltipTrigger asChild>
+    <Button
+      variant="ghost"
+      size="sm"
+      className="rounded-md hover:scale-105 transition-transform"
+      asChild
+    >
+     <Link
+  to={`/pms/appraisal-cycles/${c._id}`}
+  className="inline-flex items-center justify-center"
+>
+  <Eye className="h-4 w-4" />
+</Link>
+    </Button>
+  </TooltipTrigger>
+  <TooltipContent>
+    <p>Review</p>
+  </TooltipContent>
+</Tooltip>
                           {canDelete && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive"
-                              onClick={() => setDeleteCycle(c)}
-                              aria-label="Delete cycle"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <Tooltip>
+  <TooltipTrigger asChild>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8 rounded-md text-destructive hover:scale-105 transition-transform"
+      onClick={() => setDeleteCycle(c)}
+      aria-label="Delete cycle"
+    >
+      <Trash2 className="h-4 w-4" />
+    </Button>
+  </TooltipTrigger>
+  <TooltipContent>
+    <p>Delete</p>
+  </TooltipContent>
+</Tooltip>
                           )}
                         </div>
                       </td>
