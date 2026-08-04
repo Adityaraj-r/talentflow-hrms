@@ -741,13 +741,13 @@ const UserManagement = () => {
                     <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
                       {user.employeeCode}
                     </TableCell>
-                    <TableCell><span className="text-sm">{user.department}</span></TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="text-[10px] font-bold tracking-wider px-2 py-0.5">
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell><span className="text-sm font-medium">{user.gender}</span></TableCell>
+                      <TableCell>{user.department || '—'}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="font-semibold text-xs tracking-wide">
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="capitalize">{user.gender || '—'}</TableCell>
                     <TableCell>
                       <div className={cn(
                         "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
