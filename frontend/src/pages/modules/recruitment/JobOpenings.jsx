@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
 import apiClient from "@/services/apiClient"
 import { useUser } from "@/contexts/UserContext"
@@ -6,8 +6,10 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Input } from "@/components/ui/input"
-import { BriefcaseBusiness, ClipboardList, DoorClosed, Plus, Rocket, Search, RefreshCw, Eye, Pencil, Trash2, Archive } from "lucide-react"
+import { BriefcaseBusiness, ClipboardList, DoorClosed, Plus, Rocket, Search, RefreshCw, Eye, Pencil, Trash2, Archive, ChevronLeft, ChevronRight } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import {
   RecruitmentEmptyState,
@@ -35,6 +37,11 @@ const JobOpenings = () => {
     positions: "",
     employmentType: "",
     deadline: "",
+    description: "",
+    experience: "",
+    skills: "",
+    minSalary: "",
+    maxSalary: "",
   })
 
   const [editingJobId, setEditingJobId] = useState(null)
@@ -42,7 +49,13 @@ const JobOpenings = () => {
   const [confirmType, setConfirmType] = useState("")
   const [jobToActOn, setJobToActOn] = useState(null)
   const [activeFilter, setActiveFilter] = useState("all")
+  const [selectedStatus, setSelectedStatus] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [selectedRole, setSelectedRole] = useState("all")
+  const [selectedDept, setSelectedDept] = useState("all")
+  const [selectedLocation, setSelectedLocation] = useState("all")
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 10
 
   const getHiringRoles = (job) => {
     if (Array.isArray(job?.hiringRoles) && job.hiringRoles.length > 0) {
@@ -59,13 +72,12 @@ const JobOpenings = () => {
   }
 
   const fetchJobs = async () => {
-    setLoading(true)
     try {
-      const data = await apiClient.get("/job-openings")
-      setJobs(Array.isArray(data) ? data : [])
+      setLoading(true)
+      const response = await apiClient.get("/jobs")
+      setJobs(Array.isArray(response?.data?.data) ? response.data.data : response?.data || response || [])
     } catch (error) {
-      toast.error(error?.response?.data?.error || error?.response?.data?.message || "Failed to load job openings")
-      setJobs([])
+      toast.error(error?.response?.data?.message || "Failed to load jobs list")
     } finally {
       setLoading(false)
     }
@@ -75,68 +87,94 @@ const JobOpenings = () => {
     fetchJobs()
   }, [])
 
+  const publishJob = async (id) => {
+    try {
+      await apiClient.put(`/jobs/${id}/publish`)
+      toast.success("Job opening published successfully!")
+      fetchJobs()
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to publish job opening")
+    }
+  }
+
+  const closeJob = async (id) => {
+    try {
+      await apiClient.put(`/jobs/${id}/close`)
+      toast.success("Job opening marked as Closed")
+      fetchJobs()
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to close job opening")
+    }
+  }
+
+  const deleteJob = async (id) => {
+    try {
+      await apiClient.delete(`/jobs/${id}`)
+      toast.success("Job opening deleted successfully")
+      fetchJobs()
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to delete job")
+    }
+  }
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.jobTitle || !formData.department || !formData.positions || !formData.employmentType) {
-      toast.error("Please fill all required fields")
-      return
+    const payload = {
+      jobTitle: formData.jobTitle,
+      department: formData.department,
+      positions: Number(formData.positions),
+      employmentType: formData.employmentType,
+      deadline: formData.deadline || undefined,
+      description: formData.description,
+      hiringRoles: [{
+        roleName: formData.jobTitle,
+        openings: Number(formData.positions),
+        minSalary: formData.minSalary ? Number(formData.minSalary) : undefined,
+        maxSalary: formData.maxSalary ? Number(formData.maxSalary) : undefined,
+        experience: formData.experience,
+        skills: formData.skills,
+      }],
     }
 
     try {
       if (editingJobId) {
-        await apiClient.put(`/job-openings/${editingJobId}`, {
-          jobTitle: formData.jobTitle,
-          department: formData.department,
-          positions: Number(formData.positions),
-          employmentType: formData.employmentType,
-          deadline: formData.deadline,
-        })
+        await apiClient.put(`/job-openings/${editingJobId}`, payload)
         toast.success("Job updated successfully")
       } else {
         await apiClient.post("/job-openings", {
-          jobTitle: formData.jobTitle,
-          department: formData.department,
-          positions: Number(formData.positions),
-          employmentType: formData.employmentType,
-          deadline: formData.deadline,
+          ...payload,
           status: "Draft",
         })
         toast.success("Job draft created successfully")
       }
       setShowForm(false)
       setEditingJobId(null)
-      setFormData({ jobTitle: "", department: "", positions: "", employmentType: "", deadline: "" })
+      setFormData({
+        jobTitle: "",
+        department: "",
+        positions: "",
+        employmentType: "",
+        deadline: "",
+        description: "",
+        experience: "",
+        skills: "",
+        minSalary: "",
+        maxSalary: "",
+      })
       fetchJobs()
     } catch (error) {
       toast.error(error?.response?.data?.error || error?.response?.data?.message || "Failed to save job")
     }
   }
 
-  const publishJob = async (id) => {
-    try {
-      await apiClient.put(`/job-openings/${id}/publish`)
-      toast.success("Job published successfully")
-      fetchJobs()
-    } catch (error) {
-      toast.error(error?.response?.data?.error || error?.response?.data?.message || "Failed to publish job")
-    }
-  }
-
-  const closeJob = async (id) => {
-    try {
-      await apiClient.put(`/job-openings/${id}/close`)
-      toast.success("Job closed successfully")
-      fetchJobs()
-    } catch (error) {
-      toast.error(error?.response?.data?.error || error?.response?.data?.message || "Failed to close job")
-    }
-  }
-
   const handleEditClick = (job) => {
+    const roles = getHiringRoles(job)
+    const firstRole = roles[0] || {}
     setEditingJobId(job._id)
     setFormData({
       jobTitle: job.jobTitle || "",
@@ -144,6 +182,11 @@ const JobOpenings = () => {
       positions: job.positions ? job.positions.toString() : "",
       employmentType: job.employmentType || "",
       deadline: job.deadline ? new Date(job.deadline).toISOString().split("T")[0] : "",
+      description: job.description || "",
+      experience: firstRole.experience || "",
+      skills: firstRole.skills || "",
+      minSalary: firstRole.minSalary ? firstRole.minSalary.toString() : "",
+      maxSalary: firstRole.maxSalary ? firstRole.maxSalary.toString() : "",
     })
     setShowForm(true)
   }
@@ -174,24 +217,74 @@ const JobOpenings = () => {
   }
 
   const total = jobs.length
+  const publishedCount = jobs.filter((j) => j.status === "Published").length
+  const openCount = jobs.filter((j) => j.status === "Open").length
   const active = jobs.filter((j) => j.status === "Published" || j.status === "Open").length
   const draft = jobs.filter((j) => j.status === "Draft").length
   const closed = jobs.filter((j) => j.status === "Closed").length
 
+  const rolesOptions = useMemo(() => [...new Set(jobs.map(j => j.jobTitle).filter(Boolean))].sort(), [jobs])
+  const deptsOptions = useMemo(() => [...new Set(jobs.map(j => j.department).filter(Boolean))].sort(), [jobs])
+  const locationsOptions = useMemo(() => [...new Set(jobs.map(j => j.officeLocation || "On-site").filter(Boolean))].sort(), [jobs])
+
+  const handleKpiCardClick = (filterKey) => {
+    setActiveFilter(filterKey)
+    if (filterKey === "published") setSelectedStatus("Published")
+    else if (filterKey === "open") setSelectedStatus("Open")
+    else if (filterKey === "draft") setSelectedStatus("Draft")
+    else if (filterKey === "closed") setSelectedStatus("Closed")
+    else setSelectedStatus("all")
+  }
+
+  const handleStatusChange = (statusVal) => {
+    setSelectedStatus(statusVal)
+    if (statusVal === "Published") setActiveFilter("published")
+    else if (statusVal === "Open") setActiveFilter("open")
+    else if (statusVal === "Draft") setActiveFilter("draft")
+    else if (statusVal === "Closed") setActiveFilter("closed")
+    else setActiveFilter("all")
+  }
+
   const filteredJobs = jobs.filter((job) => {
-    let matchesFilter = true
-    if (activeFilter === "published") matchesFilter = job.status === "Published" || job.status === "Open"
-    else if (activeFilter === "draft") matchesFilter = job.status === "Draft"
-    else if (activeFilter === "closed") matchesFilter = job.status === "Closed"
+    let matchesStatus = true
+    if (selectedStatus !== "all") {
+      matchesStatus = (job.status || "").toLowerCase() === selectedStatus.toLowerCase()
+    }
     
     let matchesSearch = true
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
-      matchesSearch = (job.jobTitle?.toLowerCase().includes(q) || job.department?.toLowerCase().includes(q))
+      matchesSearch = (job.jobTitle?.toLowerCase().includes(q) || job.department?.toLowerCase().includes(q) || (job.jobCode && job.jobCode.toLowerCase().includes(q)))
+    }
+
+    let matchesRole = true
+    if (selectedRole !== "all") {
+      matchesRole = job.jobTitle === selectedRole
+    }
+
+    let matchesDept = true
+    if (selectedDept !== "all") {
+      matchesDept = job.department === selectedDept
+    }
+
+    let matchesLocation = true
+    if (selectedLocation !== "all") {
+      matchesLocation = (job.officeLocation || "On-site") === selectedLocation
     }
     
-    return matchesFilter && matchesSearch
+    return matchesStatus && matchesSearch && matchesRole && matchesDept && matchesLocation
   })
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeFilter, selectedStatus, searchQuery, selectedRole, selectedDept, selectedLocation])
+
+  const totalItems = filteredJobs.length
+  const totalPages = Math.ceil(totalItems / pageSize) || 1
+  const paginatedJobs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredJobs.slice(start, start + pageSize)
+  }, [filteredJobs, currentPage, pageSize])
 
   return (
     <div className="space-y-6">
@@ -208,27 +301,240 @@ const JobOpenings = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <RecruitmentKpiCard title="Total Jobs" value={total} icon={BriefcaseBusiness} trend={10} helper="Openings in workspace" accent="sky" active={activeFilter === "all"} onClick={() => setActiveFilter("all")} />
-        <RecruitmentKpiCard title="Published" value={active} icon={Rocket} trend={12} helper="Visible on careers portal" accent="emerald" active={activeFilter === "published"} onClick={() => setActiveFilter("published")} />
-        <RecruitmentKpiCard title="Draft" value={draft} icon={ClipboardList} trend={5} helper="Awaiting publication" accent="amber" active={activeFilter === "draft"} onClick={() => setActiveFilter("draft")} />
-        <RecruitmentKpiCard title="Closed" value={closed} icon={DoorClosed} trend={-2} helper="No longer accepting" accent="rose" active={activeFilter === "closed"} onClick={() => setActiveFilter("closed")} />
+        <RecruitmentKpiCard title="Total Jobs" value={total} icon={BriefcaseBusiness} trend={10} helper="Openings in workspace" accent="sky" active={activeFilter === "all"} onClick={() => handleKpiCardClick("all")} />
+        <RecruitmentKpiCard title="Published" value={active} icon={Rocket} trend={12} helper="Visible on careers portal" accent="emerald" active={activeFilter === "published"} onClick={() => handleKpiCardClick("published")} />
+        <RecruitmentKpiCard title="Draft" value={draft} icon={ClipboardList} trend={5} helper="Awaiting publication" accent="amber" active={activeFilter === "draft"} onClick={() => handleKpiCardClick("draft")} />
+        <RecruitmentKpiCard title="Closed" value={closed} icon={DoorClosed} trend={-2} helper="No longer accepting" accent="rose" active={activeFilter === "closed"} onClick={() => handleKpiCardClick("closed")} />
       </div>
 
-      <Card>
-        <div className="p-4 border-b flex flex-col md:flex-row gap-4 items-center justify-between bg-muted/20">
-          <div className="flex flex-wrap gap-2 w-full md:w-auto">
-            <div className="relative flex-1 md:w-80">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+
+      {canWrite && showForm && (
+        <Card className="border-white/10 bg-card/80 shadow-lg">
+          <CardContent className="p-6 space-y-6">
+            <h2 className="text-xl font-bold tracking-tight text-foreground">
+              {editingJobId ? "Edit Job Details" : "Create Job Opening"}
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Row 1: Basic details */}
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="jobTitle">Job Title <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="jobTitle"
+                    name="jobTitle"
+                    placeholder="e.g. Senior Full Stack Engineer"
+                    value={formData.jobTitle}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="department">Department <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="department"
+                    name="department"
+                    placeholder="e.g. Engineering"
+                    value={formData.department}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="positions">Positions <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="positions"
+                    name="positions"
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 3"
+                    value={formData.positions}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Type, Deadline, Experience */}
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="employmentType">Employment Type <span className="text-destructive">*</span></Label>
+                  <select
+                    id="employmentType"
+                    name="employmentType"
+                    value={formData.employmentType}
+                    onChange={handleChange}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  >
+                    <option value="">Select Type</option>
+                    <option value="Full-Time">Full-Time</option>
+                    <option value="Part-Time">Part-Time</option>
+                    <option value="Intern">Intern</option>
+                    <option value="Contract">Contract</option>
+                    <option value="Temporary">Temporary</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="deadline">Application Deadline</Label>
+                  <Input
+                    id="deadline"
+                    name="deadline"
+                    type="date"
+                    value={formData.deadline}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="experience">Required Experience</Label>
+                  <Input
+                    id="experience"
+                    name="experience"
+                    placeholder="e.g. 3-5 years"
+                    value={formData.experience}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Salary range */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="minSalary">Minimum Salary</Label>
+                  <Input
+                    id="minSalary"
+                    name="minSalary"
+                    type="number"
+                    placeholder="e.g. 50000"
+                    value={formData.minSalary}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="maxSalary">Maximum Salary</Label>
+                  <Input
+                    id="maxSalary"
+                    name="maxSalary"
+                    type="number"
+                    placeholder="e.g. 80000"
+                    value={formData.maxSalary}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
+              {/* Row 4: Description & Skills */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="description">Job Description</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    rows={4}
+                    placeholder="Provide a comprehensive job description..."
+                    value={formData.description}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="skills">Key Skills & Requirements</Label>
+                  <Textarea
+                    id="skills"
+                    name="skills"
+                    rows={4}
+                    placeholder="e.g. React, TypeScript, Node.js, Mongoose (comma-separated or bullet points)"
+                    value={formData.skills}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button type="submit">
+                  {editingJobId ? "Update Job Draft" : "Save Job Draft"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowForm(false);
+                    setEditingJobId(null);
+                    setFormData({
+                      jobTitle: "",
+                      department: "",
+                      positions: "",
+                      employmentType: "",
+                      deadline: "",
+                      description: "",
+                      experience: "",
+                      skills: "",
+                      minSalary: "",
+                      maxSalary: "",
+                    });
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+
+      <Card className="rounded-xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-950/70 shadow-lg shadow-black/5 overflow-hidden">
+        <div className="p-5 border-b border-slate-200 dark:border-white/10 flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+            <div className="relative w-full sm:w-60 h-10">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
               <Input
-                placeholder="Search job titles..."
-                className="pl-10"
+                placeholder="Search jobs..."
+                className="pl-9 h-10 border-slate-200 dark:border-white/10 bg-white/80 dark:bg-slate-950 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-xs font-semibold rounded-lg w-full"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
+
+            <select
+              value={selectedStatus}
+              onChange={(e) => handleStatusChange(e.target.value)}
+              className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer w-full sm:w-auto"
+            >
+              <option value="all">All Statuses</option>
+              <option value="Published">Published</option>
+              <option value="Open">Open</option>
+              <option value="Draft">Draft</option>
+              <option value="Closed">Closed</option>
+            </select>
+
+            <select
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+              className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer w-full sm:w-auto"
+            >
+              <option value="all">All Roles</option>
+              {rolesOptions.map(role => <option key={role} value={role}>{role}</option>)}
+            </select>
+
+            <select
+              value={selectedDept}
+              onChange={(e) => setSelectedDept(e.target.value)}
+              className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer w-full sm:w-auto"
+            >
+              <option value="all">All Departments</option>
+              {deptsOptions.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+            </select>
+
+            <select
+              value={selectedLocation}
+              onChange={(e) => setSelectedLocation(e.target.value)}
+              className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer w-full sm:w-auto"
+            >
+              <option value="all">All Locations</option>
+              {locationsOptions.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+            </select>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={fetchJobs} disabled={loading}>
+          <div className="flex gap-2 shrink-0">
+            <Button variant="outline" size="sm" onClick={fetchJobs} disabled={loading} className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 hover:bg-slate-200/80 text-slate-900 dark:text-slate-100 cursor-pointer w-full lg:w-auto">
               <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Sync Data
             </Button>
@@ -238,29 +544,30 @@ const JobOpenings = () => {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-            <thead className="bg-muted/50 text-muted-foreground border-b border-border">
+            <thead className="bg-slate-50/70 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/5 text-[10px] md:text-xs uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">
               <tr>
-                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Job Title</th>
-                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Department</th>
-                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Positions</th>
-                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Type</th>
-                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Deadline</th>
-                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Status</th>
-                <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs text-right w-[140px]">Actions</th>
+                <th className="px-6 py-3.5 font-bold tracking-wider text-xs">Job ID</th>
+                <th className="px-6 py-3.5 font-bold tracking-wider text-xs">Job Title</th>
+                <th className="px-6 py-3.5 font-bold tracking-wider text-xs">Department</th>
+                <th className="px-6 py-3.5 font-bold tracking-wider text-xs">Positions</th>
+                <th className="px-6 py-3.5 font-bold tracking-wider text-xs">Type</th>
+                <th className="px-6 py-3.5 font-bold tracking-wider text-xs">Deadline</th>
+                <th className="px-6 py-3.5 font-bold tracking-wider text-xs">Status</th>
+                <th className="px-6 py-3.5 font-bold tracking-wider text-xs text-right w-[140px]">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
               {loading ? (
                 Array.from({ length: 4 }).map((_, index) => (
                   <tr key={index}>
-                    <td colSpan="7" className="p-4">
+                    <td colSpan="8" className="p-4">
                       <div className="h-10 w-full animate-pulse rounded bg-muted/50" />
                     </td>
                   </tr>
                 ))
-              ) : filteredJobs.length === 0 ? (
+              ) : paginatedJobs.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="p-8">
+                  <td colSpan="8" className="p-8">
                     <RecruitmentEmptyState
                       title={activeFilter === "all" ? "No job openings yet" : `No ${activeFilter} job openings`}
                       description="Create a draft job, then publish it to start collecting applications."
@@ -269,17 +576,27 @@ const JobOpenings = () => {
                     />
                   </td>
                 </tr>
-              ) : filteredJobs.map((job) => {
+              ) : paginatedJobs.map((job) => {
                 const isOpen = job.status === "Open" || (job.status === "Published" && !job.deadline)
                 return (
-                  <tr key={job._id} className="hover:bg-muted/30 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="font-semibold text-foreground">{job.jobTitle}</div>
+                  <tr key={job._id} className="text-slate-700 dark:text-slate-300 hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-colors group">
+                    <td className="px-6 py-4 font-mono text-xs font-semibold text-cyan-700 dark:text-cyan-400">
+                      <span className="bg-cyan-50 dark:bg-cyan-950/50 px-2 py-1 rounded-md border border-cyan-200 dark:border-cyan-800/40">
+                        {job.jobCode || `JOB-${job._id?.slice(-4)}`}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 text-muted-foreground font-medium">{job.department}</td>
-                    <td className="px-6 py-4 text-muted-foreground font-medium">{job.positions}</td>
-                    <td className="px-6 py-4 text-muted-foreground font-medium">{job.employmentType}</td>
-                    <td className="px-6 py-4 text-muted-foreground font-medium">{job.deadline ? new Date(job.deadline).toLocaleDateString() : "N/A"}</td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => navigate(`/dashboard/jobs/${job._id}`)}
+                        className="font-bold text-cyan-600 dark:text-cyan-400 hover:underline hover:text-cyan-700 dark:hover:text-cyan-300 text-left cursor-pointer transition"
+                      >
+                        {job.jobTitle}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">{job.department}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">{job.positions}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">{job.employmentType}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">{job.deadline ? new Date(job.deadline).toLocaleDateString() : "N/A"}</td>
                     <td className="px-6 py-4">
                       <RecruitmentStatusBadge status={isOpen ? "Open" : job.status} />
                     </td>
@@ -304,7 +621,7 @@ const JobOpenings = () => {
                                           <Trash2 className="h-4 w-4" />
                                         </Button>
                                       </TooltipTrigger>
-                                      <TooltipContent>Delete Draft</TooltipContent>
+                                      <TooltipContent>Delete Draft & Related Data</TooltipContent>
                                     </Tooltip>
                                   </>
                                 )}
@@ -331,14 +648,24 @@ const JobOpenings = () => {
                                   <TooltipContent>View Job</TooltipContent>
                                 </Tooltip>
                                 {canPublish && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10" onClick={() => closeJob(job._id)}>
-                                        <Archive className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Close Job</TooltipContent>
-                                  </Tooltip>
+                                  <>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10" onClick={() => closeJob(job._id)}>
+                                          <Archive className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Close Job</TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClick(job)}>
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Delete Job & Related Data</TooltipContent>
+                                    </Tooltip>
+                                  </>
                                 )}
                               </>
                             )}
@@ -355,11 +682,11 @@ const JobOpenings = () => {
                                 {canPublish && (
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => handleRemoveClick(job)}>
+                                      <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClick(job)}>
                                         <Trash2 className="h-4 w-4" />
                                       </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent>Remove Job</TooltipContent>
+                                    <TooltipContent>Delete Job & Related Data</TooltipContent>
                                   </Tooltip>
                                 )}
                               </>
@@ -373,6 +700,57 @@ const JobOpenings = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Footer */}
+        {totalItems > 0 && (
+          <div className="px-6 py-4 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/30">
+            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Showing <span className="font-semibold text-slate-900 dark:text-slate-100">{((currentPage - 1) * pageSize) + 1}</span> to{" "}
+              <span className="font-semibold text-slate-900 dark:text-slate-100">{Math.min(currentPage * pageSize, totalItems)}</span> of{" "}
+              <span className="font-semibold text-slate-900 dark:text-slate-100">{totalItems}</span> job openings
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                className="h-8 px-2.5 text-xs border-slate-200 dark:border-slate-800 cursor-pointer"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+
+              <div className="flex items-center gap-1 mx-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`h-8 w-8 text-xs font-semibold rounded-lg transition cursor-pointer ${
+                      currentPage === pageNum
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                className="h-8 px-2.5 text-xs border-slate-200 dark:border-slate-800 cursor-pointer"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
         </CardContent>
       </Card>
 
@@ -403,6 +781,42 @@ const JobOpenings = () => {
                 <div className="text-xs text-muted-foreground">Deadline</div>
                 <div className="font-medium">{selectedJob.deadline ? new Date(selectedJob.deadline).toLocaleDateString() : "N/A"}</div>
               </div>
+
+              {/* Extra details (Experience, Salary) from first hiring role */}
+              {(() => {
+                const firstRole = getHiringRoles(selectedJob)[0] || {};
+                return (
+                  <>
+                    {firstRole.experience && (
+                      <div className="rounded-lg border border-white/10 bg-muted/10 p-3">
+                        <div className="text-xs text-muted-foreground">Experience Required</div>
+                        <div className="font-medium">{firstRole.experience}</div>
+                      </div>
+                    )}
+                    {(firstRole.minSalary || firstRole.maxSalary) && (
+                      <div className="rounded-lg border border-white/10 bg-muted/10 p-3">
+                        <div className="text-xs text-muted-foreground">Salary Range</div>
+                        <div className="font-medium text-emerald-400">
+                          {firstRole.minSalary ? `${firstRole.minSalary.toLocaleString()}` : "N/A"} - {firstRole.maxSalary ? `${firstRole.maxSalary.toLocaleString()}` : "N/A"}
+                        </div>
+                      </div>
+                    )}
+                    {selectedJob.description && (
+                      <div className="md:col-span-2 rounded-lg border border-white/10 bg-muted/10 p-3">
+                        <div className="text-xs text-muted-foreground mb-1">Job Description</div>
+                        <div className="text-sm text-foreground whitespace-pre-wrap">{selectedJob.description}</div>
+                      </div>
+                    )}
+                    {firstRole.skills && (
+                      <div className="md:col-span-2 rounded-lg border border-white/10 bg-muted/10 p-3">
+                        <div className="text-xs text-muted-foreground mb-1">Key Skills & Requirements</div>
+                        <div className="text-sm text-foreground whitespace-pre-wrap">{firstRole.skills}</div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+
               <div className="md:col-span-2 rounded-lg border border-white/10 bg-muted/10 p-3">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="text-xs text-muted-foreground">Hiring Progress</div>
@@ -418,7 +832,6 @@ const JobOpenings = () => {
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
                             <div className="font-medium">{role.roleName}</div>
-                            {role.skills && <div className="mt-1 text-xs text-muted-foreground">{role.skills}</div>}
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="rounded-full border border-white/10 px-2 py-1 text-xs">{required} required</span>

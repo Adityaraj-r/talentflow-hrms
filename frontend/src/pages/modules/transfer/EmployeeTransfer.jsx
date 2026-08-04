@@ -14,6 +14,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import EmployeePromotion from "./EmployeePromotion"
 import OffboardingRequests from "./OffboardingRequests"
 
+import TransferRequestForm from "./TransferRequestForm"
+
 const EmployeeTransfer = () => {
   const { user } = useAuth()
   const userRole = user?.role?.toUpperCase() || ""
@@ -79,6 +81,7 @@ const AdminTransferView = ({ user }) => {
 
   const [recommendModalOpen, setRecommendModalOpen] = useState(false)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [initiateModalOpen, setInitiateModalOpen] = useState(false)
   const [selectedTransfer, setSelectedTransfer] = useState(null)
   const [recommendText, setRecommendText] = useState("")
 
@@ -159,9 +162,16 @@ const AdminTransferView = ({ user }) => {
             <TabsTrigger value="history">Transfer History</TabsTrigger>
           </TabsList>
           
-          <Button variant="outline" size="sm" onClick={() => toast.success("Compiling Approved Transfers for Export...")}>
-            <FileText className="h-4 w-4 mr-2" /> Export Pipeline
-          </Button>
+          <div className="flex items-center gap-2">
+            {["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER_ADMIN", "CEO", "COUNTRY_MANAGER", "DEPARTMENT_MANAGER"].includes(userRole) && (
+              <Button size="sm" onClick={() => setInitiateModalOpen(true)}>
+                <ArrowLeftRight className="h-4 w-4 mr-2" /> Initiate Transfer
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => toast.success("Compiling Approved Transfers for Export...")}>
+              <FileText className="h-4 w-4 mr-2" /> Export Pipeline
+            </Button>
+          </div>
         </div>
 
         <TabsContent value="pending" className="mt-4">
@@ -200,6 +210,22 @@ const AdminTransferView = ({ user }) => {
           />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={initiateModalOpen} onOpenChange={setInitiateModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Initiate Employee Transfer</DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <TransferRequestForm
+              onSuccess={() => {
+                setInitiateModalOpen(false);
+                queryClient.invalidateQueries(['transfers']);
+              }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={recommendModalOpen} onOpenChange={setRecommendModalOpen}>
         <DialogContent>

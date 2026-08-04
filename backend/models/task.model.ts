@@ -54,7 +54,13 @@ const TaskSchema = new Schema<ITask>(
       mode: { type: String },
       meetingLink: { type: String },
       instructions: { type: [String], default: [] },
-      interviewStatus: { type: String }
+      interviewStatus: { type: String },
+      applicationId: { type: Schema.Types.ObjectId, ref: "Application" },
+      resume: { type: String },
+      candidateEmail: { type: String },
+      candidatePhone: { type: String },
+      jobTitle: { type: String },
+      department: { type: String }
     },
   },
   {

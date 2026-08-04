@@ -54,20 +54,51 @@ const ApplicationStatus = () => {
     switch (status) {
       case "Applied":
         return "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300"
-      case "Shortlisted":
+      case "Under Review":
+        return "bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300"
+      case "HR Screening":
         return "bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300"
-      case "Interview":
+      case "Assessment":
         return "bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-300"
+      case "Interview Round 1":
+      case "Interview Round 2":
+        return "bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300"
+      case "Hiring Manager Review":
+      case "Approved":
+        return "bg-teal-100 text-teal-600 dark:bg-teal-900 dark:text-teal-300"
+      case "Offer Sent":
+        return "bg-cyan-100 text-cyan-600 dark:bg-cyan-900 dark:text-cyan-300"
+      case "Offer Accepted":
+        return "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300"
+      case "Background Verification":
+        return "bg-rose-100 text-rose-600 dark:bg-rose-900 dark:text-rose-300"
+      case "Hired":
+        return "bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-300"
       case "Rejected":
         return "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300"
-      case "Selected":
-        return "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300"
       default:
         return "bg-gray-100 text-gray-600"
     }
   }
 
-  const timelineSteps = ["Applied", "Shortlisted", "Interview", "Selected"]
+  const timelineSteps = [
+    "Applied",
+    "HR Screening",
+    "Interview Round 1",
+    "Offer Accepted",
+    "Background Verification",
+    "Hired"
+  ]
+
+  const getActiveIndex = (status) => {
+    if (status === "Under Review" || status === "Applied") return 0
+    if (status === "HR Screening" || status === "Assessment") return 1
+    if (status === "Interview Round 1" || status === "Interview Round 2" || status === "Hiring Manager Review" || status === "Approved" || status === "Offer Sent") return 2
+    if (status === "Offer Accepted") return 3
+    if (status === "Background Verification") return 4
+    if (status === "Hired") return 5
+    return -1
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 px-6 py-16">
@@ -127,49 +158,65 @@ const ApplicationStatus = () => {
         </div>
 
         <div className="space-y-8">
-          {applications.map((app) => (
-            <div
-              key={app._id}
-              className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 shadow-md hover:shadow-xl transition"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                  <Briefcase className="text-blue-500" />
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                      {app.jobId?.jobTitle ?? "Job application"}
-                    </h3>
-                    <p className="text-sm text-gray-400">
-                      Applied on {new Date(app.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-                <span
-                  className={`px-4 py-1 rounded-full text-sm font-medium ${statusColor(app.status)}`}
-                >
-                  {app.status}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between mt-6">
-                {timelineSteps.map((step, index) => {
-                  const active = timelineSteps.indexOf(app.status) >= index
-                  return (
-                    <div key={step} className="flex-1 flex flex-col items-center">
-                      <div
-                        className={`w-4 h-4 rounded-full ${
-                          active ? "bg-blue-600" : "bg-gray-300 dark:bg-slate-700"
-                        }`}
-                      />
-                      <span className="text-xs mt-2 text-gray-500 dark:text-slate-400">
-                        {step}
-                      </span>
+          {applications.map((app) => {
+            const activeIdx = getActiveIndex(app.status)
+            return (
+              <div
+                key={app._id}
+                className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 shadow-md hover:shadow-xl transition"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-3">
+                    <Briefcase className="text-blue-500" />
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        {app.jobId?.jobTitle ?? "Job application"}
+                      </h3>
+                      <p className="text-sm text-gray-400">
+                        Applied on {new Date(app.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
-                  )
-                })}
+                  </div>
+                  <span
+                    className={`px-4 py-1 rounded-full text-sm font-medium ${statusColor(app.status)}`}
+                  >
+                    {app.status}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between mt-6 border-b border-gray-100 dark:border-slate-800 pb-6 overflow-x-auto gap-4">
+                  {timelineSteps.map((step, index) => {
+                    const active = activeIdx >= index
+                    return (
+                      <div key={step} className="flex-1 min-w-[80px] flex flex-col items-center">
+                        <div
+                          className={`w-4 h-4 rounded-full ${
+                            active ? "bg-blue-600" : "bg-gray-300 dark:bg-slate-700"
+                          }`}
+                        />
+                        <span className="text-[10px] md:text-xs mt-2 text-gray-500 dark:text-slate-400 text-center font-medium">
+                          {step}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {app.status === "Hired" && (
+                  <div className="mt-6 p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-200 text-sm space-y-3">
+                    <p className="font-bold text-lg text-emerald-400 flex items-center gap-2">🎉 Background Verification Passed!</p>
+                    <p>Congratulations! Your background checks are fully verified. You have been successfully transitioned to the Document Collection and pre-onboarding stage.</p>
+                    <a 
+                      href={`/employee-center/onboarding?email=${encodeURIComponent(app.email)}&firstName=${encodeURIComponent(app.name.split(' ')[0])}&lastName=${encodeURIComponent(app.name.split(' ').slice(1).join(' '))}`}
+                      className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md transition"
+                    >
+                      Complete Document Collection & Onboarding Profile
+                    </a>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>

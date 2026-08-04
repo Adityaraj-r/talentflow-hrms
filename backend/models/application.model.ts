@@ -227,6 +227,22 @@ const applicationSchema = new mongoose.Schema(
     default: ""
   },
 
+  workflowState: {
+    currentStageKey: { type: String, default: "" },
+    currentStageIndex: { type: Number, default: 0 },
+    stageHistory: [{
+      stageKey: { type: String },
+      stageName: { type: String },
+      enteredAt: { type: Date },
+      completedAt: { type: Date },
+      outcome: { type: String, enum: ["passed", "failed", "skipped", "in_progress"], default: "in_progress" },
+      score: { type: Number, default: 0 },
+      notes: { type: String, default: "" },
+    }],
+    finalScore: { type: Number, default: 0 },
+    isComplete: { type: Boolean, default: false },
+  },
+
   status: {
     type: String,
     default: "Applied"
@@ -248,10 +264,69 @@ const applicationSchema = new mongoose.Schema(
     location: { type: String },
     instructions: { type: [String], default: [] },
     status: { type: String, enum: ["Upcoming", "In Progress", "Completed", "Cancelled"], default: "Upcoming" }
-  }
+  },
 
+  offerEnabled: {
+    type: Boolean,
+    default: false
+  },
+
+  assignmentCleared: {
+    type: Boolean,
+    default: false
+  },
+
+  assignmentStatus: {
+    type: String,
+    enum: ["Cleared", "Pending", "Failed", "N/A"],
+    default: "Pending"
+  },
+
+  currentRound: {
+    type: String,
+    default: "Round 1"
+  },
+
+  currentRoundIndex: {
+    type: Number,
+    default: 0
+  },
+
+  backgroundVerification: {
+    status: { type: String, enum: ["Pending", "In Progress", "Passed", "Failed"], default: "Pending" },
+    initiatedAt: { type: Date },
+    completedAt: { type: Date },
+    verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    notes: { type: String, default: "" },
+    checks: {
+      identity: { type: String, enum: ["Pending", "Passed", "Failed"], default: "Pending" },
+      education: { type: String, enum: ["Pending", "Passed", "Failed"], default: "Pending" },
+      employment: { type: String, enum: ["Pending", "Passed", "Failed"], default: "Pending" },
+      criminal: { type: String, enum: ["Pending", "Passed", "Failed"], default: "Pending" }
+    }
+  },
+
+  interviewEvaluations: [
+    {
+      round: { type: String }, // e.g. "Technical Round 1", "Technical Round 2"
+      interviewerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      interviewerName: { type: String },
+      rating: { type: Number, min: 1, max: 5 },
+      feedback: { type: String, default: "" },
+      recommendation: { type: String, enum: ["Recommended", "Not Recommended", "Borderline"], default: "Borderline" },
+      evaluatedAt: { type: Date, default: Date.now }
+    }
+  ],
+
+  bgvHistory: [
+    {
+      updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      notes: { type: String },
+      timestamp: { type: Date, default: Date.now }
+    }
+  ]
 },
 { timestamps: true }
 )
 
-export default mongoose.model("Application", applicationSchema)
+export default mongoose.models.Application || mongoose.model("Application", applicationSchema)

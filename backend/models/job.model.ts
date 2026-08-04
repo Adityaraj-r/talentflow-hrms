@@ -68,7 +68,33 @@ const jobSchema = new mongoose.Schema(
       }
     }
   ],
-  
+  workflow: {
+    stages: [{
+      key: { type: String, required: true },
+      name: { type: String, required: true },
+      type: { type: String, enum: ["screening", "assignment", "interview", "review", "offer", "bgv", "custom"], default: "custom" },
+      order: { type: Number, required: true },
+      enabled: { type: Boolean, default: true },
+      config: {
+        interviewType: { type: String, default: "" },
+        requiredSkills: [{ type: String }],
+        passingScore: { type: Number, default: 3, min: 1, max: 5 },
+        assignmentTemplate: { type: String, default: "" },
+        assignmentDeadlineDays: { type: Number, default: 7 },
+        bgvChecks: [{ type: String }],
+        autoProgress: { type: Boolean, default: false },
+        emailTemplateKey: { type: String, default: "" },
+      },
+      weightage: { type: Number, default: 0, min: 0, max: 100 },
+    }],
+    scoringFormula: { type: String, enum: ["weighted_average", "pass_fail", "custom"], default: "weighted_average" },
+    autoProgressionEnabled: { type: Boolean, default: false },
+  },
+
+  hasAssignment: { type: Boolean, default: false },
+  assignmentName: { type: String, default: "Technical Assignment" },
+  interviewRounds: [{ type: String }],
+
   status: {
     type: String,
     enum: ["Draft", "Published", "Closed"],
@@ -79,4 +105,4 @@ const jobSchema = new mongoose.Schema(
 { timestamps: true }
 );
 
-export default mongoose.model("Job", jobSchema);
+export default mongoose.models.Job || mongoose.model("Job", jobSchema);

@@ -102,6 +102,11 @@ const RecruitmentPipeline = () => {
     [applications]
   )
 
+  const activeCandidate = useMemo(() => {
+    if (!selectedCandidate) return null
+    return candidates.find((c) => c._id === selectedCandidate._id) || selectedCandidate
+  }, [candidates, selectedCandidate])
+
   const filterOptions = useMemo(
     () => ({
       recruiters: [...new Set(candidates.map((candidate) => candidate.recruiter).filter(Boolean))],
@@ -345,7 +350,11 @@ const RecruitmentPipeline = () => {
         }
       />
 
-      <PipelineAnalytics candidates={filteredCandidates} />
+      <PipelineAnalytics
+        candidates={candidates}
+        activeStage={filters.stage}
+        onSelectStage={(stage) => setFilters((prev) => ({ ...prev, stage }))}
+      />
 
       <PipelineFilters
         filters={filters}
@@ -365,10 +374,11 @@ const RecruitmentPipeline = () => {
       />
 
       <CandidateDrawer
-        candidate={selectedCandidate}
+        candidate={activeCandidate}
         open={Boolean(selectedCandidate)}
         onClose={() => setSelectedCandidate(null)}
         uploadBaseUrl={uploadBaseUrl}
+        onRefresh={fetchApplications}
       />
     </div>
   )

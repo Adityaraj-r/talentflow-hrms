@@ -17,22 +17,22 @@ import { Button } from "@/components/ui/button"
 import { StatsCard } from "@/components/ui/stats-card"
 
 const statusConfig = {
-  pending: { icon: Clock3, className: "border-amber-400/30 bg-amber-500/10 text-amber-300 shadow-amber-500/10" },
-  approved: { icon: CheckCircle2, className: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10" },
-  draft: { icon: FileText, className: "border-slate-400/30 bg-slate-500/10 text-slate-700 dark:text-slate-300 shadow-slate-500/10" },
-  published: { icon: Sparkles, className: "border-sky-400/30 bg-sky-500/10 text-sky-300 shadow-sky-500/10" },
-  open: { icon: Sparkles, className: "border-sky-400/30 bg-sky-500/10 text-sky-300 shadow-sky-500/10" },
-  rejected: { icon: XCircle, className: "border-rose-400/30 bg-rose-500/10 text-rose-300 shadow-rose-500/10" },
-  interview: { icon: Clock3, className: "border-violet-400/30 bg-violet-500/10 text-violet-300 shadow-violet-500/10" },
-  shortlisted: { icon: CircleDashed, className: "border-indigo-400/30 bg-indigo-500/10 text-indigo-300 shadow-indigo-500/10" },
-  selected: { icon: CheckCircle2, className: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10" },
-  offered: { icon: FileText, className: "border-cyan-400/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 shadow-cyan-500/10" },
-  accepted: { icon: CheckCircle2, className: "border-lime-400/30 bg-lime-500/10 text-lime-300 shadow-lime-500/10" },
-  declined: { icon: XCircle, className: "border-rose-400/30 bg-rose-500/10 text-rose-300 shadow-rose-500/10" },
-  closed: { icon: Minus, className: "border-zinc-400/30 bg-zinc-500/10 text-zinc-300 shadow-zinc-500/10" },
-  applied: { icon: FileText, className: "border-blue-400/30 bg-blue-500/10 text-blue-300 shadow-blue-500/10" },
-  completed: { icon: CheckCircle2, className: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10" },
-  joined: { icon: CheckCircle2, className: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10" },
+  pending: { icon: Clock3, className: "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-300 shadow-amber-500/5" },
+  approved: { icon: CheckCircle2, className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 shadow-emerald-500/5" },
+  draft: { icon: FileText, className: "border-slate-500/20 bg-slate-500/10 text-slate-600 dark:text-slate-300 shadow-slate-500/5" },
+  published: { icon: Sparkles, className: "border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-300 shadow-sky-500/5" },
+  open: { icon: Sparkles, className: "border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-300 shadow-sky-500/5" },
+  rejected: { icon: XCircle, className: "border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-300 shadow-rose-500/5" },
+  interview: { icon: Clock3, className: "border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-300 shadow-violet-500/5" },
+  shortlisted: { icon: CircleDashed, className: "border-indigo-500/20 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 shadow-indigo-500/5" },
+  selected: { icon: CheckCircle2, className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 shadow-emerald-500/5" },
+  offered: { icon: FileText, className: "border-cyan-500/20 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 shadow-cyan-500/5" },
+  accepted: { icon: CheckCircle2, className: "border-lime-500/20 bg-lime-500/10 text-lime-600 dark:text-lime-300 shadow-lime-500/5" },
+  declined: { icon: XCircle, className: "border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-300 shadow-rose-500/5" },
+  closed: { icon: Minus, className: "border-zinc-500/20 bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 shadow-zinc-500/5" },
+  applied: { icon: FileText, className: "border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-300 shadow-blue-500/5" },
+  completed: { icon: CheckCircle2, className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 shadow-emerald-500/5" },
+  joined: { icon: CheckCircle2, className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 shadow-emerald-500/5" },
 }
 
 const normalizeStatus = (status = "") =>
@@ -45,7 +45,6 @@ export function RecruitmentStatusBadge({ status, className }) {
     .replace("interview scheduled", "interview")
     .replace("screening", "shortlisted")
   const config = statusConfig[key] || statusConfig[normalizeStatus(status)] || statusConfig.draft
-  const Icon = config.icon
 
   return (
     <span
@@ -55,7 +54,6 @@ export function RecruitmentStatusBadge({ status, className }) {
         className
       )}
     >
-      {React.createElement(Icon, { className: "h-3.5 w-3.5" })}
       {status || "Draft"}
     </span>
   )

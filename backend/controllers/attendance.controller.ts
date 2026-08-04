@@ -839,7 +839,7 @@ export const getCorrectionRequests = async (req: Request, res: Response) => {
     let requests;
 
     if (
-      ["HRMANAGER", "ADMIN", "SUPERADMIN", "HROFFICER"].includes(
+      ["HRMANAGER", "ADMIN", "SUPERADMIN", "HROFFICER", "CEO", "EXECUTIVE", "FINANCEMANAGER", "COUNTRYMANAGER"].includes(
         userRole || ""
       )
     ) {
@@ -849,7 +849,7 @@ export const getCorrectionRequests = async (req: Request, res: Response) => {
         .populate("reviewedBy", "firstName lastName")
         .sort({ createdAt: -1 });
     } else if (
-      ["DEPARTMENTMANAGER", "DIRECTMANAGER"].includes(userRole || "")
+      ["DEPARTMENTMANAGER", "DIRECTMANAGER", "PROJECTMANAGER", "TEAMLEAD"].includes(userRole || "")
     ) {
       const currentUser = await User.findById(userId);
       const teamMembers = await User.find({
@@ -867,9 +867,12 @@ export const getCorrectionRequests = async (req: Request, res: Response) => {
         .populate("reviewedBy", "firstName lastName")
         .sort({ createdAt: -1 });
     } else {
-      return res
-        .status(403)
-        .json({ success: false, message: "Access denied" });
+      filter.requestedBy = userId;
+      requests = await CorrectionRequest.find(filter)
+        .populate("requestedBy", "firstName lastName email department employeeCode")
+        .populate("attendanceId")
+        .populate("reviewedBy", "firstName lastName")
+        .sort({ createdAt: -1 });
     }
 
     res.json({ success: true, count: requests.length, data: requests });

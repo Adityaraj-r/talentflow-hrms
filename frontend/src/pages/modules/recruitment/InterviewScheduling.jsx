@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Search, Calendar, Loader2, Video, Clock3, MapPin } from "lucide-react"
+import { Search, Calendar, Loader2, Video, Clock3, MapPin, CheckCircle2, XCircle, UserCheck, UserX } from "lucide-react"
 import { format, isValid, parse } from "date-fns"
 import { toast } from "sonner"
 
@@ -46,7 +46,77 @@ const InterviewScheduling = () => {
     officeAddress: "",
     customAddress: "",
   })
+  const [processingId, setProcessingId] = useState(null)
   const todayDate = format(new Date(), "yyyy-MM-dd")
+
+  const [decisionModal, setDecisionModal] = useState({
+    open: false,
+    candidate: null,
+    targetStatus: "",
+    submitting: false,
+    errorMessage: "",
+  })
+
+  const openDecisionModal = (candidate, targetStatus) => {
+    setDecisionModal({
+      open: true,
+      candidate,
+      targetStatus,
+      submitting: false,
+      errorMessage: "",
+    })
+  }
+
+  const handleDecisionSubmit = async () => {
+    const { candidate, targetStatus } = decisionModal
+    if (!candidate?._id || !targetStatus) return
+
+    setDecisionModal(prev => ({ ...prev, submitting: true, errorMessage: "" }))
+
+    try {
+      try {
+        await apiClient.put(`/applications/${candidate._id}/status`, { status: targetStatus })
+      } catch {
+        await apiClient.patch(`/applications/${candidate._id}/status`, { status: targetStatus })
+      }
+
+      if (targetStatus === "Selected") {
+        toast.success(`${candidate.name} accepted! Offer created & available in Offer Management.`)
+      } else {
+        toast.success(`${candidate.name} has been rejected.`)
+      }
+
+      setDecisionModal({ open: false, candidate: null, targetStatus: "", submitting: false, errorMessage: "" })
+      await fetchApplications()
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || "Failed to update candidate status"
+      setDecisionModal(prev => ({ ...prev, submitting: false, errorMessage: msg }))
+      toast.error(`Failed to ${targetStatus === "Selected" ? "accept" : "reject"} candidate: ${msg}`)
+    }
+  }
+
+  const handleToggleAssignment = async (candidate) => {
+    if (!candidate?._id) return
+    const newStatus = (candidate.assignmentStatus === "Cleared" || candidate.assignmentCleared) ? "Pending" : "Cleared"
+    try {
+      await apiClient.put(`/applications/${candidate._id}/status`, { assignmentStatus: newStatus })
+      toast.success(`Assignment status updated to ${newStatus} for ${candidate.name}`)
+      await fetchApplications()
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to update assignment status")
+    }
+  }
+
+  const handleUpdateRound = async (candidate, newRound) => {
+    if (!candidate?._id) return
+    try {
+      await apiClient.put(`/applications/${candidate._id}/status`, { currentRound: newRound })
+      toast.success(`Interview round updated to ${newRound} for ${candidate.name}`)
+      await fetchApplications()
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to update interview round")
+    }
+  }
 
   const fetchApplications = async () => {
     try {
@@ -89,19 +159,49 @@ const InterviewScheduling = () => {
     }
   }
 
+  const [roleFilter, setRoleFilter] = useState("All")
+  const [stageFilter, setStageFilter] = useState("All")
+  const [locationFilter, setLocationFilter] = useState("All")
+
   useEffect(() => {
     fetchApplications()
     fetchEmployees()
   }, [])
 
+  const baseApplications = useMemo(() => {
+    return applications.filter((a) => ["Shortlisted", "Interview", "Applied", "HR Screening", "Under Review"].includes(a.status))
+  }, [applications])
+
+  const roleOptions = useMemo(() => {
+    const roles = baseApplications.map(a => a.selectedPositionTitle || a.hiringRoleName || a.jobId?.jobTitle).filter(Boolean)
+    return ["All", ...new Set(roles)]
+  }, [baseApplications])
+
+  const stageOptions = useMemo(() => {
+    const stages = baseApplications.map(a => a.status).filter(Boolean)
+    return ["All", ...new Set(stages)]
+  }, [baseApplications])
+
+  const locationOptions = useMemo(() => {
+    const locs = baseApplications.map(a => a.currentLocation || a.jobId?.officeLocation || a.jobId?.location).filter(Boolean)
+    return ["All", ...new Set(locs)]
+  }, [baseApplications])
+
   const candidates = useMemo(() => {
-    return applications
-      .filter((a) => ["Shortlisted", "Interview"].includes(a.status))
-      .filter((a) => {
-        const q = search.toLowerCase()
-        return (a.name || "").toLowerCase().includes(q) || (a.email || "").toLowerCase().includes(q)
-      })
-  }, [applications, search])
+    return baseApplications.filter((a) => {
+      const q = search.toLowerCase()
+      const roleVal = a.selectedPositionTitle || a.hiringRoleName || a.jobId?.jobTitle || ""
+      const stageVal = a.status || ""
+      const locVal = a.currentLocation || a.jobId?.officeLocation || a.jobId?.location || ""
+
+      const matchesSearch = !q || (a.name || "").toLowerCase().includes(q) || (a.email || "").toLowerCase().includes(q) || roleVal.toLowerCase().includes(q) || locVal.toLowerCase().includes(q)
+      const matchesRole = roleFilter === "All" || roleVal === roleFilter
+      const matchesStage = stageFilter === "All" || stageVal === stageFilter
+      const matchesLoc = locationFilter === "All" || locVal === locationFilter
+
+      return matchesSearch && matchesRole && matchesStage && matchesLoc
+    })
+  }, [baseApplications, search, roleFilter, stageFilter, locationFilter])
 
 
 
@@ -275,15 +375,78 @@ const InterviewScheduling = () => {
       </div>
 
       <Card>
-        <div className="p-4 border-b flex flex-col md:flex-row gap-4 items-center justify-between bg-muted/20">
-          <div className="relative flex-1 md:w-80">
+        <div className="p-4 border-b flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-muted/20">
+          <div className="relative flex-1 min-w-[200px] lg:w-72">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               className="pl-10"
-              placeholder="Search candidate..."
+              placeholder="Search candidate, role, location..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Filter by Role */}
+            <div className="w-36 sm:w-44">
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-full bg-background text-xs h-9">
+                  <SelectValue placeholder="Role: All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Roles</SelectItem>
+                  {roleOptions.filter(r => r !== "All").map(role => (
+                    <SelectItem key={role} value={role}>{role}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filter by Stage */}
+            <div className="w-32 sm:w-36">
+              <Select value={stageFilter} onValueChange={setStageFilter}>
+                <SelectTrigger className="w-full bg-background text-xs h-9">
+                  <SelectValue placeholder="Stage: All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Stages</SelectItem>
+                  {stageOptions.filter(s => s !== "All").map(stage => (
+                    <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filter by Location */}
+            <div className="w-36 sm:w-44">
+              <Select value={locationFilter} onValueChange={setLocationFilter}>
+                <SelectTrigger className="w-full bg-background text-xs h-9">
+                  <SelectValue placeholder="Location: All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Locations</SelectItem>
+                  {locationOptions.filter(l => l !== "All").map(loc => (
+                    <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {(roleFilter !== "All" || stageFilter !== "All" || locationFilter !== "All" || search) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  setSearch("")
+                  setRoleFilter("All")
+                  setStageFilter("All")
+                  setLocationFilter("All")
+                }}
+              >
+                Reset
+              </Button>
+            )}
           </div>
         </div>
         <CardContent className="p-0">
@@ -293,7 +456,11 @@ const InterviewScheduling = () => {
                 <tr>
                   <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Candidate Name</th>
                   <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Email</th>
+                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Job ID</th>
                   <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Applied Role</th>
+                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Location</th>
+                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Assignment Status</th>
+                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Interview Round</th>
                   <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Current Stage</th>
                   <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs text-right">Action</th>
                 </tr>
@@ -301,15 +468,71 @@ const InterviewScheduling = () => {
               <tbody className="divide-y divide-border">
                 {candidates.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="p-8 text-center text-sm text-muted-foreground">
-                      No candidates available for scheduling.
+                    <td colSpan="9" className="p-8 text-center text-sm text-muted-foreground">
+                      No candidates match the selected filters.
                     </td>
                   </tr>
                 ) : candidates.map((c) => (
                   <tr key={c._id} className="hover:bg-muted/30 transition-colors group">
                     <td className="px-6 py-4 font-medium text-foreground">{c.name}</td>
                     <td className="px-6 py-4 text-muted-foreground">{c.email}</td>
+                    <td className="px-6 py-4 font-mono text-xs font-semibold text-cyan-600 dark:text-cyan-400 whitespace-nowrap">
+                      {c.jobId?.jobCode || (c.jobId?._id ? `JOB-${c.jobId._id.slice(-4)}` : "N/A")}
+                    </td>
                     <td className="px-6 py-4 text-muted-foreground">{c.selectedPositionTitle || c.hiringRoleName || c.jobId?.jobTitle || "Role"}</td>
+                    <td className="px-6 py-4 text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                        <span>{c.currentLocation || c.jobId?.officeLocation || c.jobId?.location || "N/A"}</span>
+                      </div>
+                    </td>
+
+                    {/* Assignment Status */}
+                    <td className="px-6 py-4">
+                      {c.jobId?.hasAssignment || (c.jobId?.workflow?.stages && c.jobId.workflow.stages.some(s => s.type === "assignment")) ? (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleAssignment(c)}
+                          title="Click to toggle Assignment Cleared / Pending"
+                          className={cn(
+                            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition cursor-pointer shadow-xs",
+                            (c.assignmentCleared || c.assignmentStatus === "Cleared")
+                              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
+                              : "bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25"
+                          )}
+                        >
+                          {(c.assignmentCleared || c.assignmentStatus === "Cleared") ? (
+                            <>
+                              <UserCheck className="h-3.5 w-3.5 text-emerald-500" />
+                              Assignment Cleared
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="h-3.5 w-3.5 text-amber-500" />
+                              Assignment Pending
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs text-muted-foreground border border-white/10 bg-muted/30">
+                          N/A
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Interview Round */}
+                    <td className="px-6 py-4">
+                      <select
+                        value={c.currentRound || (c.jobId?.interviewRounds?.[0] || "Round 1")}
+                        onChange={(e) => handleUpdateRound(c, e.target.value)}
+                        className="appearance-none h-7 pl-2.5 pr-6 text-xs font-semibold rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 outline-none hover:bg-cyan-500/20 transition cursor-pointer"
+                      >
+                        {(c.jobId?.interviewRounds?.length ? c.jobId.interviewRounds : ["Round 1 - Technical", "Round 2 - Coding", "Round 3 - HR", "Final Round"]).map((r) => (
+                          <option key={r} value={r} className="bg-slate-900 text-slate-100">{r}</option>
+                        ))}
+                      </select>
+                    </td>
+
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center rounded-full border border-white/10 px-2.5 py-0.5 text-xs font-semibold bg-muted/50 text-muted-foreground">
                         {c.status}
@@ -317,33 +540,58 @@ const InterviewScheduling = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       {canWrite && (
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            setSelected(c)
-                            setForm({
-                              interviewDate: "",
-                              startHour: "",
-                              startMinute: "",
-                              startPeriod: "AM",
-                              endHour: "",
-                              endMinute: "",
-                              endPeriod: "AM",
-                              mode: "",
-                              location: "",
-                              meetingLink: "",
-                              instructionsText: "",
-                              interviewerName: "",
-                              interviewerDesignation: "",
-                              officeAddress: "",
-                              customAddress: "",
-                            })
-                            setOpen(true)
-                          }}
-                        >
-                          <Calendar className="mr-2 h-4 w-4" />
-                          Schedule
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelected(c)
+                              setForm({
+                                interviewDate: "",
+                                startHour: "",
+                                startMinute: "",
+                                startPeriod: "AM",
+                                endHour: "",
+                                endMinute: "",
+                                endPeriod: "AM",
+                                mode: "",
+                                location: "",
+                                meetingLink: "",
+                                instructionsText: "",
+                                interviewerName: "",
+                                interviewerDesignation: "",
+                                officeAddress: "",
+                                customAddress: "",
+                              })
+                              setOpen(true)
+                            }}
+                          >
+                            <Calendar className="mr-1.5 h-3.5 w-3.5" />
+                            Schedule
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 font-medium"
+                            onClick={() => openDecisionModal(c, "Selected")}
+                            title="Accept Candidate"
+                          >
+                            <UserCheck className="h-3.5 w-3.5 mr-1" />
+                            Accept
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-rose-500/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-medium"
+                            onClick={() => openDecisionModal(c, "Rejected")}
+                            title="Reject Candidate"
+                          >
+                            <UserX className="h-3.5 w-3.5 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -621,6 +869,87 @@ const InterviewScheduling = () => {
                 Send Interview Email
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Decision Confirmation Modal */}
+      <Dialog open={decisionModal.open} onOpenChange={(val) => !decisionModal.submitting && setDecisionModal(prev => ({ ...prev, open: val }))}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
+              {decisionModal.targetStatus === "Selected" ? (
+                <>
+                  <UserCheck className="h-5 w-5 text-emerald-500" />
+                  Accept Candidate & Enable Offer
+                </>
+              ) : (
+                <>
+                  <UserX className="h-5 w-5 text-rose-500" />
+                  Reject Candidate Application
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-sm">
+              {decisionModal.targetStatus === "Selected" ? (
+                <span>Confirm selection for <strong>{decisionModal.candidate?.name}</strong>. Their offer package will be auto-generated and added to <strong>Offer Management</strong> for editing.</span>
+              ) : (
+                <span>Are you sure you want to reject <strong>{decisionModal.candidate?.name}</strong>? This decision will update their application stage to Rejected.</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2 text-xs">
+            <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Candidate:</span>
+                <span className="font-semibold text-foreground">{decisionModal.candidate?.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Email:</span>
+                <span className="font-mono text-foreground">{decisionModal.candidate?.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Role:</span>
+                <span className="font-medium text-foreground">{decisionModal.candidate?.selectedPositionTitle || decisionModal.candidate?.hiringRoleName || "Role"}</span>
+              </div>
+            </div>
+
+            {decisionModal.errorMessage && (
+              <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-rose-600 dark:text-rose-400 space-y-1">
+                <p className="font-semibold text-xs flex items-center gap-1">
+                  <span>⚠️ Action Failed</span>
+                </p>
+                <p className="text-xs font-mono">{decisionModal.errorMessage}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              disabled={decisionModal.submitting}
+              onClick={() => setDecisionModal({ open: false, candidate: null, targetStatus: "", submitting: false, errorMessage: "" })}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant={decisionModal.targetStatus === "Selected" ? "default" : "destructive"}
+              disabled={decisionModal.submitting}
+              onClick={handleDecisionSubmit}
+              className={decisionModal.targetStatus === "Selected" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}
+            >
+              {decisionModal.submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : decisionModal.targetStatus === "Selected" ? (
+                "Accept & Create Offer"
+              ) : (
+                "Reject Candidate"
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

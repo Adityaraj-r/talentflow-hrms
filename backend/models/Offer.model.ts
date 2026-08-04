@@ -5,6 +5,8 @@ export type OfferStatus = 'Under Review' | 'Changes Requested' | 'Pending HR Man
 export interface IOffer extends Document {
   offerId: string;
   candidateId?: mongoose.Types.ObjectId;
+  jobId?: mongoose.Types.ObjectId;
+  jobCode?: string;
   employeeId?: mongoose.Types.ObjectId | any;
   candidateEmail?: string;
   candidateName: string;
@@ -99,6 +101,8 @@ const PreOnboardingStepSchema = new Schema(
 const OfferSchema: Schema = new Schema({
   offerId: { type: String, required: true, unique: true },
   candidateId: { type: Schema.Types.ObjectId, ref: 'Application' },
+  jobId: { type: Schema.Types.ObjectId, ref: 'Job' },
+  jobCode: { type: String, default: '' },
   employeeId: { type: Schema.Types.ObjectId, ref: 'Employee' },
   candidateEmail: { type: String, default: '' },
   candidateName: { type: String, required: true },
@@ -150,4 +154,4 @@ const OfferSchema: Schema = new Schema({
   emailMessageId: { type: String, default: '' },
 }, { timestamps: true });
 
-export default mongoose.model<IOffer>('Offer', OfferSchema);
+export default (mongoose.models.Offer as mongoose.Model<IOffer>) || mongoose.model<IOffer>('Offer', OfferSchema);

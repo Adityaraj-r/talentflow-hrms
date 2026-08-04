@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import apiClient from "@/services/apiClient"
 import { useUser } from "@/contexts/UserContext"
 import { CalendarClock, FileText, Search, UserCheck, Users, UserX, Eye, CheckCircle, XCircle, ChevronDown, ArrowUpRight } from "lucide-react"
@@ -67,6 +67,7 @@ const getOfferStatusLabel = (app) => {
 }
 
 const CandidateApplications = () => {
+  const navigate = useNavigate()
   const { user } = useUser()
   const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
   const role = (rawRole || "").toString().toUpperCase().replace(/\s+/g, "_")
@@ -113,6 +114,13 @@ const CandidateApplications = () => {
     () => (import.meta.env.VITE_API_URL || "http://localhost:5001/api").replace(/\/api\/?$/, ""),
     []
   )
+
+  const getResumeUrl = (resumePath) => {
+    if (!resumePath) return ""
+    if (resumePath.startsWith("http://") || resumePath.startsWith("https://")) return resumePath
+    const filename = resumePath.replace(/^\/?(uploads\/)?/, "")
+    return `${uploadBaseUrl}/uploads/${filename}`
+  }
 
   const fetchApplications = async () => {
     setLoading(true)
@@ -361,9 +369,26 @@ const CandidateApplications = () => {
     return result
   }, [applications])
 
+  const [activeKpiFilter, setActiveKpiFilter] = useState("all")
+
+  const handleKpiCardClick = (stageKey) => {
+    setActiveKpiFilter(stageKey)
+    if (stageKey === "all") {
+      setFilterStatusNew("All")
+      setFilterStatusCompleted("All")
+    } else if (stageKey === "selected" || stageKey === "rejected") {
+      setFilterStatusCompleted(stageKey === "selected" ? "Selected" : "Rejected")
+    } else {
+      setFilterStatusNew(stageKey === "applied" ? "Applied" : stageKey === "shortlisted" ? "Shortlisted" : "Interview")
+    }
+    setPageNew(1)
+    setPageCompleted(1)
+  }
+
   const percentOfTotal = (count) => stats.total ? Math.round((count / stats.total) * 100) : 0
   const stageCards = [
     {
+      stageKey: "all",
       title: "Total Applications",
       value: stats.total,
       icon: Users,
@@ -372,6 +397,7 @@ const CandidateApplications = () => {
       accent: "sky",
     },
     {
+      stageKey: "applied",
       title: "New Applications",
       value: stats.applied,
       icon: FileText,
@@ -380,6 +406,7 @@ const CandidateApplications = () => {
       accent: "cyan",
     },
     {
+      stageKey: "shortlisted",
       title: "Shortlisted",
       value: stats.shortlisted,
       icon: UserCheck,
@@ -388,6 +415,7 @@ const CandidateApplications = () => {
       accent: "violet",
     },
     {
+      stageKey: "interview",
       title: "Interview Scheduled",
       value: stats.interview,
       icon: CalendarClock,
@@ -396,6 +424,7 @@ const CandidateApplications = () => {
       accent: "amber",
     },
     {
+      stageKey: "selected",
       title: "Selected",
       value: stats.selected,
       icon: UserCheck,
@@ -404,6 +433,7 @@ const CandidateApplications = () => {
       accent: "emerald",
     },
     {
+      stageKey: "rejected",
       title: "Rejected",
       value: stats.rejected,
       icon: UserCheck,
@@ -427,6 +457,8 @@ const CandidateApplications = () => {
             value={card.value}
             icon={card.icon}
             accent={card.accent}
+            active={activeKpiFilter === card.stageKey}
+            onClick={() => handleKpiCardClick(card.stageKey)}
           />
         ))}
       </div>
@@ -473,74 +505,77 @@ const CandidateApplications = () => {
 
         {/* NEW APPLICANTS TABLE */}
         <div className="rounded-lg border border-border bg-card/80 shadow-sm overflow-hidden flex flex-col">
-          <table className="w-full text-sm table-fixed">
+          <table className="w-full text-sm table-auto">
             <thead className="bg-muted/95 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="w-[20%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Candidate <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
-                <th className="w-[15%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Job Opening <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
-                <th className="w-[15%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Hiring Role <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
-                <th className="w-[15%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Contact <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
-                <th className="w-[10%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Status <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
-                <th className="w-[9%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">AI Fit <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
-                <th className="w-[9%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Progress <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
-                <th className="w-[7%] px-4 py-3 text-right font-semibold truncate"><span className="inline-flex items-center gap-1.5">Actions <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="px-4 py-3 text-left font-semibold w-[50px]">S.No.</th>
+                <th className="px-4 py-3 text-left font-semibold">Candidate</th>
+                <th className="px-4 py-3 text-left font-semibold">Job ID</th>
+                <th className="px-4 py-3 text-left font-semibold">Applied Position</th>
+                <th className="px-4 py-3 text-left font-semibold">Experience</th>
+                <th className="px-4 py-3 text-left font-semibold">Match Score</th>
+                <th className="px-4 py-3 text-left font-semibold">Applied Date</th>
+                <th className="px-4 py-3 text-left font-semibold">Hiring Stage</th>
+                <th className="px-4 py-3 text-left font-semibold">Resume PDF</th>
+                <th className="px-4 py-3 text-right font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="p-5 text-center text-sm text-muted-foreground">Loading applications...</td>
+                  <td colSpan={10} className="p-5 text-center text-sm text-muted-foreground">Loading applications...</td>
                 </tr>
               ) : filteredNew.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-5">
+                  <td colSpan={10} className="p-5">
                     <RecruitmentEmptyState title="No active applications" description="No new or active candidates match the filters." />
                   </td>
                 </tr>
               ) : (
                 paginatedNew.map((app, index) => (
-                  <tr key={app._id} className="transition-colors hover:bg-muted/30 odd:bg-white/[0.02]">
-                    <td className="px-4 py-3 truncate">
+                  <tr key={app._id} onClick={() => navigate(`/dashboard/applications/${app._id}`)} className="transition-colors hover:bg-muted/30 cursor-pointer">
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{(pageNew - 1) * ITEMS_PER_PAGE + index + 1}</td>
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <CandidateAvatar name={app.name} />
                         <div className="min-w-0">
-                          <div className="font-medium text-foreground truncate">{app.name}</div>
-                          <div className="text-xs text-muted-foreground truncate">Applicant #{(pageNew - 1) * ITEMS_PER_PAGE + index + 1}</div>
+                          <div className="font-semibold text-foreground truncate">{app.name}</div>
+                          <div className="text-xs text-muted-foreground truncate">{app.email}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground truncate">{app.jobId?.jobTitle || "Unassigned"}</td>
-                    <td className="px-4 py-3 text-muted-foreground truncate">{app.hiringRoleName || "N/A"}</td>
-                    <td className="px-4 py-3 text-muted-foreground truncate" title={app.email}>{app.email}</td>
-                    <td className="px-4 py-3 truncate">
-                      <RecruitmentStatusBadge status={app.status} />
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                      {app.jobId?.jobCode || (app.jobId?._id ? `JOB-${app.jobId._id.slice(-4)}` : "N/A")}
                     </td>
-                    <td className="px-4 py-3 truncate">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-foreground truncate">{Number(app.aiFitScore || app.matchScore || 0)}% Match</span>
-                      </div>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{app.jobId?.jobTitle || app.hiringRoleName || 'Unassigned'}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{app.yearsOfExperience || 0} yrs</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-sm font-bold ${Number(app.aiFitScore || app.matchScore || 0) >= 75 ? 'text-emerald-600 dark:text-emerald-400' : Number(app.aiFitScore || app.matchScore || 0) >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
+                        {Number(app.aiFitScore || app.matchScore || 0)}%
+                      </span>
                     </td>
-                    <td className="px-4 py-3 truncate">
-                      <ProgressBar value={applicationStages[normalizeApplicationStage(app.status)]?.progress || 18} />
+                    <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{new Date(app.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3"><RecruitmentStatusBadge status={app.status} /></td>
+                    <td className="px-4 py-3">
+                      {app.resume ? (
+                        <a href={getResumeUrl(app.resume)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer">
+                          <Eye className="h-3.5 w-3.5" /> View
+                        </a>
+                      ) : <span className="text-xs text-muted-foreground">N/A</span>}
                     </td>
-                    <td className="px-4 py-3 text-right truncate">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 shrink-0" onClick={() => { setSelectedApplication(app); setViewOpen(true) }} title="View Candidate">
-                          <Eye className="h-4 w-4" />
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 cursor-pointer" onClick={() => { setSelectedApplication(app); setViewOpen(true) }} title="Quick View">
+                          <Eye className="h-3.5 w-3.5" />
                         </Button>
                         {canWrite && (
                           <>
-                            <Button variant="ghost" size="icon" onClick={() => handleShortlist(app._id)} disabled={normalizeApplicationStage(app.status) !== "applied"} className="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-500/10 shrink-0" title="Approve / Shortlist">
-                              <CheckCircle className="h-4 w-4" />
+                            <Button variant="ghost" size="icon" onClick={() => handleShortlist(app._id)} disabled={normalizeApplicationStage(app.status) !== 'applied'} className="h-7 w-7 text-green-500 hover:text-green-600 hover:bg-green-500/10 cursor-pointer" title="Shortlist">
+                              <CheckCircle className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleReject(app._id)} disabled={["selected", "rejected"].includes(normalizeApplicationStage(app.status))} className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10 shrink-0" title="Reject Candidate">
-                              <XCircle className="h-4 w-4" />
+                            <Button variant="ghost" size="icon" onClick={() => handleReject(app._id)} disabled={['selected','rejected'].includes(normalizeApplicationStage(app.status))} className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-500/10 cursor-pointer" title="Reject">
+                              <XCircle className="h-3.5 w-3.5" />
                             </Button>
-                            {canFinalApprove && (
-                              <Button variant="ghost" size="icon" onClick={() => handleSelected(app._id)} disabled={normalizeApplicationStage(app.status) !== "interview"} className="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-500/10 shrink-0" title="Approve Candidate">
-                                <CheckCircle className="h-4 w-4" />
-                              </Button>
-                            )}
                           </>
                         )}
                       </div>
@@ -598,63 +633,73 @@ const CandidateApplications = () => {
 
         {/* COMPLETED APPLICATIONS TABLE */}
         <div className="rounded-lg border border-border bg-card/80 shadow-sm overflow-hidden flex flex-col">
-          <table className="w-full text-sm table-fixed">
+          <table className="w-full text-sm table-auto">
             <thead className="bg-muted/95 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="w-[20%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Candidate <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
-                <th className="w-[15%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Job Opening <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
-                <th className="w-[15%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Hiring Role <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
-                <th className="w-[15%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Contact <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
-                <th className="w-[10%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Final Status <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
-                <th className="w-[10%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Decision Date <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
-                <th className="w-[10%] px-4 py-3 text-left font-semibold truncate"><span className="inline-flex items-center gap-1.5">Offer Status <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
-                <th className="w-[5%] px-4 py-3 text-right font-semibold truncate"><span className="inline-flex items-center gap-1.5">Actions <ArrowUpRight className="h-3 w-3 opacity-40" /></span></th>
+                <th className="px-4 py-3 text-left font-semibold w-[50px]">S.No.</th>
+                <th className="px-4 py-3 text-left font-semibold">Candidate</th>
+                <th className="px-4 py-3 text-left font-semibold">Job ID</th>
+                <th className="px-4 py-3 text-left font-semibold">Applied Position</th>
+                <th className="px-4 py-3 text-left font-semibold">Experience</th>
+                <th className="px-4 py-3 text-left font-semibold">Match Score</th>
+                <th className="px-4 py-3 text-left font-semibold">Decision Date</th>
+                <th className="px-4 py-3 text-left font-semibold">Final Status</th>
+                <th className="px-4 py-3 text-left font-semibold">Resume PDF</th>
+                <th className="px-4 py-3 text-right font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="p-5 text-center text-sm text-muted-foreground">Loading applications...</td>
+                  <td colSpan={10} className="p-5 text-center text-sm text-muted-foreground">Loading applications...</td>
                 </tr>
               ) : filteredCompleted.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-5">
+                  <td colSpan={10} className="p-5">
                     <RecruitmentEmptyState title="No completed applications" description="No candidates reached a final decision yet." />
                   </td>
                 </tr>
               ) : (
                 paginatedCompleted.map((app, index) => (
-                  <tr key={app._id} className="transition-colors hover:bg-muted/30 odd:bg-white/[0.02]">
-                    <td className="px-4 py-3 truncate">
+                  <tr key={app._id} onClick={() => navigate(`/dashboard/applications/${app._id}`)} className="transition-colors hover:bg-muted/30 cursor-pointer">
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{(pageCompleted - 1) * ITEMS_PER_PAGE + index + 1}</td>
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <CandidateAvatar name={app.name} />
                         <div className="min-w-0">
-                          <div className="font-medium text-foreground truncate">{app.name}</div>
-                          <div className="text-xs text-muted-foreground truncate">Applicant #{(pageCompleted - 1) * ITEMS_PER_PAGE + index + 1}</div>
+                          <div className="font-semibold text-foreground truncate">{app.name}</div>
+                          <div className="text-xs text-muted-foreground truncate">{app.email}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground truncate">{app.jobId?.jobTitle || "Unassigned"}</td>
-                    <td className="px-4 py-3 text-muted-foreground truncate">{app.hiringRoleName || "N/A"}</td>
-                    <td className="px-4 py-3 text-muted-foreground truncate" title={app.email}>{app.email}</td>
-                    <td className="px-4 py-3 truncate">
-                      <RecruitmentStatusBadge status={app.status} />
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                      {app.jobId?.jobCode || (app.jobId?._id ? `JOB-${app.jobId._id.slice(-4)}` : "N/A")}
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground truncate">
-                      {new Date(app.updatedAt || app.createdAt).toLocaleDateString()}
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{app.jobId?.jobTitle || app.hiringRoleName || 'Unassigned'}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{app.yearsOfExperience || 0} yrs</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-sm font-bold ${Number(app.aiFitScore || app.matchScore || 0) >= 75 ? 'text-emerald-600 dark:text-emerald-400' : Number(app.aiFitScore || app.matchScore || 0) >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
+                        {Number(app.aiFitScore || app.matchScore || 0)}%
+                      </span>
                     </td>
-                    <td className="px-4 py-3 truncate">
-                      <span className="font-semibold text-foreground">{getOfferStatusLabel(app)}</span>
+                    <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{new Date(app.updatedAt || app.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3"><RecruitmentStatusBadge status={app.status} /></td>
+                    <td className="px-4 py-3">
+                      {app.resume ? (
+                        <a href={getResumeUrl(app.resume)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer">
+                          <Eye className="h-3.5 w-3.5" /> View
+                        </a>
+                      ) : <span className="text-xs text-muted-foreground">N/A</span>}
                     </td>
-                    <td className="px-4 py-3 text-right truncate">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 shrink-0" onClick={() => { setSelectedApplication(app); setViewOpen(true) }} title="View Candidate">
-                          <Eye className="h-4 w-4" />
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 cursor-pointer" onClick={() => { setSelectedApplication(app); setViewOpen(true) }} title="Quick View">
+                          <Eye className="h-3.5 w-3.5" />
                         </Button>
                         {!(app.status || "").toLowerCase().includes("reject") && (
                           <Link to="/dashboard/offer-management" title="Offer Management">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 shrink-0">
-                              <FileText className="h-4 w-4" />
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 cursor-pointer">
+                              <FileText className="h-3.5 w-3.5" />
                             </Button>
                           </Link>
                         )}
@@ -754,7 +799,7 @@ const CandidateApplications = () => {
                     <div className="text-xs text-muted-foreground">Resume</div>
                     <div className="truncate text-sm" title={selectedApplication.resume}>{selectedApplication.resume}</div>
                   </div>
-                  <a href={`${uploadBaseUrl}/uploads/${selectedApplication.resume}`} target="_blank" rel="noreferrer">
+                  <a href={getResumeUrl(selectedApplication.resume)} target="_blank" rel="noreferrer">
                     <Button className="bg-blue-600 text-white hover:bg-blue-700">Open Resume</Button>
                   </a>
                 </div>

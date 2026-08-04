@@ -44,7 +44,7 @@ const InterviewTaskModal = ({ open, onOpenChange, task, intData }) => {
         const data = res?.data?.data || res?.data || res || [];
         if (active) {
           const match = (Array.isArray(data) ? data : []).find(
-            (app) => app.candidate?.name === intData.candidateName
+            (app) => (app.name || "").toLowerCase() === (intData.candidateName || "").toLowerCase()
           );
           setCandidateApp(match || null);
         }
@@ -62,7 +62,12 @@ const InterviewTaskModal = ({ open, onOpenChange, task, intData }) => {
 
   if (!task || !intData) return null;
 
-  const candidate = candidateApp?.candidate || {};
+  const uploadBaseUrl = (() => {
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5001/api"
+    return apiUrl.replace(/\/api\/?$/, "")
+  })()
+
+  const candidate = candidateApp || {};
   const displayEmail = candidate.email || intData?.candidateEmail || intData?.email || task?.candidateEmail || "";
   const displayPhone = candidate.phone || intData?.candidatePhone || intData?.phone || task?.candidatePhone || "";
   const displayResume = candidate.resume || intData?.candidateResume || intData?.resume || task?.candidateResume || "";
@@ -105,9 +110,16 @@ const InterviewTaskModal = ({ open, onOpenChange, task, intData }) => {
     return "Video Platform";
   };
 
+  const getResumeUrl = (resumePath) => {
+    if (!resumePath) return ""
+    if (resumePath.startsWith("http://") || resumePath.startsWith("https://")) return resumePath
+    const filename = resumePath.replace(/^\/?(uploads\/)?/, "")
+    return `${uploadBaseUrl}/uploads/${filename}`
+  }
+
   const openResume = () => {
-    if (candidate.resume) {
-      window.open(candidate.resume, "_blank");
+    if (displayResume) {
+      window.open(getResumeUrl(displayResume), "_blank");
     } else {
       toast.error("No resume available");
     }
@@ -295,12 +307,12 @@ const InterviewTaskModal = ({ open, onOpenChange, task, intData }) => {
                             {displayResume.split('/').pop()}
                           </p>
                           <div className="flex gap-1.5">
-                            <Button onClick={() => window.open(displayResume, "_blank")} size="sm" className="flex-1 gap-1.5 h-7 text-[11px]">
+                            <Button onClick={() => window.open(getResumeUrl(displayResume), "_blank")} size="sm" className="flex-1 gap-1.5 h-7 text-[11px]">
                               <Eye className="w-3.5 h-3.5" /> View
                             </Button>
                             <Button onClick={() => {
                                const a = document.createElement('a');
-                               a.href = displayResume;
+                               a.href = getResumeUrl(displayResume);
                                a.download = `${candidate.name || intData?.candidateName || 'Candidate'}_Resume.pdf`;
                                a.click();
                             }} size="sm" variant="outline" className="flex-1 gap-1.5 h-7 text-[11px]">

@@ -68,6 +68,8 @@ const OfferOperations = () => {
   const [filterStatus, setFilterStatus] = useState("All Statuses");
   const [filterPriority, setFilterPriority] = useState("All Priorities");
   const [filterDept, setFilterDept] = useState("All Departments");
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const offers = useMemo(() => (data?.offers || []).map(enrichOffer), [data]);
   const filteredOffers = useMemo(() => {
@@ -80,12 +82,23 @@ const OfferOperations = () => {
        return true;
     });
   }, [offers, search, filterStatus, filterPriority, filterDept]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterStatus, filterPriority, filterDept]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOffers.length / ITEMS_PER_PAGE));
+  const paginatedOffers = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return filteredOffers.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredOffers, page]);
   
   const handleResetFilters = () => {
     setSearch("");
     setFilterStatus("All Statuses");
     setFilterPriority("All Priorities");
     setFilterDept("All Departments");
+    setPage(1);
   };
 
 
@@ -336,44 +349,82 @@ const OfferOperations = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {filteredOffers.map((offer) => {
-                      const priority = offer.priority || (Number(offer.salary) >= 250000 ? "High" : Number(offer.salary) < 120000 ? "Low" : "Medium");
-                      const isSelected = selectedOffer?._id === offer._id;
-                      return (
-                        <tr key={offer._id || offer.offerId} onClick={() => setSelectedOfferId(offer._id)} className={cn("transition-colors cursor-pointer", isSelected ? "bg-muted/50" : "hover:bg-muted/30 odd:bg-white/[0.02]")}>
-                          <td className="px-4 py-3 truncate font-medium text-foreground">{offer.candidateName}</td>
-                          <td className="px-4 py-3 text-muted-foreground truncate">{offer.offerId}</td>
-                          <td className="px-4 py-3 truncate"><OfferStatusBadge status={offer.status} /></td>
-                          <td className="px-4 py-3 text-muted-foreground truncate">{offer.approvalStage || "Draft"}</td>
-                          <td className="px-4 py-3 text-center truncate">
-                              <PriorityDot priority={priority} />
+                    {paginatedOffers.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                          No offers match the selected filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedOffers.map((offer) => {
+                        const priority = offer.priority || (Number(offer.salary) >= 250000 ? "High" : Number(offer.salary) < 120000 ? "Low" : "Medium");
+                        const isSelected = selectedOffer?._id === offer._id;
+                        return (
+                          <tr key={offer._id || offer.offerId} onClick={() => setSelectedOfferId(offer._id)} className={cn("transition-colors cursor-pointer", isSelected ? "bg-muted/50" : "hover:bg-muted/30 odd:bg-white/[0.02]")}>
+                            <td className="px-4 py-3 truncate font-medium text-foreground">{offer.candidateName}</td>
+                            <td className="px-4 py-3 text-muted-foreground truncate">{offer.offerId}</td>
+                            <td className="px-4 py-3 truncate"><OfferStatusBadge status={offer.status} /></td>
+                            <td className="px-4 py-3 text-muted-foreground truncate">{offer.approvalStage || "Draft"}</td>
+                            <td className="px-4 py-3 text-center truncate">
+                                <PriorityDot priority={priority} />
+                              </td>
+                            <td className="px-4 py-3 text-muted-foreground truncate">{new Date(offer.updatedAt || offer.createdAt).toLocaleDateString()}</td>
+                            <td className="px-4 py-3 text-right truncate">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleAction("preview", offer); }} title="View">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 shrink-0 cursor-pointer" title="Edit">
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                {canWrite && canSendOffer(offer) && (
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-500/10 shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleAction("send", offer); }} title="Send Offer">
+                                    <Send className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {canApproveOffers && (
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10 shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleAction("reject", offer); }} title="Cancel">
+                                    <XCircle className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
                             </td>
-                          <td className="px-4 py-3 text-muted-foreground truncate">{new Date(offer.updatedAt || offer.createdAt).toLocaleDateString()}</td>
-                          <td className="px-4 py-3 text-right truncate">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 shrink-0" onClick={(e) => { e.stopPropagation(); handleAction("preview", offer); }} title="View">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 shrink-0" title="Edit">
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              {canWrite && canSendOffer(offer) && (
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-500/10 shrink-0" onClick={(e) => { e.stopPropagation(); handleAction("send", offer); }} title="Send Offer">
-                                  <Send className="h-4 w-4" />
-                                </Button>
-                              )}
-                              {canApproveOffers && (
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10 shrink-0" onClick={(e) => { e.stopPropagation(); handleAction("reject", offer); }} title="Cancel">
-                                  <XCircle className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
+
+                {/* PAGINATION FOOTER */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-border bg-card/50 text-xs text-muted-foreground">
+                  <div>
+                    Showing {filteredOffers.length === 0 ? 0 : (page - 1) * ITEMS_PER_PAGE + 1} to {Math.min(page * ITEMS_PER_PAGE, filteredOffers.length)} of {filteredOffers.length} entries
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      className="h-8 px-3 text-xs cursor-pointer"
+                    >
+                      Previous
+                    </Button>
+                    <span className="font-semibold text-foreground px-1">
+                      Page {page} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      className="h-8 px-3 text-xs cursor-pointer"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
               </div>
             </>
           )}

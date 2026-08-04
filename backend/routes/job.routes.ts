@@ -7,6 +7,9 @@ import {
   getPublishedJobs,
   getAllJobs,
   deleteJob,
+  getJobById,
+  getWorkflowTemplates,
+  getJobWorkflow,
 } from "../controllers/job.controller";
 import { protect } from "../middleware/auth.middleware";
 import { authorizeByMatrix, MODULE_KEYS } from "../middleware/role.middleware";
@@ -20,6 +23,9 @@ router.get("/published", getPublishedJobs);
 router.use(protect as any);
 
 router.get("/", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "read"), requireRecruitmentReadRole, getAllJobs);
+router.get("/workflow-templates", getWorkflowTemplates);
+router.get("/:id", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "read"), requireRecruitmentReadRole, getJobById);
+router.get("/:id/workflow", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "read"), requireRecruitmentReadRole, getJobWorkflow);
 router.post("/", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), requireRecruitmentOperator, upload.fields([{ name: "uploadJd", maxCount: 1 }, { name: "supportingDocuments", maxCount: 1 }]), createJob);
 router.put("/:id", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), requireRecruitmentOperator, upload.fields([{ name: "uploadJd", maxCount: 1 }, { name: "supportingDocuments", maxCount: 1 }]), updateJob);
 router.put("/:id/publish", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), requireRecruitmentApprover, publishJob);

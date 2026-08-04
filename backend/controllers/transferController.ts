@@ -6,15 +6,27 @@ import User from '../models/User.model';
 
 export const createTransferRequest = async (req: AuthRequest, res: Response) => {
     try {
+        let employeeEmail = req.body.employeeEmail;
+        if (!employeeEmail && req.body.employeeId) {
+            const emp = await Employee.findOne({
+                $or: [{ employeeCode: req.body.employeeId }, { _id: req.body.employeeId }]
+            });
+            if (emp) {
+                employeeEmail = emp.email;
+            }
+        }
+
+        const isHrOrAdmin = ['HR_MANAGER', 'HR_OFFICER', 'ADMIN', 'SUPER_ADMIN', 'CEO', 'COUNTRY_MANAGER'].includes(req.user?.role || '');
+
         const transferData = new Transfer({
             ...req.body,
             initiatedBy: req.user?.id,
-            employeeEmail: req.user?.email,
+            employeeEmail: employeeEmail || req.user?.email,
             status: 'Pending',
             auditLog: [{
                 action: 'Submitted',
                 by: req.user?.id || 'System',
-                remarks: req.body.reason || 'Request initiated'
+                remarks: req.body.reason || (isHrOrAdmin ? 'Transfer initiated by HR/Admin' : 'Request initiated')
             }]
         });
 

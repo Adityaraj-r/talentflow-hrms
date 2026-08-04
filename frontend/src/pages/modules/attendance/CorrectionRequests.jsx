@@ -37,6 +37,7 @@ import {
   Calendar,
   Filter,
   AlertTriangle,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -142,7 +143,7 @@ const CorrectionRequests = () => {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
 
-  const isHrOrAdmin = ["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER_ADMIN"].includes(userRole);
+  const isHrOrAdmin = ["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER_ADMIN", "SUPER ADMIN", "CEO", "EXECUTIVE", "FINANCE_MANAGER", "COUNTRY_MANAGER"].includes(userRole);
 
   const fetchRequests = async () => {
     try {
