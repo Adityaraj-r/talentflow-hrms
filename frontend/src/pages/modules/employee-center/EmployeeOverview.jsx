@@ -4,9 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, Download, TrendingUp, TrendingDown, Minus, Award, Users } from "lucide-react";
+import { Search, Filter, Download, TrendingUp, TrendingDown, Minus, Award, Users , Eye, } from "lucide-react";
 import apiClient from "@/services/apiClient";
-import { FileText } from "lucide-react";
+
 
 import {
   Dialog,
@@ -123,10 +123,8 @@ const EmployeeOverview = () => {
   return (
     <div className="space-y-6">
       <div className="grid gap-5 md:grid-cols-3">
-        <Card className="border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Award className="w-16 h-16 text-green-600" />
-          </div>
+        <Card className="bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-xl p-1 shadow-md hover:shadow-lg transition-all duration-300">
+     
           <CardContent className="p-6 relative z-10 flex flex-col gap-4">
             <div className="p-2.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg w-fit">
               <Award className="h-5 w-5" />
@@ -138,10 +136,8 @@ const EmployeeOverview = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Users className="w-16 h-16 text-blue-600" />
-          </div>
+        <Card className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-xl p-1 shadow-md hover:shadow-lg transition-all duration-300">
+          
           <CardContent className="p-6 relative z-10 flex flex-col gap-4">
             <div className="p-2.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg w-fit">
               <Users className="h-5 w-5" />
@@ -153,10 +149,8 @@ const EmployeeOverview = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <TrendingDown className="w-16 h-16 text-red-600" />
-          </div>
+        <Card className="bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-xl p-1 shadow-md hover:shadow-lg transition-all duration-300">
+          
           <CardContent className="p-6 relative z-10 flex flex-col gap-4">
             <div className="p-2.5 bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg w-fit">
               <TrendingDown className="h-5 w-5" />
@@ -243,8 +237,8 @@ const EmployeeOverview = () => {
               <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur-md">
                 <tr>
                   <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Employee</th>
-                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Department</th>
-                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Position</th>
+                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Department</th>
+                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Position</th>
                   <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Avg Rating</th>
                   <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Trend</th>
                   <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Reviews</th>
@@ -266,8 +260,8 @@ const EmployeeOverview = () => {
                         <div className="font-semibold text-sm text-foreground">{employee.name}</div>
                         <div className="text-xs text-muted-foreground mt-0.5">{employee.email}</div>
                       </td>
-                      <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground align-middle">{employee.department}</td>
-                      <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground align-middle">{employee.position}</td>
+                      <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground  text-center align-middle">{employee.department}</td>
+                      <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground  text-center align-middle">{employee.position}</td>
                       <td className="px-6 py-4 border-b border-border/50 align-middle text-center">
                         <span className="text-lg font-bold text-orange-600 dark:text-orange-500">
                           {(employee.avgRating || 0).toFixed(1)}<span className="text-xs font-medium text-muted-foreground">/5</span>
@@ -282,15 +276,21 @@ const EmployeeOverview = () => {
                           {employee.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 border-b border-border/50 text-right align-middle whitespace-nowrap">
-                      <Button   variant="ghost" size="icon" className="h-9 w-9 rounded-lg hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/30"
-                      onClick={() => {
-                        setSelectedEmployee(employee);
-                        setIsDetailsOpen(true);
-    }}
-  >
-    <FileText className="h-4 w-4" />
-  </Button>
+                      <td className="px-6 py-4 border-b border-border/50 text-center align-middle whitespace-nowrap">
+    <div className="flex justify-center">
+        <Button
+            title="View Details"
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-lg hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/30"
+            onClick={() => {
+                setSelectedEmployee(employee);
+                setIsDetailsOpen(true);
+            }}
+        >
+            <Eye className="h-4 w-4" />
+        </Button>
+    </div>
 </td>
                     </tr>
                   ))
