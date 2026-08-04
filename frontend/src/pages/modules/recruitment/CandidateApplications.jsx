@@ -513,6 +513,7 @@ const CandidateApplications = () => {
                 <th className="px-4 py-3 text-left font-semibold">Job ID</th>
                 <th className="px-4 py-3 text-left font-semibold">Applied Position</th>
                 <th className="px-4 py-3 text-left font-semibold">Experience</th>
+                <th className="px-4 py-3 text-left font-semibold">Source</th>
                 <th className="px-4 py-3 text-left font-semibold">Match Score</th>
                 <th className="px-4 py-3 text-left font-semibold">Applied Date</th>
                 <th className="px-4 py-3 text-left font-semibold">Hiring Stage</th>
@@ -549,6 +550,24 @@ const CandidateApplications = () => {
                     </td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{app.jobId?.jobTitle || app.hiringRoleName || 'Unassigned'}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{app.yearsOfExperience || 0} yrs</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {app.source === "Employee Referral" ? (
+                        <div>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-300 border border-purple-200 dark:border-purple-500/20">
+                            Employee Referral
+                          </span>
+                          {app.referredByEmployeeId && (
+                            <div className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[140px]" title={`Referred by ${app.referredByEmployeeId.name}`}>
+                              By: {app.referredByEmployeeId.name}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300 border border-blue-200 dark:border-blue-500/20">
+                          Career Portal
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`text-sm font-bold ${Number(app.aiFitScore || app.matchScore || 0) >= 75 ? 'text-emerald-600 dark:text-emerald-400' : Number(app.aiFitScore || app.matchScore || 0) >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
                         {Number(app.aiFitScore || app.matchScore || 0)}%

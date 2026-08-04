@@ -6,6 +6,7 @@ import Task from "../models/task.model"
 import Employee from "../models/Employee.model"
 import User from "../models/User.model"
 import Offer from "../models/Offer.model"
+import Referral from "../models/Referral.model"
 import { getHrSenderEmail, sendInterviewScheduleEmail } from "../utils/sendEmail"
 import { sendApplicationStatusEmail } from "../utils/sendEmail";
 import { calculateResumeFit } from "../utils/resumeFit"
@@ -68,7 +69,8 @@ export const applyJob = async (req: Request, res: Response) => {
       currentDesignation,
       highestEducation,
       employmentTypePreference,
-      githubProfile
+      githubProfile,
+      referralToken
     } = req.body
 
     const files = (req as any).files as { [fieldname: string]: Express.Multer.File[] } | undefined
@@ -89,6 +91,48 @@ export const applyJob = async (req: Request, res: Response) => {
         return;
       }
     }
+
+    const normEmail = (email || "").trim().toLowerCase();
+    const normPhone = (phone || "").trim().toLowerCase();
+
+    // Job-specific duplicate check
+    if (jobId && normEmail) {
+      const existingApplication = await Application.findOne({
+        jobId,
+        $or: [
+          { email: { $regex: new RegExp(`^${normEmail}$`, "i") } },
+          ...(normPhone ? [{ phone: { $regex: new RegExp(`^${normPhone}$`, "i") } }] : []),
+        ],
+      }).lean();
+
+      if (existingApplication) {
+        res.status(400).json({
+          success: false,
+          message: "You have already submitted an application for this position.",
+        });
+        return;
+      }
+    }
+
+    // Resolve Referral Record if Token provided or candidate was referred
+    let referralRecord: any = null;
+    if (referralToken) {
+      referralRecord = await Referral.findOne({ invitationToken: String(referralToken).trim() });
+    }
+    if (!referralRecord && jobId && normEmail) {
+      referralRecord = await Referral.findOne({
+        jobId,
+        status: "Invited",
+        $or: [
+          { candidateEmail: normEmail },
+          ...(normPhone ? [{ candidatePhone: normPhone }] : []),
+        ],
+      });
+    }
+
+    const applicationSource = referralRecord ? "Employee Referral" : "Career Portal";
+    const referralId = referralRecord ? referralRecord._id : null;
+    const referredByEmployeeId = referralRecord ? referralRecord.referredByEmployeeId : null;
 
     const hiringRole = Array.isArray((job as any)?.hiringRoles)
       ? (job as any).hiringRoles.find((role: any) => String(role._id) === String(hiringRoleId))
@@ -133,8 +177,17 @@ export const applyJob = async (req: Request, res: Response) => {
       employmentTypePreference,
       githubProfile,
       additionalDocuments,
+      source: applicationSource,
+      referralId,
+      referredByEmployeeId,
       ...fit,
     })
+
+    if (referralRecord) {
+      referralRecord.status = "Applied";
+      referralRecord.applicationId = application._id;
+      await referralRecord.save();
+    }
 
     // Initialize workflow state if job has workflow configured
     const jobRecord = await Job.findById(application.jobId);
@@ -162,7 +215,8 @@ export const getApplications = async (req: Request, res: Response) => {
 
     const applications = await Application
       .find()
-      .populate("jobId") 
+      .populate("jobId")
+      .populate("referredByEmployeeId", "name employeeCode email department designation") 
 
     await Promise.all(
       applications.map(async (application: any) => {
@@ -223,7 +277,9 @@ export const getApplications = async (req: Request, res: Response) => {
 
 export const getApplicationById = async (req: Request, res: Response) => {
   try {
-    const application = await Application.findById(req.params.id).populate("jobId")
+    const application = await Application.findById(req.params.id)
+      .populate("jobId")
+      .populate("referredByEmployeeId", "name employeeCode email department designation")
     if (!application) {
       res.status(404).json({ success: false, message: "Application not found" })
       return

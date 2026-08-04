@@ -179,6 +179,24 @@ const applicationSchema = new mongoose.Schema(
     default: "Uncertain"
   },
 
+  source: {
+    type: String,
+    enum: ["Career Portal", "Employee Referral"],
+    default: "Career Portal"
+  },
+
+  referralId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Referral",
+    default: null
+  },
+
+  referredByEmployeeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Employee",
+    default: null
+  },
+
   riskLevel: {
     type: String,
     enum: ["Low Risk", "Medium Risk", "High Risk"],
