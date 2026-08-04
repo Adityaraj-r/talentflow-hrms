@@ -94,7 +94,6 @@ router.get("/my-correction-requests", getMyCorrectionRequests);
 
 router.post(
   "/correction-requests",
-  authorize("EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER"),
   submitCorrectionRequest
 );
 
@@ -103,10 +102,14 @@ router.get(
   authorize(
     "ADMIN",
     "SUPER_ADMIN",
+    "CEO",
+    "EXECUTIVE",
     "HR_MANAGER",
     "HR_OFFICER",
     "DEPARTMENT_MANAGER",
-    "DIRECT_MANAGER"
+    "DIRECT_MANAGER",
+    "FINANCE_MANAGER",
+    "COUNTRY_MANAGER"
   ),
   getCorrectionRequests
 );
@@ -115,10 +118,15 @@ router.patch(
   "/correction-requests/:id/review",
   authorize(
     "ADMIN",
+    "SUPER_ADMIN",
+    "CEO",
+    "EXECUTIVE",
     "HR_MANAGER",
     "HR_OFFICER",
     "DEPARTMENT_MANAGER",
-    "DIRECT_MANAGER"
+    "DIRECT_MANAGER",
+    "FINANCE_MANAGER",
+    "COUNTRY_MANAGER"
   ),
   reviewCorrectionRequest
 );

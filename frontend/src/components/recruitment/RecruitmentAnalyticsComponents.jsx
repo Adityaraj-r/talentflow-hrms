@@ -31,6 +31,8 @@ import {
   CalendarClock,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Clock3,
   Download,
   FileSpreadsheet,
@@ -182,7 +184,7 @@ export function HiringFunnelChart({ data = [], onStageClick }) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
               onClick={() => onStageClick?.(stage)}
-              className="group w-full text-left"
+              className="group w-full text-left cursor-pointer"
             >
               <div className="relative overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-3 hover:border-cyan-300/30">
                 <div
@@ -448,7 +450,7 @@ export function DepartmentDemandChart({ data = [], onClick }) {
         </div>
         <div className="grid grid-cols-2 gap-2">
           {data.slice(0, 10).map((dept) => (
-            <button key={dept.department} onClick={() => onClick?.(dept)} className="rounded-md border border-slate-200 dark:border-white/10 p-3 text-left hover:border-cyan-300/30" style={{ backgroundColor: `rgba(56, 189, 248, ${Math.max(0.08, dept.demandScore / 260)})` }}>
+            <button key={dept.department} onClick={() => onClick?.(dept)} className="rounded-md border border-slate-200 dark:border-white/10 p-3 text-left hover:border-cyan-300/30 cursor-pointer" style={{ backgroundColor: `rgba(56, 189, 248, ${Math.max(0.08, dept.demandScore / 260)})` }}>
               <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{dept.department}</p>
               <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{dept.demandScore}</p>
               <p className="text-xs text-slate-700 dark:text-slate-300">{dept.openPositions} open positions</p>
@@ -526,40 +528,63 @@ export function AnalyticsTable({ title, rows = [], columns = [] }) {
   };
 
   return (
-    <div className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 shadow-xl shadow-black/10 backdrop-blur">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-white/10 p-4">
-        <h3 className="font-semibold text-slate-900 dark:text-white">{title}</h3>
+    <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-slate-950/70 shadow-lg shadow-black/5 backdrop-blur-md overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 p-5 bg-slate-50/50 dark:bg-slate-900/50">
+        <h3 className="font-bold text-slate-800 dark:text-slate-100 tracking-tight text-sm md:text-base">{title}</h3>
         <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-          <Input value={query} onChange={(e) => { setQuery(e.target.value); setPage(0); }} placeholder="Filter table" className="border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 pl-9 text-slate-900 dark:text-slate-100" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 dark:text-slate-500" />
+          <Input value={query} onChange={(e) => { setQuery(e.target.value); setPage(0); }} placeholder="Filter table records..." className="border-slate-200 dark:border-white/10 bg-white/50 dark:bg-slate-950/50 pl-9 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-xs rounded-lg" />
         </div>
       </div>
       <div className="overflow-x-auto custom-scrollbar">
-        <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-white/[0.03] text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <table className="min-w-full text-xs md:text-sm">
+          <thead className="bg-slate-50/70 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/5 text-[10px] md:text-xs uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">
             <tr>
               {columns.map((column) => (
-                <th key={column.key} className="whitespace-nowrap px-4 py-3 text-left font-semibold">
-                  <button type="button" onClick={() => toggleSort(column.key)} className="hover:text-slate-900 dark:text-white">{column.label}</button>
+                <th key={column.key} className="whitespace-nowrap px-5 py-3.5 text-left font-bold group">
+                  <button 
+                    type="button" 
+                    onClick={() => toggleSort(column.key)} 
+                    className="flex items-center gap-1.5 font-bold cursor-pointer hover:text-slate-800 dark:hover:text-white transition-colors"
+                  >
+                    {column.label}
+                    {sort.key === column.key ? (
+                      sort.dir === "asc" ? <ChevronUp className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" /> : <ChevronDown className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
+                    ) : (
+                      <span className="opacity-0 group-hover:opacity-40 transition-opacity text-slate-400">↕</span>
+                    )}
+                  </button>
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
-            {visible.map((row, index) => (
-              <tr key={`${title}-${index}`} className="text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:bg-white/[0.03]">
-                {columns.map((column) => <td key={column.key} className="whitespace-nowrap px-4 py-3">{row[column.key] ?? "-"}</td>)}
+          <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+            {visible.length > 0 ? (
+              visible.map((row, index) => (
+                <tr key={`${title}-${index}`} className="text-slate-700 dark:text-slate-300 hover:bg-slate-50/60 dark:hover:bg-white/[0.02] even:bg-slate-50/20 dark:even:bg-white/[0.005] transition-colors">
+                  {columns.map((column) => (
+                    <td key={column.key} className="whitespace-nowrap px-5 py-3.5 font-medium">
+                      {row[column.key] !== undefined && row[column.key] !== null ? String(row[column.key]) : "-"}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={columns.length} className="px-5 py-8 text-center text-slate-400 dark:text-slate-500 italic">
+                  No matching records found.
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
-      <div className="flex items-center justify-between border-t border-slate-200 dark:border-white/10 p-3 text-xs text-slate-500 dark:text-slate-400">
-        <span>{filtered.length} rows</span>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}><ChevronLeft className="h-4 w-4" /></Button>
-          <span>Page {page + 1} of {pages}</span>
-          <Button variant="ghost" size="icon" disabled={page + 1 >= pages} onClick={() => setPage((value) => Math.min(pages - 1, value + 1))}><ChevronRight className="h-4 w-4" /></Button>
+      <div className="flex items-center justify-between border-t border-slate-200 dark:border-white/10 p-4 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-50/20 dark:bg-white/[0.005]">
+        <span>Showing {visible.length} of {filtered.length} rows</span>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="h-7 w-7 cursor-pointer hover:bg-slate-100 dark:hover:bg-white/10" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}><ChevronLeft className="h-4 w-4" /></Button>
+          <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Page {page + 1} of {pages}</span>
+          <Button variant="ghost" size="icon" className="h-7 w-7 cursor-pointer hover:bg-slate-100 dark:hover:bg-white/10" disabled={page + 1 >= pages} onClick={() => setPage((value) => Math.min(pages - 1, value + 1))}><ChevronRight className="h-4 w-4" /></Button>
         </div>
       </div>
     </div>

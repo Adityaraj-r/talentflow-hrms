@@ -113,7 +113,6 @@ const StaffRequisition = () => {
 }
 
 const RequisitionForm = ({ onSubmitted }) => {
-  const emptyHiringRole = { roleName: "", openings: 1, minSalary: "", maxSalary: "", experience: "", skills: "" }
   const [formData, setFormData] = useState({
     position: "",
     department: "",
@@ -125,18 +124,11 @@ const RequisitionForm = ({ onSubmitted }) => {
     requirements: "",
     reason: "",
     urgency: "normal",
-    hiringType: "single",
-    hiringRoles: [{ ...emptyHiringRole }],
     applicationDeadline: "",
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const totalPositions = useMemo(() => {
-    if (formData.hiringType === "single") {
-      return Number(formData.numberOfPositions) || 1
-    }
-    return formData.hiringRoles.reduce((sum, role) => sum + (Number(role.openings) || 0), 0)
-  }, [formData.hiringType, formData.numberOfPositions, formData.hiringRoles])
+  const totalPositions = Number(formData.numberOfPositions) || 1
 
   const getSalaryError = () => {
     const minVal = formData.minSalary;
@@ -154,7 +146,6 @@ const RequisitionForm = ({ onSubmitted }) => {
   const salaryError = getSalaryError();
 
   const getNumberOfPositionsError = () => {
-    if (formData.hiringType === "multiple") return "";
     const val = formData.numberOfPositions;
     if (val === "" || val === undefined) {
       return "";
@@ -236,88 +227,6 @@ const RequisitionForm = ({ onSubmitted }) => {
     }))
   }
 
-  const updateHiringRole = (index, field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      hiringRoles: prev.hiringRoles.map((role, roleIndex) => {
-        if (roleIndex !== index) return role
-        if (field === "openings") {
-          const cleanValue = value.toString().replace(/[^0-9]/g, "")
-          return { ...role, openings: cleanValue === "" ? "" : parseInt(cleanValue, 10) }
-        }
-        if (field === "minSalary" || field === "maxSalary") {
-          const cleanValue = value.toString().replace(/[^0-9.]/g, "")
-          const parts = cleanValue.split(".");
-          const formattedValue = parts.length > 2 
-            ? parts[0] + "." + parts.slice(1).join("") 
-            : cleanValue;
-          return { ...role, [field]: formattedValue }
-        }
-        return { ...role, [field]: value }
-      }),
-    }))
-  }
-
-  const addHiringRole = () => {
-    setFormData((prev) => ({
-      ...prev,
-      hiringRoles: [...prev.hiringRoles, { ...emptyHiringRole }],
-    }))
-  }
-
-  const removeHiringRole = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      hiringRoles: prev.hiringRoles.length === 1
-        ? prev.hiringRoles
-        : prev.hiringRoles.filter((_, roleIndex) => roleIndex !== index),
-    }))
-  }
-
-  const getHiringBreakdownError = () => {
-    if (formData.hiringType === "single") return ""
-    if (!formData.hiringRoles.length) return "At least one hiring role is required."
-    
-    const roleNames = new Set()
-    for (let i = 0; i < formData.hiringRoles.length; i++) {
-      const role = formData.hiringRoles[i]
-      const nameTrimmed = (role.roleName || "").trim()
-      
-      if (!nameTrimmed) {
-        return "Every hiring role must have a role name."
-      }
-      
-      if (roleNames.has(nameTrimmed.toLowerCase())) {
-        return `Duplicate role name found: "${nameTrimmed}". Every hiring role must have a unique role name.`
-      }
-      roleNames.add(nameTrimmed.toLowerCase())
-
-      const openings = Number(role.openings)
-      if (isNaN(openings) || !Number.isInteger(openings) || openings < 1) {
-        return `Openings for role "${nameTrimmed}" must be positive whole numbers.`
-      }
-
-      if (role.minSalary === "" || role.minSalary === undefined) {
-        return `Minimum salary is required for role "${nameTrimmed}".`
-      }
-      const min = Number(role.minSalary)
-      if (isNaN(min) || min <= 0) {
-        return `Minimum salary for role "${nameTrimmed}" must be greater than zero.`
-      }
-
-      if (role.maxSalary === "" || role.maxSalary === undefined) {
-        return `Maximum salary is required for role "${nameTrimmed}".`
-      }
-      const max = Number(role.maxSalary)
-      if (isNaN(max) || max < min) {
-        return `Maximum salary for role "${nameTrimmed}" must be greater than or equal to minimum salary.`
-      }
-    }
-    return ""
-  }
-
-  const hiringBreakdownError = getHiringBreakdownError()
-
   const getTodayString = () => {
     const d = new Date();
     const year = d.getFullYear();
@@ -351,20 +260,13 @@ const RequisitionForm = ({ onSubmitted }) => {
       return;
     }
 
-    if (formData.hiringType === "single") {
-      if (formData.numberOfPositions === "") {
-        toast.error("Number of Positions is required");
-        return;
-      }
-      if (numberOfPositionsError) {
-        toast.error(numberOfPositionsError);
-        return;
-      }
-    } else {
-      if (hiringBreakdownError) {
-        toast.error(hiringBreakdownError);
-        return;
-      }
+    if (formData.numberOfPositions === "") {
+      toast.error("Number of Positions is required");
+      return;
+    }
+    if (numberOfPositionsError) {
+      toast.error(numberOfPositionsError);
+      return;
     }
 
     if (salaryError) {
@@ -389,16 +291,7 @@ const RequisitionForm = ({ onSubmitted }) => {
         urgency: formData.urgency,
         numberOfPositions: totalPositions,
         applicationDeadline: formData.applicationDeadline,
-        hiringRoles: formData.hiringType === "multiple"
-          ? formData.hiringRoles.map((role) => ({
-              roleName: role.roleName.trim(),
-              openings: Number(role.openings),
-              minSalary: Number(role.minSalary),
-              maxSalary: Number(role.maxSalary),
-              experience: role.experience.trim(),
-              skills: role.skills.trim(),
-            }))
-          : [],
+        hiringRoles: [],
       });
 
       toast.success("Requisition submitted successfully");
@@ -415,8 +308,6 @@ const RequisitionForm = ({ onSubmitted }) => {
         requirements: "",
         reason: "",
         urgency: "normal",
-        hiringType: "single",
-        hiringRoles: [{ ...emptyHiringRole }],
         applicationDeadline: "",
       });
 
@@ -497,45 +388,14 @@ const RequisitionForm = ({ onSubmitted }) => {
                 name="numberOfPositions"
                 type="number"
                 min="1"
-                value={formData.hiringType === "single" ? (formData.numberOfPositions !== "" ? String(formData.numberOfPositions) : "") : String(totalPositions)}
-                disabled={formData.hiringType === "multiple"}
-                className={formData.hiringType === "multiple" ? "bg-muted/40 text-muted-foreground cursor-not-allowed" : ""}
-                onChange={formData.hiringType === "single" ? handleChange : undefined}
-                onKeyDown={formData.hiringType === "single" ? handleKeyDownPositions : undefined}
+                value={formData.numberOfPositions !== "" ? String(formData.numberOfPositions) : ""}
+                onChange={handleChange}
+                onKeyDown={handleKeyDownPositions}
                 required
               />
-              {formData.hiringType === "single" && numberOfPositionsError && (
+              {numberOfPositionsError && (
                 <p className="text-red-500 text-sm mt-1">{numberOfPositionsError}</p>
               )}
-            </div>
-
-            {/* HIRING TYPE */}
-            <div className="space-y-2">
-              <Label>Hiring Type</Label>
-              <div className="flex items-center gap-6 pt-1.5">
-                <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
-                  <input
-                    type="radio"
-                    name="hiringType"
-                    value="single"
-                    checked={formData.hiringType === "single"}
-                    onChange={(e) => handleSelectChange("hiringType", e.target.value)}
-                    className="accent-violet-600 h-4 w-4 cursor-pointer"
-                  />
-                  <span>Single Role</span>
-                </label>
-                <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
-                  <input
-                    type="radio"
-                    name="hiringType"
-                    value="multiple"
-                    checked={formData.hiringType === "multiple"}
-                    onChange={(e) => handleSelectChange("hiringType", e.target.value)}
-                    className="accent-violet-600 h-4 w-4 cursor-pointer"
-                  />
-                  <span>Multiple Roles</span>
-                </label>
-              </div>
             </div>
 
             <div className="space-y-2">
@@ -553,38 +413,34 @@ const RequisitionForm = ({ onSubmitted }) => {
               </Select>
             </div>
 
-            {formData.hiringType === "single" && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="minSalary">Minimum Salary</Label>
-                  <Input
-                    id="minSalary"
-                    name="minSalary"
-                    type="number"
-                    placeholder="Enter minimum salary"
-                    value={formData.minSalary}
-                    onChange={handleChange}
-                    onKeyDown={handleKeyDownSalary}
-                  />
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="minSalary">Minimum Salary</Label>
+              <Input
+                id="minSalary"
+                name="minSalary"
+                type="number"
+                placeholder="Enter minimum salary"
+                value={formData.minSalary}
+                onChange={handleChange}
+                onKeyDown={handleKeyDownSalary}
+              />
+            </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="maxSalary">Maximum Salary</Label>
-                  <Input
-                    id="maxSalary"
-                    name="maxSalary"
-                    type="number"
-                    placeholder="Enter maximum salary"
-                    value={formData.maxSalary}
-                    onChange={handleChange}
-                    onKeyDown={handleKeyDownSalary}
-                  />
-                  {salaryError && (
-                    <p className="text-red-500 text-sm mt-1">{salaryError}</p>
-                  )}
-                </div>
-              </>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="maxSalary">Maximum Salary</Label>
+              <Input
+                id="maxSalary"
+                name="maxSalary"
+                type="number"
+                placeholder="Enter maximum salary"
+                value={formData.maxSalary}
+                onChange={handleChange}
+                onKeyDown={handleKeyDownSalary}
+              />
+              {salaryError && (
+                <p className="text-red-500 text-sm mt-1">{salaryError}</p>
+              )}
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="applicationDeadline">
@@ -647,99 +503,6 @@ const RequisitionForm = ({ onSubmitted }) => {
               rows={4}
             />
           </div>
-
-          {formData.hiringType === "multiple" && (
-            <div className="space-y-3 rounded-lg border border-white/10 bg-muted/10 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold">Hiring Breakdown</h3>
-                  <p className="text-xs text-muted-foreground">Define the roles included in this single requisition.</p>
-                </div>
-                <div className="text-sm font-medium">Total Positions: {totalPositions}</div>
-              </div>
-
-              <div className="space-y-3">
-                {formData.hiringRoles.map((role, index) => (
-                  <div key={index} className="grid gap-3 rounded-md border border-white/10 bg-background/70 p-3 md:grid-cols-12">
-                    <div className="space-y-1 md:col-span-2">
-                      <Label>Role Name</Label>
-                      <Input
-                        value={role.roleName}
-                        onChange={(e) => updateHiringRole(index, "roleName", e.target.value)}
-                        placeholder="Frontend Engineer"
-                      />
-                    </div>
-                    <div className="space-y-1 md:col-span-1">
-                      <Label>Openings</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={role.openings}
-                        onChange={(e) => updateHiringRole(index, "openings", e.target.value)}
-                        onKeyDown={handleKeyDownPositions}
-                      />
-                    </div>
-                    <div className="space-y-1 md:col-span-2">
-                      <Label>Min Salary</Label>
-                      <Input
-                        type="number"
-                        value={role.minSalary}
-                        onChange={(e) => updateHiringRole(index, "minSalary", e.target.value)}
-                        onKeyDown={handleKeyDownSalary}
-                        placeholder="Min"
-                      />
-                    </div>
-                    <div className="space-y-1 md:col-span-2">
-                      <Label>Max Salary</Label>
-                      <Input
-                        type="number"
-                        value={role.maxSalary}
-                        onChange={(e) => updateHiringRole(index, "maxSalary", e.target.value)}
-                        onKeyDown={handleKeyDownSalary}
-                        placeholder="Max"
-                      />
-                    </div>
-                    <div className="space-y-1 md:col-span-2">
-                      <Label>Experience</Label>
-                      <Input
-                        value={role.experience}
-                        onChange={(e) => updateHiringRole(index, "experience", e.target.value)}
-                        placeholder="Optional"
-                      />
-                    </div>
-                    <div className="space-y-1 md:col-span-2">
-                      <Label>Skills/Requirements</Label>
-                      <Input
-                        value={role.skills}
-                        onChange={(e) => updateHiringRole(index, "skills", e.target.value)}
-                        placeholder="Optional"
-                      />
-                    </div>
-                    <div className="flex items-end md:col-span-1">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeHiringRole(index)}
-                        disabled={formData.hiringRoles.length === 1}
-                        className="w-full"
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {hiringBreakdownError && (
-                <p className="text-sm text-red-500">{hiringBreakdownError}</p>
-              )}
-
-              <Button type="button" variant="outline" onClick={addHiringRole}>
-                + Add Role
-              </Button>
-            </div>
-          )}
         </form>
       </CardContent>
       <CardFooter className="flex justify-between">

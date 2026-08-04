@@ -61,9 +61,9 @@ export const listRecruitmentSuggestionsForHr = async (req: AuthRequest, res: Res
       return;
     }
 
-    const allowed = isAdminOrSuperAdmin(req.user.role);
+    const allowed = isAdminOrSuperAdmin(req.user.role) || isHrManagerOrOfficer(req.user.role);
     if (!allowed) {
-      res.status(403).json({ success: false, error: 'Admin access required' });
+      res.status(403).json({ success: false, error: 'Admin or HR access required' });
       return;
     }
 
@@ -105,11 +105,11 @@ export const acknowledgeRecruitmentSuggestion = async (req: AuthRequest, res: Re
   try {
     if (
       !req.user?.id ||
-      !isAdminOrSuperAdmin(req.user.role)
+      (!isAdminOrSuperAdmin(req.user.role) && !isHrManagerOrOfficer(req.user.role))
     ) {
       res.status(403).json({
         success: false,
-        error: 'Only ADMIN/SUPER ADMIN can acknowledge or close suggestions',
+        error: 'Only ADMIN/SUPER ADMIN or HR Manager/Officer can acknowledge or close suggestions',
       });
       return;
     }

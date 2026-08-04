@@ -6,8 +6,9 @@ import { toast } from "sonner"
 import { 
   ArrowLeft, UploadCloud, FileText, CheckCircle, Save, Globe, 
   Trash2, X, AlertCircle, Calendar as CalendarIcon, Briefcase, 
-  MapPin, Building, GraduationCap, DollarSign, Eye, Loader2, ChevronDown, Check, Plus
+  MapPin, Building, GraduationCap, DollarSign, Eye, Loader2, ChevronDown, Check, Plus, Zap
 } from "lucide-react"
+import WorkflowBuilder from "@/components/recruitment/WorkflowBuilder"
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api"
 const DRAFT_KEY = "hr_job_draft"
@@ -101,7 +102,7 @@ export default function CreateJob() {
     educationRequired: "",
     minSalary: "",
     maxSalary: "",
-    currency: "USD",
+    currency: "INR",
     aboutRole: "",
     keyResponsibilities: "",
     requiredSkills: "",
@@ -130,6 +131,15 @@ export default function CreateJob() {
   const [publishLoading, setPublishLoading] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [errors, setErrors] = useState({})
+
+  const [workflowStages, setWorkflowStages] = useState([])
+  const [scoringFormula, setScoringFormula] = useState('weighted_average')
+  const [autoProgressionEnabled, setAutoProgressionEnabled] = useState(false)
+
+  const [hasAssignment, setHasAssignment] = useState(true)
+  const [assignmentName, setAssignmentName] = useState("Technical Assignment")
+  const [interviewRounds, setInterviewRounds] = useState(["Round 1 - Technical", "Round 2 - HR"])
+  const [newRoundInput, setNewRoundInput] = useState("")
 
   const [departmentsList, setDepartmentsList] = useState([])
   const [usersList, setUsersList] = useState([])
@@ -258,8 +268,19 @@ export default function CreateJob() {
       secondarySkills.forEach(skill => payload.append("secondarySkills", skill))
       customTags.forEach(tag => payload.append("customTags", tag))
 
+      payload.append("hasAssignment", hasAssignment)
+      payload.append("assignmentName", assignmentName)
+      interviewRounds.forEach(round => payload.append("interviewRounds", round))
+
       if (uploadJd) payload.append("uploadJd", uploadJd)
       if (supportingDocuments) payload.append("supportingDocuments", supportingDocuments)
+
+      const workflow = {
+        stages: workflowStages,
+        scoringFormula,
+        autoProgressionEnabled,
+      };
+      payload.append("workflow", JSON.stringify(workflow))
 
       await apiClient.post(`/job-openings`, payload)
 
@@ -419,10 +440,10 @@ export default function CreateJob() {
               <label className="block text-sm font-semibold mb-1.5">Currency</label>
               <div className="relative">
                 <select name="currency" value={formData.currency} onChange={handleInputChange} className={`${inputBase} appearance-none pr-10 border-slate-300 dark:border-slate-700`}>
+                  <option value="INR">INR (₹)</option>
                   <option value="USD">USD ($)</option>
                   <option value="EUR">EUR (€)</option>
                   <option value="GBP">GBP (£)</option>
-                  <option value="INR">INR (₹)</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" size={16} />
               </div>
@@ -575,6 +596,117 @@ export default function CreateJob() {
           </div>
         </section>
 
+        {/* Post-Hiring Process & Interview Rounds Setup */}
+        <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 lg:p-6">
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-3 mb-5">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <Zap className="text-blue-500" size={20} /> Post-Hiring & Interview Process Setup
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">Configure whether candidates need a practical assignment and set up the interview rounds for this job.</p>
+          </div>
+
+          <div className="space-y-6">
+            {/* Assignment Setup */}
+            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={hasAssignment}
+                      onChange={(e) => setHasAssignment(e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    Requires Practical Assignment / Assessment Task
+                  </label>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 pl-6">
+                    Candidates must clear this assignment before final interview selection.
+                  </p>
+                </div>
+              </div>
+
+              {hasAssignment && (
+                <div className="pl-6 pt-2">
+                  <label className="block text-xs font-semibold mb-1">Assignment Title / Name</label>
+                  <input
+                    type="text"
+                    value={assignmentName}
+                    onChange={(e) => setAssignmentName(e.target.value)}
+                    placeholder="e.g. Frontend Coding Challenge or Case Study"
+                    className="max-w-md h-10 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Interview Rounds Setup */}
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold">Interview Rounds for this Role</label>
+              <div className="flex flex-wrap gap-2 items-center min-h-[44px] p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/30">
+                {interviewRounds.map((round, idx) => (
+                  <span key={idx} className="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 text-xs font-semibold rounded-lg border border-blue-200 dark:border-blue-800/50 shadow-xs">
+                    <span className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full">{idx + 1}</span>
+                    {round}
+                    <button type="button" onClick={() => setInterviewRounds(interviewRounds.filter((_, i) => i !== idx))} className="text-slate-400 hover:text-red-500 ml-1">
+                      <X size={14} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newRoundInput}
+                  onChange={(e) => setNewRoundInput(e.target.value)}
+                  placeholder="Type new round name (e.g. System Design Round)"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      if (newRoundInput.trim()) {
+                        setInterviewRounds([...interviewRounds, newRoundInput.trim()])
+                        setNewRoundInput("")
+                      }
+                    }
+                  }}
+                  className="flex-1 h-9 px-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newRoundInput.trim()) {
+                      setInterviewRounds([...interviewRounds, newRoundInput.trim()])
+                      setNewRoundInput("")
+                    }
+                  }}
+                  className="px-3 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition"
+                >
+                  + Add Round
+                </button>
+              </div>
+
+              {/* Quick Presets */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-xs text-slate-400 mr-1">Quick Add:</span>
+                {["Round 1 - Technical", "Round 2 - Live Coding", "Round 3 - System Design", "HR Final Round"].map(preset => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => {
+                      if (!interviewRounds.includes(preset)) {
+                        setInterviewRounds([...interviewRounds, preset])
+                      }
+                    }}
+                    className="text-[11px] px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer"
+                  >
+                    + {preset}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Attachments & Notes */}
         <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 lg:p-6">
           <div className="border-b border-slate-100 dark:border-slate-800 pb-3 mb-5">
@@ -636,6 +768,26 @@ export default function CreateJob() {
             </div>
           </div>
         </section>
+
+        {/* Hiring Workflow Configuration */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Zap className="h-5 w-5 text-cyan-600" />
+            Hiring Workflow Configuration
+          </h2>
+          <p className="text-sm text-slate-500">Configure the hiring pipeline for this job role. Select a template or build a custom workflow.</p>
+          <WorkflowBuilder
+            stages={workflowStages}
+            scoringFormula={scoringFormula}
+            autoProgressionEnabled={autoProgressionEnabled}
+            onChange={({ stages, scoringFormula: sf, autoProgressionEnabled: ap }) => {
+              setWorkflowStages(stages)
+              if (sf !== undefined) setScoringFormula(sf)
+              if (ap !== undefined) setAutoProgressionEnabled(ap)
+              setHasChanges(true)
+            }}
+          />
+        </div>
 
         {/* Action Buttons */}
         <div className="flex flex-col-reverse md:flex-row items-center justify-end gap-4 pt-4">

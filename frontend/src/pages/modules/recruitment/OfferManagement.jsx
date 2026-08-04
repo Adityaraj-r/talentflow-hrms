@@ -22,15 +22,13 @@ import {
 
 const defaultFilters = {
   search: "",
-  status: "All",
   department: "All",
-  recruiter: "All",
-  approvalStage: "All",
-  salaryRange: "All",
-  expiry: "All",
+  position: "All",
+  joiningDate: "",
+  status: "All",
 }
 
-const PAGE_SIZE = 8
+const PAGE_SIZE = 10
 
 const salaryBucket = (salary) => {
   const value = Number(salary) || 0
@@ -94,7 +92,7 @@ const OfferManagement = () => {
       const res = await apiClient.get("/applications")
       const rawData = res?.data?.data ?? res?.data ?? res ?? []
       const filtered = Array.isArray(rawData)
-        ? rawData.filter((app) => ["Selected", "Offer"].includes(app.status))
+        ? rawData.filter((app) => ["selected", "approved", "offer", "offered", "offer accepted", "shortlisted"].includes((app.status || "").toLowerCase()))
         : []
       setCandidates(filtered)
     } catch {
@@ -126,7 +124,45 @@ const OfferManagement = () => {
     }
   }, [selectedCandidate])
 
-  const enrichedOffers = useMemo(() => offers.map(enrichOffer), [offers])
+  const enrichedOffers = useMemo(() => {
+    const list = offers.map(enrichOffer)
+
+    if (Array.isArray(candidates)) {
+      candidates.forEach((cand) => {
+        if (!cand?._id) return
+        const candIdStr = String(cand._id)
+        const candEmailStr = String(cand.email || "").toLowerCase()
+        const hasOffer = list.some(
+          (o) =>
+            String(o.candidateId?._id || o.candidateId) === candIdStr ||
+            (o.candidateEmail && String(o.candidateEmail).toLowerCase() === candEmailStr)
+        )
+        if (!hasOffer) {
+          list.push(
+            enrichOffer({
+              _id: `cand-${cand._id}`,
+              offerId: `OFF-${cand._id.slice(-6).toUpperCase()}`,
+              candidateId: cand,
+              candidateName: cand.name,
+              candidateEmail: cand.email || "",
+              position: cand.selectedPositionTitle || cand.hiringRoleName || cand.jobId?.jobTitle || "Position",
+              department: cand.jobId?.department || "General",
+              salary: cand.expectedCtc ? Number(cand.expectedCtc) : 500000,
+              joiningDate: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+              status: "Offered",
+              approvalStage: "Approved",
+              recruiter: "Hiring Team",
+              createdAt: cand.updatedAt || cand.createdAt || new Date().toISOString(),
+              lastUpdated: cand.updatedAt || cand.createdAt || new Date().toISOString(),
+            })
+          )
+        }
+      })
+    }
+
+    return list
+  }, [offers, candidates])
+
   const findOffer = useCallback(
     (id) => enrichedOffers.find((offer) => offer._id === id || offer.offerId === id),
     [enrichedOffers]
@@ -163,7 +199,7 @@ const OfferManagement = () => {
   const filterOptions = useMemo(
     () => ({
       departments: [...new Set(enrichedOffers.map((offer) => offer.department).filter(Boolean))],
-      recruiters: [...new Set(enrichedOffers.map((offer) => offer.recruiter).filter(Boolean))],
+      positions: [...new Set(enrichedOffers.map((offer) => offer.position).filter(Boolean))],
     }),
     [enrichedOffers]
   )
@@ -171,18 +207,22 @@ const OfferManagement = () => {
   const filteredOffers = useMemo(() => {
     const filtered = enrichedOffers.filter((offer) => {
       const haystack = `${offer.offerId || ""} ${offer.candidateName || ""} ${offer.position || ""} ${offer.department || ""} ${offer.recruiter || ""}`.toLowerCase()
-      const matchesSearch = haystack.includes(filters.search.toLowerCase())
-      const matchesStatus =
-        filters.status === "All" ||
-        (filters.status === "Pending Approval" && (offer.status === "Pending CEO Approval" || offer.status === "Pending HR Manager Approval")) ||
-        (filters.status === "Released" && offer.status === "Offered") ||
-        offer.status === filters.status
-      const matchesDepartment = filters.department === "All" || offer.department === filters.department
-      const matchesRecruiter = filters.recruiter === "All" || offer.recruiter === filters.recruiter
-      const matchesApproval = filters.approvalStage === "All" || offer.approvalStage === filters.approvalStage
-      const matchesSalary = filters.salaryRange === "All" || salaryBucket(offer.salary) === filters.salaryRange
-      const matchesExpiry = filters.expiry === "All" || expiryBucket(offer.expiryDate) === filters.expiry
-      return matchesSearch && matchesStatus && matchesDepartment && matchesRecruiter && matchesApproval && matchesSalary && matchesExpiry
+      const matchesSearch = !filters.search || haystack.includes(filters.search.toLowerCase())
+      const matchesDepartment = !filters.department || filters.department === "All" || offer.department === filters.department
+      const matchesPosition = !filters.position || filters.position === "All" || offer.position === filters.position
+      const matchesJoiningDate = !filters.joiningDate || (offer.joiningDate && offer.joiningDate.startsWith(filters.joiningDate))
+
+      let matchesStatus = true
+      if (filters.status && filters.status !== "All") {
+        if (filters.status === "Pending") {
+          matchesStatus = (offer.status || "").includes("Pending") || (offer.approvalStage || "").includes("Pending")
+        } else {
+          matchesStatus = (offer.status || "").toLowerCase().includes(filters.status.toLowerCase()) ||
+                          (offer.approvalStage || "").toLowerCase().includes(filters.status.toLowerCase())
+        }
+      }
+
+      return matchesSearch && matchesDepartment && matchesPosition && matchesJoiningDate && matchesStatus
     })
 
     return filtered.sort((a, b) => {
@@ -430,42 +470,44 @@ const OfferManagement = () => {
         <>
           {/* Four Compact Summary Cards */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatsCard title="Total Offers" value={filteredOffers.length} icon={FileSignature} />
-            <StatsCard title="Pending Approval" value={filteredOffers.filter(o => o.status === "Pending CEO Approval" || o.status === "Pending HR Manager Approval").length} icon={Clock3} />
-            <StatsCard title="Released Offers" value={filteredOffers.filter(o => o.status === "Offered").length} icon={Send} />
-            <StatsCard title="Accepted Offers" value={filteredOffers.filter(o => o.status === "Accepted").length} icon={CheckCircle2} />
-          </div>
-
-          {/* Small Filter Chips */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mr-1">Status:</span>
-            {["All", "Draft", "Pending Approval", "Released", "Accepted", "Declined"].map((statusOption) => {
-              const isActive = filters.status === statusOption
-              return (
-                <button
-                  key={statusOption}
-                  type="button"
-                  onClick={() => setFilters(prev => ({ ...prev, status: statusOption }))}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-xs font-medium border transition-colors cursor-pointer",
-                    isActive
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5"
-                  )}
-                >
-                  {statusOption}
-                </button>
-              )
-            })}
+            <StatsCard
+              title="Total Offers"
+              value={enrichedOffers.length}
+              icon={FileSignature}
+              variant="blue"
+              isActive={filters.status === "All" || !filters.status}
+              onClick={() => setFilters(prev => ({ ...prev, status: "All" }))}
+            />
+            <StatsCard
+              title="Pending Approval"
+              value={enrichedOffers.filter(o => (o.status || "").includes("Pending") || (o.approvalStage || "").includes("Pending")).length}
+              icon={Clock3}
+              variant="amber"
+              isActive={filters.status === "Pending"}
+              onClick={() => setFilters(prev => ({ ...prev, status: "Pending" }))}
+            />
+            <StatsCard
+              title="Released Offers"
+              value={enrichedOffers.filter(o => o.status === "Offered").length}
+              icon={Send}
+              variant="blue"
+              isActive={filters.status === "Offered"}
+              onClick={() => setFilters(prev => ({ ...prev, status: "Offered" }))}
+            />
+            <StatsCard
+              title="Accepted Offers"
+              value={enrichedOffers.filter(o => o.status === "Accepted").length}
+              icon={CheckCircle2}
+              variant="emerald"
+              isActive={filters.status === "Accepted"}
+              onClick={() => setFilters(prev => ({ ...prev, status: "Accepted" }))}
+            />
           </div>
 
           <OfferFilters
             filters={filters}
             onChange={setFilters}
             options={filterOptions}
-            onSave={handleSaveFilter}
-            savedFilters={savedFilters}
-            onApply={setFilters}
           />
 
           {filteredOffers.length === 0 ? (

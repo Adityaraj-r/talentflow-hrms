@@ -50,6 +50,19 @@ function auditWorkflowRules() {
 
 async function runCalculationChecks() {
   console.log("\n[Calculation engine]")
+  const { PayrollPolicy } = require("../models/payrollPolicy.model");
+  const originalFindOne = PayrollPolicy.findOne;
+  PayrollPolicy.findOne = (() => ({
+    sort: () => Promise.resolve({
+      rules: {
+        wageCeiling: 15000,
+        employeeRate: 12,
+        eligibilityThreshold: 21000,
+        standardDeduction: 75000,
+        slabs: []
+      }
+    })
+  })) as any;
   const feb = getPeriodBounds("February", 2024)
   assert(feb.totalDays === 29, "Feb 2024 has 29 days")
   assert(feb.startStr === "2024-02-01" && feb.endStr === "2024-02-29", "Feb 2024 period bounds ISO")
@@ -96,6 +109,7 @@ async function runCalculationChecks() {
   }, new Date())
   assert(out.pf === Math.round(15000 * 0.12), "Computed PF uses ceiling (12% of 15000)")
   assert(out.tds === 500, "TDS uses fixed when useComputedTds false")
+  PayrollPolicy.findOne = originalFindOne;
 }
 
 function runVisibilityChecks() {
@@ -180,7 +194,7 @@ Env:
 
 async function main() {
   console.log("Payroll module quick check\n====================")
-  runCalculationChecks()
+  await runCalculationChecks()
   runVisibilityChecks()
   auditWorkflowRules()
   await optionalMongoAndAttendance()

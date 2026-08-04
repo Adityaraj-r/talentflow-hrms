@@ -3,6 +3,8 @@ import axios from "axios"
 import { useNavigate } from "react-router-dom"
 import { Moon, Sun, Search, MapPin, Building, Clock, ChevronDown, RefreshCcw, Briefcase, IndianRupee, TrendingUp, Users, ArrowRight, Mail } from "lucide-react"
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api"
+
 const Careers = () => {
   const [jobs, setJobs] = useState([])
   const [dark, setDark] = useState(false)
@@ -29,7 +31,7 @@ const Careers = () => {
   const fetchJobs = async () => {
     try {
       setLoading(true)
-      const res = await axios.get("http://localhost:5001/api/job-openings/published")
+      const res = await axios.get(`${API_BASE}/job-openings/published`)
       setJobs(res.data)
     } catch(error) {
       console.log(error)
@@ -40,7 +42,7 @@ const Careers = () => {
 
   const fetchCompanyInfo = async () => {
     try {
-      const { data } = await axios.get("http://localhost:5001/api/settings/company-info")
+      const { data } = await axios.get(`${API_BASE}/settings/company-info`)
       if (data.success) {
         setCompanyInfo({
           name: data.companyName || "Company HRMS",
@@ -200,6 +202,7 @@ const Careers = () => {
             {filteredJobs.map((job) => {
               const roles = getHiringRoles(job)
               const firstRole = roles[0]
+              const isSingleRole = roles.length === 1
               const isClosed = firstRole?.status === "Closed" || (Number(firstRole?.openings) - Number(firstRole?.filled) <= 0)
               const deadlinePassed = isDeadlinePassed(job.deadline)
               const inactive = deadlinePassed || isClosed
@@ -299,17 +302,45 @@ const Careers = () => {
 
                   <div className="flex-grow"></div>
 
-                  {/* Buttons */}
-                  <div className="flex justify-center pt-2">
-                    <button 
-                      className="px-10 h-[40px] bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-[14px] transition-all shadow-sm shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                      disabled={inactive}
-                      onClick={() => {
-                        if(!inactive) navigate(`/apply/${job._id}?roleId=${firstRole?._id || ""}`)
-                      }}
-                    >
-                      {inactive ? "Unavailable" : "Apply"}
-                    </button>
+                    {/* Render extra details for single role job */}
+                    {isSingleRole && firstRole && (
+                      <div className="mt-6 space-y-3 border-t pt-4 border-slate-200 dark:border-slate-800">
+                        {firstRole.experience && (
+                          <p className="text-sm text-slate-600 dark:text-slate-300">
+                            <strong className="text-gray-900 dark:text-white">Experience:</strong> {firstRole.experience}
+                          </p>
+                        )}
+                        {(firstRole.minSalary || firstRole.maxSalary) && (
+                          <p className="text-sm text-slate-600 dark:text-slate-300">
+                            <strong className="text-gray-900 dark:text-white">Salary:</strong> {firstRole.minSalary ? `$${firstRole.minSalary.toLocaleString()}` : "N/A"} - {firstRole.maxSalary ? `$${firstRole.maxSalary.toLocaleString()}` : "N/A"}
+                          </p>
+                        )}
+                        {job.description && (
+                          <div className="text-sm text-slate-600 dark:text-slate-300 mt-2">
+                            <strong className="text-gray-900 dark:text-white block mb-1">Description:</strong>
+                            <div className="whitespace-pre-wrap">{job.description}</div>
+                          </div>
+                        )}
+                        {firstRole.skills && (
+                          <div className="text-sm text-slate-600 dark:text-slate-300 mt-2">
+                            <strong className="text-gray-900 dark:text-white block mb-1">Requirements & Skills:</strong>
+                            <div className="whitespace-pre-wrap">{firstRole.skills}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Buttons */}
+                    <div className="flex justify-center pt-4">
+                      <button 
+                        className="px-10 h-[40px] bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-[14px] transition-all shadow-sm shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        disabled={inactive}
+                        onClick={() => {
+                          if(!inactive) navigate(`/apply/${job._id}?roleId=${firstRole?._id || ""}`)
+                        }}
+                      >
+                        {inactive ? "Unavailable" : "Apply"}
+                      </button>
                   </div>
                 </div>
               )

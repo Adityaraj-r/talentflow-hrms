@@ -354,7 +354,6 @@ const Sidebar = ({
               <SubLink to="/dashboard/offer-management" label="Offer Management" />
               <SubLink to="/recruitment/offers" label="Offer Operations" icon={FileSignature} />
               <SubLink to="/recruitment/analytics" label="Recruitment Analytics" icon={BarChart2} />
-              <SubLink to="/admin/recruitment-suggestions" label="Suggest to HR Manager" />
             </SidebarGroup>
           )}
 

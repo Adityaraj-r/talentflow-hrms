@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -9,19 +9,42 @@ import { toast } from "sonner";
 import apiClient from "@/services/apiClient";
 import { useAuth } from "@/contexts/AuthContext";
 
-const TransferRequestForm = () => {
+const TransferRequestForm = ({ onSuccess }) => {
     const { user } = useAuth();
+    const userRole = (user?.role || "").toUpperCase();
+    const isHrOrAdmin = ["ADMIN", "SUPER_ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO", "SUPER ADMIN", "COUNTRY_MANAGER", "DEPARTMENT_MANAGER"].includes(userRole);
+
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [employees, setEmployees] = useState([]);
+    const [loadingEmployees, setLoadingEmployees] = useState(false);
+    const [selectedEmpCode, setSelectedEmpCode] = useState("");
+
     const [formData, setFormData] = useState({
         employeeId: user?.employeeCode || "",
-        employeeName: `${user?.firstName || ""} ${user?.lastName || ""}`.trim(),
+        employeeName: user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : (user?.name || ""),
         currentDepartment: user?.department || "",
+        employeeEmail: user?.email || "",
         newDepartment: "",
         transferType: "",
         effectiveDate: "",
         reason: "",
         declaration: false,
     });
+
+    useEffect(() => {
+        if (isHrOrAdmin) {
+            setLoadingEmployees(true);
+            apiClient.get("/employees")
+                .then((res) => {
+                    const list = res?.data ?? res ?? [];
+                    setEmployees(Array.isArray(list) ? list : []);
+                })
+                .catch((err) => {
+                    console.error("Failed to load employees for transfer:", err);
+                })
+                .finally(() => setLoadingEmployees(false));
+        }
+    }, [isHrOrAdmin]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -58,21 +81,24 @@ const TransferRequestForm = () => {
 
         try {
             const response = await apiClient.post("/transfers/submit", formData);
-            if (response.success) {
+            if (response.success || response.data) {
                 toast.success("Transfer request submitted successfully!");
                 setFormData({
-                    employeeId: "",
-                    employeeName: "",
-                    currentDepartment: "",
+                    employeeId: user?.employeeCode || "",
+                    employeeName: user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "",
+                    currentDepartment: user?.department || "",
+                    employeeEmail: user?.email || "",
                     newDepartment: "",
                     transferType: "",
                     effectiveDate: "",
                     reason: "",
                     declaration: false,
                 });
+                setSelectedEmpCode("");
+                if (onSuccess) onSuccess();
             }
         } catch (error) {
-            const errorMessage = error.response?.data?.message || "Failed to submit request. Please try again.";
+            const errorMessage = error.response?.data?.message || error.response?.data?.error || "Failed to submit request. Please try again.";
             toast.error(errorMessage);
             console.error("Submission Error:", error);
         } finally {
@@ -85,6 +111,51 @@ const TransferRequestForm = () => {
             <div className="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-6 transition-all duration-300">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                        {/* Employee Select for HR & Admin */}
+                        {isHrOrAdmin && (
+                            <div className="space-y-1.5 md:col-span-2">
+                                <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                    Select Employee to Transfer <span className="text-red-500">*</span>
+                                </Label>
+                                <Select
+                                    value={selectedEmpCode}
+                                    onValueChange={(code) => {
+                                        setSelectedEmpCode(code);
+                                        const emp = employees.find((e) => (e.employeeCode || e._id) === code);
+                                        if (emp) {
+                                            const name = emp.firstName
+                                                ? `${emp.firstName} ${emp.lastName || ""}`.trim()
+                                                : (emp.name || emp.employeeCode || code);
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                employeeId: emp.employeeCode || emp._id,
+                                                employeeName: name,
+                                                currentDepartment: emp.department || "General",
+                                                employeeEmail: emp.email || "",
+                                            }));
+                                        }
+                                    }}
+                                >
+                                    <SelectTrigger className="dark:bg-slate-900 dark:border-slate-700">
+                                        <SelectValue placeholder={loadingEmployees ? "Loading employees list..." : "Choose an employee to transfer..."} />
+                                    </SelectTrigger>
+                                    <SelectContent className="dark:bg-slate-800 dark:border-slate-700 max-h-60">
+                                        {employees.map((emp) => {
+                                            const code = emp.employeeCode || emp._id;
+                                            const name = emp.firstName
+                                                ? `${emp.firstName} ${emp.lastName || ""}`.trim()
+                                                : (emp.name || code);
+                                            return (
+                                                <SelectItem key={emp._id || code} value={code}>
+                                                    {name} ({code}) — {emp.department || "No Dept"}
+                                                </SelectItem>
+                                            );
+                                        })}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+
                         {/* Employee ID */}
                         <div className="space-y-1.5">
                             <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -107,7 +178,7 @@ const TransferRequestForm = () => {
                             </Label>
                             <Input
                                 name="employeeName"
-                                placeholder="Enter your full name"
+                                placeholder="Full name"
                                 value={formData.employeeName}
                                 readOnly
                                 disabled
