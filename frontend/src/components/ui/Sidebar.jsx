@@ -5,7 +5,7 @@ import {
   FileCheck, Home, ChevronDown, ChevronRight, ChevronLeft,
   Briefcase, Plane, Calculator, LogOut, Clock, Settings,
   FileText, ArrowLeftRight, TrendingUp, Shield, Layers, Database, Building, Building2,
-  LayoutDashboard, CircleDollarSign, Target, Network, FileBadge, BarChart2, FileSignature
+  LayoutDashboard, CircleDollarSign, Target, Network, FileBadge, BarChart2, FileSignature, UserPlus
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ROLES } from "@/constants/roles"
@@ -370,6 +370,7 @@ const Sidebar = ({
           </SidebarGroup>
 
           <SidebarLink to="/dashboard/pm/tasks" icon={FileCheck} label="Task Board" />
+          <SidebarLink to="/employee/referrals" icon={UserPlus} label="Employee Referral" />
 
           <FullPayrollSidebarGroup label="Payroll & Compliance" />
 
@@ -402,6 +403,7 @@ const Sidebar = ({
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           <SidebarLink to="/dashboard/employee/make-transfer" icon={ArrowLeftRight} label="Make Transfer Request" />
+          <SidebarLink to="/employee/referrals" icon={UserPlus} label="Employee Referral" />
           <SidebarLink to="/employee/resignation" icon={AlertTriangle} label="Initiate Separation" />
           <SidebarLink to="/payroll/salary-slip" icon={FileText} label="My Salary Slips" />
 
@@ -465,6 +467,7 @@ const Sidebar = ({
           )}
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          <SidebarLink to="/employee/referrals" icon={UserPlus} label="Employee Referral" />
 
           {canSee("employees") && (
             <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
@@ -520,6 +523,7 @@ const Sidebar = ({
           )}
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          <SidebarLink to="/employee/referrals" icon={UserPlus} label="Employee Referral" />
 
           <HRPayrollSidebarGroup />
 

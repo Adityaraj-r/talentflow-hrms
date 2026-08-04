@@ -137,6 +137,7 @@ import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 import Profile from "./pages/dashboard/Profile"
 import AttendanceAnalytics from "./pages/modules/attendance/AttendanceAnalytics"
 import EmployeeResignation from "./pages/role/EMPLOYEE/EmployeeResignation"
+import EmployeeReferrals from "./pages/modules/employee-center/EmployeeReferrals"
 
 // Document Module
 import MyDocuments from "./pages/modules/documents/MyDocuments"
@@ -304,6 +305,12 @@ function App() {
             <Route path="/profile" element={
               <ProtectedRoute>
                 <DashboardLayout><Profile /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/employee/referrals" element={
+              <ProtectedRoute>
+                <DashboardLayout><EmployeeReferrals /></DashboardLayout>
               </ProtectedRoute>
             } />
 

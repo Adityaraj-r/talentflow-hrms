@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import Settings from '../models/Settings.model';
 import { logger } from '../utils/logger';
 
@@ -47,7 +49,8 @@ const hasEnvSmtpConfig = (): boolean =>
       clean(process.env.SMTP_PORT) ||
       clean(process.env.SMTP_USER) ||
       clean(process.env.SMTP_PASS) ||
-      clean(process.env.SMTP_FROM_EMAIL)
+      clean(process.env.SMTP_FROM_EMAIL) ||
+      clean(process.env.SMTP_FROM)
   );
 
 const validate = (config: Partial<SmtpConfig>, source: SmtpConfig['source']): SmtpConfigResult => {
@@ -87,6 +90,20 @@ const fromEnvironment = (): SmtpConfigResult => {
   const port = parsePort(process.env.SMTP_PORT);
   const secure = parseBoolean(process.env.SMTP_SECURE);
 
+  let envFromName = clean(process.env.SMTP_FROM_NAME);
+  let envFromEmail = clean(process.env.SMTP_FROM_EMAIL);
+
+  if (!envFromName || !envFromEmail) {
+    const rawFrom = clean(process.env.SMTP_FROM);
+    if (rawFrom) {
+      const match = rawFrom.match(/^(?:"?([^"]*)"?\s)?<([^>]+)>$/);
+      if (match) {
+        if (!envFromName && match[1]) envFromName = match[1].trim();
+        if (!envFromEmail && match[2]) envFromEmail = match[2].trim();
+      }
+    }
+  }
+
   return validate(
     {
       host: clean(process.env.SMTP_HOST),
@@ -94,8 +111,8 @@ const fromEnvironment = (): SmtpConfigResult => {
       secure: secure ?? port === 465,
       user: clean(process.env.SMTP_USER),
       pass: clean(process.env.SMTP_PASS),
-      fromName: clean(process.env.SMTP_FROM_NAME) || DEFAULT_FROM_NAME,
-      fromEmail: clean(process.env.SMTP_FROM_EMAIL) || clean(process.env.SMTP_USER),
+      fromName: envFromName || DEFAULT_FROM_NAME,
+      fromEmail: envFromEmail || clean(process.env.SMTP_USER),
     },
     'env'
   );

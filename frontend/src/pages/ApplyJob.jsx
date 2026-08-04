@@ -17,7 +17,10 @@ const ApplyJob = () => {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
   const roleId = searchParams.get("roleId") || ""
+  const referralToken = searchParams.get("referralToken") || ""
   const navigate = useNavigate()
+
+  const [referredByInfo, setReferredByInfo] = useState(null)
 
   const isDeadlinePassed = (deadline) => {
     if (!deadline) return false;
@@ -71,11 +74,31 @@ const ApplyJob = () => {
   const DRAFT_KEY = `job_app_draft_${id}_${roleId}`
 
   useEffect(() => {
+    // Verify Referral Token if present
+    if (referralToken) {
+      axios.get(`${API_BASE}/referrals/verify-token?token=${referralToken}`)
+        .then(res => {
+          if (res.data?.success && res.data?.data) {
+            const refData = res.data.data;
+            setReferredByInfo(refData.referredBy);
+            setFormData(prev => ({
+              ...prev,
+              name: prev.name || refData.candidateName || "",
+              email: prev.email || refData.candidateEmail || "",
+              phone: prev.phone || refData.candidatePhone || ""
+            }));
+          }
+        })
+        .catch(err => {
+          console.warn("Referral token verification warning:", err.response?.data?.error);
+        });
+    }
+
     // Load Draft
     const draft = localStorage.getItem(DRAFT_KEY)
     if(draft) {
       try {
-        setFormData(JSON.parse(draft))
+        setFormData(prev => ({ ...prev, ...JSON.parse(draft) }))
       } catch(e) { console.error("Could not load draft") }
     }
 
@@ -95,7 +118,7 @@ const ApplyJob = () => {
       }
     }
     fetchJob()
-  }, [id, roleId, DRAFT_KEY])
+  }, [id, roleId, referralToken, DRAFT_KEY])
 
   // Auto-save
   useEffect(() => {
@@ -183,6 +206,9 @@ const ApplyJob = () => {
       const formPayload = new FormData()
       formPayload.append("jobId", id)
       formPayload.append("hiringRoleId", roleId)
+      if (referralToken) {
+        formPayload.append("referralToken", referralToken)
+      }
       
       // Append all text fields
       Object.keys(formData).forEach(key => {
