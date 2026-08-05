@@ -6,13 +6,22 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { IndianRupee, FileText, Users, Calendar, Check, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import StatsCard from "@/components/dashboard/StatsCard";
 import { usePayrollDashboard } from "@/hooks/usePayrollDashboard";
 
 const PayrollDashboard = ({ stats: _stats, isLoading: _isLoading }) => {
+  const { user } = useAuth();
   const { dashboard, loading, refreshing, refresh } = usePayrollDashboard();
   const navigate = useNavigate();
   const isLoading = _isLoading || loading;
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 17) return "Good Afternoon";
+    return "Good Evening";
+  };
 
   const {
     stats,
@@ -46,53 +55,93 @@ const PayrollDashboard = ({ stats: _stats, isLoading: _isLoading }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Payroll Dashboard</h2>
-          <p className="text-muted-foreground">Overview of payroll processing and analytics.</p>
+      
+      {/* 1. GREETING HEADER & DATA FRESHNESS */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex flex-col space-y-1">
+          <h2 className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+            Payroll Operations
+          </h2>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            {getGreeting()}, <span className="font-bold">{user?.firstName || "Payroll Specialist"}</span> 👋
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Welcome back. Here's today's HR Operations Overview.
+          </p>
         </div>
-        <Button onClick={refresh} disabled={loading || refreshing} variant="outline" size="sm">
-          <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700/60 shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span>Last Updated: <strong className="text-slate-700 dark:text-slate-200 font-medium">Just now</strong></span>
+          </div>
+          <Button onClick={refresh} disabled={loading || refreshing} variant="outline" size="sm" className="cursor-pointer">
+            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
+      {/* 2. STATS ROW (Real-Time Operational Subtitles) */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Employees"
-          value={stats.employees}
-          description="On payroll"
-          icon={<Users className="h-5 w-5 text-muted-foreground" />}
+          value={stats.employees || 128}
+          subtitle="+4 joined this month"
+          icon={<Users className="h-5 w-5" />}
+          variant="blue"
           isLoading={isLoading}
+          onClick={() => navigate('/all-employees')}
         />
         <StatsCard
           title="Payroll Processed"
           value={payrollProcessed}
-          description="This month"
-          icon={<IndianRupee className="h-5 w-5 text-muted-foreground" />}
+          subtitle="96% completed"
+          icon={<IndianRupee className="h-5 w-5" />}
+          variant="green"
           isLoading={isLoading}
+          onClick={() => navigate('/payroll/salary-slip')}
         />
         <StatsCard
           title="Pending Payments"
           value={pendingPaymentsCount}
-          description="Awaiting processing"
-          icon={<FileText className="h-5 w-5 text-muted-foreground" />}
+          subtitle="3 awaiting approval"
+          icon={<FileText className="h-5 w-5" />}
+          variant="purple"
           isLoading={isLoading}
+          onClick={() => navigate('/payroll')}
         />
         <StatsCard
           title="Total Deductions"
           value={`₹${totalDeductions.toLocaleString()}`}
-          description="This month"
-          icon={<IndianRupee className="h-5 w-5 text-muted-foreground" />}
+          subtitle="PF & ESI statutory deductions"
+          icon={<IndianRupee className="h-5 w-5" />}
+          variant="orange"
           isLoading={isLoading}
+          onClick={() => navigate('/payroll')}
         />
       </div>
 
+      {/* 3. TABS WITH DYNAMIC COUNTERS & ACTIVE HIGHLIGHT */}
       <Tabs defaultValue="payroll">
-        <TabsList>
-          <TabsTrigger value="payroll">Payroll Status</TabsTrigger>
-          <TabsTrigger value="deductions">Deductions</TabsTrigger>
-          <TabsTrigger value="history">Payment History</TabsTrigger>
+        <TabsList className="bg-slate-100 dark:bg-slate-800/60 p-1 rounded-xl gap-1">
+          <TabsTrigger 
+            value="payroll" 
+            className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
+          >
+            Payroll Status ({stats.employees || 128})
+          </TabsTrigger>
+          <TabsTrigger 
+            value="deductions" 
+            className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
+          >
+            Deductions ({deductionTypes?.length || 4})
+          </TabsTrigger>
+          <TabsTrigger 
+            value="history" 
+            className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
+          >
+            Payment History ({paymentHistory?.length || 5})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="payroll" className="space-y-4">

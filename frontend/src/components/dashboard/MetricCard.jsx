@@ -8,8 +8,11 @@ const MetricCard = ({
   trend, 
   trendValue, 
   icon: Icon,
-  color = 'blue' 
+  color = 'blue',
+  onClick 
 }) => {
+  const isClickable = Boolean(onClick);
+
   const colorClasses = {
     blue: 'bg-blue-500',
     green: 'bg-green-500',
@@ -32,9 +35,18 @@ const MetricCard = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+    <div 
+      onClick={onClick}
+      tabIndex={isClickable ? 0 : undefined}
+      role={isClickable ? "button" : undefined}
+      className={`relative bg-card dark:bg-slate-900/90 border border-border/80 rounded-xl shadow-sm cursor-pointer p-6 transition-all duration-300 ease-out ${
+        isClickable 
+          ? "group hover:border-primary/40 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-slate-950/40 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" 
+          : ""
+      }`}
+    >
       <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
+        <div className={`p-3 rounded-lg ${colorClasses[color] || colorClasses.blue} ${isClickable ? "transition-transform duration-300 group-hover:scale-110" : ""}`}>
           {Icon && <Icon className="w-6 h-6 text-white" />}
         </div>
         {trendValue && (
@@ -46,8 +58,8 @@ const MetricCard = ({
       </div>
       
       <div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-1">{value}</h3>
-        <p className="text-sm text-gray-600">{label || title}</p>
+        <h3 className="text-2xl font-bold text-foreground dark:text-white mb-1 tracking-tight">{value}</h3>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label || title}</p>
       </div>
     </div>
   );

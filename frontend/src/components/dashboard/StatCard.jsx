@@ -1,23 +1,29 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 
-const StatCard = ({ title, value, description, icon: Icon, borderColor, textColor, isLoading }) => {
+const StatCard = ({ title, value, description, icon: Icon, borderColor, textColor, isLoading, onClick }) => {
+  const isClickable = Boolean(onClick);
+
   return (
-    <Card className={`border-l-4 ${borderColor} bg-card shadow-sm hover:shadow-md transition-shadow h-full min-h-[130px] flex flex-col`}>
-      {/* Reduced padding slightly from p-5 to p-4 to give the text more horizontal breathing room */}
+    <Card 
+      onClick={onClick}
+      tabIndex={isClickable ? 0 : undefined}
+      role={isClickable ? "button" : undefined}
+      className={`relative border-l-4 ${borderColor} bg-card shadow-sm cursor-pointer transition-all duration-300 ease-out h-full min-h-[130px] flex flex-col ${
+        isClickable 
+          ? "group hover:-translate-y-1 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-slate-950/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" 
+          : ""
+      }`}
+    >
       <CardContent className="p-4 sm:p-5 flex flex-col flex-grow justify-between">
         
         {/* Top Row: Title & Icon */}
         <div className="flex items-start justify-between gap-2 w-full">
-          {/* 1. Removed 'truncate' and 'tracking-wider'
-            2. Added 'break-words' and 'leading-tight' so it wraps neatly to two lines if needed 
-          */}
           <span className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase leading-tight break-words mt-1">
             {title}
           </span>
-          {/* Added shrink-0 so the icon never gets squished by long text */}
-          <div className={`p-1.5 sm:p-2 rounded-lg bg-muted/30 shrink-0 ${textColor}`}>
-            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+          <div className={`p-1.5 sm:p-2 rounded-lg bg-muted/40 shrink-0 ${textColor} ${isClickable ? "transition-transform duration-300 group-hover:scale-110" : ""}`}>
+            {Icon && <Icon className="w-4 h-4 sm:w-5 sm:h-5" />}
           </div>
         </div>
         
@@ -30,9 +36,11 @@ const StatCard = ({ title, value, description, icon: Icon, borderColor, textColo
               {value !== undefined && value !== null ? value : "0"}
             </span>
           )}
-          <span className="text-xs font-medium text-muted-foreground mt-1 truncate w-full">
-            {description}
-          </span>
+          {description && (
+            <span className="text-xs font-medium text-muted-foreground mt-1 truncate w-full">
+              {description}
+            </span>
+          )}
         </div>
         
       </CardContent>

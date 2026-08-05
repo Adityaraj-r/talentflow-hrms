@@ -203,6 +203,7 @@ export default function PerformanceSection({
               <Button
                 variant="outline"
                 size="sm"
+                className="cursor-pointer"
                 disabled={!pagination || (filters?.page || 1) <= 1}
                 onClick={() =>
                   setFilters((prev) => ({
@@ -217,6 +218,7 @@ export default function PerformanceSection({
               <Button
                 variant="outline"
                 size="sm"
+                className="cursor-pointer"
                 disabled={
                   !pagination ||
                   (filters?.page || 1) >= (pagination?.pages || 1)

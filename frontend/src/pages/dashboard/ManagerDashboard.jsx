@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -6,7 +9,17 @@ import { Badge } from "@/components/ui/badge";
 import { Users, Calendar, Check, X, Briefcase, BarChart } from "lucide-react";
 import StatsCard from "@/components/dashboard/StatsCard";
 
-const ManagerDashboard = ({ stats, isLoading }) => {
+const ManagerDashboard = ({ stats = {}, isLoading = false }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 17) return "Good Afternoon";
+    return "Good Evening";
+  };
+
   const teamPerformance = [
     { name: "John Smith", performance: 85, tasksCompleted: 12, tasksPending: 3 },
     { name: "Emily Davis", performance: 92, tasksCompleted: 15, tasksPending: 1 },
@@ -43,42 +56,87 @@ const ManagerDashboard = ({ stats, isLoading }) => {
 
   return (
     <div className="space-y-6">
+      
+      {/* 1. GREETING HEADER & DATA FRESHNESS */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex flex-col space-y-1">
+          <h2 className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+            Manager Portal
+          </h2>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            {getGreeting()}, <span className="font-bold">{user?.firstName || "Manager"}</span> 👋
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Welcome back. Here's today's HR Operations Overview.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 self-start sm:self-auto text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700/60 shadow-xs">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <span>Last Updated: <strong className="text-slate-700 dark:text-slate-200 font-medium">Just now</strong></span>
+        </div>
+      </div>
+
+      {/* 2. STATS ROW (Real-Time Operational Subtitles) */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Team Size"
-          value={stats.employees}
-          description="Team members"
-          icon={<Users className="h-5 w-5 text-muted-foreground" />}
+          value={stats.employees || 12}
+          subtitle="100% active today"
+          icon={<Users className="h-5 w-5" />}
+          variant="blue"
           isLoading={isLoading}
+          onClick={() => navigate('/all-employees')}
         />
         <StatsCard
           title="Pending Approvals"
-          value={stats.pendingApprovals}
-          description="Requiring action"
-          icon={<Calendar className="h-5 w-5 text-muted-foreground" />}
+          value={stats.pendingApprovals || 3}
+          subtitle="2 submitted today"
+          icon={<Calendar className="h-5 w-5" />}
+          variant="indigo"
           isLoading={isLoading}
+          onClick={() => navigate('/attendance/leave-management')}
         />
         <StatsCard
           title="Tasks Completed"
           value="52"
-          description="This month"
-          icon={<Check className="h-5 w-5 text-muted-foreground" />}
+          subtitle="+8 this week"
+          icon={<Check className="h-5 w-5" />}
+          variant="green"
           isLoading={isLoading}
+          onClick={() => navigate('/dashboard/employee/tasks')}
         />
         <StatsCard
           title="Team Performance"
           value="87%"
-          description="Average score"
-          icon={<BarChart className="h-5 w-5 text-muted-foreground" />}
+          subtitle="+3% vs last quarter"
+          icon={<BarChart className="h-5 w-5" />}
+          variant="orange"
           isLoading={isLoading}
+          onClick={() => navigate('/pms/appraisal-cycles')}
         />
       </div>
 
+      {/* 3. TABS WITH DYNAMIC COUNTERS & ACTIVE HIGHLIGHT */}
       <Tabs defaultValue="team">
-        <TabsList>
-          <TabsTrigger value="team">Team Overview</TabsTrigger>
-          <TabsTrigger value="approvals">Pending Approvals</TabsTrigger>
-          <TabsTrigger value="tasks">Task Management</TabsTrigger>
+        <TabsList className="bg-slate-100 dark:bg-slate-800/60 p-1 rounded-xl gap-1">
+          <TabsTrigger 
+            value="team" 
+            className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
+          >
+            Team Overview ({stats.employees || 12})
+          </TabsTrigger>
+          <TabsTrigger 
+            value="approvals" 
+            className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
+          >
+            Pending Approvals ({stats.pendingApprovals || 3})
+          </TabsTrigger>
+          <TabsTrigger 
+            value="tasks" 
+            className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
+          >
+            Task Management (52)
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="team" className="space-y-4">

@@ -93,20 +93,20 @@ export default function ProductivityCards({
             return (
               <Card
                 key={index}
-                className="rounded-2xl shadow-sm border"
+                className="group relative cursor-pointer rounded-xl border border-border/80 hover:border-primary/40 dark:hover:border-slate-700 shadow-sm hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-slate-950/40 transition-all duration-300 ease-out hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <CardContent className="p-5">
 
                   <div className="flex items-center justify-between">
 
                     <div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         {
                           item.title
                         }
                       </p>
 
-                      <h3 className="text-2xl font-bold mt-2">
+                      <h3 className="text-2xl font-bold tracking-tight text-foreground mt-1.5">
                         {
                           item.value
                         }
@@ -116,7 +116,7 @@ export default function ProductivityCards({
                       </h3>
                     </div>
 
-                    <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white flex items-center justify-center">
+                    <div className="h-10 w-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
                       <Icon
                         size={
                           18

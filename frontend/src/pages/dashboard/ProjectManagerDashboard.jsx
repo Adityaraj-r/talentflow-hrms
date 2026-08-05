@@ -33,12 +33,12 @@ const ProjectManagerDashboard = () => {
           <h1 className="text-3xl font-bold tracking-tight">Project Manager Dashboard</h1>
           <p className="text-muted-foreground">Overview of projects, tasks, and team performance</p>
         </div>
-        <Button><Calendar className="mr-2 h-4 w-4" /> Schedule Meeting</Button>
+        <Button className="cursor-pointer"><Calendar className="mr-2 h-4 w-4" /> Schedule Meeting</Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
         {stats.map((stat, i) => (
-          <Card key={i} className={`border-l-4 ${stat.bg}`}>
+          <Card key={i} className={`border-l-4 ${stat.bg} cursor-pointer`}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -88,25 +88,25 @@ const ProjectManagerDashboard = () => {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button variant="outline" className="w-full justify-between">
+            <Button variant="outline" className="w-full justify-between cursor-pointer">
               <span className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" /> View Task Board
               </span>
               <ArrowRight className="h-4 w-4" />
             </Button>
-            <Button variant="outline" className="w-full justify-between">
+            <Button variant="outline" className="w-full justify-between cursor-pointer">
               <span className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" /> Safety Incidents
               </span>
               <ArrowRight className="h-4 w-4" />
             </Button>
-            <Button variant="outline" className="w-full justify-between">
+            <Button variant="outline" className="w-full justify-between cursor-pointer">
               <span className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" /> Timesheet Approvals
               </span>
               <ArrowRight className="h-4 w-4" />
             </Button>
-            <Button variant="outline" className="w-full justify-between">
+            <Button variant="outline" className="w-full justify-between cursor-pointer">
               <span className="flex items-center gap-2">
                 <Users className="h-4 w-4" /> Team Performance
               </span>

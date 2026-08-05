@@ -69,13 +69,18 @@ const getFilteredEmployees = async (
     user
   );
 
-  const employees = await Employee.find(
+  const rawEmployees = await Employee.find(
     filter
   )
     .select(
-      "userId department status salary.basic joiningDate firstName lastName designation role"
+      "userId employeeCode department status salary.basic joiningDate firstName lastName designation role"
     )
     .lean();
+
+  const employees = rawEmployees.map((emp: any, index: number) => ({
+    ...emp,
+    employeeCode: emp.employeeCode || `EMP${String(index + 1).padStart(3, '0')}`
+  }));
 
   const userIds = employees
     .map((e: any) => e.userId)
@@ -414,11 +419,13 @@ export const getEmployeePerformance = async (req: Request, res: Response) => {
     let filtered = employees;
 
     if (search) {
-      filtered = filtered.filter((e: any) =>
-        `${e.firstName} ${e.lastName}`
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      );
+      const queryLower = String(search).trim().toLowerCase();
+      filtered = filtered.filter((e: any) => {
+        const fullName = `${e.firstName || ''} ${e.lastName || ''}`.toLowerCase();
+        const code = String(e.employeeCode || '').toLowerCase();
+        const idStr = String(e._id || e.userId || '').toLowerCase();
+        return fullName.includes(queryLower) || code.includes(queryLower) || idStr.includes(queryLower);
+      });
     }
 
     const skip = (Number(page) - 1) * Number(limit);
