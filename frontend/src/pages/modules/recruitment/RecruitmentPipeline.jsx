@@ -102,6 +102,11 @@ const RecruitmentPipeline = () => {
     [applications]
   )
 
+  const activeCandidate = useMemo(() => {
+    if (!selectedCandidate) return null
+    return candidates.find((c) => c._id === selectedCandidate._id) || selectedCandidate
+  }, [candidates, selectedCandidate])
+
   const filterOptions = useMemo(
     () => ({
       recruiters: [...new Set(candidates.map((candidate) => candidate.recruiter).filter(Boolean))],
@@ -321,19 +326,12 @@ const RecruitmentPipeline = () => {
     toast.success("Pipeline exported to PDF successfully")
   }
 
-  const activeSummary = useMemo(() => {
-    const interviews = filteredCandidates.filter((candidate) => candidate.stage === "Interview").length
-    const offers = filteredCandidates.filter((candidate) => candidate.stage === "Offer").length
-    const hires = filteredCandidates.filter((candidate) => candidate.stage === "Hired").length
-    return `${filteredCandidates.length} candidates - ${interviews} interviews - ${offers} offers - ${hires} hires`
-  }, [filteredCandidates])
+
 
   return (
     <div className="space-y-6">
       <RecruitmentPageHeader
         title="Recruitment Pipeline"
-        subtitle="A drag-and-drop ATS workflow for screening, interviews, offers, and hiring decisions."
-        summary={activeSummary}
         actions={
           <>
             <Button type="button" variant="outline" onClick={() => setFilters(defaultFilters)}>
@@ -352,7 +350,11 @@ const RecruitmentPipeline = () => {
         }
       />
 
-      <PipelineAnalytics candidates={filteredCandidates} />
+      <PipelineAnalytics
+        candidates={candidates}
+        activeStage={filters.stage}
+        onSelectStage={(stage) => setFilters((prev) => ({ ...prev, stage }))}
+      />
 
       <PipelineFilters
         filters={filters}
@@ -372,10 +374,11 @@ const RecruitmentPipeline = () => {
       />
 
       <CandidateDrawer
-        candidate={selectedCandidate}
+        candidate={activeCandidate}
         open={Boolean(selectedCandidate)}
         onClose={() => setSelectedCandidate(null)}
         uploadBaseUrl={uploadBaseUrl}
+        onRefresh={fetchApplications}
       />
     </div>
   )

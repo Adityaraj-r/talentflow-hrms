@@ -23,6 +23,7 @@ import {
   getIndemnities,
   createIndemnity,
   updateIndemnityStatus,
+  editAndResubmitIndemnity,
   getPayrollSettings,
   updatePayrollSettings,
   calculatePayrollPreview,
@@ -98,10 +99,31 @@ router.get("/tickets", authorize(...ticketRoles), getTickets)
 router.post("/tickets", authorize(...ticketRoles), createTicket)
 router.patch("/tickets/:id/status", authorize(...ticketApproveRoles), updateTicketStatus)
 
-router.post("/indemnity/calculate", authorize(...ticketRoles), calculateIndemnity)
-router.get("/indemnity", authorize(...ticketRoles), getIndemnities)
-router.post("/indemnity", authorize(...ticketRoles), createIndemnity)
-router.patch("/indemnity/:id/status", authorize(...ticketApproveRoles), updateIndemnityStatus)
+const indemnityApproveRoles = [
+  "HR_MANAGER",
+  "HRMANAGER",
+  "PAYROLLOFFICER",
+  "PAYROLL_OFFICER",
+  "FINANCE_MANAGER",
+  "CEO",
+  "ADMIN",
+  "SUPER_ADMIN",
+  "SUPER ADMIN",
+] as const
+
+const indemnityCreateRoles = [
+  "PAYROLLOFFICER",
+  "PAYROLL_OFFICER",
+  "ADMIN",
+  "SUPER_ADMIN",
+  "SUPER ADMIN",
+] as const
+
+router.post("/indemnity/calculate", authorize(...indemnityCreateRoles), calculateIndemnity)
+router.get("/indemnity", authorize(...indemnityApproveRoles), getIndemnities)
+router.post("/indemnity", authorize(...indemnityCreateRoles), createIndemnity)
+router.patch("/indemnity/:id/status", authorize(...indemnityApproveRoles), updateIndemnityStatus)
+router.patch("/indemnity/:id/edit-resubmit", authorize(...indemnityCreateRoles), editAndResubmitIndemnity)
 
 router.get(
   "/history/:userId",

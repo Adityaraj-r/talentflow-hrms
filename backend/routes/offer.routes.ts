@@ -11,6 +11,7 @@ import {
   approveOffer,
   rejectOffer,
   negotiateOffer,
+  updateOfferDetails,
   sendOffer,
   getOfferPdf,
 } from '../controllers/offer.controller';
@@ -37,6 +38,12 @@ router.post(
   authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'write'),
   requireRecruitmentOperator,
   createOffer
+);
+router.put(
+  '/:id',
+  authorizeByMatrix(MODULE_KEYS.RECRUITMENT, 'write'),
+  requireRecruitmentOperator,
+  updateOfferDetails
 );
 router.patch(
   '/:id/status',

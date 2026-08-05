@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
 import Job from "../models/job.model";
+import Application from "../models/application.model";
+import Offer from "../models/Offer.model";
+import Task from "../models/task.model";
+import { WORKFLOW_TEMPLATES, getWorkflowTemplate, getDefaultWorkflow } from '../services/workflowTemplates';
 
 const normalizeHiringRoles = (roles: any, fallbackRoleName: string, fallbackOpenings: any) => {
   const rows = Array.isArray(roles) ? roles : [];
@@ -40,22 +44,46 @@ const totalOpenings = (roles: any[]) =>
 
 export const getAllJobs = async (req: Request, res: Response) => {
   try {
-    const now = new Date();
-    const threshold = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    
-    // Auto-close jobs whose deadline day has ended
-    await Job.updateMany(
-      { status: "Published", deadline: { $exists: true, $ne: null, $lte: threshold } },
-      { $set: { status: "Closed" } }
-    );
-    
-    // Reopen jobs whose deadline day has not ended yet
-    await Job.updateMany(
-      { status: "Closed", deadline: { $exists: true, $ne: null, $gt: threshold } },
-      { $set: { status: "Published" } }
-    );
+    try {
+      const now = new Date();
+      const threshold = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      
+      // Auto-close jobs whose deadline day has ended
+      await Job.updateMany(
+        { status: "Published", deadline: { $exists: true, $ne: null, $lte: threshold } },
+        { $set: { status: "Closed" } }
+      );
+      
+      // Reopen jobs whose deadline day has not ended yet
+      await Job.updateMany(
+        { status: "Closed", deadline: { $exists: true, $ne: null, $gt: threshold } },
+        { $set: { status: "Published" } }
+      );
+    } catch (autoCloseErr) {
+      console.error("Auto-close deadline update error:", autoCloseErr);
+    }
 
     const jobs = await Job.find().sort({ createdAt: -1 });
+
+    // Safely backfill missing jobCode for existing jobs
+    for (const job of jobs) {
+      if (!job.jobCode) {
+        try {
+          const created = (job as any).createdAt ? new Date((job as any).createdAt) : new Date();
+          const validDate = isNaN(created.getTime()) ? new Date() : created;
+          const datePart = validDate.toISOString().slice(0, 7).replace("-", "");
+          const rand = Math.floor(10000 + Math.random() * 90000);
+          const generatedCode = `JOB-${datePart}-${rand}`;
+          job.jobCode = generatedCode;
+          await Job.updateOne({ _id: job._id }, { $set: { jobCode: generatedCode } });
+        } catch (e) {
+          if (!job.jobCode) {
+            job.jobCode = `JOB-${job._id.toString().slice(-6).toUpperCase()}`;
+          }
+        }
+      }
+    }
+
     res.json(jobs);
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -73,16 +101,41 @@ export const createJob = async (req: Request, res: Response) => {
     console.log("Incoming Job Data:", req.body);
 
     const hiringRoles = normalizeHiringRoles(req.body.hiringRoles, req.body.jobTitle, req.body.positions);
-    const jobData = {
-      jobTitle: req.body.jobTitle,
-      department: req.body.department,
+    
+    // Auto-generate job code if not provided
+    let jobCode = req.body.jobCode;
+    if (!jobCode) {
+      const datePart = new Date().toISOString().slice(0, 7).replace("-", ""); // YYYYMM
+      const randomPart = Math.floor(1000 + Math.random() * 9000); // 4 digit random
+      jobCode = `JOB-${datePart}-${randomPart}`;
+    }
+
+    let uploadJd = "";
+    let supportingDocuments = "";
+    if (req.files) {
+      if ((req.files as any)["uploadJd"]) uploadJd = (req.files as any)["uploadJd"][0].path;
+      if ((req.files as any)["supportingDocuments"]) supportingDocuments = (req.files as any)["supportingDocuments"][0].path;
+    }
+
+    const jobData: any = {
+      ...req.body,
+      jobCode,
       positions: totalOpenings(hiringRoles),
       hiringRoles,
-      employmentType: req.body.employmentType,
-      description: req.body.description,
-      deadline: req.body.deadline,
-      status: status
+      status: status,
+      uploadJd: uploadJd || req.body.uploadJd,
+      supportingDocuments: supportingDocuments || req.body.supportingDocuments
     };
+
+    // Apply workflow - use provided workflow or default
+    if (!jobData.workflow || !jobData.workflow.stages || jobData.workflow.stages.length === 0) {
+      const defaultWf = getDefaultWorkflow();
+      jobData.workflow = {
+        stages: defaultWf.stages,
+        scoringFormula: defaultWf.scoringFormula,
+        autoProgressionEnabled: defaultWf.autoProgressionEnabled,
+      };
+    }
 
     const job = await Job.create(jobData);
 
@@ -114,6 +167,20 @@ export const updateJob = async (req: Request, res: Response) => {
     }
 
     const updateData: any = { ...req.body };
+    
+    let uploadJd = "";
+    let supportingDocuments = "";
+    if (req.files) {
+      if ((req.files as any)["uploadJd"]) {
+        uploadJd = (req.files as any)["uploadJd"][0].path;
+        updateData.uploadJd = uploadJd;
+      }
+      if ((req.files as any)["supportingDocuments"]) {
+        supportingDocuments = (req.files as any)["supportingDocuments"][0].path;
+        updateData.supportingDocuments = supportingDocuments;
+      }
+    }
+
     if (Object.prototype.hasOwnProperty.call(req.body, "hiringRoles")) {
       updateData.hiringRoles = normalizeHiringRoles(req.body.hiringRoles, req.body.jobTitle || job.jobTitle, req.body.positions || job.positions);
       updateData.positions = totalOpenings(updateData.hiringRoles);
@@ -194,22 +261,71 @@ export const deleteJob = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: "Job not found" });
     }
 
-    if (job.status === "Published" || String(job.status) === "Open") {
-      return res.status(400).json({ success: false, message: "Published/Open jobs cannot be deleted directly" });
+    if (role !== "HR_OFFICER" && role !== "HR_MANAGER" && role !== "ADMIN" && role !== "SUPER_ADMIN") {
+      return res.status(403).json({ success: false, message: "Access denied for deleting job openings" });
     }
 
-    if (job.status === "Closed") {
-      if (role !== "HR_MANAGER" && role !== "ADMIN" && role !== "SUPER_ADMIN") {
-        return res.status(403).json({ success: false, message: "Only HR Manager and Admins can remove closed jobs" });
-      }
-    } else if (job.status === "Draft") {
-      if (role !== "HR_OFFICER" && role !== "HR_MANAGER" && role !== "ADMIN" && role !== "SUPER_ADMIN") {
-        return res.status(403).json({ success: false, message: "Access denied for deleting draft jobs" });
-      }
+    // Find all candidate applications associated with this job opening
+    const applications = await Application.find({ jobId: id }).select("_id taskId email");
+    const appIds = applications.map(a => a._id);
+    const taskIds = applications.map(a => a.taskId).filter(Boolean);
+    const emails = applications.map(a => a.email).filter(Boolean);
+
+    // Delete associated offers, tasks, applications and the job opening itself
+    if (appIds.length > 0) {
+      await Offer.deleteMany({
+        $or: [
+          { candidateId: { $in: appIds } },
+          ...(emails.length > 0 ? [{ candidateEmail: { $in: emails } }] : [])
+        ]
+      });
     }
 
+    if (taskIds.length > 0) {
+      await Task.deleteMany({ _id: { $in: taskIds } });
+    }
+
+    await Application.deleteMany({ jobId: id });
     await Job.findByIdAndDelete(id);
-    res.json({ success: true, message: "Job deleted successfully" });
+
+    res.json({ success: true, message: "Job opening and all associated data deleted successfully" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getJobById = async (req: Request, res: Response) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ success: false, message: "Job not found" });
+    }
+    res.json(job);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getWorkflowTemplates = async (req: Request, res: Response) => {
+  try {
+    res.json({ success: true, data: WORKFLOW_TEMPLATES });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getJobWorkflow = async (req: Request, res: Response) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ success: false, message: "Job not found" });
+    }
+    const workflow = (job as any).workflow;
+    if (!workflow || !workflow.stages || workflow.stages.length === 0) {
+      const defaultWf = getDefaultWorkflow();
+      return res.json({ success: true, data: { stages: defaultWf.stages, scoringFormula: defaultWf.scoringFormula, autoProgressionEnabled: defaultWf.autoProgressionEnabled } });
+    }
+    res.json({ success: true, data: workflow });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

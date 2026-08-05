@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { usePayrollDashboard } from "@/hooks/usePayrollDashboard";
 
 const PayrollDashboard = ({ stats: _stats, isLoading: _isLoading }) => {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("payroll");
   const { dashboard, loading, refreshing, refresh } = usePayrollDashboard();
   const navigate = useNavigate();
   const isLoading = _isLoading || loading;
@@ -81,7 +82,7 @@ const PayrollDashboard = ({ stats: _stats, isLoading: _isLoading }) => {
         </div>
       </div>
 
-      {/* 2. STATS ROW (Real-Time Operational Subtitles) */}
+      {/* 2. STATS ROW */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Employees"
@@ -90,7 +91,8 @@ const PayrollDashboard = ({ stats: _stats, isLoading: _isLoading }) => {
           icon={<Users className="h-5 w-5" />}
           variant="blue"
           isLoading={isLoading}
-          onClick={() => navigate('/all-employees')}
+          isActive={activeTab === "payroll"}
+          onClick={() => setActiveTab("payroll")}
         />
         <StatsCard
           title="Payroll Processed"
@@ -99,7 +101,8 @@ const PayrollDashboard = ({ stats: _stats, isLoading: _isLoading }) => {
           icon={<IndianRupee className="h-5 w-5" />}
           variant="green"
           isLoading={isLoading}
-          onClick={() => navigate('/payroll/salary-slip')}
+          isActive={activeTab === "payroll"}
+          onClick={() => setActiveTab("payroll")}
         />
         <StatsCard
           title="Pending Payments"
@@ -108,7 +111,8 @@ const PayrollDashboard = ({ stats: _stats, isLoading: _isLoading }) => {
           icon={<FileText className="h-5 w-5" />}
           variant="purple"
           isLoading={isLoading}
-          onClick={() => navigate('/payroll')}
+          isActive={activeTab === "payroll"}
+          onClick={() => setActiveTab("payroll")}
         />
         <StatsCard
           title="Total Deductions"
@@ -117,12 +121,13 @@ const PayrollDashboard = ({ stats: _stats, isLoading: _isLoading }) => {
           icon={<IndianRupee className="h-5 w-5" />}
           variant="orange"
           isLoading={isLoading}
-          onClick={() => navigate('/payroll')}
+          isActive={activeTab === "deductions"}
+          onClick={() => setActiveTab("deductions")}
         />
       </div>
 
-      {/* 3. TABS WITH DYNAMIC COUNTERS & ACTIVE HIGHLIGHT */}
-      <Tabs defaultValue="payroll">
+      {/* 3. TABS */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-slate-100 dark:bg-slate-800/60 p-1 rounded-xl gap-1">
           <TabsTrigger 
             value="payroll" 

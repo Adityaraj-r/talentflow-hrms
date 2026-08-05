@@ -177,3 +177,24 @@ export const sendOfferEmail = async (
     ],
   });
 };
+
+export const sendReferralEmail = async (
+  candidateEmail: string,
+  payload: {
+    companyName: string;
+    candidateName: string;
+    referrerName: string;
+    jobTitle: string;
+    department?: string;
+    location?: string;
+    employmentType?: string;
+    applicationDeadline?: string;
+    applyLink: string;
+  }
+) => {
+  return sendEmail({
+    to: candidateEmail,
+    subject: `${payload.referrerName} Has Referred You for ${payload.jobTitle} at ${payload.companyName}`,
+    html: renderEmailTemplate('referralEmail', payload as any),
+  });
+};

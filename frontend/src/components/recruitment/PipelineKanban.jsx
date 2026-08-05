@@ -1,5 +1,8 @@
+import { PriorityDot } from "@/components/ui/PriorityDot";
 import { useMemo, useState } from "react"
 import * as React from "react"
+import apiClient from "@/services/apiClient"
+import { toast } from "sonner"
 import { AnimatePresence } from "framer-motion"
 import * as Motion from "framer-motion"
 import {
@@ -54,27 +57,48 @@ import {
 
 export const PIPELINE_STAGES = [
   { id: "Applied", label: "Applied", apiStatus: "Applied", accent: "sky", color: "bg-sky-400" },
-  { id: "Screening", label: "Screening", apiStatus: "Screening", accent: "violet", color: "bg-violet-400" },
-  { id: "Interview", label: "Interview", apiStatus: "Interview", accent: "amber", color: "bg-amber-400" },
-  { id: "Offer", label: "Offer", apiStatus: "Offer", accent: "cyan", color: "bg-cyan-400" },
-  { id: "Hired", label: "Hired", apiStatus: "Hired", accent: "emerald", color: "bg-emerald-400" },
-  { id: "Rejected", label: "Rejected", apiStatus: "Rejected", accent: "rose", color: "bg-rose-400" },
+  { id: "Under Review", label: "Under Review", apiStatus: "Under Review", accent: "indigo", color: "bg-indigo-400" },
+  { id: "HR Screening", label: "HR Screening", apiStatus: "HR Screening", accent: "purple", color: "bg-purple-400" },
+  { id: "Assessment", label: "Assessment", apiStatus: "Assessment", accent: "orange", color: "bg-orange-400" },
+  { id: "Interview Round 1", label: "Interview Rd 1", apiStatus: "Interview Round 1", accent: "amber", color: "bg-amber-400" },
+  { id: "Interview Round 2", label: "Interview Rd 2", apiStatus: "Interview Round 2", accent: "yellow", color: "bg-yellow-400" },
+  { id: "Hiring Manager Review", label: "HM Review", apiStatus: "Hiring Manager Review", accent: "pink", color: "bg-pink-400" },
+  { id: "Approved", label: "Approved", apiStatus: "Approved", accent: "teal", color: "bg-teal-400" },
+  { id: "Offer Sent", label: "Offer Sent", apiStatus: "Offer Sent", accent: "cyan", color: "bg-cyan-400" },
+  { id: "Offer Accepted", label: "Offer Accepted", apiStatus: "Offer Accepted", accent: "green", color: "bg-emerald-500" },
+  { id: "Background Verification", label: "BGV Checks", apiStatus: "Background Verification", accent: "rose", color: "bg-rose-500" },
+  { id: "Hired", label: "Hired", apiStatus: "Hired", accent: "emerald", color: "bg-emerald-600" },
+  { id: "Rejected", label: "Rejected", apiStatus: "Rejected", accent: "rose", color: "bg-rose-600" },
 ]
 
 const stageAliases = {
   applied: "Applied",
   new: "Applied",
   submitted: "Applied",
-  screening: "Screening",
-  shortlisted: "Screening",
-  shortlist: "Screening",
-  interview: "Interview",
-  "interview scheduled": "Interview",
-  interview_scheduled: "Interview",
-  selected: "Offer",
-  offered: "Offer",
-  offer: "Offer",
-  accepted: "Hired",
+  "under review": "Under Review",
+  "hr screening": "HR Screening",
+  screening: "HR Screening",
+  shortlisted: "HR Screening",
+  shortlist: "HR Screening",
+  assessment: "Assessment",
+  "interview round 1": "Interview Round 1",
+  "interview rd 1": "Interview Round 1",
+  interview: "Interview Round 1",
+  "interview scheduled": "Interview Round 1",
+  interview_scheduled: "Interview Round 1",
+  "interview round 2": "Interview Round 2",
+  "interview rd 2": "Interview Round 2",
+  "hiring manager review": "Hiring Manager Review",
+  "hm review": "Hiring Manager Review",
+  approved: "Approved",
+  "offer sent": "Offer Sent",
+  selected: "Offer Sent",
+  offered: "Offer Sent",
+  offer: "Offer Sent",
+  "offer accepted": "Offer Accepted",
+  accepted: "Offer Accepted",
+  "background verification": "Background Verification",
+  bgv: "Background Verification",
   hired: "Hired",
   rejected: "Rejected",
   declined: "Rejected",
@@ -96,6 +120,14 @@ const getToneClass = (tone) => ({
   rose: "border-rose-400/30 bg-rose-500/10 text-rose-300",
   cyan: "border-cyan-400/30 bg-cyan-500/10 text-cyan-300",
   violet: "border-violet-400/30 bg-violet-500/10 text-violet-300",
+  sky: "border-sky-400/30 bg-sky-500/10 text-sky-300",
+  indigo: "border-indigo-400/30 bg-indigo-500/10 text-indigo-300",
+  purple: "border-purple-400/30 bg-purple-500/10 text-purple-300",
+  orange: "border-orange-400/30 bg-orange-500/10 text-orange-300",
+  yellow: "border-yellow-400/30 bg-yellow-500/10 text-yellow-300",
+  pink: "border-pink-400/30 bg-pink-500/10 text-pink-300",
+  teal: "border-teal-400/30 bg-teal-500/10 text-teal-300",
+  green: "border-green-400/30 bg-green-500/10 text-green-300",
 }[tone] || "border-white/10 bg-muted/10 text-muted-foreground")
 
 const getRiskTone = (risk = "") => {
@@ -240,134 +272,62 @@ export function MatchScoreBadge({ score = 0, size = "sm" }) {
   )
 }
 
-export function StageAnalyticsCard({ stage, count, total }) {
-  const conversion = total ? Math.round((count / total) * 100) : 0
-  return (
-    <div className="min-w-[180px] rounded-lg border border-white/10 bg-card/70 p-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className={cn("h-2.5 w-2.5 rounded-full", stage.color)} />
-          <span className="text-sm font-semibold">{stage.label}</span>
-        </div>
-        <span className="text-xs text-muted-foreground">{count}</span>
-      </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-        <div className={cn("h-full rounded-full", stage.color)} style={{ width: `${conversion}%` }} />
-      </div>
-      <p className="mt-2 text-xs text-muted-foreground">{conversion}% of visible pipeline</p>
-    </div>
-  )
-}
 
 export function PipelineFilters({ filters, onChange, options, onSaveFilter, savedFilters, onApplySavedFilter }) {
   const set = (key, value) => onChange({ ...filters, [key]: value })
 
   return (
-   <section className="rounded-lg border border-white/10 bg-card/80 p-4">
-  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-
-    {/* Search */}
-    <div className="relative xl:col-span-1">
-      <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-      <Input
-        value={filters.search}
-        onChange={(e) => set("search", e.target.value)}
-        placeholder="Search candidate, role, email, skills..."
-        className="pl-9"
-      />
-    </div>
-
-    <FilterSelect
-      label="Recruiter"
-      value={filters.recruiter}
-      onChange={(value) => set("recruiter", value)}
-      options={options.recruiters}
-    />
-
-    <FilterSelect
-      label="Department"
-      value={filters.department}
-      onChange={(value) => set("department", value)}
-      options={options.departments}
-    />
-
-    <FilterSelect
-      label="Role"
-      value={filters.role}
-      onChange={(value) => set("role", value)}
-      options={options.roles}
-    />
-
-    <FilterSelect
-      label="Stage"
-      value={filters.stage}
-      onChange={(value) => set("stage", value)}
-      options={PIPELINE_STAGES.map((s) => s.id)}
-    />
-
-    <FilterSelect
-      label="Experience"
-      value={filters.experience}
-      onChange={(value) => set("experience", value)}
-      options={["0-2 years", "3-5 years", "6+ years"]}
-    />
-
-    <FilterSelect
-      label="Priority"
-      value={filters.priority}
-      onChange={(value) => set("priority", value)}
-      options={priorities}
-    />
-
-    <Button
-      type="button"
-      variant="outline"
-      onClick={onSaveFilter}
-      className="w-full"
-    >
-      Save Filter
-    </Button>
-
-  </div>
-
-  {savedFilters.length > 0 && (
-    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-      <span>Saved:</span>
-      {savedFilters.map((saved, index) => (
-        <button
-          key={`${saved.label}-${index}`}
-          type="button"
-          onClick={() => onApplySavedFilter(saved.filters)}
-          className="rounded-full border border-white/10 px-3 py-1 transition-colors hover:bg-muted cursor-pointer"
-        >
-          {saved.label}
-        </button>
-      ))}
-    </div>
-  )}
-</section>
+   <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
+     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+       <div className="relative">
+         <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+         <Input
+           value={filters.search}
+           onChange={(e) => set("search", e.target.value)}
+           placeholder="Search candidate, role..."
+           className="pl-9 h-9 w-full"
+         />
+       </div>
+       <FilterSelect label="Recruiter" value={filters.recruiter} onChange={(v) => set("recruiter", v)} options={options.recruiters} />
+       <FilterSelect label="Department" value={filters.department} onChange={(v) => set("department", v)} options={options.departments} />
+       <FilterSelect label="Role" value={filters.role} onChange={(v) => set("role", v)} options={options.roles} />
+     </div>
+     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+       <FilterSelect label="Stage" value={filters.stage} onChange={(v) => set("stage", v)} options={PIPELINE_STAGES.map(s => s.id)} />
+       <FilterSelect label="Experience" value={filters.experience} onChange={(v) => set("experience", v)} options={["0-2 years", "3-5 years", "6+ years"]} />
+       <FilterSelect label="Priority" value={filters.priority} onChange={(v) => set("priority", v)} options={priorities} />
+       <Button type="button" variant="outline" onClick={onSaveFilter} className="h-9 w-full">Save Filter</Button>
+     </div>
+     {savedFilters.length > 0 && (
+       <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-3 border-t border-border">
+         <span>Saved:</span>
+         {savedFilters.map((saved, index) => (
+           <button key={index} type="button" onClick={() => onApplySavedFilter(saved.filters)} className="rounded-full border border-border px-3 py-1 transition-colors hover:bg-muted cursor-pointer">
+             {saved.label}
+           </button>
+         ))}
+       </div>
+     )}
+   </section>
   )
 }
 
 function FilterSelect({ label, value, onChange, options = [] }) {
   return (
-    <label className="relative min-w-[142px]">
+    <label className="relative block">
       <span className="sr-only">{label}</span>
-
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="appearance-none h-9 w-full rounded-md border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-[3px] focus:ring-ring/50 cursor-pointer"
       >
         <option value="All">{label}</option>
-
         {options.map((option) => (
           <option key={option} value={option}>
             {option}
           </option>
         ))}
       </select>
-
       <ChevronDown className="pointer-events-none absolute right-2 top-2.5 h-4 w-4 text-muted-foreground" />
     </label>
   );
@@ -489,7 +449,76 @@ export function CandidateTimeline({ candidate }) {
   )
 }
 
-export function CandidateDrawer({ candidate, open, onClose, uploadBaseUrl }) {
+export function CandidateDrawer({ candidate, open, onClose, uploadBaseUrl, onRefresh }) {
+  // Local state for Evaluation Form
+  const [evaluationForm, setEvaluationForm] = useState({
+    round: "Interview Round 1",
+    rating: 5,
+    feedback: "",
+    recommendation: "Recommended"
+  });
+  const [evaluating, setEvaluating] = useState(false);
+
+  // Local state for BGV updates
+  const bgv = candidate?.backgroundVerification || {};
+  const [bgvChecks, setBgvChecks] = useState({
+    identity: bgv.checks?.identity || "Pending",
+    education: bgv.checks?.education || "Pending",
+    employment: bgv.checks?.employment || "Pending",
+    criminal: bgv.checks?.criminal || "Pending",
+  });
+  const [bgvNotes, setBgvNotes] = useState(bgv.notes || "");
+  const [bgvStatus, setBgvStatus] = useState(bgv.status || "Pending");
+  const [savingBgv, setSavingBgv] = useState(false);
+
+  // Sync state when candidate changes
+  React.useEffect(() => {
+    if (candidate) {
+      const freshBgv = candidate.backgroundVerification || {};
+      setBgvChecks({
+        identity: freshBgv.checks?.identity || "Pending",
+        education: freshBgv.checks?.education || "Pending",
+        employment: freshBgv.checks?.employment || "Pending",
+        criminal: freshBgv.checks?.criminal || "Pending",
+      });
+      setBgvNotes(freshBgv.notes || "");
+      setBgvStatus(freshBgv.status || "Pending");
+    }
+  }, [candidate]);
+
+  const handleEvaluationSubmit = async (e) => {
+    e.preventDefault();
+    setEvaluating(true);
+    try {
+      await apiClient.post(`/applications/${candidate._id}/evaluate`, evaluationForm);
+      toast.success("Interview evaluation scorecard submitted successfully");
+      setEvaluationForm({ round: "Interview Round 1", rating: 5, feedback: "", recommendation: "Recommended" });
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to submit evaluation");
+    } finally {
+      setEvaluating(false);
+    }
+  };
+
+  const handleBgvSubmit = async (e) => {
+    e.preventDefault();
+    setSavingBgv(true);
+    try {
+      await apiClient.put(`/applications/${candidate._id}/bgv`, {
+        checks: bgvChecks,
+        notes: bgvNotes,
+        status: bgvStatus
+      });
+      toast.success("Background verification checks updated successfully");
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to update BGV details");
+    } finally {
+      setSavingBgv(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {open && candidate && (
@@ -597,6 +626,181 @@ export function CandidateDrawer({ candidate, open, onClose, uploadBaseUrl }) {
                   <p className="text-sm text-muted-foreground">No material resume risks detected.</p>
                 )}
               </DrawerSection>
+
+              <DrawerSection title="Interview Evaluations" icon={NotebookPen}>
+                <div className="space-y-4">
+                  {candidate.interviewEvaluations && candidate.interviewEvaluations.length > 0 ? (
+                    <div className="space-y-3">
+                      {candidate.interviewEvaluations.map((evalItem, idx) => (
+                        <div key={idx} className="rounded-lg border border-white/5 bg-muted/20 p-3 text-sm space-y-1">
+                          <div className="flex justify-between font-semibold">
+                            <span>{evalItem.round}</span>
+                            <span className="text-primary">{evalItem.rating}/5 ⭐</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Evaluated by {evalItem.interviewerName} on {new Date(evalItem.evaluatedAt).toLocaleDateString()}
+                          </div>
+                          <div className="mt-1 text-xs italic text-foreground">
+                            "{evalItem.feedback || "No feedback comments."}"
+                          </div>
+                          <div className="mt-1">
+                            <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold border", 
+                              evalItem.recommendation === "Recommended" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" :
+                              evalItem.recommendation === "Borderline" ? "border-amber-500/30 bg-amber-500/10 text-amber-300" :
+                              "border-rose-500/30 bg-rose-500/10 text-rose-300"
+                            )}>
+                              {evalItem.recommendation}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No interview evaluations logged yet.</p>
+                  )}
+
+                  <form onSubmit={handleEvaluationSubmit} className="mt-4 pt-4 border-t border-white/5 space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Submit Evaluation</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-muted-foreground uppercase">Round</label>
+                        <select 
+                          value={evaluationForm.round}
+                          onChange={(e) => setEvaluationForm({ ...evaluationForm, round: e.target.value })}
+                          className="w-full rounded-md border border-white/10 bg-background px-2 py-1 text-xs text-foreground outline-none"
+                        >
+                          <option value="Interview Round 1">Technical Round 1</option>
+                          <option value="Interview Round 2">Technical Round 2</option>
+                          <option value="Hiring Manager Review">Hiring Manager Review</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-muted-foreground uppercase">Recommendation</label>
+                        <select 
+                          value={evaluationForm.recommendation}
+                          onChange={(e) => setEvaluationForm({ ...evaluationForm, recommendation: e.target.value })}
+                          className="w-full rounded-md border border-white/10 bg-background px-2 py-1 text-xs text-foreground outline-none"
+                        >
+                          <option value="Recommended">Recommended</option>
+                          <option value="Borderline">Borderline</option>
+                          <option value="Not Recommended">Not Recommended</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-muted-foreground uppercase">Rating (1-5)</label>
+                        <select 
+                          value={evaluationForm.rating}
+                          onChange={(e) => setEvaluationForm({ ...evaluationForm, rating: Number(e.target.value) })}
+                          className="w-full rounded-md border border-white/10 bg-background px-2 py-1 text-xs text-foreground outline-none"
+                        >
+                          {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} ⭐</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-muted-foreground uppercase">Feedback Notes</label>
+                      <textarea
+                        value={evaluationForm.feedback}
+                        onChange={(e) => setEvaluationForm({ ...evaluationForm, feedback: e.target.value })}
+                        placeholder="Enter feedback comments..."
+                        rows={2}
+                        className="w-full rounded-md border border-white/10 bg-background p-2 text-xs text-foreground outline-none resize-none"
+                      />
+                    </div>
+                    <Button type="submit" size="sm" className="w-full" disabled={evaluating}>
+                      {evaluating ? "Submitting..." : "Log Evaluation Scorecard"}
+                    </Button>
+                  </form>
+                </div>
+              </DrawerSection>
+
+              {candidate.stage === "Background Verification" && (
+                <DrawerSection title="Background Verification Checks" icon={BadgeCheck}>
+                  <form onSubmit={handleBgvSubmit} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-muted-foreground uppercase font-medium">Identity Check</label>
+                        <select
+                          value={bgvChecks.identity}
+                          onChange={(e) => setBgvChecks({ ...bgvChecks, identity: e.target.value })}
+                          className="w-full rounded-md border border-white/10 bg-background px-2 py-1 text-xs text-foreground outline-none"
+                        >
+                          <option value="Pending">🕒 Pending</option>
+                          <option value="Passed">✅ Passed</option>
+                          <option value="Failed">❌ Failed</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-muted-foreground uppercase font-medium">Education Check</label>
+                        <select
+                          value={bgvChecks.education}
+                          onChange={(e) => setBgvChecks({ ...bgvChecks, education: e.target.value })}
+                          className="w-full rounded-md border border-white/10 bg-background px-2 py-1 text-xs text-foreground outline-none"
+                        >
+                          <option value="Pending">🕒 Pending</option>
+                          <option value="Passed">✅ Passed</option>
+                          <option value="Failed">❌ Failed</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-muted-foreground uppercase font-medium">Employment Check</label>
+                        <select
+                          value={bgvChecks.employment}
+                          onChange={(e) => setBgvChecks({ ...bgvChecks, employment: e.target.value })}
+                          className="w-full rounded-md border border-white/10 bg-background px-2 py-1 text-xs text-foreground outline-none"
+                        >
+                          <option value="Pending">🕒 Pending</option>
+                          <option value="Passed">✅ Passed</option>
+                          <option value="Failed">❌ Failed</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-muted-foreground uppercase font-medium">Criminal Check</label>
+                        <select
+                          value={bgvChecks.criminal}
+                          onChange={(e) => setBgvChecks({ ...bgvChecks, criminal: e.target.value })}
+                          className="w-full rounded-md border border-white/10 bg-background px-2 py-1 text-xs text-foreground outline-none"
+                        >
+                          <option value="Pending">🕒 Pending</option>
+                          <option value="Passed">✅ Passed</option>
+                          <option value="Failed">❌ Failed</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-muted-foreground uppercase font-medium">Overall BGV Status Override</label>
+                      <select
+                        value={bgvStatus}
+                        onChange={(e) => setBgvStatus(e.target.value)}
+                        className="w-full rounded-md border border-white/10 bg-background px-2 py-1.5 text-xs text-foreground font-semibold outline-none"
+                      >
+                        <option value="Pending">Pending Checks</option>
+                        <option value="In Progress">Checks in Progress</option>
+                        <option value="Passed">Approved (Verification Passed)</option>
+                        <option value="Failed">Rejected (Verification Failed)</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-muted-foreground uppercase font-medium">BGV Audit Notes</label>
+                      <textarea
+                        value={bgvNotes}
+                        onChange={(e) => setBgvNotes(e.target.value)}
+                        placeholder="Log checklist audit details..."
+                        rows={2}
+                        className="w-full rounded-md border border-white/10 bg-background p-2 text-xs text-foreground outline-none resize-none"
+                      />
+                    </div>
+
+                    <Button type="submit" size="sm" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold" disabled={savingBgv}>
+                      {savingBgv ? "Saving..." : "Update BGV Checklist"}
+                    </Button>
+                  </form>
+                </DrawerSection>
+              )}
 
               <DrawerSection title="Interview Timeline" icon={Clock3}>
                 <CandidateTimeline candidate={candidate} />
@@ -748,7 +952,7 @@ export function CandidateCard({ candidate, onOpen, canDrag = true, dragging = fa
       </button>
 
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/5 pt-3">
-        <span className="text-xs text-muted-foreground">{candidate.interviewDate ? `Interview ${candidate.interviewDate}` : `${candidate.priority} priority`}</span>
+        <span className="text-xs text-muted-foreground flex items-center gap-1">{candidate.interviewDate ? `Interview ${candidate.interviewDate}` : <><PriorityDot priority={candidate.priority} className="w-auto" /> Priority</>}</span>
         <button
           type="button"
           className="text-xs font-medium text-primary outline-none hover:underline focus:ring-2 focus:ring-ring cursor-pointer"
@@ -779,23 +983,23 @@ export function CandidateCard({ candidate, onOpen, canDrag = true, dragging = fa
   )
 }
 
-export function PipelineColumn({ stage, candidates, total, onOpen, activeStage, canWrite }) {
+export function PipelineColumn({ stage, candidates, onOpen, activeStage, canWrite }) {
   const { setNodeRef, isOver } = useDroppable({
     id: stage.id,
     data: { type: "stage", stage },
   })
-  const conversion = total ? Math.round((candidates.length / total) * 100) : 0
+  
 
   return (
     <section
       ref={setNodeRef}
       className={cn(
-        "flex max-h-[calc(100vh-310px)] min-h-[520px] w-[320px] shrink-0 flex-col rounded-lg border border-white/10 bg-card/70 transition-colors",
+        "flex max-h-[calc(100vh-310px)] min-h-[520px] w-[320px] shrink-0 flex-col rounded-lg border border-border bg-card/50 transition-colors",
         (isOver || activeStage === stage.id) && "border-primary/50 bg-primary/5"
       )}
       aria-label={`${stage.label} stage`}
     >
-      <header className="sticky top-0 z-10 rounded-t-lg border-b border-white/10 bg-card/95 p-3 backdrop-blur">
+      <header className="sticky top-0 z-10 rounded-t-lg border-b border-border bg-card/95 p-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className={cn("h-2.5 w-2.5 rounded-full", stage.color)} />
@@ -803,12 +1007,7 @@ export function PipelineColumn({ stage, candidates, total, onOpen, activeStage, 
           </div>
           <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold">{candidates.length}</span>
         </div>
-        <div className="mt-3 flex items-center gap-2">
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-            <div className={cn("h-full rounded-full", stage.color)} style={{ width: `${conversion}%` }} />
-          </div>
-          <span className="text-xs text-muted-foreground">{conversion}%</span>
-        </div>
+        
       </header>
       <SortableContext items={candidates.map((candidate) => candidate._id)} strategy={verticalListSortingStrategy}>
         <div className="custom-scrollbar flex-1 space-y-3 overflow-y-auto p-3">
@@ -897,7 +1096,6 @@ export function PipelineBoard({ candidates, onMoveCandidate, onOpenCandidate, ca
               key={stage.id}
               stage={stage}
               candidates={grouped[stage.id] || []}
-              total={candidates.length}
               onOpen={onOpenCandidate}
               activeStage={activeStage}
               canWrite={canWrite}
@@ -932,108 +1130,73 @@ function CandidateDragPreview({ candidate }) {
   )
 }
 
-export function PipelineAnalytics({ candidates }) {
+export function PipelineAnalytics({ candidates, activeStage = "All", onSelectStage }) {
   const total = candidates.length
   const hired = candidates.filter((candidate) => candidate.stage === "Hired").length
-  const interview = candidates.filter((candidate) => candidate.stage === "Interview").length
+  const interview = candidates.filter((candidate) => (candidate.stage || "").includes("Interview") || candidate.stage === "HR Screening").length
   const rejected = candidates.filter((candidate) => candidate.stage === "Rejected").length
-  const offer = candidates.filter((candidate) => candidate.stage === "Offer").length
+  const offer = candidates.filter((candidate) => (candidate.stage || "").includes("Offer")).length
   const conversion = total ? Math.round(((hired + offer) / total) * 100) : 0
   const interviewSuccess = interview + offer + hired ? Math.round(((offer + hired) / (interview + offer + hired)) * 100) : 0
   const dropOff = total ? Math.round((rejected / total) * 100) : 0
 
-  const metrics = React.useMemo(() => {
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-    const dayMs = 1000 * 60 * 60 * 24
-
-    const isThisMonth = (d) => d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-    const isLastMonth = (d) => {
-      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-      return d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear()
-    }
-
-    let cmTotal = 0, lmTotal = 0
-    let cmSuccess = 0, lmSuccess = 0
-    let cmRejects = 0, lmRejects = 0
-    let cmInterviews = 0, lmInterviews = 0
-
-    const last7Days = Array.from({ length: 7 }, (_, i) => today - (6 - i) * dayMs)
-    const charts = { total: [0,0,0,0,0,0,0], conv: [0,0,0,0,0,0,0], drop: [0,0,0,0,0,0,0], vel: [0,0,0,0,0,0,0], int: [0,0,0,0,0,0,0], age: [0,0,0,0,0,0,0] }
-    const ageCounts = [0,0,0,0,0,0,0]
-
-    candidates.forEach(c => {
-      const created = new Date(c.createdAt || Date.now())
-      const updated = new Date(c.updatedAt || c.createdAt || Date.now())
-      const createdTime = new Date(created.getFullYear(), created.getMonth(), created.getDate()).getTime()
-      const updatedTime = new Date(updated.getFullYear(), updated.getMonth(), updated.getDate()).getTime()
-
-      if (isThisMonth(created)) cmTotal++
-      if (isLastMonth(created)) lmTotal++
-
-      const isWin = c.stage === "Hired" || c.stage === "Offer"
-      if (isWin) {
-        if (isThisMonth(updated)) cmSuccess++
-        if (isLastMonth(updated)) lmSuccess++
-      }
-      if (c.stage === "Rejected") {
-        if (isThisMonth(updated)) cmRejects++
-        if (isLastMonth(updated)) lmRejects++
-      }
-      if (c.stage === "Interview") {
-        if (isThisMonth(updated)) cmInterviews++
-        if (isLastMonth(updated)) lmInterviews++
-      }
-
-      last7Days.forEach((day, i) => {
-        if (createdTime === day) charts.total[i]++
-        if (updatedTime === day) {
-          if (isWin) { charts.conv[i]++; charts.vel[i]++ }
-          if (c.stage === "Rejected") charts.drop[i]++
-          if (c.stage === "Interview") charts.int[i]++
-        }
-        if (createdTime <= day) {
-          charts.age[i] += Math.floor((day - createdTime) / dayMs)
-          ageCounts[i]++
-        }
-      })
-    })
-
-    const calcTrend = (curr, prev) => prev ? Math.round(((curr - prev) / prev) * 100) : curr ? 100 : 0
-    const totalTrend = calcTrend(cmTotal, lmTotal)
-    const velocityTrend = calcTrend(cmSuccess, lmSuccess)
-    
-    const convTrend = Math.round((cmTotal ? cmSuccess/cmTotal : 0) * 100) - Math.round((lmTotal ? lmSuccess/lmTotal : 0) * 100)
-    const dropTrend = Math.round((cmTotal ? cmRejects/cmTotal : 0) * 100) - Math.round((lmTotal ? lmRejects/lmTotal : 0) * 100)
-    
-    const currIntSucc = cmInterviews + cmSuccess ? cmSuccess / (cmInterviews + cmSuccess) : 0
-    const lastIntSucc = lmInterviews + lmSuccess ? lmSuccess / (lmInterviews + lmSuccess) : 0
-    const intSuccessTrend = Math.round((currIntSucc - lastIntSucc) * 100)
-
-    charts.age = charts.age.map((sum, i) => ageCounts[i] ? Math.round(sum / ageCounts[i]) : 0)
-
-    return { totalTrend, velocityTrend, convTrend, dropTrend, intSuccessTrend, charts }
-  }, [candidates])
-
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-        <RecruitmentKpiCard title="Total Candidates" value={total} icon={Users} trend={metrics.totalTrend} chartData={metrics.charts.total} helper="Visible pipeline volume" accent="sky" />
-        <RecruitmentKpiCard title="Conversion Rate" value={`${conversion}%`} icon={BadgeCheck} trend={metrics.convTrend} chartData={metrics.charts.conv} helper="Offer and hire movement" accent="emerald" />
-        <RecruitmentKpiCard title="Avg Stage Age" value={`${averageStageAge(candidates)}d`} icon={Clock3} trend={0} chartData={metrics.charts.age} helper="Average time since application" accent="cyan" />
-        <RecruitmentKpiCard title="Stage Drop-off" value={`${dropOff}%`} icon={TrendingDown} trend={metrics.dropTrend} chartData={metrics.charts.drop} helper="Rejected share" accent="rose" />
-        <RecruitmentKpiCard title="Hiring Velocity" value={`${hired + offer}`} icon={TrendingUp} trend={metrics.velocityTrend} chartData={metrics.charts.vel} helper="Offer and hired candidates" accent="violet" />
-        <RecruitmentKpiCard title="Interview Success" value={`${interviewSuccess}%`} icon={Sparkles} trend={metrics.intSuccessTrend} chartData={metrics.charts.int} helper="Interview to offer/hire" accent="amber" />
-      </div>
-      <div className="custom-scrollbar flex gap-3 overflow-x-auto pb-1">
-        {PIPELINE_STAGES.map((stage) => (
-          <StageAnalyticsCard
-            key={stage.id}
-            stage={stage}
-            count={candidates.filter((candidate) => candidate.stage === stage.id).length}
-            total={total}
-          />
-        ))}
+        <RecruitmentKpiCard
+          title="Total Candidates"
+          value={total}
+          icon={Users}
+          helper="Click to view all"
+          accent="sky"
+          active={activeStage === "All"}
+          onClick={() => onSelectStage?.("All")}
+        />
+        <RecruitmentKpiCard
+          title="Conversion Rate"
+          value={`${conversion}%`}
+          icon={BadgeCheck}
+          helper="Click to view Hired"
+          accent="emerald"
+          active={activeStage === "Hired"}
+          onClick={() => onSelectStage?.("Hired")}
+        />
+        <RecruitmentKpiCard
+          title="Avg Stage Age"
+          value={`${averageStageAge(candidates)}d`}
+          icon={Clock3}
+          helper="Click to view Applied"
+          accent="cyan"
+          active={activeStage === "Applied"}
+          onClick={() => onSelectStage?.("Applied")}
+        />
+        <RecruitmentKpiCard
+          title="Stage Drop-off"
+          value={`${dropOff}%`}
+          icon={TrendingDown}
+          helper="Click to view Rejected"
+          accent="rose"
+          active={activeStage === "Rejected"}
+          onClick={() => onSelectStage?.("Rejected")}
+        />
+        <RecruitmentKpiCard
+          title="Hiring Velocity"
+          value={`${hired + offer}`}
+          icon={TrendingUp}
+          helper="Click to view Offer Sent"
+          accent="violet"
+          active={activeStage === "Offer Sent"}
+          onClick={() => onSelectStage?.("Offer Sent")}
+        />
+        <RecruitmentKpiCard
+          title="Interview Success"
+          value={`${interviewSuccess}%`}
+          icon={Sparkles}
+          helper="Click to view Rd 1"
+          accent="amber"
+          active={activeStage === "Interview Round 1"}
+          onClick={() => onSelectStage?.("Interview Round 1")}
+        />
       </div>
     </div>
   )

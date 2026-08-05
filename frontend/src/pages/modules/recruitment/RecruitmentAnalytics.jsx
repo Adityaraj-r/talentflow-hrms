@@ -161,7 +161,7 @@ const RecruitmentAnalytics = () => {
   };
 
   return (
-    <div id="report-container" className="min-h-screen space-y-6 bg-slate-50 dark:bg-slate-950 p-4 text-slate-900 dark:text-slate-100 md:p-6">
+    <div id="report-container" className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-700 dark:text-cyan-200">

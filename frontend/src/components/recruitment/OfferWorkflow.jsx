@@ -1,4 +1,6 @@
 import * as React from "react"
+import { useNavigate } from "react-router-dom"
+import apiClient from "@/services/apiClient"
 import { AnimatePresence } from "framer-motion"
 import * as Motion from "framer-motion"
 import {
@@ -146,7 +148,7 @@ function calculateResponseDays(offer) {
 }
 
 const formatMoney = (amount = 0) =>
-  `INR ${Number(amount || 0).toLocaleString("en-IN")}`
+  `₹${Number(amount || 0).toLocaleString("en-IN")}`
 
 export function OfferStatusBadge({ status, className }) {
   const canonical = canonicalOfferStatus(status)
@@ -180,9 +182,9 @@ export function OfferAnalyticsCard(props) {
   return <RecruitmentKpiCard {...props} />
 }
 
-export function OfferDashboardAnalytics({ offers }) {
+export function OfferDashboardAnalytics({ offers, activeStatus = "All", onSelectStatus }) {
   const total = offers.length
-  const pending = offers.filter((offer) => offer.status === "Pending CEO Approval" || offer.status === "Pending HR Manager Approval").length
+  const pending = offers.filter((offer) => offer.status === "Pending CEO Approval" || offer.status === "Pending HR Manager Approval" || (offer.status || "").includes("Pending")).length
   const accepted = offers.filter((offer) => offer.status === "Accepted").length
   const declined = offers.filter((offer) => offer.status === "Declined").length
   const acceptance = total ? Math.round((accepted / total) * 100) : 0
@@ -194,13 +196,66 @@ export function OfferDashboardAnalytics({ offers }) {
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      <OfferAnalyticsCard title="Total Offers" value={total} icon={FileSignature} trend={11} helper="All active offer records" accent="sky" />
-      <OfferAnalyticsCard title="Pending Approvals" value={pending} icon={Clock3} trend={4} helper="Waiting approval action" accent="amber" />
-      <OfferAnalyticsCard title="Accepted Offers" value={accepted} icon={CheckCircle2} trend={18} helper="Confirmed candidates" accent="emerald" />
-      <OfferAnalyticsCard title="Declined Offers" value={declined} icon={XCircle} trend={-3} helper="Closed as declined" accent="rose" />
-      <OfferAnalyticsCard title="Acceptance Rate" value={`${acceptance}%`} icon={TrendingUp} trend={7} helper="Accepted / total offers" accent="violet" />
-      <OfferAnalyticsCard title="Avg Salary" value={avgSalary ? formatMoney(avgSalary) : "INR 0"} icon={CircleDollarSign} trend={9} helper="Average offer package" accent="cyan" />
-      <OfferAnalyticsCard title="Expiry Alerts" value={expiryAlerts} icon={CalendarClock} trend={-2} helper="Due within 3 days" accent="amber" />
+      <OfferAnalyticsCard
+        title="Total Offers"
+        value={total}
+        icon={FileSignature}
+        trend={11}
+        helper="Click to view all"
+        accent="sky"
+        active={activeStatus === "All" || !activeStatus}
+        onClick={() => onSelectStatus?.("All")}
+      />
+      <OfferAnalyticsCard
+        title="Pending Approvals"
+        value={pending}
+        icon={Clock3}
+        trend={4}
+        helper="Click to view pending"
+        accent="amber"
+        active={activeStatus === "Pending"}
+        onClick={() => onSelectStatus?.("Pending")}
+      />
+      <OfferAnalyticsCard
+        title="Accepted Offers"
+        value={accepted}
+        icon={CheckCircle2}
+        trend={18}
+        helper="Click to view accepted"
+        accent="emerald"
+        active={activeStatus === "Accepted"}
+        onClick={() => onSelectStatus?.("Accepted")}
+      />
+      <OfferAnalyticsCard
+        title="Declined Offers"
+        value={declined}
+        icon={XCircle}
+        trend={-3}
+        helper="Click to view declined"
+        accent="rose"
+        active={activeStatus === "Declined"}
+        onClick={() => onSelectStatus?.("Declined")}
+      />
+      <OfferAnalyticsCard
+        title="Acceptance Rate"
+        value={`${acceptance}%`}
+        icon={TrendingUp}
+        trend={7}
+        helper="Click to view accepted"
+        accent="violet"
+        active={activeStatus === "Accepted"}
+        onClick={() => onSelectStatus?.("Accepted")}
+      />
+      <OfferAnalyticsCard
+        title="Expiry Alerts"
+        value={expiryAlerts}
+        icon={CalendarClock}
+        trend={-2}
+        helper="Click to view offered"
+        accent="amber"
+        active={activeStatus === "Offered"}
+        onClick={() => onSelectStatus?.("Offered")}
+      />
     </div>
   )
 }
@@ -438,89 +493,51 @@ export function OfferInsightsPanel({ offers }) {
   )
 }
 
-export function OfferFilters({ filters, onChange, options, onSave, savedFilters, onApply }) {
+export function OfferFilters({ filters, onChange, options }) {
   const set = (key, value) => onChange({ ...filters, [key]: value })
 
   return (
     <section className="rounded-lg border border-white/10 bg-card/80 p-4">
-  <div className="grid gap-3 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Search */}
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={filters.search || ""}
+            onChange={(e) => set("search", e.target.value)}
+            placeholder="Search candidate, offer ID..."
+            className="pl-9"
+          />
+        </div>
 
-    {/* Search */}
-    <div className="relative">
-      <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-      <Input
-        value={filters.search}
-        onChange={(e) => set("search", e.target.value)}
-        placeholder="Search offer, candidate, recruiter..."
-        className="pl-9"
-      />
-    </div>
+        {/* Department Filter */}
+        <FilterSelect
+          label="Department"
+          value={filters.department || "All"}
+          onChange={(value) => set("department", value)}
+          options={options.departments || []}
+        />
 
-    <FilterSelect
-      label="Status"
-      value={filters.status}
-      onChange={(value) => set("status", value)}
-      options={["Offered", "Accepted", "Declined", "Pending HR Manager Approval", "Pending CEO Approval"]}
-    />
+        {/* Position Filter */}
+        <FilterSelect
+          label="Position"
+          value={filters.position || "All"}
+          onChange={(value) => set("position", value)}
+          options={options.positions || []}
+        />
 
-    <FilterSelect
-      label="Department"
-      value={filters.department}
-      onChange={(value) => set("department", value)}
-      options={options.departments}
-    />
-
-    <FilterSelect
-      label="Recruiter"
-      value={filters.recruiter}
-      onChange={(value) => set("recruiter", value)}
-      options={options.recruiters}
-    />
-
-    <FilterSelect
-      label="Approval"
-      value={filters.approvalStage}
-      onChange={(value) => set("approvalStage", value)}
-      options={["Released", "HR Manager Approval", "Completed"]}
-    />
-
-    <FilterSelect
-      label="Salary"
-      value={filters.salaryRange}
-      onChange={(value) => set("salaryRange", value)}
-      options={["Below 100k", "100k-250k", "250k+"]}
-    />
-
-    <FilterSelect
-      label="Expiry"
-      value={filters.expiry}
-      onChange={(value) => set("expiry", value)}
-      options={["Due soon", "Expired", "Healthy"]}
-    />
-
-    <Button variant="outline" onClick={onSave} className="w-full">
-      <Filter className="mr-2 h-4 w-4" />
-      Save
-    </Button>
-
-  </div>
-
-  {savedFilters.length > 0 && (
-    <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-      <span className="py-1">Saved:</span>
-      {savedFilters.map((saved, index) => (
-        <button
-          key={`${saved.label}-${index}`}
-          type="button"
-          onClick={() => onApply(saved.filters)}
-          className="rounded-full border border-white/10 px-3 py-1 hover:bg-muted"
-        >
-          {saved.label}
-        </button>
-      ))}
-    </div>
-  )}
-</section>
+        {/* Joining Date Filter */}
+        <div className="relative">
+          <Input
+            type="date"
+            value={filters.joiningDate || ""}
+            onChange={(e) => set("joiningDate", e.target.value)}
+            className="w-full text-xs"
+            placeholder="Joining Date"
+          />
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -633,11 +650,13 @@ function ChartCard({ title, children }) {
 }
 
 export function OfferTable({ offers, sort, onSort, page, pageSize, onPageChange, onView, onAction, canWrite, isCeo, canApproveOffers = false }) {
+  const navigate = useNavigate()
   const pages = Math.max(1, Math.ceil(offers.length / pageSize))
   const visible = offers.slice((page - 1) * pageSize, page * pageSize)
   const columns = [
     ["offerId", "Offer ID"],
     ["candidateName", "Candidate"],
+    ["jobCode", "Job ID"],
     ["position", "Position"],
     ["department", "Department"],
     ["salary", "Salary Package"],
@@ -670,7 +689,6 @@ export function OfferTable({ offers, sort, onSort, page, pageSize, onPageChange,
                   {key === "actions" ? label : (
                     <button type="button" onClick={() => onSort(key)} className="inline-flex items-center gap-1 hover:text-foreground">
                       {label}
-                      <MoreHorizontal className={cn("h-3 w-3", sort.key === key && "text-primary")} />
                     </button>
                   )}
                 </th>
@@ -684,39 +702,55 @@ export function OfferTable({ offers, sort, onSort, page, pageSize, onPageChange,
                   <RecruitmentEmptyState title="No offers match this view" description="Adjust filters or create a new offer to continue the workflow." />
                 </td>
               </tr>
-            ) : visible.map((offer) => (
-              <Motion.motion.tr key={offer._id || offer.offerId} whileHover={{ backgroundColor: "rgb(255 255 255 / 0.035)" }} className="odd:bg-white/[0.015]">
-                <td className="px-4 py-4 font-mono text-xs text-muted-foreground">{offer.offerId}</td>
-                <td className="px-4 py-4">
-                  <div className="flex items-center gap-3">
-                    <CandidateAvatar name={offer.candidateName} />
-                    <span className="font-medium">{offer.candidateName}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-4 text-muted-foreground">{offer.position}</td>
-                <td className="px-4 py-4 text-muted-foreground">{offer.department}</td>
-                <td className="px-4 py-4 font-medium">{formatMoney(offer.salary)}</td>
-                <td className="px-4 py-4 text-muted-foreground">{offer.joiningDate}</td>
-                <td className="px-4 py-4"><OfferStatusBadge status={offer.status} /></td>
-                <td className="px-4 py-4"><RecruitmentStatusBadge status={offer.approvalStage} /></td>
-                <td className="px-4 py-4 text-muted-foreground">{offer.recruiter}</td>
-                <td className="px-4 py-4 text-muted-foreground">{new Date(offer.lastUpdated).toLocaleDateString()}</td>
-                <td className="px-4 py-4">
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" variant="outline" onClick={() => onView(offer)}>
-                      <Eye className="mr-1 h-3.5 w-3.5" />
-                      View
-                    </Button>
+            ) : visible.map((offer) => {
+              const candidateIdVal = offer.candidateId?._id || offer.candidateId
+              return (
+                <Motion.motion.tr key={offer._id || offer.offerId} whileHover={{ backgroundColor: "rgb(255 255 255 / 0.035)" }} className="odd:bg-white/[0.015]">
+                  <td className="px-4 py-4 font-mono text-xs text-muted-foreground">{offer.offerId}</td>
+                  <td className="px-4 py-4">
+                    <span 
+                      onClick={(e) => {
+                        if (candidateIdVal) {
+                          e.stopPropagation()
+                          navigate(`/dashboard/applications/${candidateIdVal}`)
+                        } else {
+                          onView(offer)
+                        }
+                      }}
+                      className={cn(
+                        "font-semibold transition-colors cursor-pointer",
+                        candidateIdVal ? "text-cyan-600 dark:text-cyan-400 hover:underline" : "text-foreground"
+                      )}
+                      title={candidateIdVal ? "Click to view candidate profile" : offer.candidateName}
+                    >
+                      {offer.candidateName}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 font-mono text-xs font-semibold text-cyan-600 dark:text-cyan-400 whitespace-nowrap">
+                    {offer.jobCode || offer.jobId?.jobCode || offer.candidateId?.jobId?.jobCode || (offer.jobId?._id ? `JOB-${offer.jobId._id.slice(-4)}` : "N/A")}
+                  </td>
+                  <td className="px-4 py-4 text-muted-foreground">{offer.position}</td>
+                  <td className="px-4 py-4 text-muted-foreground">{offer.department}</td>
+                  <td className="px-4 py-4 font-medium">{formatMoney(offer.salary)}</td>
+                  <td className="px-4 py-4 text-muted-foreground">{offer.joiningDate}</td>
+                  <td className="px-4 py-4"><OfferStatusBadge status={offer.status} /></td>
+                  <td className="px-4 py-4"><RecruitmentStatusBadge status={offer.approvalStage} /></td>
+                  <td className="px-4 py-4 text-muted-foreground">{offer.recruiter}</td>
+                  <td className="px-4 py-4 text-muted-foreground">{new Date(offer.lastUpdated).toLocaleDateString()}</td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={() => onView(offer)}>
+                        View
+                      </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 border border-white/10">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
+                        <Button size="sm" variant="ghost" className="h-8 px-2 border border-white/10 text-xs">
+                          More
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48 border-white/10 bg-slate-950 text-slate-100 shadow-xl">
                         <DropdownMenuItem onClick={() => onView(offer)} className="cursor-pointer hover:bg-white/10">
-                          <Eye className="mr-2 h-4 w-4" /> View Details
+                          View Details
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
                           if (offer.status === "Draft" || offer.status === "Under Review") {
@@ -725,32 +759,32 @@ export function OfferTable({ offers, sort, onSort, page, pageSize, onPageChange,
                             onAction("renegotiate", offer)
                           }
                         }} className="cursor-pointer hover:bg-white/10">
-                          <PenLine className="mr-2 h-4 w-4" /> Edit / Negotiate
+                          Edit / Negotiate
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onAction("preview-pdf", offer)} className="cursor-pointer hover:bg-white/10">
-                          <FileText className="mr-2 h-4 w-4" /> Preview PDF
+                          Preview PDF
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
                           onView(offer)
                           toast.info("Opening offer history in drawer...")
                         }} className="cursor-pointer hover:bg-white/10">
-                          <Clock3 className="mr-2 h-4 w-4" /> History
+                          History
                         </DropdownMenuItem>
 
                         {((isCeo || canApproveOffers) && (offer.status === "Pending CEO Approval" || offer.status === "Pending HR Manager Approval")) && (
                           <>
                             <DropdownMenuSeparator className="bg-white/10" />
                             <DropdownMenuItem onClick={() => onAction("approve", offer)} className="cursor-pointer hover:bg-white/10 text-emerald-400">
-                              <BadgeCheck className="mr-2 h-4 w-4" /> Release/Approve
+                              Release/Approve
                             </DropdownMenuItem>
                           </>
                         )}
 
-                        {(canApproveOffers && offer.status === "Offered") && (
+                        {canWrite && (
                           <>
                             <DropdownMenuSeparator className="bg-white/10" />
-                            <DropdownMenuItem onClick={() => onAction("send", offer)} className="cursor-pointer hover:bg-white/10 text-sky-400">
-                              <Send className="mr-2 h-4 w-4" /> Send Offer
+                            <DropdownMenuItem onClick={() => onAction("send", offer)} className="cursor-pointer hover:bg-white/10 text-sky-400 font-semibold">
+                              Send Offer
                             </DropdownMenuItem>
                           </>
                         )}
@@ -759,7 +793,7 @@ export function OfferTable({ offers, sort, onSort, page, pageSize, onPageChange,
                   </div>
                 </td>
               </Motion.motion.tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </div>
@@ -775,6 +809,57 @@ export function OfferTable({ offers, sort, onSort, page, pageSize, onPageChange,
 }
 
 export function OfferDetailsDrawer({ offer, open, onClose, onAction, isCeo, canWrite, canApproveOffers = false, onPreviewLetter }) {
+  const navigate = useNavigate()
+  const [isEditing, setIsEditing] = React.useState(false)
+  const [editForm, setEditForm] = React.useState({
+    salary: offer?.salary || 0,
+    joiningDate: offer?.joiningDate || "",
+    expiryDate: offer?.expiryDate ? new Date(offer.expiryDate).toISOString().split('T')[0] : "",
+    position: offer?.position || "",
+    department: offer?.department || "",
+    bonus: offer?.bonus || 0,
+  })
+  const [savingEdit, setSavingEdit] = React.useState(false)
+
+  React.useEffect(() => {
+    if (offer) {
+      setEditForm({
+        salary: offer.salary || 0,
+        joiningDate: offer.joiningDate || "",
+        expiryDate: offer.expiryDate ? new Date(offer.expiryDate).toISOString().split('T')[0] : "",
+        position: offer.position || "",
+        department: offer.department || "",
+        bonus: offer.bonus || 0,
+      })
+      setIsEditing(false)
+    }
+  }, [offer])
+
+  const candidateIdVal = offer?.candidateId?._id || offer?.candidateId
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault()
+    if (!offer?._id) return
+    try {
+      setSavingEdit(true)
+      await apiClient.put(`/offers/${offer._id}`, {
+        salary: Number(editForm.salary),
+        joiningDate: editForm.joiningDate,
+        expiryDate: editForm.expiryDate || undefined,
+        position: editForm.position,
+        department: editForm.department,
+        bonus: Number(editForm.bonus || 0),
+      })
+      toast.success("Offer package updated successfully!")
+      setIsEditing(false)
+      if (onAction) onAction("export")
+    } catch (err) {
+      toast.error(err?.response?.data?.error || "Failed to update offer package")
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
   return (
     <AnimatePresence>
       {open && offer && (
@@ -866,6 +951,22 @@ export function OfferDetailsDrawer({ offer, open, onClose, onAction, isCeo, canW
                     </p>
                   </div>
                 </div>
+                {candidateIdVal && (
+                  <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        onClose()
+                        navigate(`/dashboard/applications/${candidateIdVal}`)
+                      }}
+                      className="text-xs font-bold text-cyan-600 dark:text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10 cursor-pointer"
+                    >
+                      <UserRound className="mr-1.5 h-3.5 w-3.5" />
+                      View Full Candidate Profile
+                    </Button>
+                  </div>
+                )}
               </DrawerSection>
               <div className="grid grid-cols-2 gap-3">
                 <InfoTile icon={FileSignature} label="Offer ID" value={offer.offerId} />
@@ -873,6 +974,92 @@ export function OfferDetailsDrawer({ offer, open, onClose, onAction, isCeo, canW
                 <InfoTile icon={CalendarClock} label="Joining Date" value={offer.joiningDate} />
                 <InfoTile icon={UserRound} label="Recruiter" value={offer.recruiter} />
               </div>
+
+              {canWrite && (
+                <DrawerSection title="Edit Offer Package" icon={PenLine}>
+                  {!isEditing ? (
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">Modify salary package, joining date, expiry date, or position details.</p>
+                      <Button size="sm" variant="outline" onClick={() => setIsEditing(true)} className="text-xs font-bold cursor-pointer">
+                        <PenLine className="mr-1.5 h-3.5 w-3.5" /> Edit Package
+                      </Button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSaveEdit} className="space-y-3 pt-1">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] font-bold text-muted-foreground block mb-1">Salary Package (INR)</label>
+                          <Input
+                            type="number"
+                            value={editForm.salary}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, salary: e.target.value }))}
+                            className="h-8 text-xs bg-background"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-muted-foreground block mb-1">Joining Date</label>
+                          <Input
+                            type="date"
+                            value={editForm.joiningDate}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, joiningDate: e.target.value }))}
+                            className="h-8 text-xs bg-background"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] font-bold text-muted-foreground block mb-1">Offer Expiry Date</label>
+                          <Input
+                            type="date"
+                            value={editForm.expiryDate}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, expiryDate: e.target.value }))}
+                            className="h-8 text-xs bg-background"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-muted-foreground block mb-1">Bonus Package (INR)</label>
+                          <Input
+                            type="number"
+                            value={editForm.bonus}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, bonus: e.target.value }))}
+                            className="h-8 text-xs bg-background"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] font-bold text-muted-foreground block mb-1">Position Title</label>
+                          <Input
+                            type="text"
+                            value={editForm.position}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, position: e.target.value }))}
+                            className="h-8 text-xs bg-background"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-muted-foreground block mb-1">Department</label>
+                          <Input
+                            type="text"
+                            value={editForm.department}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, department: e.target.value }))}
+                            className="h-8 text-xs bg-background"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pt-1">
+                        <Button type="submit" disabled={savingEdit} size="sm" className="flex-1 text-xs font-bold bg-cyan-600 hover:bg-cyan-700 text-white cursor-pointer">
+                          {savingEdit ? "Saving..." : "Save Offer Changes"}
+                        </Button>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="text-xs cursor-pointer">
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </DrawerSection>
+              )}
 
               <DrawerSection title="Compensation Breakdown" icon={Banknote}>
                 <div className="grid gap-3 md:grid-cols-2">
@@ -937,8 +1124,8 @@ export function OfferDetailsDrawer({ offer, open, onClose, onAction, isCeo, canW
                   <Button variant="destructive" onClick={() => onAction("declined", offer)}>Decline</Button>
                 </>
               )}
-              {canApproveOffers && offer.status === "Offered" && (
-                <Button variant="outline" onClick={() => onAction("send", offer)}>
+              {canWrite && (
+                <Button variant="default" className="bg-sky-600 hover:bg-sky-700 text-white font-bold" onClick={() => onAction("send", offer)}>
                   {offer.emailStatus === 'Failed' ? (
                     <>
                       <RefreshCw className="mr-2 h-4 w-4" />

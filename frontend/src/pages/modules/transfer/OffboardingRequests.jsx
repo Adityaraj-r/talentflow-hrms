@@ -167,8 +167,8 @@ const OffboardingRequests = () => {
               <thead className="bg-muted/50 border-b">
                 <tr className="whitespace-nowrap">
                   <th className="px-4 py-3 font-medium">Employee</th>
-                  <th className="px-4 py-3 font-medium">Department</th>
-                  <th className="px-4 py-3 font-medium">Type</th>
+                  <th className="px-4 py-3 font-medium text-center">Department</th>
+                  <th className="px-4 py-3 font-medium text-center">Type</th>
                   <th className="px-4 py-3 font-medium">LWD (Proposed)</th>
                   <th className="px-4 py-3 font-medium text-center">Status</th>
                   <th className="px-4 py-3 font-medium text-center">Actions</th>
@@ -200,12 +200,18 @@ const OffboardingRequests = () => {
                           <p className="font-semibold text-sm">{req.employeeName}</p>
                           <p className="text-xs text-muted-foreground">{req.employeeId}</p>
                         </td>
-                        <td className="px-4 py-3">
-                          <p className="text-sm">{req.department}</p>
-                          <p className="text-xs text-muted-foreground truncate max-w-[150px]">{req.designation}</p>
+                        <td className="px-4 py-3 text-center">
+                          <p className="text-sm font-medium mx-auto">{req.department}</p>
+                          <p className="text-xs text-muted-foreground truncate max-w-[150px] mx-auto">{req.designation}</p>
                         </td>
-                        <td className="px-4 py-3">
-                          <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-md text-[11px] font-medium border">
+                        <td className="px-4 py-3 text-center">
+                          <span className={cn(
+                            "px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase border shadow-sm whitespace-nowrap",
+                            req.type?.toLowerCase().includes("resignation") ? "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/40 dark:text-orange-400 dark:border-orange-800" :
+                            req.type?.toLowerCase().includes("termination") ? "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/40 dark:text-red-400 dark:border-red-800" :
+                            req.type?.toLowerCase().includes("absconding") ? "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/40 dark:text-purple-400 dark:border-purple-800" :
+                            "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/40 dark:text-blue-400 dark:border-blue-800"
+                          )}>
                             {req.type}
                           </span>
                         </td>

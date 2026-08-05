@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import StatsCard from "@/components/dashboard/StatsCard";
 const ManagerDashboard = ({ stats = {}, isLoading = false }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("team");
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -76,7 +77,7 @@ const ManagerDashboard = ({ stats = {}, isLoading = false }) => {
         </div>
       </div>
 
-      {/* 2. STATS ROW (Real-Time Operational Subtitles) */}
+      {/* 2. STATS ROW */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Team Size"
@@ -85,7 +86,8 @@ const ManagerDashboard = ({ stats = {}, isLoading = false }) => {
           icon={<Users className="h-5 w-5" />}
           variant="blue"
           isLoading={isLoading}
-          onClick={() => navigate('/all-employees')}
+          isActive={activeTab === "team"}
+          onClick={() => setActiveTab("team")}
         />
         <StatsCard
           title="Pending Approvals"
@@ -94,7 +96,8 @@ const ManagerDashboard = ({ stats = {}, isLoading = false }) => {
           icon={<Calendar className="h-5 w-5" />}
           variant="indigo"
           isLoading={isLoading}
-          onClick={() => navigate('/attendance/leave-management')}
+          isActive={activeTab === "approvals"}
+          onClick={() => setActiveTab("approvals")}
         />
         <StatsCard
           title="Tasks Completed"
@@ -103,7 +106,8 @@ const ManagerDashboard = ({ stats = {}, isLoading = false }) => {
           icon={<Check className="h-5 w-5" />}
           variant="green"
           isLoading={isLoading}
-          onClick={() => navigate('/dashboard/employee/tasks')}
+          isActive={activeTab === "tasks"}
+          onClick={() => setActiveTab("tasks")}
         />
         <StatsCard
           title="Team Performance"
@@ -116,8 +120,8 @@ const ManagerDashboard = ({ stats = {}, isLoading = false }) => {
         />
       </div>
 
-      {/* 3. TABS WITH DYNAMIC COUNTERS & ACTIVE HIGHLIGHT */}
-      <Tabs defaultValue="team">
+      {/* 3. TABS */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-slate-100 dark:bg-slate-800/60 p-1 rounded-xl gap-1">
           <TabsTrigger 
             value="team" 

@@ -1,3 +1,4 @@
+import { PriorityDot } from "@/components/ui/PriorityDot";
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
 import { Button } from "@/components/ui/button"
@@ -112,15 +113,7 @@ const Avatar = ({ user, size = "sm" }) => {
 }
 
 
-const PriorityBadge = ({ priority }) => {
-  const cfg = PRIORITY_CONFIG[priority?.toUpperCase()] ?? PRIORITY_CONFIG.MEDIUM
-  return (
-    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${cfg.cls}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-      {cfg.label}
-    </span>
-  )
-}
+
 
 
 
@@ -133,7 +126,7 @@ const TaskCardItem = ({ task, onView, onDelete }) => {
     <div className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-150 cursor-grab active:cursor-grabbing select-none">
 
       <div className="flex items-center justify-between mb-2">
-        <PriorityBadge priority={task.priority} />
+        <PriorityDot priority={task.priority} className="w-auto justify-start" />
         <div className="flex items-center gap-1">
           <span className="text-[10px] font-mono text-muted-foreground/50">#{shortId}</span>
           <DropdownMenu>
@@ -249,7 +242,7 @@ const TaskDetailDrawer = ({ task, onClose, onStatusChange, onDelete }) => {
               <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${statusCfg.cls}`}>
                 {statusCfg.label}
               </span>
-              <PriorityBadge priority={task.priority} />
+              <PriorityDot priority={task.priority} className="w-auto justify-start" />
               {dueInfo?.overdue && (
                 <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
                   Overdue

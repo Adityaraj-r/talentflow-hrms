@@ -1,3 +1,4 @@
+import { PriorityDot } from "@/components/ui/PriorityDot";
 import { useState, useEffect, useCallback } from "react"
 import { useUser } from "@/contexts/UserContext"
 import taskService from "@/services/taskService"

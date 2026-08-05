@@ -43,8 +43,11 @@ import Careers from "./pages/Careers"
 import OfferManagement from "./pages/modules/recruitment/OfferManagement"
 import OfferOperations from "./pages/modules/recruitment/OfferOperations"
 import JobOpenings from "./pages/modules/recruitment/JobOpenings"
+import CreateJob from "./pages/modules/recruitment/CreateJob"
+import JobDetail from "./pages/modules/recruitment/JobDetail"
 import ApplyJob from "./pages/ApplyJob"
 import CandidateApplications from "./pages/modules/recruitment/CandidateApplications"
+import CandidateDetail from "./pages/modules/recruitment/CandidateDetail"
 import RecruitmentPipeline from "./pages/modules/recruitment/RecruitmentPipeline"
 import InterviewScheduling from "./pages/modules/recruitment/InterviewScheduling"
 import ApplicationStatus from "./pages/ApplicationStatus"
@@ -134,6 +137,7 @@ import MyTasks from "./pages/role/EMPLOYEE/MyTasks"
 import Profile from "./pages/dashboard/Profile"
 import AttendanceAnalytics from "./pages/modules/attendance/AttendanceAnalytics"
 import EmployeeResignation from "./pages/role/EMPLOYEE/EmployeeResignation"
+import EmployeeReferrals from "./pages/modules/employee-center/EmployeeReferrals"
 
 // Document Module
 import MyDocuments from "./pages/modules/documents/MyDocuments"
@@ -304,6 +308,12 @@ function App() {
               </ProtectedRoute>
             } />
 
+            <Route path="/employee/referrals" element={
+              <ProtectedRoute>
+                <DashboardLayout><EmployeeReferrals /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+
             <Route path="/admin/dashboard" element={
               <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
                 <DashboardLayout><AdminDashboard /></DashboardLayout>
@@ -449,6 +459,11 @@ function App() {
                 <DashboardLayout><CandidateApplications /></DashboardLayout>
               </ProtectedRoute>
             } />
+            <Route path="/dashboard/applications/:id" element={
+              <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
+                <DashboardLayout><CandidateDetail /></DashboardLayout>
+              </ProtectedRoute>
+            } />
             <Route path="/dashboard/recruitment-pipeline" element={
               <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
                 <DashboardLayout><RecruitmentPipeline /></DashboardLayout>
@@ -462,6 +477,16 @@ function App() {
             <Route path="/dashboard/job-openings" element={
               <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
                 <DashboardLayout><JobOpenings /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/jobs/create" element={
+              <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
+                <DashboardLayout><CreateJob /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/jobs/:id" element={
+              <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "CEO", "ADMIN", "SUPER ADMIN"]}>
+                <DashboardLayout><JobDetail /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/dashboard/offer-management" element={
@@ -505,7 +530,7 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/dashboard/recruitment-suggestions" element={
-              <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN"]}>
+              <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER"]}>
                 <DashboardLayout><RecruitmentSuggestionsInbox /></DashboardLayout>
               </ProtectedRoute>
             } />
@@ -584,7 +609,7 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/attendance/correction-requests" element={
-              <ProtectedRoute allowedRoles={["ADMIN", "SUPER ADMIN", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER"]}>
+              <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN", "SUPER ADMIN", "CEO", "EXECUTIVE", "HR_MANAGER", "HR_OFFICER", "DEPARTMENT_MANAGER", "DIRECT_MANAGER", "FINANCE_MANAGER", "COUNTRY_MANAGER"]}>
                 <DashboardLayout><CorrectionRequests /></DashboardLayout>
               </ProtectedRoute>
             } />

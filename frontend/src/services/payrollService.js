@@ -109,8 +109,8 @@ export const getIndemnities = (params = {}) =>
 export const createIndemnity = (data) =>
   apiClient.post("/payroll/indemnity", data);
 
-export const updateIndemnityStatus = (id, payload) => {
-  const body = typeof payload === "object" ? payload : { action: payload };
+export const updateIndemnityStatus = (id, payload, rejectionReason) => {
+  const body = typeof payload === "object" ? payload : { action: payload, rejectionReason };
   return apiClient.patch(`/payroll/indemnity/${id}/status`, body);
 };
 

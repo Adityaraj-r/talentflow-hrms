@@ -83,15 +83,27 @@ const CorrectionRequestModal = ({
         reason: formData.reason.trim(),
       };
 
-      if (formData.requestedClockIn && record?.date) {
+      const rawDate = record?.date;
+      let dateStr = "";
+      if (rawDate) {
+        if (typeof rawDate === "string") {
+          dateStr = rawDate.split("T")[0];
+        } else {
+          dateStr = new Date(rawDate).toISOString().split("T")[0];
+        }
+      } else {
+        dateStr = new Date().toISOString().split("T")[0];
+      }
+
+      if (formData.requestedClockIn) {
         payload.requestedClockIn = new Date(
-          `${record.date}T${formData.requestedClockIn}`
+          `${dateStr}T${formData.requestedClockIn}`
         ).toISOString();
       }
 
-      if (formData.requestedClockOut && record?.date) {
+      if (formData.requestedClockOut) {
         payload.requestedClockOut = new Date(
-          `${record.date}T${formData.requestedClockOut}`
+          `${dateStr}T${formData.requestedClockOut}`
         ).toISOString();
       }
 

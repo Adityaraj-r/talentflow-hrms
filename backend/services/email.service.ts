@@ -51,6 +51,9 @@ const getTransporter = async (): Promise<{ transporter: Transporter; config: Smt
         user: config.user,
         pass: config.pass,
       },
+      tls: {
+        rejectUnauthorized: false,
+      },
     });
     cachedSignature = signature;
   }

@@ -4,8 +4,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, Download, TrendingUp, TrendingDown, Minus, Award, Users } from "lucide-react";
+import { Search, Filter, Download, TrendingUp, TrendingDown, Minus, Award, Users , Eye, } from "lucide-react";
 import apiClient from "@/services/apiClient";
+
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const EmployeeOverview = () => {
   const [employeeData, setEmployeeData] = useState([]);
@@ -14,6 +22,8 @@ const EmployeeOverview = () => {
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("rating-desc");
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -233,8 +243,8 @@ const EmployeeOverview = () => {
               <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur-md">
                 <tr>
                   <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Employee</th>
-                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Department</th>
-                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Position</th>
+                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Department</th>
+                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Position</th>
                   <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Avg Rating</th>
                   <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Trend</th>
                   <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Reviews</th>
@@ -256,8 +266,8 @@ const EmployeeOverview = () => {
                         <div className="font-semibold text-sm text-foreground">{employee.name}</div>
                         <div className="text-xs text-muted-foreground mt-0.5">{employee.email}</div>
                       </td>
-                      <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground align-middle">{employee.department}</td>
-                      <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground align-middle">{employee.position}</td>
+                      <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground  text-center align-middle">{employee.department}</td>
+                      <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground  text-center align-middle">{employee.position}</td>
                       <td className="px-6 py-4 border-b border-border/50 align-middle text-center">
                         <span className="text-lg font-bold text-orange-600 dark:text-orange-500">
                           {(employee.avgRating || 0).toFixed(1)}<span className="text-xs font-medium text-muted-foreground">/5</span>
@@ -272,13 +282,22 @@ const EmployeeOverview = () => {
                           {employee.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 border-b border-border/50 text-right align-middle whitespace-nowrap">
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 hover:bg-primary/5 h-8">
-                            View Details
-                          </Button>
-                        </div>
-                      </td>
+                      <td className="px-6 py-4 border-b border-border/50 text-center align-middle whitespace-nowrap">
+    <div className="flex justify-center">
+        <Button
+            title="View Details"
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-lg hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/30"
+            onClick={() => {
+                setSelectedEmployee(employee);
+                setIsDetailsOpen(true);
+            }}
+        >
+            <Eye className="h-4 w-4" />
+        </Button>
+    </div>
+</td>
                     </tr>
                   ))
                 )}
@@ -287,6 +306,54 @@ const EmployeeOverview = () => {
           </div>
         </CardContent>
       </Card>
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+  <DialogContent className="max-w-lg">
+    <DialogHeader>
+      <DialogTitle>Employee Performance Details</DialogTitle>
+    </DialogHeader>
+
+    {selectedEmployee && (
+      <div className="space-y-3">
+        <div className="flex justify-between">
+          <span className="font-medium">Name</span>
+          <span>{selectedEmployee.name}</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span className="font-medium">Email</span>
+          <span>{selectedEmployee.email}</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span className="font-medium">Department</span>
+          <span>{selectedEmployee.department}</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span className="font-medium">Position</span>
+          <span>{selectedEmployee.position}</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span className="font-medium">Average Rating</span>
+          <span>{selectedEmployee.avgRating.toFixed(1)}/5</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span className="font-medium">Total Reviews</span>
+          <span>{selectedEmployee.totalReviews}</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span className="font-medium">Status</span>
+          <Badge className={getStatusBadge(selectedEmployee.status)}>
+            {selectedEmployee.status}
+          </Badge>
+        </div>
+      </div>
+    )}
+  </DialogContent>
+</Dialog>
     </div>
   );
 };

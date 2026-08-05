@@ -23,9 +23,15 @@ export default function RecruitmentSuggestionsInbox() {
 
   const allowed =
     role === "ADMIN" ||
-    role === "SUPER_ADMIN"
+    role === "SUPER_ADMIN" ||
+    role === "HR_MANAGER" ||
+    role === "HR_OFFICER"
 
-  const canAck = role === "ADMIN" || role === "SUPER_ADMIN"
+  const canAck =
+    role === "ADMIN" ||
+    role === "SUPER_ADMIN" ||
+    role === "HR_MANAGER" ||
+    role === "HR_OFFICER"
 
   const load = async () => {
     try {
@@ -76,9 +82,9 @@ export default function RecruitmentSuggestionsInbox() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Recruitment suggestions (Admin)</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Recruitment Suggestions</h1>
         <p className="text-muted-foreground mt-1">
-          Suggestions raised by Admin from governance oversight. {canAck ? "You can acknowledge or close." : "View only — HR Manager acknowledges."}
+          Suggestions raised from governance oversight. Acknowledge and resolve items here.
         </p>
       </div>
 

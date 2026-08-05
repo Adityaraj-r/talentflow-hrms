@@ -514,18 +514,27 @@ const PayrollProcessing = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-xl border bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 p-5">
-          <p className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Total Records</p>
-          <p className="text-3xl font-black text-gray-900 dark:text-white mt-1">{records.length}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="rounded-xl border shadow-sm transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 hover:brightness-100 dark:hover:brightness-110 bg-gradient-to-br from-blue-100 via-blue-50 to-white hover:from-blue-200 hover:via-blue-100 hover:to-blue-50 dark:from-blue-950/60 dark:via-blue-900/20 dark:to-background dark:hover:from-blue-900/60 dark:hover:via-blue-800/20 border-blue-200 dark:border-blue-900 p-4 flex flex-col justify-center relative overflow-hidden group cursor-pointer">
+          <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500 transform translate-x-2 -translate-y-2 pointer-events-none">
+            <Users className="w-24 h-24 text-blue-600 dark:text-blue-400" />
+          </div>
+          <p className="text-xs font-bold uppercase tracking-widest text-blue-800 dark:text-blue-400 relative z-10">Total Records</p>
+          <p className="text-2xl font-extrabold text-blue-900 dark:text-blue-100 mt-1 relative z-10">{records.length}</p>
         </div>
-        <div className="rounded-xl border bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30 p-5">
-          <p className="text-xs font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400">Pending This Month</p>
-          <p className="text-3xl font-black text-gray-900 dark:text-white mt-1">{pending.length}</p>
+        <div className="rounded-xl border shadow-sm transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 hover:brightness-100 dark:hover:brightness-110 bg-gradient-to-br from-orange-100 via-orange-50 to-white hover:from-orange-200 hover:via-orange-100 hover:to-orange-50 dark:from-orange-950/60 dark:via-orange-900/20 dark:to-background dark:hover:from-orange-900/60 dark:hover:via-orange-800/20 border-orange-200 dark:border-orange-900 p-4 flex flex-col justify-center relative overflow-hidden group cursor-pointer">
+          <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500 transform translate-x-2 -translate-y-2 pointer-events-none">
+            <AlertCircle className="w-24 h-24 text-orange-600 dark:text-orange-400" />
+          </div>
+          <p className="text-xs font-bold uppercase tracking-widest text-orange-800 dark:text-orange-400 relative z-10">Pending This Month</p>
+          <p className="text-2xl font-extrabold text-orange-900 dark:text-orange-100 mt-1 relative z-10">{pending.length}</p>
         </div>
-        <div className="rounded-xl border bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30 p-5">
-          <p className="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400">Paid This Month</p>
-          <p className="text-3xl font-black text-gray-900 dark:text-white mt-1">
+        <div className="rounded-xl border shadow-sm transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 hover:brightness-100 dark:hover:brightness-110 bg-gradient-to-br from-green-100 via-green-50 to-white hover:from-green-200 hover:via-green-100 hover:to-green-50 dark:from-green-950/60 dark:via-green-900/20 dark:to-background dark:hover:from-green-900/60 dark:hover:via-green-800/20 border-green-200 dark:border-green-900 p-4 flex flex-col justify-center relative overflow-hidden group cursor-pointer">
+          <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500 transform translate-x-2 -translate-y-2 pointer-events-none">
+            <CheckCircle className="w-24 h-24 text-green-600 dark:text-green-400" />
+          </div>
+          <p className="text-xs font-bold uppercase tracking-widest text-green-800 dark:text-green-400 relative z-10">Paid This Month</p>
+          <p className="text-2xl font-extrabold text-green-900 dark:text-green-100 mt-1 relative z-10">
             {records.filter(r => ["Paid", "Disbursed", "Locked"].includes(r.status)).reduce((sum, r) => sum + (r.employees?.length || 0), 0)}
           </p>
         </div>
@@ -888,14 +897,18 @@ const PayrollProcessing = () => {
                       </TableHead>
                     )}
                     <TableHead className="font-bold">Employee</TableHead>
-                    <TableHead className="font-bold">Department</TableHead>
-                    <TableHead className="font-bold">Role</TableHead>
+                    <TableHead className="font-bold">
+                      <div className="w-full flex justify-center">Department</div>
+                    </TableHead>
+                    <TableHead className="font-bold">
+                      <div className="w-full flex justify-center">Role</div>
+                    </TableHead>
                     <TableHead className="font-bold">Employee ID</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pending.map(emp => (
-                    <TableRow key={emp._id}>
+                    <TableRow key={emp._id} className="hover:bg-primary/5 transition-colors duration-200 cursor-pointer group">
                       {canProcessPayroll(userRole) && (
                         <TableCell>
                           <input
@@ -916,13 +929,19 @@ const PayrollProcessing = () => {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm">{emp.department || "—"}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="text-[10px] font-bold tracking-wider">
-                          {emp.role}
-                        </Badge>
+                      <TableCell className="align-middle">
+                        <div className="w-full flex justify-center">
+                          <span className="text-sm">{emp.department || "—"}</span>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-sm font-mono text-blue-600 dark:text-blue-400">
+                      <TableCell className="align-middle">
+                        <div className="w-full flex justify-center">
+                          <Badge variant="secondary" className="text-[10px] font-bold tracking-wider">
+                            {emp.role}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm font-mono text-blue-600 dark:text-blue-400 align-middle">
                         {emp.employeeCode || "—"}
                       </TableCell>
                     </TableRow>
@@ -1147,7 +1166,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
   const st = record.status
   const displayStatus = record.rejectionReason ? "Rejected" : st
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/30">
 
       <div
         className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-muted/30 transition-colors select-none"
@@ -1352,7 +1371,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
               <div
                 key={emp.employeeId}
                 className={cn(
-                  "grid grid-cols-12 gap-2 px-5 py-3 items-center text-sm border-b last:border-b-0 transition-colors hover:bg-muted/10",
+                  "grid grid-cols-12 gap-2 px-5 py-3 items-center text-sm border-b last:border-b-0 transition-colors duration-200 cursor-pointer hover:bg-primary/5",
                   idx % 2 === 0
                     ? "bg-white dark:bg-transparent"
                     : "bg-muted/10"

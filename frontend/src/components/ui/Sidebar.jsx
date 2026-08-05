@@ -4,8 +4,8 @@ import {
   Users, Calendar, RefreshCw, DollarSign, Award, AlertTriangle,
   FileCheck, Home, ChevronDown, ChevronRight, ChevronLeft,
   Briefcase, Plane, Calculator, LogOut, Clock, Settings,
-  FileText, ArrowLeftRight, TrendingUp, Shield, Layers, Database, Building,
-  LayoutDashboard, CircleDollarSign, Target, Network, FileBadge, BarChart2, FileSignature
+  FileText, ArrowLeftRight, TrendingUp, Shield, Layers, Database, Building, Building2,
+  LayoutDashboard, CircleDollarSign, Target, Network, FileBadge, BarChart2, FileSignature, UserPlus
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ROLES } from "@/constants/roles"
@@ -269,7 +269,7 @@ const Sidebar = ({
 
   const payrollOpsNestedActiveTeam = (p) => p === "/payroll"
 
-  const payrollOpsNestedActiveExec = (p) => p.startsWith("/payroll")
+  const payrollOpsNestedActiveExec = (p) => p.startsWith("/payroll") || p.startsWith("/indemnity")
 
   const FullPayrollSidebarGroup = ({ label }) =>
     canSee("payroll") ? (
@@ -354,7 +354,6 @@ const Sidebar = ({
               <SubLink to="/dashboard/offer-management" label="Offer Management" />
               <SubLink to="/recruitment/offers" label="Offer Operations" icon={FileSignature} />
               <SubLink to="/recruitment/analytics" label="Recruitment Analytics" icon={BarChart2} />
-              <SubLink to="/admin/recruitment-suggestions" label="Suggest to HR Manager" />
             </SidebarGroup>
           )}
 
@@ -371,6 +370,7 @@ const Sidebar = ({
           </SidebarGroup>
 
           <SidebarLink to="/dashboard/pm/tasks" icon={FileCheck} label="Task Board" />
+          <SidebarLink to="/employee/referrals" icon={UserPlus} label="Employee Referral" />
 
           <FullPayrollSidebarGroup label="Payroll & Compliance" />
 
@@ -403,6 +403,7 @@ const Sidebar = ({
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           <SidebarLink to="/dashboard/employee/make-transfer" icon={ArrowLeftRight} label="Make Transfer Request" />
+          <SidebarLink to="/employee/referrals" icon={UserPlus} label="Employee Referral" />
           <SidebarLink to="/employee/resignation" icon={AlertTriangle} label="Initiate Separation" />
           <SidebarLink to="/payroll/salary-slip" icon={FileText} label="My Salary Slips" />
 
@@ -466,6 +467,7 @@ const Sidebar = ({
           )}
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          <SidebarLink to="/employee/referrals" icon={UserPlus} label="Employee Referral" />
 
           {canSee("employees") && (
             <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
@@ -521,6 +523,7 @@ const Sidebar = ({
           )}
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          <SidebarLink to="/employee/referrals" icon={UserPlus} label="Employee Referral" />
 
           <HRPayrollSidebarGroup />
 
@@ -580,6 +583,7 @@ const Sidebar = ({
                     to="/payroll"
                     label={userRole === ROLES.CEO ? "Processing & approvals" : "Payroll overview"}
                   />
+                  <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
                   <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
                 </SidebarNestedGroup>
               )}
@@ -831,7 +835,9 @@ const Sidebar = ({
           isCollapsed ? "justify-center" : "justify-between"
         )}>
           <div className="flex items-center gap-2 overflow-hidden">
-            <Briefcase className="h-8 w-8 text-primary shrink-0" />
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-lg shadow-sm shrink-0">
+              <Building2 className="h-6 w-6 text-white" />
+            </div>
             <span className={cn(
               "text-lg font-bold truncate transition-all duration-300",
               isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"

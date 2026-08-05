@@ -14,30 +14,25 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { StatsCard } from "@/components/ui/stats-card"
 
 const statusConfig = {
-  pending: { icon: Clock3, className: "border-amber-400/30 bg-amber-500/10 text-amber-300 shadow-amber-500/10" },
-  approved: { icon: CheckCircle2, className: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10" },
-  draft: { icon: FileText, className: "border-slate-400/30 bg-slate-500/10 text-slate-700 dark:text-slate-300 shadow-slate-500/10" },
-  published: { icon: Sparkles, className: "border-sky-400/30 bg-sky-500/10 text-sky-300 shadow-sky-500/10" },
-  open: { icon: Sparkles, className: "border-sky-400/30 bg-sky-500/10 text-sky-300 shadow-sky-500/10" },
-  rejected: { icon: XCircle, className: "border-rose-400/30 bg-rose-500/10 text-rose-300 shadow-rose-500/10" },
-  interview: { icon: Clock3, className: "border-violet-400/30 bg-violet-500/10 text-violet-300 shadow-violet-500/10" },
-  shortlisted: { icon: CircleDashed, className: "border-indigo-400/30 bg-indigo-500/10 text-indigo-300 shadow-indigo-500/10" },
-  selected: { icon: CheckCircle2, className: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10" },
-  offered: { icon: FileText, className: "border-cyan-400/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 shadow-cyan-500/10" },
-  accepted: { icon: CheckCircle2, className: "border-lime-400/30 bg-lime-500/10 text-lime-300 shadow-lime-500/10" },
-  declined: { icon: XCircle, className: "border-rose-400/30 bg-rose-500/10 text-rose-300 shadow-rose-500/10" },
-  closed: { icon: Minus, className: "border-zinc-400/30 bg-zinc-500/10 text-zinc-300 shadow-zinc-500/10" },
-  applied: { icon: FileText, className: "border-blue-400/30 bg-blue-500/10 text-blue-300 shadow-blue-500/10" },
-  completed: { icon: CheckCircle2, className: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10" },
-  joined: { icon: CheckCircle2, className: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10" },
+  pending: { icon: Clock3, className: "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-300 shadow-amber-500/5" },
+  approved: { icon: CheckCircle2, className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 shadow-emerald-500/5" },
+  draft: { icon: FileText, className: "border-slate-500/20 bg-slate-500/10 text-slate-600 dark:text-slate-300 shadow-slate-500/5" },
+  published: { icon: Sparkles, className: "border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-300 shadow-sky-500/5" },
+  open: { icon: Sparkles, className: "border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-300 shadow-sky-500/5" },
+  rejected: { icon: XCircle, className: "border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-300 shadow-rose-500/5" },
+  interview: { icon: Clock3, className: "border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-300 shadow-violet-500/5" },
+  shortlisted: { icon: CircleDashed, className: "border-indigo-500/20 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 shadow-indigo-500/5" },
+  selected: { icon: CheckCircle2, className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 shadow-emerald-500/5" },
+  offered: { icon: FileText, className: "border-cyan-500/20 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 shadow-cyan-500/5" },
+  accepted: { icon: CheckCircle2, className: "border-lime-500/20 bg-lime-500/10 text-lime-600 dark:text-lime-300 shadow-lime-500/5" },
+  declined: { icon: XCircle, className: "border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-300 shadow-rose-500/5" },
+  closed: { icon: Minus, className: "border-zinc-500/20 bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 shadow-zinc-500/5" },
+  applied: { icon: FileText, className: "border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-300 shadow-blue-500/5" },
+  completed: { icon: CheckCircle2, className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 shadow-emerald-500/5" },
+  joined: { icon: CheckCircle2, className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 shadow-emerald-500/5" },
 }
 
 const normalizeStatus = (status = "") =>
@@ -50,7 +45,6 @@ export function RecruitmentStatusBadge({ status, className }) {
     .replace("interview scheduled", "interview")
     .replace("screening", "shortlisted")
   const config = statusConfig[key] || statusConfig[normalizeStatus(status)] || statusConfig.draft
-  const Icon = config.icon
 
   return (
     <span
@@ -60,7 +54,6 @@ export function RecruitmentStatusBadge({ status, className }) {
         className
       )}
     >
-      {React.createElement(Icon, { className: "h-3.5 w-3.5" })}
       {status || "Draft"}
     </span>
   )
@@ -88,97 +81,35 @@ export function RecruitmentKpiCard({
   trend = 0,
   trendLabel = "this month",
   helper,
-  updated = "Updated just now",
+  updated,
   accent = "sky",
   onClick,
   active,
   chartData,
   className,
-  tooltip,
 }) {
-  const safeTrend = isNaN(Number(trend)) ? 0 : Number(trend)
-  const positive = safeTrend >= 0
-  const TrendIcon = positive ? ArrowUpRight : ArrowDownRight
-  const accentClass = {
-    sky: "from-sky-500/20 text-sky-300 ring-sky-400/20",
-    emerald: "from-emerald-500/20 text-emerald-300 ring-emerald-400/20",
-    amber: "from-amber-500/20 text-amber-300 ring-amber-400/20",
-    rose: "from-rose-500/20 text-rose-300 ring-rose-400/20",
-    violet: "from-violet-500/20 text-violet-300 ring-violet-400/20",
-    cyan: "from-cyan-500/20 text-cyan-600 dark:text-cyan-300 ring-cyan-400/20",
-    slate: "from-slate-500/20 text-slate-700 dark:text-slate-300 ring-slate-400/20",
-  }[accent] || "from-sky-500/20 text-sky-300 ring-sky-400/20"
-
-  const maxVal = Math.max(...(chartData || []), 1)
-  const normalizedData = chartData 
-    ? chartData.map(val => Math.max((val / maxVal) * 100, 5)) // Min 5% height so 0 values are visible
-    : [35, 55, 42, 70, 48, 82, 64] // Fallback
-
-  const cardContent = (
-    <Motion.motion.button
-      type="button"
-      onClick={onClick}
-      disabled={!onClick}
-      whileHover={{ y: -3 }}
-      transition={{ duration: 0.18 }}
-      className={cn(
-        "group relative flex h-full min-h-[140px] w-full min-w-0 flex-col justify-between gap-3 overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 bg-card/80 p-3.5 text-left shadow-sm transition-all",
-        "hover:border-white/20 hover:bg-card hover:shadow-lg hover:shadow-black/10",
-        active && "border-primary/40 ring-1 ring-primary/30",
-        !onClick && "cursor-default",
-        className
-      )}
-    >
-      <div className={cn("absolute inset-x-0 top-0 h-1 bg-gradient-to-r to-transparent", accentClass.split(" ")[0])} />
-      <div className="flex flex-col gap-1.5">
-        <div className="flex min-w-0 items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="break-words text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-            <div className="mt-1 break-words text-2xl font-bold leading-none text-foreground sm:text-2xl xl:text-3xl">{value}</div>
-          </div>
-          {Icon && (
-            <div className={cn("shrink-0 rounded-md bg-muted/40 p-1.5 ring-1 sm:p-2", accentClass)}>
-              {React.createElement(Icon, { className: "h-4.5 w-4.5 sm:h-5 sm:w-5" })}
-            </div>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs">
-          <span className={cn("inline-flex items-center gap-0.5 font-semibold", positive ? "text-emerald-300" : "text-rose-300")}>
-            <TrendIcon className="h-3.5 w-3.5" />
-            {Math.abs(safeTrend)}%
-          </span>
-          {trendLabel && <span className="text-[11px] text-muted-foreground">{trendLabel}</span>}
-        </div>
-      </div>
-      <div className="flex flex-col gap-1.5 pt-0.5">
-        <div className="flex h-4 items-end gap-1">
-          {normalizedData.map((height, index) => (
-            <span
-              key={index}
-              className={cn("w-full rounded-t bg-muted transition-colors group-hover:bg-primary/40", active && "bg-primary/50")}
-              style={{ height: `${height}%` }}
-            />
-          ))}
-        </div>
-        <div className="flex flex-col gap-0.5 text-[11px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-          {helper && <span className="min-w-0 break-words leading-tight">{helper}</span>}
-          {updated && <span className="shrink-0 text-[10px] opacity-80">{updated}</span>}
-        </div>
-      </div>
-    </Motion.motion.button>
-  )
-
-  if (!tooltip) return cardContent
-
+  const variantMap = {
+    sky: 'blue',
+    emerald: 'emerald',
+    amber: 'amber',
+    rose: 'rose',
+    violet: 'blue',
+    cyan: 'blue',
+    slate: 'blue'
+  }
+  
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{cardContent}</TooltipTrigger>
-        <TooltipContent className="max-w-xs bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-          {tooltip}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <StatsCard 
+      title={title} 
+      value={value} 
+      subtitle={helper || updated} 
+      trend={trend} 
+      trendLabel={trendLabel} 
+      icon={Icon} 
+      variant={variantMap[accent] || 'blue'} 
+      isActive={active} 
+      onClick={onClick} 
+    />
   )
 }
 

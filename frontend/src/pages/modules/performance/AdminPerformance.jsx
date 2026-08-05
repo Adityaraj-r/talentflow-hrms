@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TrendingUp, Plus, Calendar, Users, FileText, X, Loader2, Award } from "lucide-react";
+import { TrendingUp, Plus, Calendar, Users, FileText, X, Loader2, Award,  Eye, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import EmployeeOverview from "@/pages/modules/employee-center/EmployeeOverview"
 import PerformanceAnalytics from "@/pages/modules/performance/PerformanceAnalytics"
@@ -272,14 +272,12 @@ const AdminPerformance = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          <div className="bg-card border border-border/50 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-               <Calendar className="w-16 h-16 text-blue-600" />
-            </div>
+         <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-xl p-6 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+            <div className="p-2.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg w-fit">
+   <Calendar className="w-5 h-5" />
+</div>
             <div className="flex flex-col gap-4 relative z-10">
-              <div className="p-2.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg w-fit">
-                <Calendar className="w-5 h-5" />
-              </div>
+             
               <div>
                 <p className="text-muted-foreground text-sm font-medium">Total Cycles</p>
                 <p className="text-3xl font-bold text-foreground mt-1">{performanceData.totalCycles}</p>
@@ -287,14 +285,12 @@ const AdminPerformance = () => {
             </div>
           </div>
 
-          <div className="bg-card border border-border/50 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-               <TrendingUp className="w-16 h-16 text-green-600" />
-            </div>
+          <div className="bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-xl p-6 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+           <div className="p-2.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg w-fit">
+   <TrendingUp className="w-5 h-5" />
+</div>
             <div className="flex flex-col gap-4 relative z-10">
-              <div className="p-2.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg w-fit">
-                <TrendingUp className="w-5 h-5" />
-              </div>
+             
               <div>
                 <p className="text-muted-foreground text-sm font-medium">Active Cycles</p>
                 <p className="text-3xl font-bold text-foreground mt-1">{performanceData.activeCycles}</p>
@@ -302,10 +298,8 @@ const AdminPerformance = () => {
             </div>
           </div>
 
-          <div className="bg-card border border-border/50 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-               <FileText className="w-16 h-16 text-purple-600" />
-            </div>
+       <div className="bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700 rounded-xl p-6 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+   
             <div className="flex flex-col gap-4 relative z-10">
               <div className="p-2.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg w-fit">
                 <FileText className="w-5 h-5" />
@@ -317,10 +311,8 @@ const AdminPerformance = () => {
             </div>
           </div>
 
-          <div className="bg-card border border-border/50 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-               <Award className="w-16 h-16 text-amber-600" />
-            </div>
+         <div className="bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-xl p-6 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+   
             <div className="flex flex-col gap-4 relative z-10">
               <div className="p-2.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg w-fit">
                 <Award className="w-5 h-5" />
@@ -364,12 +356,29 @@ const AdminPerformance = () => {
               <table className="w-full text-left border-separate border-spacing-0">
                 <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur-md">
                   <tr>
-                    <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cycle Name</th>
-                    <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Period</th>
-                    <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Reviews</th>
-                    <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Avg Score</th>
-                    <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
+                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-left">
+  Cycle Name
+</th>
+
+<th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">
+  Period
+</th>
+
+<th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">
+  Status
+</th>
+
+<th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">
+  Reviews
+</th>
+
+<th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">
+  Avg Score
+</th>
+
+<th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">
+  Actions
+</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -385,10 +394,10 @@ const AdminPerformance = () => {
                         <td className="px-6 py-4 border-b border-border/50 align-middle">
                           <span className="font-semibold text-sm text-foreground">{cycle.name}</span>
                         </td>
-                        <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground align-middle">
+                        <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground text-center align-middle">
                           {new Date(cycle.startDate).toLocaleDateString()} - {new Date(cycle.endDate).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 border-b border-border/50 align-middle">
+                        <td className="px-6 py-4 border-b border-border/50 text-center align-middle">
                           <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase ${
                             cycle.status === 'active' 
                               ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400 border border-green-200 dark:border-green-500/30' 
@@ -402,27 +411,30 @@ const AdminPerformance = () => {
                         <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground text-center align-middle">{cycle.totalReviews}</td>
                         <td className="px-6 py-4 border-b border-border/50 text-sm text-foreground font-medium text-center align-middle">{cycle.avgScore ? `${cycle.avgScore}/5` : '—'}</td>
                         <td className="px-6 py-4 border-b border-border/50 text-right align-middle whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button 
-                              className="text-primary hover:text-primary/80 text-sm font-medium transition-colors"
-                              onClick={() => handleViewCycle(cycle)}
-                            >
-                              View
+                          <div className="flex items-center justify-end gap-2">
+                           <button
+                             title="View"
+                             className="p-2 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900 transition"
+                             onClick={() => handleViewCycle(cycle)}
+                             >
+                             <Eye className="w-4 h-4 text-blue-600" />
                             </button>
                             {canPmsWrite && (
-                            <button 
-                              className="text-amber-600 hover:text-amber-700 dark:text-amber-500 dark:hover:text-amber-400 text-sm font-medium transition-colors"
+                           <button
+                              title="Edit"
+                              className="p-2 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900 transition"
                               onClick={() => handleEditClick(cycle)}
                             >
-                              Edit
+                              <Pencil className="w-4 h-4 text-amber-600" />
                             </button>
                             )}
                             {canPmsCycleStruct && (
-                            <button 
-                              className="text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400 text-sm font-medium transition-colors"
+                            <button
+                              title="Delete"
+                              className="p-2 rounded-md hover:bg-red-100 dark:hover:bg-red-900 transition"
                               onClick={() => handleDeleteCycle(cycle._id, cycle.name)}
                             >
-                              Delete
+                              <Trash2 className="w-4 h-4 text-red-600" />
                             </button>
                             )}
                           </div>

@@ -71,17 +71,12 @@ export const requireInterviewParticipantReadRole = requireRecruitmentRole(
 )
 
 export const requireApplicationStatusRole = (req: Request, res: Response, next: NextFunction) => {
-  const status = (req.body?.status || "").toString().trim().toLowerCase()
   const role = normalizeRole((req as any).user?.role)
-  const isFinalApproval = ["selected", "hired", "final approved", "final_approved"].includes(status)
 
-  if (isFinalApproval && role !== RECRUITMENT_ROLES.HR_MANAGER) {
-    return res.status(403).json({ success: false, message: "Only HR Manager can perform final candidate approval" })
+  if (["ADMIN", "SUPER_ADMIN", "HR_MANAGER", "HR_OFFICER", "CEO"].includes(role)) {
+    next();
+    return;
   }
 
-  if (![RECRUITMENT_ROLES.HR_OFFICER, RECRUITMENT_ROLES.HR_MANAGER].includes(role as any)) {
-    return res.status(403).json({ success: false, message: "Access denied for this recruitment action" })
-  }
-
-  next()
+  return res.status(403).json({ success: false, message: "Access denied for this recruitment action" })
 }

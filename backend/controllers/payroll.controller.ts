@@ -758,9 +758,29 @@ export const patchPayrollWorkflow = async (req: AuthRequest, res: Response) => {
 
         let stage: string
         if (payroll.status === "Generated") {
-          if (!isFinanceManager(role) && !isAdmin(role))
-            return res.status(403).json({ success: false, error: "Finance Manager or Admin only" })
-          stage = "verify"
+
+          // Payroll with Finance approval required
+          if (payroll.financeApprovalRequired) {
+
+            if (!isFinanceManager(role) && !isAdmin(role))
+              return res.status(403).json({
+                success: false,
+                error: "Finance Manager or Admin only"
+              })
+
+            stage = "verify"
+
+          } else {
+
+            // Payroll that goes directly to HR
+            if (!isHRManager(role) && !isAdmin(role))
+              return res.status(403).json({
+                success: false,
+                error: "HR Manager or Admin only"
+              })
+
+            stage = "hr_approve"
+          }
         } else if (payroll.status === "Verified") {
           if (!isHRManager(role) && !isAdmin(role))
             return res.status(403).json({ success: false, error: "HR Manager or Admin only" })
@@ -1236,9 +1256,49 @@ if (status === "Approved") {
   }
 }
 
+// --- Indemnity/Gratuity — Payment of Gratuity Act, 1972 ---
+const GRATUITY_CEILING = 2000000 // ₹20,00,000 statutory ceiling (Sec 4(3); also IT Act Sec 10(10) exemption limit)
+const EXEMPT_REASONS = ["death", "permanent-disablement"] // bypass the 5-year eligibility rule
+
+function getRoundedYearsOfService(joining: Date, leaving: Date) {
+  let years = leaving.getFullYear() - joining.getFullYear()
+  let months = leaving.getMonth() - joining.getMonth()
+  let days = leaving.getDate() - joining.getDate()
+
+  if (days < 0) {
+    months -= 1
+    days += new Date(leaving.getFullYear(), leaving.getMonth(), 0).getDate()
+  }
+  if (months < 0) {
+    years -= 1
+    months += 12
+  }
+
+  const roundedYears = months > 6 || (months === 6 && days > 0) ? years + 1 : years
+
+  return { years, months, days, roundedYears }
+}
+
+function computeGratuity(basicPlusDA: number, roundedYears: number, reason: string) {
+  const eligible = roundedYears >= 5 || EXEMPT_REASONS.includes(reason)
+
+  if (!eligible) {
+    return {
+      amount: 0,
+      formula: "Not eligible — minimum 5 years of continuous service required (except death/disablement)",
+      cappedAtCeiling: false,
+    }
+  }
+
+  const rawAmount = (15 * basicPlusDA * roundedYears) / 26
+  const cappedAtCeiling = rawAmount > GRATUITY_CEILING
+  const amount = Math.round(Math.min(rawAmount, GRATUITY_CEILING))
+
+  return { amount, formula: "(15 × Last drawn Basic+DA × Completed years of service) / 26", cappedAtCeiling }
+}
 export const calculateIndemnity = async (req: AuthRequest, res: Response) => {
   try {
-    const { basicSalary, joiningDate, lastWorkingDate } = req.body
+    const { basicSalary, da = 0, joiningDate, lastWorkingDate, reason = "" } = req.body
 
     if (!basicSalary || !joiningDate || !lastWorkingDate)
       return res.status(400).json({ success: false, error: "basicSalary, joiningDate and lastWorkingDate are required" })
@@ -1249,26 +1309,17 @@ export const calculateIndemnity = async (req: AuthRequest, res: Response) => {
     if (leaving <= joining)
       return res.status(400).json({ success: false, error: "lastWorkingDate must be after joiningDate" })
 
-    const msPerYear = 1000 * 60 * 60 * 24 * 365.25
-    const yearsOfService = (leaving.getTime() - joining.getTime()) / msPerYear
-
-    let calculatedAmount = 0
-    let formula = "Not eligible (< 1 year of service)"
-
-    if (yearsOfService >= 1 && yearsOfService <= 5) {
-      calculatedAmount = basicSalary * yearsOfService * 0.5
-      formula = "Basic × Years × 0.5"
-    } else if (yearsOfService > 5) {
-      calculatedAmount = basicSalary * yearsOfService
-      formula = "Basic × Years"
-    }
+    const { years, months, days, roundedYears } = getRoundedYearsOfService(joining, leaving)
+    const basicPlusDA = Number(basicSalary) + Number(da)
+    const { amount, formula, cappedAtCeiling } = computeGratuity(basicPlusDA, roundedYears, reason)
 
     res.json({
       success: true,
       data: {
-        yearsOfService: Math.round(yearsOfService * 100) / 100,
-        calculatedAmount: Math.round(calculatedAmount),
-        breakdown: { basicSalary, formula },
+        yearsOfService: { years, months, days },
+        roundedYearsOfService: roundedYears,
+        calculatedAmount: amount,
+        breakdown: { basicSalary: Number(basicSalary), da: Number(da), formula, cappedAtCeiling },
       },
     })
   } catch (err: any) {
@@ -1301,7 +1352,7 @@ export const getIndemnities = async (req: AuthRequest, res: Response) => {
 
 export const createIndemnity = async (req: AuthRequest, res: Response) => {
   try {
-    const { employeeId, employeeName, joiningDate, lastWorkingDate, basicSalary, reason, notes } = req.body
+    const { employeeId, employeeName, joiningDate, lastWorkingDate, basicSalary, da = 0, reason, notes } = req.body
 
     if (!employeeId || !employeeName || !joiningDate || !lastWorkingDate || !basicSalary || !reason)
       return res.status(400).json({ success: false, error: "All required fields must be provided" })
@@ -1312,15 +1363,12 @@ export const createIndemnity = async (req: AuthRequest, res: Response) => {
     if (leaving <= joining)
       return res.status(400).json({ success: false, error: "lastWorkingDate must be after joiningDate" })
 
-    const msPerYear = 1000 * 60 * 60 * 24 * 365.25
-    const yearsOfService = (leaving.getTime() - joining.getTime()) / msPerYear
+    const { years, months, days, roundedYears } = getRoundedYearsOfService(joining, leaving)
+    const basicPlusDA = Number(basicSalary) + Number(da)
+    const { amount } = computeGratuity(basicPlusDA, roundedYears, reason)
 
-    let calculatedAmount = 0
-    if (yearsOfService >= 1 && yearsOfService <= 5) {
-      calculatedAmount = Math.round(Number(basicSalary) * yearsOfService * 0.5)
-    } else if (yearsOfService > 5) {
-      calculatedAmount = Math.round(Number(basicSalary) * yearsOfService)
-    }
+    if (roundedYears < 5 && !EXEMPT_REASONS.includes(reason))
+      return res.status(400).json({ success: false, error: "Employee is not eligible — minimum 5 years of continuous service required" })
 
     const existingRecord = await Indemnity.findOne({ employeeId, status: { $in: ["Pending", "Approved"] } })
     if (existingRecord)
@@ -1331,12 +1379,15 @@ export const createIndemnity = async (req: AuthRequest, res: Response) => {
       employeeName,
       joiningDate,
       lastWorkingDate,
-      yearsOfService: Math.round(yearsOfService * 100) / 100,
+      yearsOfService: roundedYears,
+      roundedYearsOfService: roundedYears,
       basicSalary: Number(basicSalary),
-      calculatedAmount,
+      da: Number(da),
+      calculatedAmount: amount,
       reason,
       notes,
       requestedBy: req.user?.email || "unknown",
+      workflowStage: "PENDING_FINANCE",
     })
 
     res.status(201).json({ success: true, data: record })
@@ -1347,10 +1398,12 @@ export const createIndemnity = async (req: AuthRequest, res: Response) => {
 
 export const updateIndemnityStatus = async (req: AuthRequest, res: Response) => {
   try {
-    const { status } = req.body
+    const { action, rejectionReason } = req.body
+    const role = req.user?.role || ""
 
-    if (!["Approved", "Rejected", "Paid"].includes(status))
-      return res.status(400).json({ success: false, error: "Status must be Approved, Rejected or Paid" })
+    const validActions = ["finance_approve", "hr_approve", "ceo_approve", "reject", "mark_paid", "resubmit"]
+    if (!action || !validActions.includes(action))
+      return res.status(400).json({ success: false, error: `action must be one of: ${validActions.join(", ")}` })
 
     const record = await Indemnity.findById(req.params.id)
     if (!record) return res.status(404).json({ success: false, error: "Indemnity record not found" })
@@ -1358,14 +1411,133 @@ export const updateIndemnityStatus = async (req: AuthRequest, res: Response) => 
     if (record.status === "Paid")
       return res.status(400).json({ success: false, error: "Paid indemnities cannot be modified" })
 
-    record.status = status
-    if (status === "Approved") {
+    if (action === "reject") {
+      const stageRoleOk =
+        (record.workflowStage === "PENDING_FINANCE" && (isFinanceManager(role) || isAdmin(role))) ||
+        (record.workflowStage === "PENDING_HR" && (isHRManager(role) || isAdmin(role))) ||
+        (record.workflowStage === "PENDING_CEO" && (isCEO(role) || isAdmin(role)))
+
+      if (!stageRoleOk)
+        return res.status(403).json({ success: false, error: "You are not allowed to reject this request at its current stage" })
+
+      record.rejectedAtStage = record.workflowStage
+      record.rejectionReason = rejectionReason?.trim() || undefined
+      record.rejectedBy = req.user?.email
+      record.rejectedAt = new Date()
+
+      // Sent back to Payroll Officer — sits here until they explicitly resubmit
+      record.workflowStage = "REJECTED_RESUBMIT"
+      record.status = "Pending"
+      record.financeApprovedBy = undefined
+      record.financeApprovedAt = undefined
+      record.hrApprovedBy = undefined
+      record.hrApprovedAt = undefined
+
+      await record.save()
+      return res.json({ success: true, data: record })
+    }
+
+    if (action === "resubmit") {
+      if (!isPayrollOfficer(role) && !isAdmin(role))
+        return res.status(403).json({ success: false, error: "Payroll Officer or Admin only" })
+      if (record.workflowStage !== "REJECTED_RESUBMIT")
+        return res.status(400).json({ success: false, error: "Only a rejected request can be resubmitted" })
+      record.workflowStage = "PENDING_FINANCE"
+      await record.save()
+      return res.json({ success: true, data: record })
+    }
+
+    if (action === "finance_approve") {
+      if (!isFinanceManager(role) && !isAdmin(role))
+        return res.status(403).json({ success: false, error: "Finance Manager or Admin only" })
+      if (record.workflowStage !== "PENDING_FINANCE")
+        return res.status(400).json({ success: false, error: "Invalid state for Finance approval" })
+      record.financeApprovedBy = req.user?.email
+      record.financeApprovedAt = new Date()
+      record.workflowStage = "PENDING_HR"
+      // Clear any prior rejection trail — this approval supersedes it
+      record.rejectionReason = undefined
+      record.rejectedBy = undefined
+      record.rejectedAt = undefined
+      record.rejectedAtStage = undefined
+      await record.save()
+      return res.json({ success: true, data: record })
+    }
+
+    if (action === "hr_approve") {
+      if (!isHRManager(role) && !isAdmin(role))
+        return res.status(403).json({ success: false, error: "HR Manager or Admin only" })
+      if (record.workflowStage !== "PENDING_HR")
+        return res.status(400).json({ success: false, error: "Invalid state for HR approval" })
+      record.hrApprovedBy = req.user?.email
+      record.hrApprovedAt = new Date()
+      record.workflowStage = "PENDING_CEO"
+      await record.save()
+      return res.json({ success: true, data: record })
+    }
+
+    if (action === "ceo_approve") {
+      if (!isCEO(role) && !isAdmin(role))
+        return res.status(403).json({ success: false, error: "CEO or Admin only" })
+      if (record.workflowStage !== "PENDING_CEO")
+        return res.status(400).json({ success: false, error: "Invalid state for CEO approval" })
       record.approvedBy = req.user?.email
       record.approvalDate = new Date()
+      record.workflowStage = "APPROVED"
+      record.status = "Approved"
+      await record.save()
+      return res.json({ success: true, data: record })
     }
-    if (status === "Paid") {
+
+    if (action === "mark_paid") {
+      if (!isPayrollOfficer(role))
+        return res.status(403).json({ success: false, error: "Payroll Officer only" })
+      if (record.workflowStage !== "APPROVED")
+        return res.status(400).json({ success: false, error: "Indemnity must be fully approved (CEO) before marking paid" })
+      record.status = "Paid"
       record.paymentDate = new Date()
+      await record.save()
+      return res.json({ success: true, data: record })
     }
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message })
+  }
+}
+export const editAndResubmitIndemnity = async (req: AuthRequest, res: Response) => {
+  try {
+    const role = req.user?.role || ""
+    if (!isPayrollOfficer(role) && !isAdmin(role))
+      return res.status(403).json({ success: false, error: "Payroll Officer or Admin only" })
+
+    const record = await Indemnity.findById(req.params.id)
+    if (!record) return res.status(404).json({ success: false, error: "Indemnity record not found" })
+
+    if (record.workflowStage !== "REJECTED_RESUBMIT")
+      return res.status(400).json({ success: false, error: "Only a rejected request can be edited and resubmitted" })
+
+    const { joiningDate, lastWorkingDate, reason, notes } = req.body
+    const finalJoiningDate = joiningDate ? new Date(joiningDate) : record.joiningDate
+    const finalLastWorkingDate = lastWorkingDate ? new Date(lastWorkingDate) : record.lastWorkingDate
+    const finalReason = reason || record.reason
+
+    if (finalLastWorkingDate <= finalJoiningDate)
+      return res.status(400).json({ success: false, error: "lastWorkingDate must be after joiningDate" })
+
+    const { roundedYears } = getRoundedYearsOfService(finalJoiningDate, finalLastWorkingDate)
+    const basicPlusDA = Number(record.basicSalary) + Number(record.da)
+    const { amount } = computeGratuity(basicPlusDA, roundedYears, finalReason)
+
+    if (roundedYears < 5 && !EXEMPT_REASONS.includes(finalReason))
+      return res.status(400).json({ success: false, error: "Employee is not eligible — minimum 5 years of continuous service required" })
+
+    record.joiningDate = finalJoiningDate
+    record.lastWorkingDate = finalLastWorkingDate
+    record.reason = finalReason
+    record.notes = notes !== undefined ? notes : record.notes
+    record.yearsOfService = roundedYears
+    record.roundedYearsOfService = roundedYears
+    record.calculatedAmount = amount
+    record.workflowStage = "PENDING_FINANCE"
 
     await record.save()
     res.json({ success: true, data: record })

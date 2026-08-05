@@ -1,6 +1,7 @@
 import express from 'express'; //
 import cors from 'cors';
 import dotenv from 'dotenv';
+dotenv.config();
 import mongoose from 'mongoose';
 import path from 'path';
 import fs from 'fs';
@@ -50,12 +51,12 @@ import bonusRoutes from './routes/bonus.routes';
 import notificationRoutes from './routes/notification.routes';
 import offerRoutes from './routes/offer.routes';
 import disciplinaryRoutes from './routes/disciplinary.routes';
+import referralRoutes from './routes/referral.routes';
 import User from './models/User.model';
 import { initCronJobs } from './scripts/cronJobs';
 import dns from 'dns'
 import payrollPolicyRoutes from './routes/payrollPolicy.routes';
-
-
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 const app = express();
 const PORT = process.env.PORT || 5001;
 const MONGODB_URI = process.env.MONGODB_URI || '';
@@ -102,6 +103,23 @@ if (fs.existsSync(rootUploads)) {
   app.use('/uploads', express.static(localUploads));
 }
 
+// Fallback to serve uploaded files requested directly without /uploads/ prefix
+app.get('/:filename', (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const rawFilename = req.params.filename;
+  const filename = Array.isArray(rawFilename) ? rawFilename[0] : rawFilename;
+  if (filename && typeof filename === 'string' && filename.includes('.') && !filename.endsWith('.js') && !filename.endsWith('.html') && !filename.endsWith('.json') && !filename.endsWith('.ts')) {
+    const localFile = path.join(localUploads, filename);
+    const rootFile = path.join(rootUploads, filename);
+    if (fs.existsSync(localFile)) {
+      return res.sendFile(localFile);
+    }
+    if (fs.existsSync(rootFile)) {
+      return res.sendFile(rootFile);
+    }
+  }
+  next();
+});
+
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
@@ -143,6 +161,7 @@ app.use('/api/candidates', candidateRoutes);
 
 app.use('/api/requisitions', requisitionRoutes);
 app.use('/api/job-openings', jobRoutes);
+app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/recruitment-suggestions', recruitmentSuggestionRoutes);
@@ -172,6 +191,7 @@ app.use('/api/pms/bonus', bonusRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/disciplinary', disciplinaryRoutes);
+app.use('/api/referrals', referralRoutes);
 
 app.use((req, res) => {
   console.warn(`\x1b[33m[404] Route not found: ${req.method} ${req.path}\x1b[0m`);

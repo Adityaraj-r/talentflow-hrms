@@ -1,3 +1,4 @@
+import { PriorityDot } from "@/components/ui/PriorityDot";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import * as Motion from "framer-motion";
 import { toast } from "sonner";
@@ -5,8 +6,10 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { Link, useLocation } from "react-router-dom";
-import { ArrowLeft, BriefcaseBusiness, RefreshCw, Send, CheckCircle2, XCircle, BadgeCheck, Clock3, AlertTriangle, CircleDollarSign, Eye, UserCheck, FileText, Download, UserPlus, Archive, ShieldCheck, ExternalLink } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, RefreshCw, Send, CheckCircle2, XCircle, BadgeCheck, Pencil, Search, ChevronDown, Clock3, AlertTriangle, CircleDollarSign, Eye, UserCheck, FileText, Download, UserPlus, Archive, ShieldCheck, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { RecruitmentKpiCard } from "@/components/recruitment/RecruitmentUI";
 import offerOperationsService from "@/services/offerOperationsService";
 import apiClient from "@/services/apiClient";
 import { useUser } from "@/contexts/UserContext";
@@ -61,6 +64,42 @@ const OfferOperations = () => {
   const [error, setError] = useState("");
   const [selectedOfferId, setSelectedOfferId] = useState(null);
   const [previewOffer, setPreviewOffer] = useState(null);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("All Statuses");
+  const [filterPriority, setFilterPriority] = useState("All Priorities");
+  const [filterDept, setFilterDept] = useState("All Departments");
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  const offers = useMemo(() => (data?.offers || []).map(enrichOffer), [data]);
+  const filteredOffers = useMemo(() => {
+    return offers.filter(offer => {
+       if (search && !offer.candidateName?.toLowerCase().includes(search.toLowerCase())) return false;
+       if (filterStatus !== "All Statuses" && offer.status !== filterStatus) return false;
+       if (filterDept !== "All Departments" && offer.department !== filterDept) return false;
+       const priority = offer.priority || (Number(offer.salary) >= 250000 ? "High" : Number(offer.salary) < 120000 ? "Low" : "Medium");
+       if (filterPriority !== "All Priorities" && priority !== filterPriority) return false;
+       return true;
+    });
+  }, [offers, search, filterStatus, filterPriority, filterDept]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterStatus, filterPriority, filterDept]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOffers.length / ITEMS_PER_PAGE));
+  const paginatedOffers = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return filteredOffers.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredOffers, page]);
+  
+  const handleResetFilters = () => {
+    setSearch("");
+    setFilterStatus("All Statuses");
+    setFilterPriority("All Priorities");
+    setFilterDept("All Departments");
+    setPage(1);
+  };
 
 
   const loadDashboard = useCallback(async () => {
@@ -83,7 +122,7 @@ const OfferOperations = () => {
     loadDashboard();
   }, [loadDashboard]);
 
-  const offers = useMemo(() => (data?.offers || []).map(enrichOffer), [data]);
+
   const selectedOffer = useMemo(() => offers.find((offer) => offer._id === selectedOfferId) || offers[0], [offers, selectedOfferId]);
 
   const handleAction = async (action, offer) => {
@@ -184,16 +223,7 @@ const OfferOperations = () => {
   }).length, [offers]);
   const responsePending = useMemo(() => offers.filter(o => o.status === "Offered").length, [offers]);
 
-  const highestOffer = useMemo(() => offers.length ? Math.max(...offers.map(o => Number(o.salary) || 0)) : 0, [offers]);
-  const lowestOffer = useMemo(() => offers.length ? Math.min(...offers.map(o => Number(o.salary) || 0)) : 0, [offers]);
-  const avgOfferValue = useMemo(() => offers.length ? Math.round(offers.reduce((sum, o) => sum + (Number(o.salary) || 0), 0) / offers.length) : 0, [offers]);
-  const avgResponseTime = useMemo(() => offers.length ? Math.round(offers.reduce((sum, o) => sum + (o.responseTimeDays || 0), 0) / offers.length) : 0, [offers]);
-  const offersThisMonth = useMemo(() => offers.filter(o => {
-    const date = o.createdAt ? new Date(o.createdAt) : null;
-    if (!date) return false;
-    const now = new Date();
-    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-  }).length, [offers]);
+
 
   const recentActivities = useMemo(() => {
     const list = [];
@@ -251,23 +281,14 @@ const OfferOperations = () => {
   }, [recentActivities]);
 
   return (
-    <div className="min-h-screen space-y-6 bg-slate-50 dark:bg-slate-950 p-5 text-slate-900 dark:text-slate-100 md:p-7">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-700 dark:text-cyan-200">
-            <BriefcaseBusiness className="h-3.5 w-3.5" />
-            Enterprise Hiring Operations
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white md:text-3xl">Offer Operations</h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-            Prioritize approvals, releases, responses, and offer follow-through from one workspace.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2.5">
+    <div className="min-h-screen bg-background text-foreground p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Offer Operations</h1>
+        <div className="flex flex-wrap items-center gap-2">
           <Link to="/dashboard/offer-management">
-            <Button variant="outline" className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm"><ArrowLeft className="mr-2 h-4 w-4" />Classic Offers</Button>
+            <Button variant="outline" className="h-9"><ArrowLeft className="mr-2 h-4 w-4" />Classic Offers</Button>
           </Link>
-          <Button onClick={loadDashboard} variant="outline" className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm"><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
+          <Button onClick={loadDashboard} variant="outline" className="h-9"><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
           <ExportCenter onExport={handleExport} />
         </div>
       </div>
@@ -285,96 +306,127 @@ const OfferOperations = () => {
       ) : (
         <>
           {!showApprovalsOnly && !showTemplatesOnly && (
-            <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-              <div className="mb-4 flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-cyan-500 dark:text-cyan-400 mt-1 shrink-0" strokeWidth={2} />
-                  <div>
-                    <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Needs Attention</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Approval blockers, expiry risk, and pending candidate responses.</p>
-                  </div>
-                </div>
-                <Link to="/dashboard/offer-management">
-                  <Button variant="outline" size="sm" className="rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-semibold transition-all hover:-translate-y-0.5 hover:shadow-sm">
-                    <Eye className="mr-2 h-3.5 w-3.5" />View All
-                  </Button>
-                </Link>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <Link to="/dashboard/offer-management?status=Pending Approval" className="rounded-lg border border-amber-200 dark:border-amber-500/20 bg-amber-50/35 dark:bg-amber-500/5 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber-100/45 dark:hover:bg-amber-500/10 hover:shadow-sm">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">HR Approval</p>
-                  <p className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white font-mono">{pendingHr}</p>
-                </Link>
-                <Link to="/dashboard/offer-management?status=Pending Approval" className="rounded-lg border border-blue-200 dark:border-blue-500/20 bg-blue-50/35 dark:bg-blue-500/5 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-100/45 dark:hover:bg-blue-500/10 hover:shadow-sm">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">Manager Approval</p>
-                  <p className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white font-mono">{pendingMgr}</p>
-                </Link>
-                <Link to="/dashboard/offer-management?expiry=Due soon" className="rounded-lg border border-rose-200 dark:border-rose-500/20 bg-rose-50/35 dark:bg-rose-500/5 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-100/45 dark:hover:bg-rose-500/10 hover:shadow-sm">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300">Expiring Soon</p>
-                  <p className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white font-mono">{expiringSoon}</p>
-                </Link>
-                <Link to="/dashboard/offer-management?status=Released" className="rounded-lg border border-violet-200 dark:border-violet-500/20 bg-violet-50/35 dark:bg-violet-500/5 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet-100/45 dark:hover:bg-violet-500/10 hover:shadow-sm">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300">Response Due</p>
-                  <p className="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white font-mono">{responsePending}</p>
-                </Link>
-              </div>
-            </section>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+              <RecruitmentKpiCard title="HR Approval" value={pendingHr} icon={AlertTriangle} accent="amber" />
+              <RecruitmentKpiCard title="Manager Approval" value={pendingMgr} icon={Clock3} accent="blue" />
+              <RecruitmentKpiCard title="Expiring Soon" value={expiringSoon} icon={AlertTriangle} accent="rose" />
+              <RecruitmentKpiCard title="Response Due" value={responsePending} icon={CheckCircle2} accent="violet" />
+            </div>
           )}
 
           {offers.length > 0 && (
-            <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-              <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <BriefcaseBusiness className="h-5 w-5 text-cyan-500 dark:text-cyan-400 mt-1 shrink-0" strokeWidth={2} />
-                  <div>
-                    <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Active Offer Work Queue</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Open candidate packages and release-ready offers.</p>
+            <>
+              {/* FILTERS */}
+              <div className="rounded-lg border border-border bg-card p-4 shadow-sm mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Search candidate..." className="pl-9 h-9 w-full text-sm bg-background" value={search} onChange={e => setSearch(e.target.value)} />
+                  </div>
+                  <FilterSelect label="Status" value={filterStatus} onChange={setFilterStatus} options={["All Statuses", "Draft", "Pending HR Manager Approval", "Pending CEO Approval", "Offered", "Accepted"]} />
+                  <FilterSelect label="Priority" value={filterPriority} onChange={setFilterPriority} options={["All Priorities", "High", "Medium", "Low"]} />
+                  <FilterSelect label="Department" value={filterDept} onChange={setFilterDept} options={["All Departments", "Engineering", "Design", "Sales", "HR"]} />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                  <div className="md:col-start-6 flex gap-2">
+                    <Button variant="outline" onClick={handleResetFilters} className="h-9 w-full border-input bg-background hover:bg-muted">Reset Filters</Button>
                   </div>
                 </div>
-                {selectedOffer && canWrite && canSendOffer(selectedOffer) && <Button onClick={() => handleAction("send", selectedOffer)} className="rounded-lg bg-cyan-600 dark:bg-cyan-500 text-white hover:bg-cyan-700 dark:hover:bg-cyan-600 transition-all shadow-sm"><Send className="mr-2 h-4 w-4" />Send Selected Offer</Button>}
               </div>
-              <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-3 pt-1">
-                {offers.map((offer) => {
-                  const priority = offer.priority || (Number(offer.salary) >= 250000 ? "High" : Number(offer.salary) < 120000 ? "Low" : "Medium");
-                  const priorityColor = priority === "High" ? "text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-500/10" : priority === "Low" ? "text-emerald-700 dark:text-[#34D399] border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10" : "text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10";
-                  const isSelected = selectedOffer?._id === offer._id;
-                  const initials = (offer.candidateName || "").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
-                  return (
-                    <button
-                      key={offer._id || offer.offerId}
-                      onClick={() => setSelectedOfferId(offer._id)}
-                      className={cn(
-                        "relative overflow-hidden min-w-72 rounded-lg text-left flex flex-col justify-between gap-3 transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-md",
-                        isSelected
-                          ? "border-2 border-cyan-500 dark:border-cyan-500/60 bg-cyan-500/[0.025] dark:bg-cyan-500/[0.035] p-[15px] shadow-md shadow-cyan-500/[0.05] dark:shadow-cyan-900/10"
-                          : "border border-slate-200 dark:border-[rgba(148,163,184,0.20)] bg-slate-50/50 dark:bg-white/[0.01] p-4 shadow-sm hover:border-slate-300 dark:hover:border-[rgba(148,163,184,0.35)] hover:bg-slate-100/50 dark:hover:bg-white/[0.02]"
-                      )}
+              {/* TABLE */}
+              <div className="rounded-lg border border-border bg-card/80 shadow-sm overflow-hidden flex flex-col mb-6">
+                <table className="w-full text-sm table-fixed">
+                  <thead className="bg-muted/95 text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="w-[18%] px-4 py-3 text-left font-semibold truncate">Candidate</th>
+                      <th className="w-[12%] px-4 py-3 text-left font-semibold truncate">Offer ID</th>
+                      <th className="w-[15%] px-4 py-3 text-left font-semibold truncate">Offer Status</th>
+                      <th className="w-[15%] px-4 py-3 text-left font-semibold truncate">Current Stage</th>
+                      <th className="w-[10%] px-4 py-3 text-center font-semibold truncate">Priority</th>
+                      <th className="w-[15%] px-4 py-3 text-left font-semibold truncate">Last Updated</th>
+                      <th className="w-[15%] px-4 py-3 text-right font-semibold truncate">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {paginatedOffers.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                          No offers match the selected filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedOffers.map((offer) => {
+                        const priority = offer.priority || (Number(offer.salary) >= 250000 ? "High" : Number(offer.salary) < 120000 ? "Low" : "Medium");
+                        const isSelected = selectedOffer?._id === offer._id;
+                        return (
+                          <tr key={offer._id || offer.offerId} onClick={() => setSelectedOfferId(offer._id)} className={cn("transition-colors cursor-pointer", isSelected ? "bg-muted/50" : "hover:bg-muted/30 odd:bg-white/[0.02]")}>
+                            <td className="px-4 py-3 truncate font-medium text-foreground">{offer.candidateName}</td>
+                            <td className="px-4 py-3 text-muted-foreground truncate">{offer.offerId}</td>
+                            <td className="px-4 py-3 truncate"><OfferStatusBadge status={offer.status} /></td>
+                            <td className="px-4 py-3 text-muted-foreground truncate">{offer.approvalStage || "Draft"}</td>
+                            <td className="px-4 py-3 text-center truncate">
+                                <PriorityDot priority={priority} />
+                              </td>
+                            <td className="px-4 py-3 text-muted-foreground truncate">{new Date(offer.updatedAt || offer.createdAt).toLocaleDateString()}</td>
+                            <td className="px-4 py-3 text-right truncate">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleAction("preview", offer); }} title="View">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 shrink-0 cursor-pointer" title="Edit">
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                {canWrite && canSendOffer(offer) && (
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-500/10 shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleAction("send", offer); }} title="Send Offer">
+                                    <Send className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {canApproveOffers && (
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10 shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleAction("reject", offer); }} title="Cancel">
+                                    <XCircle className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+
+                {/* PAGINATION FOOTER */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-border bg-card/50 text-xs text-muted-foreground">
+                  <div>
+                    Showing {filteredOffers.length === 0 ? 0 : (page - 1) * ITEMS_PER_PAGE + 1} to {Math.min(page * ITEMS_PER_PAGE, filteredOffers.length)} of {filteredOffers.length} entries
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      className="h-8 px-3 text-xs cursor-pointer"
                     >
-                      {isSelected && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-cyan-500 dark:bg-cyan-400" />}
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 shrink-0 grid place-items-center rounded-full bg-cyan-500/10 dark:bg-cyan-500/10 text-cyan-700 dark:text-[#38BDF8] font-bold text-xs border border-cyan-500/20">
-                          {initials}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-[15px] font-semibold text-slate-900 dark:text-[#F8FAFC]">{offer.candidateName}</p>
-                          <p className="text-[10px] font-mono text-slate-500 dark:text-[rgba(148,163,184,0.88)] mt-0.5">{offer.offerId}</p>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1 text-[11px] pt-2 border-t border-slate-100 dark:border-[rgba(148,163,184,0.18)]">
-                        <p className="truncate"><span className="font-semibold text-slate-800 dark:text-[#E2E8F0]">{offer.status}</span></p>
-                        <p className="truncate text-slate-600 dark:text-[#CBD5E1]">{offer.approvalStage || "Draft"}</p>
-                      </div>
-                      <div className="flex items-center justify-between mt-1">
-                        <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider", priorityColor)}>
-                          {priority} Priority
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
+                      Previous
+                    </Button>
+                    <span className="font-semibold text-foreground px-1">
+                      Page {page} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      className="h-8 px-3 text-xs cursor-pointer"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </section>
+            </>
           )}
 
           {showTemplatesOnly ? (
@@ -581,3 +633,24 @@ const OfferOperations = () => {
 };
 
 export default OfferOperations;
+
+function FilterSelect({ label, value, onChange, options = [] }) {
+  return (
+    <label className="relative block w-full">
+      <span className="sr-only">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="appearance-none h-9 w-full rounded-md border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-[3px] focus:ring-ring/50 cursor-pointer"
+      >
+        <option value={options[0]}>{options[0]}</option>
+        {options.slice(1).map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2 top-2.5 h-4 w-4 text-muted-foreground" />
+    </label>
+  );
+}

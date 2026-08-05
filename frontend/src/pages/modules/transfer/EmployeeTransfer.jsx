@@ -14,6 +14,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import EmployeePromotion from "./EmployeePromotion"
 import OffboardingRequests from "./OffboardingRequests"
 
+import TransferRequestForm from "./TransferRequestForm"
+
 const EmployeeTransfer = () => {
   const { user } = useAuth()
   const userRole = user?.role?.toUpperCase() || ""
@@ -79,6 +81,7 @@ const AdminTransferView = ({ user }) => {
 
   const [recommendModalOpen, setRecommendModalOpen] = useState(false)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [initiateModalOpen, setInitiateModalOpen] = useState(false)
   const [selectedTransfer, setSelectedTransfer] = useState(null)
   const [recommendText, setRecommendText] = useState("")
 
@@ -145,11 +148,11 @@ const AdminTransferView = ({ user }) => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="Total Requests" value={stats.total} icon={<ArrowLeftRight className="text-blue-500" />} />
-        <StatCard title="Approved" value={stats.approved} icon={<CheckCircle2 className="text-green-500" />} color="text-green-600" />
-        <StatCard title="Pending" value={stats.pending} icon={<Clock className="text-orange-500" />} color="text-orange-600" />
-        <StatCard title="Rejected" value={stats.rejected} icon={<XCircle className="text-red-500" />} color="text-red-600" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard title="Total Requests" value={stats.total} icon={<ArrowLeftRight className="h-5 w-5 text-blue-700 dark:text-blue-400" />} color="text-blue-800 dark:text-blue-400" gradient="from-blue-100 via-blue-50 to-white dark:from-blue-950/60 dark:via-blue-900/20 dark:to-background border-blue-200 dark:border-blue-900" />
+        <StatCard title="Approved" value={stats.approved} icon={<CheckCircle2 className="h-5 w-5 text-green-700 dark:text-green-400" />} color="text-green-800 dark:text-green-400" gradient="from-green-100 via-green-50 to-white dark:from-green-950/60 dark:via-green-900/20 dark:to-background border-green-200 dark:border-green-900" />
+        <StatCard title="Pending" value={stats.pending} icon={<Clock className="h-5 w-5 text-orange-700 dark:text-orange-400" />} color="text-orange-800 dark:text-orange-400" gradient="from-orange-100 via-orange-50 to-white dark:from-orange-950/60 dark:via-orange-900/20 dark:to-background border-orange-200 dark:border-orange-900" />
+        <StatCard title="Rejected" value={stats.rejected} icon={<XCircle className="h-5 w-5 text-red-700 dark:text-red-400" />} color="text-red-800 dark:text-red-400" gradient="from-red-100 via-red-50 to-white dark:from-red-950/60 dark:via-red-900/20 dark:to-background border-red-200 dark:border-red-900" />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -159,9 +162,16 @@ const AdminTransferView = ({ user }) => {
             <TabsTrigger value="history">Transfer History</TabsTrigger>
           </TabsList>
           
-          <Button variant="outline" size="sm" onClick={() => toast.success("Compiling Approved Transfers for Export...")}>
-            <FileText className="h-4 w-4 mr-2" /> Export Pipeline
-          </Button>
+          <div className="flex items-center gap-2">
+            {["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER_ADMIN", "CEO", "COUNTRY_MANAGER", "DEPARTMENT_MANAGER"].includes(userRole) && (
+              <Button size="sm" onClick={() => setInitiateModalOpen(true)}>
+                <ArrowLeftRight className="h-4 w-4 mr-2" /> Initiate Transfer
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => toast.success("Compiling Approved Transfers for Export...")}>
+              <FileText className="h-4 w-4 mr-2" /> Export Pipeline
+            </Button>
+          </div>
         </div>
 
         <TabsContent value="pending" className="mt-4">
@@ -200,6 +210,22 @@ const AdminTransferView = ({ user }) => {
           />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={initiateModalOpen} onOpenChange={setInitiateModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Initiate Employee Transfer</DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <TransferRequestForm
+              onSuccess={() => {
+                setInitiateModalOpen(false);
+                queryClient.invalidateQueries(['transfers']);
+              }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={recommendModalOpen} onOpenChange={setRecommendModalOpen}>
         <DialogContent>
@@ -321,7 +347,7 @@ const EmployeeTransferView = ({ user }) => {
       </div>
 
       {formOpen && (
-        <Card>
+        <Card className="border shadow-md bg-gradient-to-br from-background to-muted/20">
           <CardHeader>
             <CardTitle>New Transfer Request</CardTitle>
             <CardDescription>Submit a request to transfer to another department. Your request will be reviewed by HR.</CardDescription>
@@ -356,7 +382,7 @@ const EmployeeTransferView = ({ user }) => {
         </Card>
       )}
 
-      <Card className="shadow-sm border">
+      <Card className="shadow-md border overflow-hidden transition-all duration-300 hover:shadow-lg">
         <CardHeader>
           <CardTitle className="text-lg">My Transfer Requests</CardTitle>
         </CardHeader>
@@ -378,7 +404,7 @@ const EmployeeTransferView = ({ user }) => {
                   <tr><td colSpan="4" className="p-8 text-center text-muted-foreground">No transfer requests found. Click New Request to submit one.</td></tr>
                 ) : (
                   myTransfers.map(t => (
-                    <tr key={t._id} className="hover:bg-muted/20 transition-colors">
+                    <tr key={t._id} className="hover:bg-primary/5 transition-colors duration-200 cursor-pointer">
                       <td className="p-4 font-medium">{t.requestedDepartment || t.newDepartment}</td>
                       <td className="p-4">{t.reason}</td>
                       <td className="p-4">{new Date(t.createdAt).toLocaleDateString()}</td>
@@ -421,21 +447,27 @@ const EmployeeTransferView = ({ user }) => {
   )
 }
 
-const StatCard = ({ title, value, icon, color = "text-foreground" }) => (
-  <Card className="shadow-md border-none transition-all hover:shadow-lg">
-    <CardContent className="p-6 flex items-center justify-between">
+const StatCard = ({ title, value, icon, color = "text-foreground", gradient = "from-background to-transparent" }) => (
+  <Card className={cn(
+    "relative overflow-hidden shadow-sm transition-all duration-300 ease-out border",
+    "hover:shadow-lg hover:-translate-y-1 hover:brightness-95 dark:hover:brightness-110 group",
+    `bg-gradient-to-br ${gradient}`
+  )}>
+    <CardContent className="p-4 flex items-center justify-between relative z-10">
       <div>
-        <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        <h3 className={cn("text-2xl font-bold mt-1", color)}>{value}</h3>
+        <p className="text-xs font-semibold text-muted-foreground/80 group-hover:text-foreground/90 transition-colors duration-300">{title}</p>
+        <h3 className={cn("text-2xl font-bold mt-1 tracking-tight", color)}>{value}</h3>
       </div>
-      <div className="p-3 bg-muted rounded-full">{icon}</div>
+      <div className="p-2.5 bg-white/60 dark:bg-black/20 backdrop-blur-md rounded-xl shadow-sm border border-black/5 dark:border-white/5 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+        {icon}
+      </div>
     </CardContent>
   </Card>
 )
 
 const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTerm, onSearchChange, pagination, onPageChange, canApproveReject = true, canRecommend = false, onRecommend, onViewDetails, userRole }) => {
   return (
-    <Card className="shadow-sm border">
+    <Card className="shadow-md border overflow-hidden transition-all duration-300 hover:shadow-lg">
       {isHistory && (
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-lg">Transfer Logs</CardTitle>
@@ -476,7 +508,7 @@ const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTe
                   const hasRecommended = item.managerRecommendation && item.managerRecommendation.includes(`[${formattedUserRole}]`);
                   
                   return (
-                  <tr key={item._id} className="hover:bg-muted/20 transition-colors">
+                  <tr key={item._id} className="hover:bg-primary/5 transition-colors duration-200 group">
                     <td className="p-4 font-medium">{item.employeeName}</td>
                     <td className="p-4">{item.employeeId}</td>
                     <td className="p-4">{item.currentDepartment}</td>

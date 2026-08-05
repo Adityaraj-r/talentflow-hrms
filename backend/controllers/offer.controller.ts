@@ -9,9 +9,9 @@ import { generateOfferLetterPdfBuffer } from '../utils/pdfGenerator';
 import { sendOfferEmail } from '../utils/sendEmail';
 
 const CEO_OFFER_THRESHOLD = () => Number(process.env.CEO_OFFER_SALARY_THRESHOLD || 250000);
-const PENDING_OFFER_APPROVAL_STATUSES = ['Pending HR Manager Approval', 'Pending CEO Approval'];
-const isPendingOfferApproval = (status?: string) => PENDING_OFFER_APPROVAL_STATUSES.includes(String(status || ''));
-const canReleaseOffer = (status?: string) => !isPendingOfferApproval(status) && status !== 'Changes Requested' && status !== 'Under Review';
+const PENDING_OFFER_APPROVAL_STATUSES: string[] = [];
+const isPendingOfferApproval = (_status?: string) => false;
+const canReleaseOffer = (_status?: string) => true;
 
 const normalizeRole = (role?: string) =>
   (role || '').toString().toUpperCase().replace(/\s+/g, '_');
@@ -64,8 +64,7 @@ const parseBenefits = (benefits: unknown) =>
     ? benefits.split(',').map((item: string) => item.trim()).filter(Boolean)
     : [];
 
-const approvalStatusForSalary = (salary: number) =>
-  Number.isFinite(salary) && salary >= CEO_OFFER_THRESHOLD() ? 'Pending HR Manager Approval' : 'Offered';
+const approvalStatusForSalary = (_salary: number) => 'Offered';
 
 const buildOfferAnalytics = async () => {
   const now = new Date();
@@ -263,7 +262,9 @@ export const getOffers = async (req: AuthRequest, res: Response) => {
     const offers = await Offer.find()
       .sort({ createdAt: -1 })
       .populate('createdBy', 'firstName lastName')
-      .populate('employeeId', 'employeeCode name email status department designation');
+      .populate('employeeId', 'employeeCode name email status department designation')
+      .populate('jobId')
+      .populate({ path: 'candidateId', populate: { path: 'jobId' } });
     res.status(200).json({ success: true, data: offers });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Server Error' });
@@ -302,6 +303,20 @@ export const createOffer = async (req: AuthRequest, res: Response) => {
     if (!Number.isFinite(numSalary) || numSalary <= 0) {
       return res.status(400).json({ success: false, error: 'Salary must be a valid positive amount.' });
     }
+
+    const queryApp = candidateId
+      ? { _id: candidateId }
+      : (candidateEmail ? { email: candidateEmail } : null);
+    if (queryApp) {
+      const application = await mongoose.model("Application").findOne(queryApp);
+      if (application && !application.offerEnabled) {
+        return res.status(403).json({
+          success: false,
+          error: "Offer generation is disabled. Candidate must be Approved first.",
+        });
+      }
+    }
+
     const offerId = `OFF-${Date.now()}`;
     const status = approvalStatusForSalary(numSalary);
     const needsApproval = isPendingOfferApproval(status);
@@ -328,7 +343,7 @@ if (existingOffer) {
   existingOffer.templateId = templateId;
   existingOffer.compensation = compensation;
   existingOffer.status = status as any;
-  existingOffer.approvalStage = needsApproval ? 'HR Manager Approval' : 'Ready to Send';
+  existingOffer.approvalStage = 'Approved' as any;
   existingOffer.set('approvalHistory', [...((existingOffer.get('approvalHistory') as any[]) || []), {
     role: 'Recruiter',
     approverName: userName(req),
@@ -369,7 +384,8 @@ if (existingOffer) {
       probationDetails,
       reportingManager: reportingManager || '',
       templateId,
-      approvalStage: needsApproval ? 'HR Manager Approval' : 'Ready to Send',
+      status: status as any,
+      approvalStage: 'Approved' as any,
       compensation,
       approvalHistory: [{ role: 'Recruiter', approverName: userName(req), approverId: req.user?.id, action: 'Submitted', comments: 'Offer package submitted', at: new Date() }],
       activityHistory: [{ type: 'offer-created', message: `Recruiter submitted offer for ${candidateName}`, actor: userName(req), priority: needsApproval ? 'high' : 'normal', at: new Date() }],
@@ -384,7 +400,6 @@ if (existingOffer) {
         { step: 'Payroll Setup', owner: 'Payroll', status: 'Pending' },
         { step: 'Department Assignment', owner: 'Hiring Manager', status: 'Pending' },
       ],
-      status,
       createdBy: req.user?.id,
     });
 
@@ -417,6 +432,24 @@ export const updateOfferStatus = async (req: AuthRequest, res: Response) => {
         { step: 'Payroll Setup', owner: 'Payroll', status: 'Pending' },
         { step: 'Department Assignment', owner: 'Hiring Manager', status: 'Pending' },
       ]);
+
+      if (offer.candidateId) {
+        const app = await mongoose.model('Application').findById(offer.candidateId);
+        if (app) {
+          app.set('status', 'Background Verification');
+          app.set('backgroundVerification', {
+            status: 'In Progress',
+            initiatedAt: new Date(),
+            checks: {
+              identity: 'Pending',
+              education: 'Pending',
+              employment: 'Pending',
+              criminal: 'Pending'
+            }
+          });
+          await app.save();
+        }
+      }
     }
     offer.set('activityHistory', [...((offer.get('activityHistory') as any[]) || []), { type: 'status-update', message: `Offer marked ${status}`, actor: userName(req), priority: status === 'Accepted' ? 'success' : 'normal', at: new Date() }]);
     await offer.save();
@@ -535,6 +568,47 @@ export const negotiateOffer = async (req: AuthRequest, res: Response) => {
     res.status(200).json({ success: true, data: offer });
   } catch {
     res.status(400).json({ success: false, error: 'Negotiation failed' });
+  }
+};
+
+export const updateOfferDetails = async (req: AuthRequest, res: Response) => {
+  try {
+    const offer = await Offer.findById(req.params.id);
+    if (!offer) return res.status(404).json({ success: false, error: 'Offer not found' });
+    const before = offer.toObject();
+
+    const { salary, joiningDate, expiryDate, position, department, bonus, reportingManager, probationDetails } = req.body;
+
+    if (salary !== undefined) {
+      const numSalary = Number(salary);
+      if (!Number.isFinite(numSalary) || numSalary <= 0) {
+        return res.status(400).json({ success: false, error: 'Salary must be a valid positive amount.' });
+      }
+      offer.salary = numSalary;
+      offer.set('compensation', compensationFor(numSalary, req.body));
+    }
+
+    if (joiningDate) offer.joiningDate = joiningDate;
+    if (expiryDate) offer.expiryDate = new Date(expiryDate);
+    if (position) offer.position = position;
+    if (department) offer.department = department;
+    if (bonus !== undefined) offer.bonus = Number(bonus);
+    if (reportingManager !== undefined) offer.reportingManager = reportingManager;
+    if (probationDetails !== undefined) offer.probationDetails = probationDetails;
+
+    offer.set('activityHistory', [...((offer.get('activityHistory') as any[]) || []), {
+      type: 'offer-updated',
+      message: `Offer details updated for ${offer.candidateName}`,
+      actor: userName(req),
+      priority: 'normal',
+      at: new Date(),
+    }]);
+
+    await offer.save();
+    await logOfferAction(req, 'Update Offer Details', `Updated details for offer ${offer.offerId}`, before, offer.toObject());
+    res.status(200).json({ success: true, data: offer });
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error?.message || 'Update failed' });
   }
 };
 
