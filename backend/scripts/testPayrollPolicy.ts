@@ -1,9 +1,18 @@
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import { seedPayrollPolicies } from '../utils/payrollPolicySeeder';
 import { getActivePolicy, calculateSlabTax, getFlatSlabAmount } from '../services/payrollPolicy.service';
 
 async function main() {
+  let MongoMemoryServer: any;
+  try {
+    // @ts-ignore
+    const memServerModule = await import('mongodb-memory-server');
+    MongoMemoryServer = memServerModule.MongoMemoryServer;
+  } catch {
+    console.error('mongodb-memory-server package is not installed in environment.');
+    process.exit(1);
+  }
+
   const mongod = await MongoMemoryServer.create();
   await mongoose.connect(mongod.getUri());
   console.log('Connected to in-memory MongoDB');
