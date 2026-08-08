@@ -9,8 +9,24 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Download, FileText, Plus, Search } from "lucide-react"
+import { StatsCard } from "@/components/ui/stats-card";
+
+// import { Download, FileText, Plus, Search } from "lucide-react"
+import {
+  Download,
+  FileText,
+  Plus,
+  Search,
+  ClipboardList,
+  Clock3,
+  LoaderCircle,
+  CheckCircle2,
+} from "lucide-react";
 import { toast } from "sonner"
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 import {
   createDisciplinaryCase,
   getDisciplinaryCases,
@@ -20,11 +36,13 @@ import {
   updateDisciplinaryStatus,
 } from "@/services/disciplinaryService"
 
+
 const STATUSES = ["Pending Review", "In Progress", "Completed"]
 const HR_OFFICER_ROLES = ["HR_OFFICER", "ADMIN", "SUPER_ADMIN"]
 const HR_MANAGER_ROLES = ["HR_MANAGER"]
 const REPORTING_ROLES = ["DEPARTMENT_MANAGER", "DIRECT_MANAGER"]
 const API_ORIGIN = (import.meta.env.VITE_API_URL || "http://localhost:5001/api").replace(/\/api\/?$/, "")
+
 
 const normalizeRole = (role) => (role || "").toUpperCase().replace(/\s+/g, "_")
 const getName = (employee) =>
@@ -49,6 +67,7 @@ const DisciplinaryActions = () => {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("All")
   const [showCreateCase, setShowCreateCase] = useState(false)
+  const [dashboardFilter, setDashboardFilter] = useState("All");
 
   const loadCases = async () => {
     setLoading(true)
@@ -107,7 +126,7 @@ const DisciplinaryActions = () => {
             <>
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="cases">All Cases</TabsTrigger>
-              <TabsTrigger value="reports">Reports</TabsTrigger>
+             
             </>
           ) : (
             <>
@@ -120,11 +139,14 @@ const DisciplinaryActions = () => {
         {isHr && (
           <TabsContent value="dashboard">
             <HrDashboard
-              cases={cases}
-              counts={counts}
-              isHrManager={isHrManager}
+                cases={cases}
+                 counts={counts}
+               dashboardFilter={dashboardFilter}
+               setDashboardFilter={setDashboardFilter}
+               isHrManager={isHrManager}
               onView={setSelectedCase}
-              loading={loading}
+               loading={loading}
+
             />
           </TabsContent>
         )}
@@ -156,23 +178,28 @@ const DisciplinaryActions = () => {
           />
         </TabsContent>
 
-        {isHr && (
-          <TabsContent value="reports">
-            <Reports counts={counts} total={cases.length} />
-          </TabsContent>
-        )}
+        
       </Tabs>
 
-      {selectedCase && (
-        <CaseDetails
-          item={selectedCase}
-          role={role}
-          isHrOfficer={isHrOfficer}
-          isHrManager={isHrManager}
-          onClose={() => setSelectedCase(null)}
-          onUpdated={updateCaseInList}
-        />
-      )}
+      <Dialog
+  open={!!selectedCase}
+  onOpenChange={(open) => {
+    if (!open) setSelectedCase(null);
+  }}
+>
+  <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+    {selectedCase && (
+      <CaseDetails
+        item={selectedCase}
+        role={role}
+        isHrOfficer={isHrOfficer}
+        isHrManager={isHrManager}
+        onClose={() => setSelectedCase(null)}
+        onUpdated={updateCaseInList}
+      />
+    )}
+  </DialogContent>
+</Dialog>
     </div>
   )
 }
@@ -326,21 +353,60 @@ const ReadonlyField = ({ label, value }) => (
   </div>
 )
 
-const HrDashboard = ({ cases, counts, isHrManager, onView, loading }) => {
-  const awaitingReview = cases.filter((item) => item.managerReviewRequested && item.status !== "Completed")
 
+const HrDashboard = ({
+  cases,
+  counts,
+  dashboardFilter,
+  setDashboardFilter,
+  isHrManager,
+  onView,
+  loading,
+}) => {
+  const awaitingReview = cases.filter((item) => item.managerReviewRequested && item.status !== "Completed")
+  const filteredDashboardCases =
+  dashboardFilter === "All"
+    ? cases
+    : cases.filter((item) => item.status === dashboardFilter);
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {STATUSES.map((status) => (
-          <Card key={status}>
-            <CardHeader className="pb-2">
-              <CardDescription>{status}</CardDescription>
-              <CardTitle className="text-3xl">{counts[status] || 0}</CardTitle>
-            </CardHeader>
-          </Card>
-        ))}
-      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+  <StatsCard
+    title="Total Cases"
+    value={cases.length}
+    subtitle="All disciplinary cases"
+    icon={<ClipboardList className="h-8 w-8" />}
+    variant="blue"
+      onClick={() => setDashboardFilter("All")}
+  />
+
+  <StatsCard
+    title="Pending Review"
+    value={counts["Pending Review"] || 0}
+    subtitle="Awaiting HR review"
+    icon={<Clock3 className="h-8 w-8" />}
+    variant="amber"
+    onClick={() => setDashboardFilter("Pending Review")}
+  />
+
+  <StatsCard
+    title="In Progress"
+    value={counts["In Progress"] || 0}
+    subtitle="Cases under investigation"
+    icon={<LoaderCircle className="h-8 w-8" />}
+    variant="orange"
+    onClick={() => setDashboardFilter("In Progress")}
+  />
+
+  <StatsCard
+    title="Completed"
+    value={counts["Completed"] || 0}
+    subtitle="Cases resolved"
+    icon={<CheckCircle2 className="h-8 w-8" />}
+    variant="green"
+     onClick={() => setDashboardFilter("Completed")}
+  />
+</div>
       {isHrManager && (
         <CasesTable
           title="Cases Awaiting Manager Review"
@@ -350,7 +416,7 @@ const HrDashboard = ({ cases, counts, isHrManager, onView, loading }) => {
           loading={loading}
         />
       )}
-      <CasesTable title="Recent Cases" description="Latest submitted incidents" cases={cases.slice(0, 5)} onView={onView} loading={loading} />
+      <CasesTable title="Recent Cases" description="Latest submitted incidents" cases={filteredDashboardCases} onView={onView} loading={loading} />
     </div>
   )
 }
@@ -527,7 +593,23 @@ const CaseDetails = ({ item, isHrOfficer, isHrManager, onClose, onUpdated }) => 
           {item.attachment ? (
             <div className="flex gap-2">
               <Button variant="outline" asChild><a href={getAttachmentUrl(item.attachment)} target="_blank" rel="noreferrer">View</a></Button>
-              <Button variant="outline" asChild><a href={getAttachmentUrl(item.attachment)} download><Download className="h-4 w-4 mr-2" />Download</a></Button>
+              <Button
+  variant="outline"
+  onClick={() => {
+    const filename = item.attachment?.split("/").pop();
+
+    if (!filename) return;
+
+    const link = document.createElement("a");
+    link.href = `${API_ORIGIN}/api/disciplinary/download/${filename}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }}
+>
+  <Download className="h-4 w-4 mr-2" />
+  Download
+</Button>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">No attachment uploaded.</p>
@@ -584,12 +666,7 @@ const CaseDetails = ({ item, isHrOfficer, isHrManager, onClose, onUpdated }) => 
   )
 }
 
-const Reports = ({ total, counts }) => (
-  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-    <ReportCard title="Total Cases" value={total} />
-    {STATUSES.map((status) => <ReportCard key={status} title={status} value={counts[status] || 0} />)}
-  </div>
-)
+
 
 const ReportCard = ({ title, value }) => (
   <Card>

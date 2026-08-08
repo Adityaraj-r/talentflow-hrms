@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { FileText, Eye, Download, FolderOpen, ZoomIn, ZoomOut, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import JSZip from "jszip";
+// import JSZip from "jszip";
 
 // Helper Functions
 export const getFileUrl = (url) => {

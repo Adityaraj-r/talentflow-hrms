@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import DisciplinaryCase, { DisciplinaryStatus } from "../models/DisciplinaryCase.model";
 import Employee from "../models/Employee.model";
 import User from "../models/User.model";
+import fs from "fs";
+import path from "path";
 
 const STATUSES: DisciplinaryStatus[] = ["Pending Review", "In Progress", "Completed"];
 const HR_ROLES = ["ADMIN", "SUPER_ADMIN", "HR_MANAGER", "HR_OFFICER"];
@@ -324,5 +326,27 @@ export const updateDisciplinaryStatus = async (req: Request, res: Response) => {
     res.json({ success: true, data: await caseWithEmployee(disciplinaryCase) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
+  }
+
+};
+export const downloadAttachment = async (req: Request, res: Response) => {
+  try {
+    const { filename } = req.params;
+
+    const filePath = path.join(__dirname, "../uploads", filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        success: false,
+        message: "File not found",
+      });
+    }
+
+    return res.download(filePath);
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
