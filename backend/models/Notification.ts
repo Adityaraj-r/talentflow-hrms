@@ -6,6 +6,19 @@ export enum NotificationType {
   APPRAISAL_RESULT_PUBLISHED = 'appraisal_result_published',
   TEAM_APPRAISALS_COMPLETE = 'team_appraisals_complete',
   RESIGNATION_WITHDRAWN = 'resignation_withdrawn',
+  PAYROLL_REJECTED = 'payroll_rejected',
+  PAYROLL_PENDING_CEO_APPROVAL = 'payroll_pending_ceo_approval',
+  PAYROLL_PENDING_FINANCE_APPROVAL = 'payroll_pending_finance_approval',
+  INDEMNITY_REJECTED = 'indemnity_rejected',
+  INDEMNITY_PENDING_HR_APPROVAL = 'indemnity_pending_hr_approval',
+  INDEMNITY_PENDING_CEO_APPROVAL = 'indemnity_pending_ceo_approval',
+  INDEMNITY_APPROVED = 'indemnity_approved',
+  INDEMNITY_RESUBMITTED = 'indemnity_resubmitted',
+  INDEMNITY_PENDING_FINANCE_APPROVAL = 'indemnity_pending_finance_approval',
+  TICKET_PENDING_FINANCE_APPROVAL = 'ticket_pending_finance_approval',
+  TICKET_PENDING_PAYROLL_APPROVAL = 'ticket_pending_payroll_approval',
+  TICKET_APPROVED = 'ticket_approved',
+  TICKET_REJECTED = 'ticket_rejected',
 }
 
 export interface INotification extends Document {
@@ -60,5 +73,6 @@ const NotificationSchema = new Schema<INotification>(
 NotificationSchema.index({ userId: 1, readAt: 1, createdAt: -1 });
 NotificationSchema.index({ userId: 1, isDeleted: 1 });
 NotificationSchema.index({ createdAt: -1 });
+NotificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 604800 }); // 7 days — ADD THIS
 
 export const NotificationModel = model<INotification>('Notification', NotificationSchema);
