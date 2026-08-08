@@ -165,7 +165,7 @@ export default function FiltersSection({ filters, setFilters }) {
             />
             <Input
               type="text"
-              placeholder="Search employee..."
+              placeholder="Search by name or employee ID..."
               value={filters.search}
               onChange={(e) =>
                 setFilters({
@@ -190,12 +190,12 @@ export default function FiltersSection({ filters, setFilters }) {
                 setFilters({ ...filters, department: value, page: 1 })
               }
             >
-              <SelectTrigger className="h-10 shadow-sm">
+              <SelectTrigger className="h-10 shadow-sm cursor-pointer">
                 <SelectValue placeholder="Select Department" />
               </SelectTrigger>
               <SelectContent>
                 {departments.map((dep) => (
-                  <SelectItem key={dep} value={dep}>
+                  <SelectItem key={dep} value={dep} className="cursor-pointer">
                     {dep === "all" ? "All Departments" : dep}
                   </SelectItem>
                 ))}

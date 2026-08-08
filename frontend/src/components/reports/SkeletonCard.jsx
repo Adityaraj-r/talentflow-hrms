@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SkeletonCard() {
   return (
-    <Card className="rounded-2xl shadow-sm">
+    <Card className="rounded-xl border border-border/80 shadow-sm">
       <CardContent className="p-5 space-y-3">
         <Skeleton className="h-4 w-24" />
         <Skeleton className="h-6 w-20" />

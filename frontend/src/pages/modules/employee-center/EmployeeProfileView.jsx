@@ -162,7 +162,7 @@ const EmployeeProfileView = () => {
             {canInitiateOffboarding && isActive && (
               <Button 
                 variant="destructive" 
-                className="shrink-0 shadow-sm"
+                className="shrink-0 shadow-sm cursor-pointer"
                 onClick={() => setShowOffboardModal(true)}
               >
                 <UserMinus className="h-4 w-4 mr-2" />
@@ -179,7 +179,7 @@ const EmployeeProfileView = () => {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={cn(
-                  "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
+                  "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px cursor-pointer",
                   activeTab === tab
                     ? "border-primary text-primary"
                     : "border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white"

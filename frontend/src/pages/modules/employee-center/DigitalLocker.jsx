@@ -225,8 +225,8 @@ const DigitalLocker = () => {
 
               {(!isAdmin || selectedCategory !== "Onboarding" || targetEmployeeId) && (
                 <div className="flex items-center border dark:border-gray-700 rounded-md p-1 shrink-0 bg-white dark:bg-gray-800">
-                  <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === 'grid' ? 'bg-gray-200 dark:bg-gray-700 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`} onClick={() => setViewMode('grid')}><Grid className="w-4 h-4" /></Button>
-                  <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === 'list' ? 'bg-gray-200 dark:bg-gray-700 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`} onClick={() => setViewMode('list')}><List className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" className={`h-7 w-7 cursor-pointer ${viewMode === 'grid' ? 'bg-gray-200 dark:bg-gray-700 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`} onClick={() => setViewMode('grid')}><Grid className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" className={`h-7 w-7 cursor-pointer ${viewMode === 'list' ? 'bg-gray-200 dark:bg-gray-700 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`} onClick={() => setViewMode('list')}><List className="w-4 h-4" /></Button>
                 </div>
               )}
 
@@ -234,7 +234,7 @@ const DigitalLocker = () => {
                 <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
                   <DialogTrigger asChild>
                     <Button
-                      className="bg-blue-600 hover:bg-blue-700 shrink-0"
+                      className="bg-blue-600 hover:bg-blue-700 shrink-0 cursor-pointer"
                       onClick={() => {
                         setUploadCategory(selectedCategory === "All" || selectedCategory === "Onboarding" ? "Onboarding" : selectedCategory);
                         setDocumentTitle("");

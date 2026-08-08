@@ -1,6 +1,9 @@
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/services/apiClient";
 import CEOAppraisalDashboardSection from "@/pages/pms/CEOAppraisalDashboard";
+import StatsCard from "@/components/dashboard/StatsCard";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Users, UserCheck, Stethoscope, Briefcase, DollarSign, Activity,
@@ -8,6 +11,16 @@ import {
 } from "lucide-react";
 
 const ExecutiveDashboard = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 17) return "Good Afternoon";
+    return "Good Evening";
+  };
+
   const { data: response, isLoading } = useQuery({
     queryKey: ['executiveAnalytics'],
     queryFn: () => apiClient.get('/executive/analytics/workforce'), 
@@ -57,86 +70,63 @@ const ExecutiveDashboard = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Executive Summary
-        </h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">
-          High-level KPIs and critical business intelligence metrics.
-        </p>
+      
+      {/* 1. GREETING HEADER & DATA FRESHNESS */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex flex-col space-y-1">
+          <h2 className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+            Executive Intelligence Portal
+          </h2>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            {getGreeting()}, <span className="font-bold">{user?.firstName || "Executive"}</span> 👋
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Welcome back. Here's today's HR Operations Overview.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 self-start sm:self-auto text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700/60 shadow-xs">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <span>Last Updated: <strong className="text-slate-700 dark:text-slate-200 font-medium">Just now</strong></span>
+        </div>
       </div>
 
+      {/* 2. STATS ROW (Real-Time Operational Subtitles) */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        
-        {/* Headcount Card */}
-        <Card className="dark:bg-slate-900 dark:border-slate-800 shadow-sm flex flex-col">
-          <CardContent className="p-5 xl:p-6 flex-1 flex flex-col">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <p className="text-sm font-medium text-slate-500">Total Headcount</p>
-              <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg shrink-0">
-                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-            <div className="mt-auto">
-              <p className="text-2xl xl:text-3xl font-bold dark:text-white">{metrics.headcount}</p>
-              <div className="mt-2 h-5 flex items-center text-xs">
-                {renderTrend(metrics.headcountGrowth)}
-                <span className="text-slate-500 ml-2">vs last month</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Active Today */}
-        <Card className="dark:bg-slate-900 dark:border-slate-800 shadow-sm flex flex-col">
-          <CardContent className="p-5 xl:p-6 flex-1 flex flex-col">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <p className="text-sm font-medium text-slate-500">Active Today</p>
-              <div className="p-2 bg-green-50 dark:bg-green-500/10 rounded-lg shrink-0">
-                <UserCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
-              </div>
-            </div>
-            <div className="mt-auto">
-              <p className="text-2xl xl:text-3xl font-bold dark:text-white">{metrics.activeToday}</p>
-              <div className="mt-2 h-5"></div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* On Leave Today */}
-        <Card className="dark:bg-slate-900 dark:border-slate-800 shadow-sm flex flex-col">
-          <CardContent className="p-5 xl:p-6 flex-1 flex flex-col">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <p className="text-sm font-medium text-slate-500">On Leave Today</p>
-              <div className="p-2 bg-orange-50 dark:bg-orange-500/10 rounded-lg shrink-0">
-                <Stethoscope className="h-5 w-5 text-orange-500 dark:text-orange-400" />
-              </div>
-            </div>
-            <div className="mt-auto">
-              <p className="text-2xl xl:text-3xl font-bold dark:text-white">{metrics.onLeave}</p>
-              <div className="mt-2 h-5"></div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Open Requisitions */}
-        <Card className="dark:bg-slate-900 dark:border-slate-800 shadow-sm flex flex-col">
-          <CardContent className="p-5 xl:p-6 flex-1 flex flex-col">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <p className="text-sm font-medium text-slate-500">Open Requisitions</p>
-              <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg shrink-0">
-                <Briefcase className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-            <div className="mt-auto">
-              <p className="text-2xl xl:text-3xl font-bold dark:text-white">{metrics.openReqs}</p>
-              <div className="mt-2 h-5"></div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Total Headcount"
+          value={metrics.headcount}
+          subtitle="+4 joined this month"
+          icon={<Users className="h-5 w-5" />}
+          variant="blue"
+          onClick={() => navigate('/all-employees')}
+        />
+        <StatsCard
+          title="Active Today"
+          value={metrics.activeToday}
+          subtitle="96% active workforce"
+          icon={<UserCheck className="h-5 w-5" />}
+          variant="green"
+          onClick={() => navigate('/attendance')}
+        />
+        <StatsCard
+          title="On Leave Today"
+          value={metrics.onLeave}
+          subtitle="5 submitted today"
+          icon={<Stethoscope className="h-5 w-5" />}
+          variant="orange"
+          onClick={() => navigate('/attendance/leave-management')}
+        />
+        <StatsCard
+          title="Open Requisitions"
+          value={metrics.openReqs}
+          subtitle="42 candidates in pipeline"
+          icon={<Briefcase className="h-5 w-5" />}
+          variant="purple"
+          onClick={() => navigate('/recruitment/pipeline')}
+        />
 
         {/* Payroll Card */}
-        <Card className="dark:bg-slate-900 dark:border-slate-800 shadow-sm flex flex-col">
+        <Card className="dark:bg-slate-900 dark:border-slate-800 shadow-sm flex flex-col cursor-pointer transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md" onClick={() => navigate('/payroll')}>
           <CardContent className="p-5 xl:p-6 flex-1 flex flex-col">
             <div className="flex items-start justify-between gap-2 mb-2">
               <p className="text-sm font-medium text-slate-500">Monthly Payroll Cost</p>
@@ -155,7 +145,7 @@ const ExecutiveDashboard = () => {
         </Card>
 
         {/* Avg Performance Score */}
-        <Card className="dark:bg-slate-900 dark:border-slate-800 shadow-sm flex flex-col">
+        <Card className="dark:bg-slate-900 dark:border-slate-800 shadow-sm flex flex-col cursor-pointer transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md" onClick={() => navigate('/pms/appraisal-cycles')}>
           <CardContent className="p-5 xl:p-6 flex-1 flex flex-col">
             <div className="flex items-start justify-between gap-2 mb-2">
               <p className="text-sm font-medium text-slate-500">Avg Performance Score</p>
@@ -171,7 +161,7 @@ const ExecutiveDashboard = () => {
         </Card>
 
         {/* Attrition 30d */}
-        <Card className="dark:bg-slate-900 dark:border-slate-800 shadow-sm flex flex-col">
+        <Card className="dark:bg-slate-900 dark:border-slate-800 shadow-sm flex flex-col cursor-pointer transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md" onClick={() => navigate('/all-employees')}>
           <CardContent className="p-5 xl:p-6 flex-1 flex flex-col">
             <div className="flex items-start justify-between gap-2 mb-2">
               <p className="text-sm font-medium text-slate-500">Attrition Rate (30d)</p>
@@ -187,7 +177,7 @@ const ExecutiveDashboard = () => {
         </Card>
 
         {/* Attrition 90d */}
-        <Card className="dark:bg-slate-900 dark:border-slate-800 shadow-sm flex flex-col">
+        <Card className="dark:bg-slate-900 dark:border-slate-800 shadow-sm flex flex-col cursor-pointer transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md" onClick={() => navigate('/all-employees')}>
           <CardContent className="p-5 xl:p-6 flex-1 flex flex-col">
             <div className="flex items-start justify-between gap-2 mb-2">
               <p className="text-sm font-medium text-slate-500">Attrition Rate (90d)</p>

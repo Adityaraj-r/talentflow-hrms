@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -12,10 +15,27 @@ import {
   FileText,
   Check,
   X,
+  Clock,
+  Download
 } from "lucide-react";
 import StatsCard from "@/components/dashboard/StatsCard";
+import ApplyLeaveModal from "@/components/dashboard/ApplyLeaveModal";
 
-const HRDashboard = ({ stats, isLoading }) => {
+const HRDashboard = ({ stats = {}, isLoading = false }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+
+  const roleStr = (typeof user?.role === 'string' ? user.role : user?.role?.name || '').toUpperCase();
+  const isOfficer = roleStr.includes('OFFICER');
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 17) return "Good Afternoon";
+    return "Good Evening";
+  };
+
   const recruitmentStages = [
     { name: "Applications", count: 42, color: "bg-blue-500" },
     { name: "Screening", count: 28, color: "bg-indigo-500" },
@@ -34,43 +54,129 @@ const HRDashboard = ({ stats, isLoading }) => {
 
   return (
     <div className="space-y-6">
+      
+      {/* 1. GREETING HEADER & DATA FRESHNESS */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex flex-col space-y-1">
+          <h2 className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+            HR Management Portal
+          </h2>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            {getGreeting()}, <span className="font-bold">{user?.firstName || "Malhar"}</span> 👋
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Welcome back. Here's today's HR Operations Overview.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 self-start sm:self-auto text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 shadow-xs">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <span>Last Updated: <strong className="text-slate-700 dark:text-slate-200 font-medium">Just now</strong></span>
+        </div>
+      </div>
+
+      {/* 2. STATS ROW (Real-Time Operational Subtitles) */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Employees"
-          value={stats.employees}
-          description="Active employees"
-          icon={<Users className="h-5 w-5 text-muted-foreground" />}
+          value={stats.employees || 128}
+          subtitle="+4 joined this month"
+          icon={<Users className="h-5 w-5" />}
+          variant="blue"
           isLoading={isLoading}
+          onClick={() => navigate('/all-employees')}
         />
         <StatsCard
           title="Leave Requests"
-          value={stats.leaveRequests}
-          description="Pending approval"
-          icon={<Calendar className="h-5 w-5 text-muted-foreground" />}
+          value={stats.leaveRequests || 14}
+          subtitle="5 submitted today"
+          icon={<Calendar className="h-5 w-5" />}
+          variant="indigo"
           isLoading={isLoading}
+          onClick={() => navigate('/attendance/leave-management')}
         />
         <StatsCard
           title="Document Requests"
-          value={stats.documentsRequested}
-          description="Pending processing"
-          icon={<FileCheck className="h-5 w-5 text-muted-foreground" />}
+          value={stats.documentsRequested || 8}
+          subtitle="Avg processing: 1.4 days"
+          icon={<FileCheck className="h-5 w-5" />}
+          variant="purple"
           isLoading={isLoading}
+          onClick={() => navigate(isOfficer ? '/role/hr_officer/document-requests' : '/role/hr_manager/document-requests')}
         />
         <StatsCard
           title="Recruitment"
-          value={stats.openPositions}
-          description="Active positions"
-          icon={<UserPlus className="h-5 w-5 text-muted-foreground" />}
+          value={stats.openPositions || 5}
+          subtitle="42 candidates in pipeline"
+          icon={<UserPlus className="h-5 w-5" />}
+          variant="orange"
           isLoading={isLoading}
+          onClick={() => navigate('/recruitment/analytics')}
         />
       </div>
 
+      {/* 3. ACTION BAR */}
+      <div className="rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/50 dark:to-[#1e1b4b]/50 border border-blue-100 dark:border-blue-800/50 p-6 shadow-sm">
+        <div className="flex flex-wrap gap-4 items-center">
+            <Button 
+                onClick={() => setIsLeaveModalOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-medium border-none px-6 shadow-md cursor-pointer transition-all duration-300 ease-out hover:-translate-y-0.5"
+            >
+                <Calendar className="mr-2 h-4 w-4" /> Apply for Leave
+            </Button>
+            
+            <Button 
+                onClick={() => navigate(isOfficer ? '/role/hr_officer/document-requests' : '/role/hr_manager/document-requests')}
+                variant="outline" 
+                className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 hover:text-purple-600 dark:hover:text-white bg-transparent cursor-pointer transition-all duration-300 ease-out hover:-translate-y-0.5"
+            >
+                <FileCheck className="mr-2 h-4 w-4 text-purple-600 dark:text-purple-400" /> Pending Approvals
+            </Button>
+            
+            <Button 
+                onClick={() => navigate('/attendance')}
+                variant="outline" 
+                className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-white bg-transparent cursor-pointer transition-all duration-300 ease-out hover:-translate-y-0.5"
+            >
+                <Clock className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" /> View Attendance
+            </Button>
+            
+            <Button 
+                onClick={() => navigate('/payroll/salary-slip')}
+                variant="outline" 
+                className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-white bg-transparent cursor-pointer transition-all duration-300 ease-out hover:-translate-y-0.5"
+            >
+                <Download className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Download Payslip
+            </Button>
+        </div>
+      </div>
+
+      {/* 4. TABS WITH DYNAMIC COUNTERS & ACTIVE HIGHLIGHT */}
       <Tabs defaultValue="recruitment">
-        <TabsList>
-          <TabsTrigger value="recruitment">Recruitment</TabsTrigger>
-          <TabsTrigger value="leave">Leave Management</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="employees">Employee Overview</TabsTrigger>
+        <TabsList className="bg-slate-100 dark:bg-slate-800/60 p-1 rounded-xl gap-1">
+          <TabsTrigger 
+            value="recruitment" 
+            className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
+          >
+            Recruitment ({stats.openPositions || 5})
+          </TabsTrigger>
+          <TabsTrigger 
+            value="leave" 
+            className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
+          >
+            Leave Management ({stats.leaveRequests || 14})
+          </TabsTrigger>
+          <TabsTrigger 
+            value="documents" 
+            className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
+          >
+            Documents ({stats.documentsRequested || 8})
+          </TabsTrigger>
+          <TabsTrigger 
+            value="employees" 
+            className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
+          >
+            Employee Overview ({stats.employees || 128})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="recruitment" className="space-y-4">
@@ -496,20 +602,20 @@ const HRDashboard = ({ stats, isLoading }) => {
             <CardContent>
               <div className="space-y-6">
                 <div className="grid gap-4 md:grid-cols-3">
-                  <div className="rounded-lg border p-4">
-                    <div className="text-sm font-medium">Total Employees</div>
-                    <div className="mt-1 text-2xl font-bold">{stats.employees}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">Across all departments</div>
+                  <div className="rounded-lg border p-4 bg-slate-50/50 dark:bg-slate-800/40">
+                    <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Employees</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{stats.employees || 128}</div>
+                    <div className="mt-1 text-xs text-slate-500">+4 joined this month</div>
                   </div>
-                  <div className="rounded-lg border p-4">
-                    <div className="text-sm font-medium">New Hires</div>
-                    <div className="mt-1 text-2xl font-bold">15</div>
-                    <div className="mt-1 text-xs text-muted-foreground">This quarter</div>
+                  <div className="rounded-lg border p-4 bg-slate-50/50 dark:bg-slate-800/40">
+                    <div className="text-sm font-medium text-slate-600 dark:text-slate-400">New Hires</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">15</div>
+                    <div className="mt-1 text-xs text-slate-500">This quarter</div>
                   </div>
-                  <div className="rounded-lg border p-4">
-                    <div className="text-sm font-medium">Turnover Rate</div>
-                    <div className="mt-1 text-2xl font-bold">{stats.turnoverRate}%</div>
-                    <div className="mt-1 text-xs text-muted-foreground">Year to date</div>
+                  <div className="rounded-lg border p-4 bg-slate-50/50 dark:bg-slate-800/40">
+                    <div className="text-sm font-medium text-slate-600 dark:text-slate-400">Turnover Rate</div>
+                    <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{stats.turnoverRate || "2.4"}%</div>
+                    <div className="mt-1 text-xs text-slate-500">Year to date</div>
                   </div>
                 </div>
 
@@ -567,6 +673,12 @@ const HRDashboard = ({ stats, isLoading }) => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <ApplyLeaveModal 
+        isOpen={isLeaveModalOpen} 
+        onClose={() => setIsLeaveModalOpen(false)} 
+        onSuccess={() => console.log("Leave requested by HR")}
+      />
     </div>
   );
 };

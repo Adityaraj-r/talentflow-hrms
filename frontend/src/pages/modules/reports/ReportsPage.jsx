@@ -278,7 +278,7 @@ export default function ReportsPage() {
               ) => (
                 <Card
                   key={i}
-                  className="rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group h-full bg-card"
+                  className="rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group h-full bg-card cursor-pointer"
                 >
                   <CardContent className="p-6 relative z-10 flex flex-col h-full justify-between gap-4">
                     <div>

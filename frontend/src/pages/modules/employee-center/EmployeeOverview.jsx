@@ -123,41 +123,47 @@ const EmployeeOverview = () => {
   return (
     <div className="space-y-6">
       <div className="grid gap-5 md:grid-cols-3">
-        <Card className="bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-xl p-1 shadow-md hover:shadow-lg transition-all duration-300">
-     
+        <Card className="group relative border border-green-200/80 dark:border-green-500/30 bg-green-50/50 dark:bg-green-500/10 shadow-sm hover:shadow-lg hover:shadow-green-500/5 hover:-translate-y-1 hover:border-green-300 dark:hover:border-green-400/50 transition-all duration-300 ease-out overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-300 group-hover:scale-110">
+            <Award className="w-16 h-16 text-green-600 dark:text-green-400" />
+          </div>
           <CardContent className="p-6 relative z-10 flex flex-col gap-4">
-            <div className="p-2.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg w-fit">
+            <div className="p-2.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg w-fit transition-transform duration-300 group-hover:scale-110">
               <Award className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-3xl font-bold text-foreground">{topPerformers}</div>
-              <p className="text-sm font-medium text-muted-foreground mt-1">Top Performers</p>
+              <div className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{topPerformers}</div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mt-1">Top Performers</p>
               <p className="text-xs text-muted-foreground mt-0.5">Rating &gt;= 4.5</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-xl p-1 shadow-md hover:shadow-lg transition-all duration-300">
-          
+        <Card className="group relative border border-blue-200/80 dark:border-blue-500/30 bg-blue-50/50 dark:bg-blue-500/10 shadow-sm hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-1 hover:border-blue-300 dark:hover:border-blue-400/50 transition-all duration-300 ease-out overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-300 group-hover:scale-110">
+            <Users className="w-16 h-16 text-blue-600 dark:text-blue-400" />
+          </div>
           <CardContent className="p-6 relative z-10 flex flex-col gap-4">
-            <div className="p-2.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg w-fit">
+            <div className="p-2.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg w-fit transition-transform duration-300 group-hover:scale-110">
               <Users className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-3xl font-bold text-foreground">{employeeData.length}</div>
-              <p className="text-sm font-medium text-muted-foreground mt-1">Total Employees</p>
+              <div className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{employeeData.length}</div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mt-1">Total Employees</p>
               <p className="text-xs text-muted-foreground mt-0.5">Across all departments</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-xl p-1 shadow-md hover:shadow-lg transition-all duration-300">
-          
+        <Card className="group relative border border-red-200/80 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/10 shadow-sm hover:shadow-lg hover:shadow-red-500/5 hover:-translate-y-1 hover:border-red-300 dark:hover:border-red-400/50 transition-all duration-300 ease-out overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-300 group-hover:scale-110">
+            <TrendingDown className="w-16 h-16 text-red-600 dark:text-red-400" />
+          </div>
           <CardContent className="p-6 relative z-10 flex flex-col gap-4">
-            <div className="p-2.5 bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg w-fit">
+            <div className="p-2.5 bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg w-fit transition-transform duration-300 group-hover:scale-110">
               <TrendingDown className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-3xl font-bold text-foreground">{needsImprovement}</div>
-              <p className="text-sm font-medium text-muted-foreground mt-1">Needs Improvement</p>
+              <div className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{needsImprovement}</div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mt-1">Needs Improvement</p>
               <p className="text-xs text-muted-foreground mt-0.5">Rating &lt; 3.0</p>
             </div>
           </CardContent>
