@@ -8,6 +8,22 @@ import Indemnity from "../models/indemnity.model"
 import User from "../models/User.model"
 import Employee from "../models/Employee.model"
 import Settings from "../models/Settings.model"
+import {
+  notifyPayrollRejected,
+  notifyPayrollRegenerated,
+  notifyPayrollPendingCEOApproval,
+  notifyPayrollPendingFinanceApproval,
+  notifyIndemnityRejected,
+  notifyIndemnityResubmitted,
+  notifyIndemnityPendingHRApproval,
+  notifyIndemnityPendingCEOApproval,
+  notifyIndemnityApproved,
+  notifyIndemnityPendingFinanceApproval,
+  notifyTicketPendingFinanceApproval,
+  notifyTicketPendingPayrollApproval,
+  notifyTicketApproved,
+  notifyTicketRejected,
+} from "../services/notification.service"
 import { getActivePolicy, calculateSlabTax } from '../services/payrollPolicy.service';
 import { generatePayslip, computePayslipYearToDate } from "../utils/payslip.generator"
 import { getOrCreatePayrollSettings } from "../models/payrollCompanySettings.model"
@@ -275,6 +291,8 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
       existing.employees = existing.employees.filter(
         e => !employeeIds.includes(e.employeeId)
       )
+      const previousRejectedBy = existing.rejectedBy
+      const previousRejectedAtStage = existing.rejectedAtStage
 
       existing.rejectionReason = undefined
       existing.rejectedBy = undefined
@@ -283,6 +301,8 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
 
       await existing.save()
       regenerationPayroll = existing
+      ;(regenerationPayroll as any)._prevRejectedBy = previousRejectedBy
+      ;(regenerationPayroll as any)._prevRejectedAtStage = previousRejectedAtStage
     } else if (existing && !replaceExisting) {
       if (existing.status !== "Generated")
         return res.status(400).json({
@@ -361,6 +381,21 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
       existing.regenerationInProgress = false
 
       payroll = await existing.save()
+
+      if (regenerationPayroll) {
+        const prevRejectedBy = (regenerationPayroll as any)._prevRejectedBy
+        const prevStage = (regenerationPayroll as any)._prevRejectedAtStage
+        if (prevRejectedBy) {
+          try {
+            const recipient = await User.findOne({ email: prevRejectedBy }).select("_id")
+            if (recipient) {
+              await notifyPayrollRegenerated(recipient._id, payroll._id.toString(), prevStage || "")
+            }
+          } catch (notifyErr) {
+            console.error("Failed to send payroll regenerated notification:", notifyErr)
+          }
+        }
+      }
     } else {
       payroll = await Payroll.create({
         month,
@@ -378,7 +413,13 @@ export const generatePayroll = async (req: AuthRequest, res: Response) => {
       recalcTotals(payroll, settings)
       await payroll.save()
     }
-
+    if (payroll.financeApprovalRequired) {          // ← ADD THIS BLOCK
+      try {
+        await notifyPayrollPendingFinanceApproval(payroll._id.toString(), payroll.totalNet)
+      } catch (notifyErr) {
+        console.error("Failed to send Finance approval notification:", notifyErr)
+      }
+    }
     for (const line of employeesPayroll) {
       if (Number(line.earnings?.performanceBonus) > 0) {
         await markPerformanceBonusPaid(line.employeeId, payroll._id.toString())
@@ -809,6 +850,30 @@ export const patchPayrollWorkflow = async (req: AuthRequest, res: Response) => {
     }
 
     await payroll.save()
+
+    if (action === "reject") {
+      try {
+        // generatedBy is stored as an email string, not a userId — resolve it
+        const recipient = await User.findOne({ email: payroll.generatedBy }).select("_id")
+        if (recipient) {
+          await notifyPayrollRejected(
+            recipient._id,
+            payroll._id.toString(),
+            payroll.rejectionReason || "",
+            payroll.rejectedAtStage || ""
+          )
+        }
+      } catch (notifyErr) {
+        console.error("Failed to send payroll rejection notification:", notifyErr)
+      }
+    }
+    if (action === "hr_approve") {
+      try {
+        await notifyPayrollPendingCEOApproval(payroll._id.toString(), payroll.totalNet)
+      } catch (notifyErr) {
+        console.error("Failed to send CEO approval notification:", notifyErr)
+      }
+    }
     await logPayrollAudit({
       req,
       action: `payroll_workflow_${action}`,
@@ -1178,7 +1243,11 @@ export const createTicket = async (req: AuthRequest, res: Response) => {
       status: "Pending",
        workflowStage: "PENDING_FINANCE",
     })
-
+    try {
+      await notifyTicketPendingFinanceApproval(ticket._id.toString(), ticket.type)
+    } catch (notifyErr) {
+      console.error("Failed to send ticket finance-pending notification:", notifyErr)
+    }
     res.status(201).json({ success: true, data: ticket })
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message })
@@ -1250,6 +1319,17 @@ if (status === "Approved") {
   ticket.rejectionReason = rejectionReason
 }
     await ticket.save()
+    try {
+      if (status === "Approved" && ticket.workflowStage === "PENDING_PAYROLL") {
+        await notifyTicketPendingPayrollApproval(ticket._id.toString(), ticket.type)
+      } else if (status === "Approved" && ticket.workflowStage === "APPROVED") {
+        await notifyTicketApproved(ticket.employeeId, ticket._id.toString())
+      } else if (status === "Rejected") {
+        await notifyTicketRejected(ticket.employeeId, ticket._id.toString(), rejectionReason)
+      }
+    } catch (notifyErr) {
+      console.error("Failed to send ticket status notification:", notifyErr)
+    }
     res.json({ success: true, data: ticket })
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message })
@@ -1389,7 +1469,11 @@ export const createIndemnity = async (req: AuthRequest, res: Response) => {
       requestedBy: req.user?.email || "unknown",
       workflowStage: "PENDING_FINANCE",
     })
-
+    try {
+      await notifyIndemnityPendingFinanceApproval(record._id.toString(), employeeName)
+    } catch (notifyErr) {
+      console.error("Failed to send indemnity finance-pending notification:", notifyErr)
+    }
     res.status(201).json({ success: true, data: record })
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message })
@@ -1434,6 +1518,19 @@ export const updateIndemnityStatus = async (req: AuthRequest, res: Response) => 
       record.hrApprovedAt = undefined
 
       await record.save()
+      try {
+        const recipient = await User.findOne({ email: record.requestedBy }).select("_id")
+        if (recipient) {
+          await notifyIndemnityRejected(
+            recipient._id,
+            record._id.toString(),
+            record.rejectionReason || "",
+            record.rejectedAtStage || ""
+          )
+        }
+      } catch (notifyErr) {
+        console.error("Failed to send indemnity rejection notification:", notifyErr)
+      }
       return res.json({ success: true, data: record })
     }
 
@@ -1444,6 +1541,11 @@ export const updateIndemnityStatus = async (req: AuthRequest, res: Response) => 
         return res.status(400).json({ success: false, error: "Only a rejected request can be resubmitted" })
       record.workflowStage = "PENDING_FINANCE"
       await record.save()
+      try {
+        await notifyIndemnityResubmitted(record._id.toString())
+      } catch (notifyErr) {
+        console.error("Failed to send indemnity resubmit notification:", notifyErr)
+      }
       return res.json({ success: true, data: record })
     }
 
@@ -1461,6 +1563,11 @@ export const updateIndemnityStatus = async (req: AuthRequest, res: Response) => 
       record.rejectedAt = undefined
       record.rejectedAtStage = undefined
       await record.save()
+      try {
+        await notifyIndemnityPendingHRApproval(record._id.toString(), record.employeeName)
+      } catch (notifyErr) {
+        console.error("Failed to send indemnity HR-pending notification:", notifyErr)
+      }
       return res.json({ success: true, data: record })
     }
 
@@ -1473,6 +1580,11 @@ export const updateIndemnityStatus = async (req: AuthRequest, res: Response) => 
       record.hrApprovedAt = new Date()
       record.workflowStage = "PENDING_CEO"
       await record.save()
+      try {
+        await notifyIndemnityPendingCEOApproval(record._id.toString(), record.employeeName)
+      } catch (notifyErr) {
+        console.error("Failed to send indemnity CEO-pending notification:", notifyErr)
+      }
       return res.json({ success: true, data: record })
     }
 
@@ -1486,6 +1598,14 @@ export const updateIndemnityStatus = async (req: AuthRequest, res: Response) => 
       record.workflowStage = "APPROVED"
       record.status = "Approved"
       await record.save()
+      try {
+        const recipient = await User.findOne({ email: record.requestedBy }).select("_id")
+        if (recipient) {
+          await notifyIndemnityApproved(recipient._id, record._id.toString())
+        }
+      } catch (notifyErr) {
+        console.error("Failed to send indemnity approved notification:", notifyErr)
+      }
       return res.json({ success: true, data: record })
     }
 
@@ -1540,6 +1660,11 @@ export const editAndResubmitIndemnity = async (req: AuthRequest, res: Response) 
     record.workflowStage = "PENDING_FINANCE"
 
     await record.save()
+    try {
+      await notifyIndemnityResubmitted(record._id.toString())
+    } catch (notifyErr) {
+      console.error("Failed to send indemnity resubmit notification:", notifyErr)
+    }
     res.json({ success: true, data: record })
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message })

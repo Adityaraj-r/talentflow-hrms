@@ -24,6 +24,10 @@ function iconForType(type: NotificationType) {
       return CheckCircle2;
     case "team_appraisals_complete":
       return Users;
+    case "payroll_pending_ceo_approval":
+      return ClipboardList;
+    case "payroll_pending_finance_approval":
+      return ClipboardList;  
     default:
       return ClipboardList;
   }
@@ -55,6 +59,21 @@ function routeForNotification(
     }
     case "team_appraisals_complete":
       return "/role/direct_manager/appraisal";
+    case "payroll_pending_ceo_approval":
+      return "/ceo/payroll";
+    case "payroll_pending_finance_approval":
+      return "/payroll"; // Finance Manager's payroll records tab — adjust if they have a dedicated route like /ceo/payroll does  
+    case "indemnity_rejected":
+    case "indemnity_resubmitted":
+    case "indemnity_pending_hr_approval":
+    case "indemnity_pending_ceo_approval":
+    case "indemnity_approved":
+    case "indemnity_pending_finance_approval": 
+    case "ticket_pending_finance_approval":
+    case "ticket_pending_payroll_approval":
+    case "ticket_approved":
+    case "ticket_rejected": 
+      return "/indemnity";
     default:
       return "/dashboard";
   }

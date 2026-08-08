@@ -618,8 +618,6 @@ function App() {
                 <DashboardLayout><OvertimeApprovals /></DashboardLayout>
               </ProtectedRoute>
             } />
-
-
             <Route path="/payroll" element={
               <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
                 <DashboardLayout><Payroll /></DashboardLayout>
