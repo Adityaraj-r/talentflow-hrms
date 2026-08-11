@@ -41,7 +41,7 @@ const DashboardLayout = ({ children }) => {
       <div 
         className={`
           flex flex-col min-h-screen transition-all duration-300 ease-in-out
-          ${isCollapsed ? 'lg:ml-[80px]' : 'lg:ml-[320px]'}
+          ${isCollapsed ? 'lg:ml-20' : 'lg:ml-[260px]'}
         `}
       >
         <Header toggleSidebar={toggleSidebar} />

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { Pagination } from "@/components/ui/pagination";
 import Papa from "papaparse";
 import { UploadCloud, FileSpreadsheet, AlertCircle, Download, X, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -11,9 +12,10 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import attendanceService from "@/services/attendanceService";
 import apiClient from "@/services/apiClient";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const inputThemeClasses = "bg-white dark:bg-[#131b2c] border-slate-200 dark:border-[#222f43] text-slate-900 dark:text-slate-100 focus:ring-primary placeholder:text-slate-400 dark:placeholder:text-slate-500";
-const cardThemeClasses = "bg-white dark:bg-transparent border-slate-200 dark:border-none shadow-sm dark:shadow-none";
+const cardThemeClasses = "border border-slate-100 dark:border-slate-800 shadow-sm rounded-xl overflow-hidden bg-white dark:bg-slate-900";
 
 const SearchableDropdown = ({ value, onChange, options, placeholder, icon: Icon, hideScrollbar }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -116,10 +118,10 @@ const TimeInput = ({ value, onChange, name }) => {
 
   return (
     <div className="flex items-center gap-2 w-full">
-      <SearchableDropdown value={h} onChange={(val) => { setH(val); notifyParent(val, m, ampm); }} options={hoursOptions} placeholder="HH" hideScrollbar={true} />
+      <div className="flex-1"><SearchableDropdown value={h} onChange={(val) => { setH(val); notifyParent(val, m, ampm); }} options={hoursOptions} placeholder="HH" hideScrollbar={true} /></div>
       <span className="font-bold text-muted-foreground">:</span>
-      <SearchableDropdown value={m} onChange={(val) => { setM(val); notifyParent(h, val, ampm); }} options={minutesOptions} placeholder="MM" hideScrollbar={true} />
-      <SearchableDropdown value={ampm} onChange={(val) => { setAmpm(val); notifyParent(h, m, val); }} options={["AM", "PM"]} placeholder="AM/PM" hideScrollbar={true} />
+      <div className="flex-1"><SearchableDropdown value={m} onChange={(val) => { setM(val); notifyParent(h, val, ampm); }} options={minutesOptions} placeholder="MM" hideScrollbar={true} /></div>
+      <div className="flex-1"><SearchableDropdown value={ampm} onChange={(val) => { setAmpm(val); notifyParent(h, m, val); }} options={["AM", "PM"]} placeholder="AM/PM" hideScrollbar={true} /></div>
     </div>
   );
 };
@@ -164,6 +166,8 @@ const ManualAttendance = () => {
 
   const [bulkFile, setBulkFile] = useState(null);
   const [previewData, setPreviewData] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const handleSingleChange = (e) => {
     const { name, value } = e.target;
@@ -227,6 +231,8 @@ const ManualAttendance = () => {
     });
   };
 
+  const totalPages = Math.ceil(previewData.length / itemsPerPage);
+
   const handleFileDrop = (e) => {
     e.preventDefault();
     processFile(e.dataTransfer ? e.dataTransfer.files[0] : e.target.files[0]);
@@ -271,8 +277,13 @@ const ManualAttendance = () => {
   };
 
   return (
-    <div className="space-y-6 w-full dark:text-slate-200">
-
+    <div className="space-y-6 max-w-full pb-10 pt-4 dark:text-slate-200">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Manual Attendance</h1>
+        <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
+          Record single logs or process bulk CSV uploads for manual attendance.
+        </p>
+      </div>
       <Tabs defaultValue="single" className="w-full">
         <div className="flex items-center space-x-2 mb-6 bg-slate-100 dark:bg-[#131b2c] p-1 rounded-lg w-max border dark:border-[#222f43]">
           <TabsList className="bg-transparent border-none p-0 h-auto">
@@ -294,12 +305,12 @@ const ManualAttendance = () => {
         <TabsContent value="single">
           <Card className={cardThemeClasses}>
             <form key={formKey} onSubmit={submitSingleEntry}>
-              <CardHeader className="px-0 pb-6">
+              <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-800">
                 <CardTitle className="text-xl font-semibold dark:text-white">Record Single Log</CardTitle>
                 <CardDescription className="dark:text-slate-400">Manually correct or insert an attendance record for a specific employee.</CardDescription>
               </CardHeader>
 
-              <CardContent className="px-0 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+              <CardContent className="p-5 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
 
                 <div className="space-y-2">
                   <Label htmlFor="employeeEmail" className="text-sm font-semibold">
@@ -381,7 +392,7 @@ const ManualAttendance = () => {
 
               </CardContent>
 
-              <CardFooter className="px-0 pt-6 mt-4 flex justify-between items-center border-t border-slate-200 dark:border-slate-800">
+              <CardFooter className="p-5 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 items-center border-t border-slate-100 dark:border-slate-800">
                 <Button
                   type="button"
                   variant="outline"
@@ -407,18 +418,27 @@ const ManualAttendance = () => {
 
         <TabsContent value="bulk">
           <Card className={cardThemeClasses}>
-            <CardHeader className="px-0 pb-6 border-b border-slate-200 dark:border-slate-800">
+            <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-800">
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle className="text-xl font-semibold dark:text-white">Bulk Attendance Upload</CardTitle>
                   <CardDescription className="dark:text-slate-400">Upload a standard CSV file from a biometric machine or spreadsheet.</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" className="gap-2 dark:border-[#222f43] dark:bg-[#131b2c] dark:hover:bg-[#1d283e]" onClick={handleDownloadTemplate} type="button">
-                  <Download className="w-4 h-4" /> Download Template
-                </Button>
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" className="dark:border-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 shadow-sm" onClick={handleDownloadTemplate} type="button">
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Download Template</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </CardHeader>
-            <CardContent className="px-0 pt-6 space-y-6">
+            <CardContent className="p-5 space-y-6">
 
               {!bulkFile ? (
                 <div
@@ -455,7 +475,7 @@ const ManualAttendance = () => {
               {previewData.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-                    <AlertCircle className="w-4 h-4 text-blue-500" /> Data Preview
+                    <AlertCircle className="w-4 h-4 text-indigo-500" /> Data Preview
                   </div>
                   <div className="border rounded-md overflow-hidden dark:border-slate-800 max-h-[300px] overflow-y-auto">
                     <Table>
@@ -469,7 +489,7 @@ const ManualAttendance = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {previewData.map((row) => (
+                        {previewData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((row) => (
                           <TableRow key={row.id} className="dark:border-slate-800">
                             <TableCell className="font-medium text-sm">{row.email}</TableCell>
                             <TableCell className="text-sm">{row.date}</TableCell>
@@ -485,11 +505,22 @@ const ManualAttendance = () => {
                       </TableBody>
                     </Table>
                   </div>
+                  {previewData.length > 0 && (
+                    <div className="p-2 border-t border-slate-200 dark:border-slate-800">
+                      <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={previewData.length}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={(page) => setCurrentPage(page)}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
             </CardContent>
-            <CardFooter className="px-0 pt-4 flex justify-end gap-3">
+            <CardFooter className="p-5 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
               <Button variant="outline" onClick={clearFile} disabled={!bulkFile || loading} type="button" className="dark:border-slate-700 dark:text-slate-300">Cancel</Button>
               <Button onClick={submitBulkEntry} disabled={!bulkFile || loading} type="button" className="dark:bg-white dark:text-black dark:hover:bg-slate-200">
                 {loading ? "Processing..." : "Process Bulk Upload"}

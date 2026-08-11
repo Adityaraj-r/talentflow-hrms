@@ -93,7 +93,7 @@ const AssignShiftModal = ({ isOpen, onClose, shifts = [], onSuccess }) => {
       <DialogContent className="sm:max-w-2xl h-[85vh] p-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 shrink-0">
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <Briefcase className="w-5 h-5 text-blue-600" />
+            <Briefcase className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             Assign Shift to Employees
           </DialogTitle>
           <DialogDescription>
@@ -141,7 +141,7 @@ const AssignShiftModal = ({ isOpen, onClose, shifts = [], onSuccess }) => {
             <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
               {fetchingData ? (
                 <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-                  <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                  <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
                   <span className="text-sm">Loading employee directory...</span>
                 </div>
               ) : (
@@ -155,7 +155,7 @@ const AssignShiftModal = ({ isOpen, onClose, shifts = [], onSuccess }) => {
                         className={cn(
                           "w-4 h-4 rounded border flex items-center justify-center transition-all",
                           selectedEmployees.length === filteredEmployees.length
-                            ? "bg-blue-600 border-blue-600"
+                            ? "bg-indigo-600 border-indigo-600"
                             : "border-slate-300 dark:border-slate-600"
                         )}
                       >
@@ -163,7 +163,7 @@ const AssignShiftModal = ({ isOpen, onClose, shifts = [], onSuccess }) => {
                           <Check className="w-3 h-3 text-white" />
                         )}
                       </div>
-                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                      <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
                         Select All ({filteredEmployees.length})
                       </span>
                     </div>
@@ -178,7 +178,7 @@ const AssignShiftModal = ({ isOpen, onClose, shifts = [], onSuccess }) => {
                         className={cn(
                           "flex items-center gap-3 p-2.5 rounded-md cursor-pointer transition-all",
                           isSelected
-                            ? "bg-blue-50 dark:bg-blue-900/20"
+                            ? "bg-indigo-50 dark:bg-indigo-900/20"
                             : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
                         )}
                       >
@@ -186,7 +186,7 @@ const AssignShiftModal = ({ isOpen, onClose, shifts = [], onSuccess }) => {
                           className={cn(
                             "w-4 h-4 rounded border flex items-center justify-center transition-all",
                             isSelected
-                              ? "bg-blue-600 border-blue-600"
+                              ? "bg-indigo-600 border-indigo-600"
                               : "border-slate-300 dark:border-slate-600"
                           )}
                         >
@@ -234,7 +234,7 @@ const AssignShiftModal = ({ isOpen, onClose, shifts = [], onSuccess }) => {
             </Button>
             <Button
               onClick={handleSubmit}
-              className="bg-blue-600 hover:bg-blue-700 text-white min-w-[140px]"
+              className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white min-w-[140px]"
               disabled={loading || selectedEmployees.length === 0 || !selectedShift}
             >
               {loading ? (

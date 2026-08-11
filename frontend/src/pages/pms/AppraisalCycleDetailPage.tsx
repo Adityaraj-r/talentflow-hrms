@@ -227,7 +227,7 @@ export default function AppraisalCycleDetailPage() {
         </div>
 
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{cycleTitle}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{cycleTitle}</h1>
           <p className="text-muted-foreground">
             {format(new Date(cycle.startDate), "PPP")} – {format(new Date(cycle.endDate), "PPP")}
           </p>

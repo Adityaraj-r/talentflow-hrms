@@ -26,10 +26,10 @@ const CreateRequisition = () => {
   const canCreateRequisition = user?.can?.("recruitment", "write") && isRecruitmentOperator
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Staff Requisition</h1>
-        <p className="text-muted-foreground">Request and manage staff requisitions</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Staff Requisition</h1>
+        <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">Request and manage staff requisitions</p>
       </div>
 
       <Tabs defaultValue={canCreateRequisition ? "create" : "pending"}>

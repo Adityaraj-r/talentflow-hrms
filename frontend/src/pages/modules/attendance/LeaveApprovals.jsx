@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Pagination } from "@/components/ui/pagination";
 import leaveService from "@/services/leaveService";
 import { useUser } from "@/contexts/UserContext";
 import {
@@ -119,6 +120,8 @@ const LeaveApprovals = () => {
 
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [selectedLeaveId, setSelectedLeaveId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fetchLeaves = async () => {
     try {
@@ -199,16 +202,17 @@ const LeaveApprovals = () => {
     );
   });
 
+  const totalPages = Math.ceil(filteredLeaves.length / itemsPerPage);
   const pendingCount = leaves.filter((l) => l.status === "Pending").length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">
             Leave Approvals
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
             {isHrOrAdmin
               ? "Review and manage organisation-wide leave requests."
               : "Review and manage your team's leave requests."}
@@ -224,12 +228,12 @@ const LeaveApprovals = () => {
         )}
       </div>
 
-      <Card className="border-slate-200 dark:border-slate-800">
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader className="border-b p-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
-                <ShieldCheck className="w-4 h-4 text-blue-600" />
+                <ShieldCheck className="w-4 h-4 text-indigo-600" />
                 {isHrOrAdmin ? "Organisation Requests" : "Team Requests"}
               </CardTitle>
               <CardDescription className="mt-0.5">
@@ -297,7 +301,7 @@ const LeaveApprovals = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredLeaves.map((leave) => (
+                  filteredLeaves.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((leave) => (
                     <TableRow
                       key={leave._id}
                       className="hover:bg-slate-50 dark:hover:bg-slate-800/50"
@@ -335,7 +339,7 @@ const LeaveApprovals = () => {
                         {formatDate(leave.startDate)} — {formatDate(leave.endDate)}
                       </TableCell>
 
-                      <TableCell className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                      <TableCell className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
                         {leave.totalDays}d
                       </TableCell>
 
@@ -428,6 +432,17 @@ const LeaveApprovals = () => {
               </TableBody>
             </Table>
           </div>
+          {filteredLeaves.length > 0 && (
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredLeaves.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

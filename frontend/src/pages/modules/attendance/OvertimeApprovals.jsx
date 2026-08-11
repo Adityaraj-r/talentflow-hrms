@@ -29,6 +29,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Pagination } from "@/components/ui/pagination";
 
 const formatDate = (dateString) => {
   if (!dateString) return "-";
@@ -64,6 +65,8 @@ const OvertimeApprovals = () => {
   const [loading, setLoading] = useState(true);
   const [approvingId, setApprovingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [startDate, setStartDate] = useState(`${currentMonth}-01`);
@@ -132,14 +135,18 @@ const OvertimeApprovals = () => {
     0
   );
 
+  const totalItems = filteredRecords.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const paginatedRecords = filteredRecords.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">
             Overtime Approvals
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
             Review and approve overtime hours logged by employees.
           </p>
         </div>
@@ -186,7 +193,7 @@ const OvertimeApprovals = () => {
         </div>
       </div>
 
-      <Card className="border-slate-200 dark:border-slate-800">
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader className="border-b p-4">
           <CardTitle className="flex items-center gap-2 text-base">
             <Timer className="w-4 h-4 text-amber-500" />
@@ -227,7 +234,7 @@ const OvertimeApprovals = () => {
                       Loading overtime records...
                     </TableCell>
                   </TableRow>
-                ) : filteredRecords.length === 0 ? (
+                ) : paginatedRecords.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="py-10">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -239,7 +246,7 @@ const OvertimeApprovals = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredRecords.map((record) => (
+                  paginatedRecords.map((record) => (
                     <TableRow
                       key={record._id}
                       className="hover:bg-slate-50 dark:hover:bg-slate-800/50"
@@ -273,7 +280,7 @@ const OvertimeApprovals = () => {
 
                       <TableCell>
                         <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
-                          <Clock className="w-3.5 h-3.5 shrink-0 text-blue-500" />
+                          <Clock className="w-3.5 h-3.5 shrink-0 text-indigo-500" />
                           {record.userId?.currentShift?.endTime
                             ? record.userId.currentShift.endTime
                             : "No shift"}
@@ -323,24 +330,14 @@ const OvertimeApprovals = () => {
         </CardContent>
       </Card>
 
-      {filteredRecords.length > 0 && (
-        <div className="flex items-center justify-between px-1">
-          <p className="text-xs text-muted-foreground">
-            Showing {filteredRecords.length} record
-            {filteredRecords.length !== 1 ? "s" : ""}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Total pending OT:{" "}
-            <span className="font-semibold text-amber-600 dark:text-amber-400">
-              {formatOTHours(
-                filteredRecords.reduce(
-                  (sum, r) => sum + (r.overtimeHours || 0),
-                  0
-                )
-              )}
-            </span>
-          </p>
-        </div>
+      {totalItems > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={(page) => setCurrentPage(page)}
+        />
       )}
     </div>
   );

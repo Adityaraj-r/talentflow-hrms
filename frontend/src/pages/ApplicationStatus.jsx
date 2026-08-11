@@ -105,7 +105,7 @@ const ApplicationStatus = () => {
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-12">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
               Track Your Application Status
             </h1>
             <p className="text-gray-500 dark:text-slate-400 mt-2">

@@ -9,10 +9,12 @@ import { FileText, Clock, CheckCircle, XCircle, Loader2, Download, Eye } from "l
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { UploadedDocumentsModal, DocumentPreviewDialog, getAttachments, formatFileSize, downloadFile } from "@/components/ui/DocumentViewer";
+import { Pagination } from "@/components/ui/pagination";
 
 const RequestDocument = () => {
   const { user } = useAuth();
   const [requests, setRequests] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -136,7 +138,7 @@ const RequestDocument = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Document Requests</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-2xl">Document Requests</h1>
         <p className="text-muted-foreground">Submit a request to HR for official company documents.</p>
       </div>
 
@@ -232,7 +234,7 @@ const RequestDocument = () => {
                   ) : requests.length === 0 ? (
                     <tr><td colSpan="5" className="text-center py-8 text-muted-foreground">No requests found.</td></tr>
                   ) : (
-                    requests.map((req) => (
+                    requests.slice((currentPage - 1) * 10, currentPage * 10).map((req) => (
                       <tr key={req._id} className="hover:bg-muted/20">
                         <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">{req.requestId || "N/A"}</td>
                         <td className="px-4 py-3 font-medium flex items-center gap-2 whitespace-nowrap">
@@ -282,6 +284,17 @@ const RequestDocument = () => {
                 </tbody>
               </table>
             </div>
+            {requests.length > 10 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t bg-slate-50/50 dark:bg-slate-900/30">
+                <Pagination 
+                  currentPage={currentPage} 
+                  totalPages={Math.ceil(requests.length / 10)} 
+                  totalItems={requests.length} 
+                  itemsPerPage={10}
+                  onPageChange={(page) => setCurrentPage(page)} 
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

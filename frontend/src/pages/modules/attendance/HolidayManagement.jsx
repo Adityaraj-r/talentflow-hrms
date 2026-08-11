@@ -104,21 +104,21 @@ const HolidayManagement = () => {
     const getDay = (dateStr) => new Date(dateStr).getDate();
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-full pb-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Holiday Calendar</h1>
-                    <p className="text-muted-foreground">Manage upcoming holidays and non-working days.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Holiday Calendar</h1>
+                    <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">Manage upcoming holidays and non-working days.</p>
                 </div>
             </div>
 
             <div className="grid lg:grid-cols-3 gap-8">
                 {isAdmin && (
                     <div className="lg:col-span-1">
-                        <Card className="sticky top-6 border-slate-200 dark:border-slate-800">
+                        <Card className="sticky top-6 border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Plus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                    <Plus className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                                     {editingId ? "Edit Holiday" : "Add Holiday"}
                                 </CardTitle>
                                 <CardDescription>
@@ -156,7 +156,7 @@ const HolidayManagement = () => {
                                         <label className="text-sm font-medium">Type</label>
                                         <select
                                             name="type"
-                                            className="w-full p-2 border rounded-lg bg-transparent text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full p-2 border rounded-lg bg-transparent text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
                                             value={formData.type}
                                             onChange={handleChange}
                                         >
@@ -167,7 +167,7 @@ const HolidayManagement = () => {
                                     </div>
 
                                     <div className="flex gap-2 mt-2">
-                                        <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+                                        <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white">
                                             {editingId ? "Update Calendar" : "Add to Calendar"}
                                         </Button>
                                         {editingId && (
@@ -183,7 +183,7 @@ const HolidayManagement = () => {
                 )}
 
                 <div className={isAdmin ? "lg:col-span-2" : "lg:col-span-3"}>
-                    <Card className="border-slate-200 dark:border-slate-800">
+                    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
                         <CardHeader>
                             <CardTitle>Upcoming Holidays</CardTitle>
                         </CardHeader>
@@ -204,7 +204,7 @@ const HolidayManagement = () => {
                                             className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className="flex flex-col items-center justify-center w-14 h-14 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
+                                                <div className="flex flex-col items-center justify-center w-14 h-14 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-700 dark:text-indigo-400 border border-blue-100 dark:border-blue-800">
                                                     <span className="text-[10px] font-bold uppercase tracking-wider">{getMonth(holiday.date)}</span>
                                                     <span className="text-xl font-bold leading-none">{getDay(holiday.date)}</span>
                                                 </div>

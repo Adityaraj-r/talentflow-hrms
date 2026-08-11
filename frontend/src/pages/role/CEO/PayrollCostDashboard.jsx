@@ -54,7 +54,7 @@ const PayrollCostDashboard = () => {
     <div className="space-y-8 max-w-5xl">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Payroll &amp; Cost</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-2xl">Payroll &amp; Cost</h1>
           <p className="text-muted-foreground">
             Disbursed payroll totals by month and benchmark workforce salary cost.
           </p>

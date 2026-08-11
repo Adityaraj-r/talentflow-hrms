@@ -1,4 +1,5 @@
 import * as React from "react"
+import { formatChildren } from "@/lib/utils"
 
 const badgeVariants = {
   default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
@@ -9,12 +10,14 @@ const badgeVariants = {
   warning: "border-transparent bg-yellow-500 text-white hover:bg-yellow-600",
 }
 
-function Badge({ className = "", variant = "default", ...props }) {
+function Badge({ className = "", variant = "default", children, ...props }) {
   const baseClasses = "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
   const variantClasses = badgeVariants[variant] || badgeVariants.default
   
   return (
-    <div className={`${baseClasses} ${variantClasses} ${className}`} {...props} />
+    <div className={`${baseClasses} ${variantClasses} ${className}`} {...props}>
+      {formatChildren(children)}
+    </div>
   )
 }
 

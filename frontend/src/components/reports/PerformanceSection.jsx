@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Pagination } from "@/components/ui/pagination";
 
 export default function PerformanceSection({
   hook,
@@ -44,7 +45,7 @@ export default function PerformanceSection({
 
       {/* Heading */}
       <div>
-        <h2 className="text-2xl font-bold">
+        <h2 className="text-[17px] font-bold text-slate-900 dark:text-white">
           {isDept
             ? "My Department Performance"
             : "Employee Performance"}
@@ -170,69 +171,14 @@ export default function PerformanceSection({
           </div>
 
           {/* Pagination Footer */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border/50 bg-muted/20">
-            {/* Left: Showing X-Y of Z */}
-            <div className="text-sm text-muted-foreground">
-              Showing{" "}
-              <span className="font-medium text-foreground">
-                {data.length > 0 ? (pagination?.page - 1) * 10 + 1 : 0}
-              </span>
-              –
-              <span className="font-medium text-foreground">
-                {data.length > 0
-                  ? Math.min(
-                      pagination?.page * 10,
-                      pagination?.total
-                    )
-                  : 0}
-              </span>{" "}
-              of{" "}
-              <span className="font-medium text-foreground">
-                {pagination?.total || 0}
-              </span>{" "}
-              employees
-            </div>
-
-            {/* Center: Page P of T */}
-            <div className="text-sm font-medium text-muted-foreground hidden sm:block">
-              Page {pagination?.page || 1} of {pagination?.pages || 1}
-            </div>
-
-            {/* Right: Buttons */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="cursor-pointer"
-                disabled={!pagination || (filters?.page || 1) <= 1}
-                onClick={() =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    page: (prev?.page || 1) - 1,
-                  }))
-                }
-              >
-                Previous
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="cursor-pointer"
-                disabled={
-                  !pagination ||
-                  (filters?.page || 1) >= (pagination?.pages || 1)
-                }
-                onClick={() =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    page: (prev?.page || 1) + 1,
-                  }))
-                }
-              >
-                Next
-              </Button>
-            </div>
+          <div className="p-4 border-t border-border/50 bg-muted/20">
+            <Pagination
+              currentPage={pagination?.page || 1}
+              totalPages={pagination?.pages || 1}
+              totalItems={pagination?.total || 0}
+              itemsPerPage={10}
+              onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
+            />
           </div>
         </CardContent>
       </Card>

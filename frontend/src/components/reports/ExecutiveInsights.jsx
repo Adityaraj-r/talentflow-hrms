@@ -95,7 +95,7 @@ export default function ExecutiveInsights({
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-2xl font-semibold">
+              <h2 className="text-[17px] font-semibold text-slate-900 dark:text-white">
                 Executive insights
               </h2>
               <p className="text-sm text-muted-foreground mt-1">

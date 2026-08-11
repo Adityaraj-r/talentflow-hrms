@@ -133,7 +133,7 @@ export default function CEOAppraisalDashboardSection() {
       {/* Header */}
 
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-2xl font-bold tracking-tight">
           CEO Executive Overview
         </h1>
 

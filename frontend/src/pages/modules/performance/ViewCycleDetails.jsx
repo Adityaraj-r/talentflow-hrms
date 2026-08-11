@@ -9,14 +9,18 @@ import {
   Calendar,
   Users,
   TrendingUp,
-  Clock,
+  AlertCircle,
+  PlayCircle,
+  Loader2,
   CheckCircle2,
+  RefreshCw,
   XCircle,
   FileText,
   BarChart3,
   Plus,
-  Loader2
+  Clock
 } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
 import { performanceApi } from "@/services/performanceApi";
 import { reviewApi } from "@/services/reviewApi";
@@ -32,6 +36,8 @@ const ViewCycleDetails = () => {
   const [cycle, setCycle] = useState(location.state?.cycle || null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedReview, setSelectedReview] = useState(null);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -156,8 +162,8 @@ const ViewCycleDetails = () => {
 
   if (!cycle) {
     return (
-      <div className="p-6">
-        <Card>
+      <div className="space-y-6 max-w-full pb-10">
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardContent className="p-12 text-center">
             <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-2">Cycle Not Found</h2>
@@ -175,7 +181,7 @@ const ViewCycleDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 p-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="max-w-7xl mx-auto space-y-6">
 
         <div className="flex items-center justify-between">
@@ -187,7 +193,7 @@ const ViewCycleDetails = () => {
               <ArrowLeft className="h-4 w-4 text-gray-700 dark:text-gray-300" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{cycle.name}</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-2xl">{cycle.name}</h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
                 Performance cycle details and employee reviews
               </p>
@@ -342,7 +348,7 @@ const ViewCycleDetails = () => {
                     </td>
                   </tr>
                 ) : (
-                  reviews.map((review) => (
+                  reviews.slice((currentPage - 1) * 10, currentPage * 10).map((review) => (
                     <tr
                       key={review._id}
                       className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
@@ -403,6 +409,15 @@ const ViewCycleDetails = () => {
                 )}
               </tbody>
             </table>
+            {reviews.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(reviews.length / 10)}
+                totalItems={reviews.length}
+                itemsPerPage={10}
+                onPageChange={setCurrentPage}
+              />
+            )}
           </div>
         </div>
 

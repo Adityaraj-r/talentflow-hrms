@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import adminService from "@/services/adminService"
+import { Pagination } from "@/components/ui/pagination"
 
 const PAGE_SIZE = 20
 
@@ -163,14 +164,14 @@ const AuditLogs = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 p-6">
+    <div className="space-y-6 max-w-full pb-10 px-6 pt-6">
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">System Audit Logs</h1>
-            <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">System Audit Logs</h1>
+            <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
               Traceability and security monitoring for all administrative actions.
             </p>
           </div>
@@ -220,7 +221,7 @@ const AuditLogs = () => {
         </div>
 
         {/* Table Card */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden">
 
           {/* Filters */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 rounded-t-xl">
@@ -357,33 +358,14 @@ const AuditLogs = () => {
           </Table>
 
           {/* Pagination Footer */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
-            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">
-              Showing {filteredLogs.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredLogs.length)} of {filteredLogs.length} entries
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 px-3 text-xs"
-                disabled={page === 1}
-                onClick={() => setPage(p => p - 1)}
-              >
-                Prev
-              </Button>
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 px-1">
-                Page {page} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 px-3 text-xs"
-                disabled={page >= totalPages}
-                onClick={() => setPage(p => p + 1)}
-              >
-                Next
-              </Button>
-            </div>
+          <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              totalItems={filteredLogs.length}
+              itemsPerPage={PAGE_SIZE}
+              onPageChange={(p) => setPage(p)}
+            />
           </div>
         </div>
 
@@ -422,7 +404,7 @@ const StatsSummary = ({ title, value, icon, description, variant, isActive, onCl
     <div 
       onClick={onClick}
       className={cn(
-        "rounded-xl border p-6 transition-all duration-200 hover:scale-105 cursor-pointer", 
+        "border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] p-6 transition-all duration-200 hover:scale-105 cursor-pointer", 
         s.card,
         isActive && s.activeRing,
         !isActive && "opacity-80 hover:opacity-100"

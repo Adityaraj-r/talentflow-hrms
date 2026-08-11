@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Loader2, CheckCircle2, XCircle, Clock, Download, FileText, Eye } from "lucide-react";
+import { Search, Loader2, CheckCircle2, XCircle, Clock, Download, FileText, Eye, MessageSquarePlus } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "@/services/apiClient";
 import { UploadedDocumentsModal, DocumentPreviewDialog, getAttachments, getFileUrl, forceCloudinaryDownload, getFileName, formatFileSize, downloadFile } from "@/components/ui/DocumentViewer";
@@ -129,13 +131,15 @@ const DocumentRequests = () => {
 
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Document Requests (HR Manager Supervision)</h1>
-        <p className="text-muted-foreground">Monitor and supervise employee document requests</p>
+    <div className="space-y-6 max-w-full pb-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Document Requests (HR Manager Supervision)</h1>
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">Monitor and supervise employee document requests</p>
+        </div>
       </div>
 
-      <Card>
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 overflow-hidden">
         <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <CardTitle>Request History</CardTitle>
@@ -154,86 +158,113 @@ const DocumentRequests = () => {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-muted/50 border-b">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Request ID</th>
-                  <th className="px-4 py-3 font-medium">Employee</th>
-                  <th className="px-4 py-3 font-medium">Document Type</th>
-                  <th className="px-4 py-3 font-medium">Request Date</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
+            <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                  <TableHead className="px-4 py-3 font-medium">Request ID</TableHead>
+                  <TableHead className="px-4 py-3 font-medium">Employee</TableHead>
+                  <TableHead className="px-4 py-3 font-medium">Document Type</TableHead>
+                  <TableHead className="px-4 py-3 font-medium">Request Date</TableHead>
+                  <TableHead className="px-4 py-3 font-medium">Status</TableHead>
+                  <TableHead className="px-4 py-3 font-medium text-right">Actions</TableHead>
+                </TableRow>
+                </TableHeader>
+                <TableBody>
                 {loading ? (
-                  <tr><td colSpan="6" className="text-center py-8 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></td></tr>
+                  <TableRow><TableCell colSpan="6" className="text-center py-8 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></TableCell></TableRow>
                 ) : historyRequestsList.length === 0 ? (
-                  <tr><td colSpan="6" className="text-center py-8 text-muted-foreground">No document requests found.</td></tr>
+                  <TableRow><TableCell colSpan="6" className="text-center py-8 text-muted-foreground">No document requests found.</TableCell></TableRow>
                 ) : (
                   historyRequestsList.map((req) => (
-                    <tr key={req._id} className="group hover:bg-slate-50 dark:hover:bg-slate-900/60 transition-colors">
-                      <td className="px-4 py-3 font-bold">{req.requestId || "N/A"}</td>
-                      <td className="px-4 py-3">
+                    <TableRow key={req._id} className="hover:bg-muted/10 group">
+                      <TableCell className="px-4 py-3 font-bold">{req.requestId || "N/A"}</TableCell>
+                      <TableCell className="px-4 py-3">
                         <div className="font-medium text-slate-800 dark:text-slate-200">{req.employeeName}</div>
                         <div className="text-xs text-muted-foreground">ID: {req.employeeId}</div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">{req.documentType}</td>
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{new Date(req.createdAt).toLocaleDateString()}</td>
-                      <td className="px-4 py-3">{getStatusBadge(req.status)}</td>
-                      <td className="px-4 py-3 text-right">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 whitespace-nowrap">{req.documentType}</TableCell>
+                      <TableCell className="px-4 py-3 text-muted-foreground whitespace-nowrap">{new Date(req.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell className="px-4 py-3">{getStatusBadge(req.status)}</TableCell>
+                      <TableCell className="px-4 py-3 text-right">
                         <div className="flex justify-end items-center gap-2 opacity-85 group-hover:opacity-100 transition-opacity duration-150">
-                          {req.status === "Approved" && (
-                            <>
-                              {getAttachments(req).length === 0 ? (
-                                <span className="text-xs text-muted-foreground italic">No documents uploaded yet.</span>
-                              ) : (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-8 px-2.5 text-xs font-semibold flex items-center gap-1.5 border-indigo-200 bg-indigo-50/55 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/40 dark:text-indigo-400 dark:hover:bg-indigo-900/40 text-indigo-700 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                  onClick={() => {
-                                    setActiveReqAttachments(req);
-                                    setAttachmentsModalOpen(true);
-                                  }}
-                                >
-                                  {getAttachments(req).length === 1 ? (
-                                    <span>📄</span>
-                                  ) : (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="inline-block">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={req.status !== "Approved" || getAttachments(req).length === 0}
+                                    className="h-8 px-2.5 text-xs font-semibold flex items-center gap-1.5 border-indigo-200 bg-indigo-50/55 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/40 dark:text-indigo-400 dark:hover:bg-indigo-900/40 text-indigo-700 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
+                                    onClick={() => {
+                                      if (req.status === "Approved" && getAttachments(req).length > 0) {
+                                        setActiveReqAttachments(req);
+                                        setAttachmentsModalOpen(true);
+                                      }
+                                    }}
+                                  >
                                     <span className="flex items-center gap-1">
                                       <span>📎</span>
                                       <span>{getAttachments(req).length}</span>
                                     </span>
-                                  )}
+                                  </Button>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>
+                                  {req.status !== "Approved" ? "Request is not approved yet" :
+                                   getAttachments(req).length === 0 ? "No documents uploaded yet" :
+                                   "View Attachments"}
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="icon" 
+                                  className="h-8 w-8 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 shrink-0"
+                                  onClick={() => handleOpenViewDetails(req)}
+                                >
+                                  <Eye className="h-4 w-4" />
                                 </Button>
-                              )}
-                            </>
-                          )}
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                            onClick={() => handleOpenViewDetails(req)}
-                          >
-                            View Details
-                          </Button>
-                          {req.status !== "Rejected" ? (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 px-3 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50/70 dark:hover:bg-blue-950/30 rounded-lg transition-all duration-150 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                              onClick={() => handleOpenAddRemark(req)}
-                            >
-                              Add Remark
-                            </Button>
-                          ) : null}
+                              </TooltipTrigger>
+                              <TooltipContent><p>View Details</p></TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="inline-block">
+                                  <Button 
+                                    variant="outline" 
+                                    size="icon" 
+                                    disabled={req.status === "Rejected"}
+                                    className="h-8 w-8 border-blue-200 dark:border-blue-800/40 bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    onClick={() => {
+                                      if (req.status !== "Rejected") handleOpenAddRemark(req);
+                                    }}
+                                  >
+                                    <MessageSquarePlus className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{req.status === "Rejected" ? "Request is already rejected" : "Add Remark"}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+              </Table>
           </div>
         </CardContent>
       </Card>

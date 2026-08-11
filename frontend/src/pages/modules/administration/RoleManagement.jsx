@@ -167,11 +167,11 @@ const RoleManagement = () => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] space-y-4">
+    <div className="flex flex-col h-[calc(100vh-140px)] space-y-6 max-w-full pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Access Control Matrix</h1>
-          <p className="text-muted-foreground text-sm">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Access Control Matrix</h1>
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
             Manage granular permissions for {roles.length} active roles.
           </p>
         </div>
@@ -198,7 +198,7 @@ const RoleManagement = () => {
         </div>
       </div>
 
-      <div className="flex-1 border border-border/50 rounded-xl bg-card shadow-sm overflow-hidden flex flex-col">
+      <div className="flex-1 border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 flex flex-col">
         <div className="flex-1 overflow-auto custom-scrollbar relative">
           <table className="w-full text-left border-separate border-spacing-0">
             <thead className="sticky top-0 z-30 shadow-sm">

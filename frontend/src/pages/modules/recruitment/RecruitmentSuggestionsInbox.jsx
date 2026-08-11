@@ -80,15 +80,15 @@ export default function RecruitmentSuggestionsInbox() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-full pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Recruitment Suggestions</h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Recruitment Suggestions</h1>
+        <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
           Suggestions raised from governance oversight. Acknowledge and resolve items here.
         </p>
       </div>
 
-      <Card>
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader>
           <CardTitle>Inbox</CardTitle>
           <CardDescription>Open items first; newest at top.</CardDescription>

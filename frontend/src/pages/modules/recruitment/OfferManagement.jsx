@@ -359,10 +359,10 @@ const OfferManagement = () => {
 
   if (isGeneratePage) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-full pb-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Generate Offer</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-2xl">Generate Offer</h1>
           </div>
         </div>
         {!canWrite ? (
@@ -441,7 +441,7 @@ const OfferManagement = () => {
   const detailsOffer = isDetailsPage ? findOffer(offerId) : null
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <RecruitmentPageHeader
         title="Offer Management"
         subtitle="Enterprise offer lifecycle control for approvals, release, compensation, and candidate decisions."

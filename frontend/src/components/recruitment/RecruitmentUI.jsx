@@ -61,15 +61,13 @@ export function RecruitmentStatusBadge({ status, className }) {
 
 export function RecruitmentPageHeader({ title, subtitle, summary, actions }) {
   return (
-    <div className="sticky top-0 z-20 -mx-6 border-b border-slate-200 dark:border-white/10 bg-background/90 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{title}</h1>
-          {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
-          {summary && <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{summary}</p>}
-        </div>
-        {actions && <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3 lg:w-auto lg:flex lg:flex-wrap lg:items-center">{actions}</div>}
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-2">
+      <div className="min-w-0">
+        <h1 className="text-[28px] font-bold text-slate-900 dark:text-white tracking-tight">{title}</h1>
+        {subtitle && <p className="mt-1 text-[15px] text-slate-500 dark:text-slate-400">{subtitle}</p>}
+        {summary && <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{summary}</p>}
       </div>
+      {actions && <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3 lg:w-auto lg:flex lg:flex-wrap lg:items-center">{actions}</div>}
     </div>
   )
 }
@@ -170,7 +168,7 @@ export function RecruitmentSkeleton({ type = "cards", rows = 5 }) {
 
 export function RecruitmentTable({ columns, children, className }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 bg-card/80 shadow-sm">
+    <div className="overflow-hidden rounded-[16px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
       <div className={cn("overflow-x-auto overflow-y-auto custom-scrollbar", className)}>
         <table className="min-w-full text-sm">
           <thead className="sticky top-0 z-10 bg-muted/95 text-xs uppercase tracking-wide text-muted-foreground backdrop-blur">

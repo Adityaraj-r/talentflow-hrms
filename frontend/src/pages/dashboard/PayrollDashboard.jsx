@@ -1,18 +1,14 @@
-import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { IndianRupee, FileText, Users, Calendar, Check, RefreshCw } from "lucide-react";
+import React from "react";
+import { IndianRupee, FileText, Users, Calendar, RefreshCw, ArrowUpRight, CheckCircle, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import StatsCard from "@/components/dashboard/StatsCard";
 import { usePayrollDashboard } from "@/hooks/usePayrollDashboard";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const PayrollDashboard = ({ stats: _stats, isLoading: _isLoading }) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("payroll");
   const { dashboard, loading, refreshing, refresh } = usePayrollDashboard();
   const navigate = useNavigate();
   const isLoading = _isLoading || loading;
@@ -40,343 +36,284 @@ const PayrollDashboard = ({ stats: _stats, isLoading: _isLoading }) => {
   const getStatusBadgeVariant = (status) => {
     switch (status) {
       case "Pending":
-        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300";
+        return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
       case "Issue":
       case "Failed":
-        return "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300";
+        return "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400";
       case "Completed":
       case "Processed":
       case "Paid":
       case "Disbursed":
-        return "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300";
+        return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
       default:
-        return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300";
+        return "bg-slate-100 text-slate-700 dark:bg-slate-800/50 dark:text-slate-300";
     }
   };
 
+  const smartAlerts = [
+    {
+      id: 1,
+      type: 'pending',
+      title: 'Pending Approvals',
+      desc: `${pendingPaymentsCount || 0} payroll payments are awaiting final approval.`,
+      icon: <Clock className="w-4 h-4 text-amber-600" />,
+      bg: 'bg-amber-50 border-amber-100',
+      iconBg: 'bg-amber-100'
+    },
+    {
+      id: 2,
+      type: 'issues',
+      title: 'Discrepancy Alerts',
+      desc: `${issuesReported || 0} anomalies detected in recent payroll runs.`,
+      icon: <AlertTriangle className="w-4 h-4 text-rose-600" />,
+      bg: 'bg-rose-50 border-rose-100',
+      iconBg: 'bg-rose-100'
+    },
+    {
+      id: 3,
+      type: 'success',
+      title: 'Payroll Progress',
+      desc: 'Current month payroll processing is on track.',
+      icon: <CheckCircle className="w-4 h-4 text-emerald-600" />,
+      bg: 'bg-emerald-50 border-emerald-100',
+      iconBg: 'bg-emerald-100'
+    }
+  ];
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-slate-50/50 flex items-center justify-center text-slate-500">Loading dashboard...</div>;
+  }
+
+  // Workaround since Clock is not imported above but used in smartAlerts
+  const Clock = Calendar; 
+
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 p-6 lg:p-8 font-sans">
       
-      {/* 1. GREETING HEADER & DATA FRESHNESS */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div className="flex flex-col space-y-1">
-          <h2 className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-            Payroll Operations
-          </h2>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            {getGreeting()}, <span className="font-bold">{user?.firstName || "Payroll Specialist"}</span> 👋
+      {/* HEADER SECTION */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">
+            {getGreeting()}, {user?.firstName || "Payroll Specialist"}
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Welcome back. Here's today's HR Operations Overview.
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
+            Manage payroll runs, deductions, and financial summaries.
           </p>
         </div>
-        <div className="flex items-center gap-3 self-start sm:self-auto">
-          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700/60 shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <span>Last Updated: <strong className="text-slate-700 dark:text-slate-200 font-medium">Just now</strong></span>
-          </div>
-          <Button onClick={refresh} disabled={loading || refreshing} variant="outline" size="sm" className="cursor-pointer">
+        <div className="flex items-center gap-3">
+          <Button onClick={refresh} disabled={loading || refreshing} variant="outline" className="bg-white hover:bg-slate-50 border-slate-200 text-slate-700 shadow-sm rounded-[12px]">
             <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-            Refresh
+            Refresh Data
           </Button>
         </div>
       </div>
 
-      {/* 2. STATS ROW */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Total Employees"
-          value={stats.employees || 128}
-          subtitle="+4 joined this month"
-          icon={<Users className="h-5 w-5" />}
-          variant="blue"
-          isLoading={isLoading}
-          isActive={activeTab === "payroll"}
-          onClick={() => setActiveTab("payroll")}
-        />
-        <StatsCard
-          title="Payroll Processed"
-          value={payrollProcessed}
-          subtitle="96% completed"
-          icon={<IndianRupee className="h-5 w-5" />}
-          variant="green"
-          isLoading={isLoading}
-          isActive={activeTab === "payroll"}
-          onClick={() => setActiveTab("payroll")}
-        />
-        <StatsCard
-          title="Pending Payments"
-          value={pendingPaymentsCount}
-          subtitle="3 awaiting approval"
-          icon={<FileText className="h-5 w-5" />}
-          variant="purple"
-          isLoading={isLoading}
-          isActive={activeTab === "payroll"}
-          onClick={() => setActiveTab("payroll")}
-        />
-        <StatsCard
-          title="Total Deductions"
-          value={`₹${totalDeductions.toLocaleString()}`}
-          subtitle="PF & ESI statutory deductions"
-          icon={<IndianRupee className="h-5 w-5" />}
-          variant="orange"
-          isLoading={isLoading}
-          isActive={activeTab === "deductions"}
-          onClick={() => setActiveTab("deductions")}
-        />
-      </div>
-
-      {/* 3. TABS */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-100 dark:bg-slate-800/60 p-1 rounded-xl gap-1">
-          <TabsTrigger 
-            value="payroll" 
-            className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
-          >
-            Payroll Status ({stats.employees || 128})
-          </TabsTrigger>
-          <TabsTrigger 
-            value="deductions" 
-            className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
-          >
-            Deductions ({deductionTypes?.length || 4})
-          </TabsTrigger>
-          <TabsTrigger 
-            value="history" 
-            className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
-          >
-            Payment History ({paymentHistory?.length || 5})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="payroll" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Payroll Status</CardTitle>
-              <CardDescription>Overview of current payroll processing</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex h-8 items-center">
-                    {payrollStatus.map((status, index) => (
-                      <div
-                        key={status.name}
-                        className={`h-full ${status.color} ${index === 0 ? "rounded-l-md" : ""} ${
-                          index === payrollStatus.length - 1 ? "rounded-r-md" : ""
-                        }`}
-                        style={{ width: `${(status.count / Math.max(stats.employees, 1)) * 100}%` }}
-                      ></div>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                    {payrollStatus.map((status) => (
-                      <div key={status.name}>
-                        <div className="font-medium">{status.count}</div>
-                        <div className="text-muted-foreground">{status.name}</div>
-                      </div>
-                    ))}
-                  </div>
+      <div className="flex flex-col xl:flex-row gap-6">
+        {/* MAIN CONTENT COLUMN */}
+        <div className="flex-1 space-y-6">
+          
+          {/* QUICK ACTIONS ROW */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div 
+              onClick={() => navigate('/payroll')}
+              className="bg-[#f3f0ff] dark:bg-purple-900/20 rounded-[20px] p-6 cursor-pointer hover:shadow-sm transition-all group relative overflow-hidden flex flex-col justify-between min-h-[140px]"
+            >
+              <div>
+                <div className="w-10 h-10 rounded-full bg-white/60 dark:bg-black/20 flex items-center justify-center mb-4 text-purple-700 dark:text-purple-400 shadow-sm">
+                  <IndianRupee className="w-5 h-5" />
                 </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="rounded-lg border p-4">
-                    <div className="text-sm font-medium">Total Payroll</div>
-                    <div className="mt-1 text-2xl font-bold">₹{totalPayroll.toLocaleString()}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">This month</div>
-                  </div>
-                  <div className="rounded-lg border p-4">
-                    <div className="text-sm font-medium">Pending Payments</div>
-                    <div className="mt-1 text-2xl font-bold">{pendingPaymentsCount}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">To be processed</div>
-                  </div>
-                  <div className="rounded-lg border p-4">
-                    <div className="text-sm font-medium">Issues Reported</div>
-                    <div className="mt-1 text-2xl font-bold">{issuesReported}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">Requiring resolution</div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-medium mb-3">Pending Payroll Actions</h3>
-                  <div className="rounded-md border">
-                    <div className="grid grid-cols-5 bg-muted/50 p-3 text-xs font-medium">
-                      <div>Employee</div>
-                      <div>Department</div>
-                      <div>Amount</div>
-                      <div>Status</div>
-                      <div>Actions</div>
-                    </div>
-                    <div className="divide-y">
-                      {pendingPayrollActions.length > 0 ? (
-                        pendingPayrollActions.map((payment) => (
-                          <div key={payment.id} className="grid grid-cols-5 p-3 text-sm items-center">
-                            <div className="font-medium truncate" title={payment.name}>{payment.name}</div>
-                            <div className="truncate" title={payment.department}>{payment.department}</div>
-                            <div>{payment.amount}</div>
-                            <div>
-                              <Badge variant="outline" className={getStatusBadgeVariant(payment.status)}>
-                                {payment.status}
-                              </Badge>
-                            </div>
-                            <div>
-                              <Button variant="ghost" size="sm">
-                                Process
-                              </Button>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="p-4 text-center text-sm text-muted-foreground">
-                          No pending actions
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-lg">Run Payroll</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
+                  Initiate new payroll cycles and disburse salaries.
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="deductions">
-          <Card>
-            <CardHeader>
-              <CardTitle>Deductions Overview</CardTitle>
-              <CardDescription>Breakdown of payroll deductions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="rounded-lg border p-4">
-                    <div className="text-sm font-medium">Total Deductions</div>
-                    <div className="mt-1 text-2xl font-bold">₹{totalDeductions.toLocaleString()}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">This month</div>
-                  </div>
-                  <div className="rounded-lg border p-4">
-                    <div className="text-sm font-medium">Employees Affected</div>
-                    <div className="mt-1 text-2xl font-bold">{Math.max(...deductionTypes.map(d => d.count), 0)}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">With deductions</div>
-                  </div>
-                  <div className="rounded-lg border p-4">
-                    <div className="text-sm font-medium">Average Deduction</div>
-                    <div className="mt-1 text-2xl font-bold">
-                      ₹{totalDeductions > 0 && Math.max(...deductionTypes.map(d => d.count), 0) > 0 
-                        ? Math.round(totalDeductions / Math.max(...deductionTypes.map(d => d.count), 0)).toLocaleString() 
-                        : 0}
-                    </div>
-                    <div className="mt-1 text-xs text-muted-foreground">Per employee</div>
-                  </div>
-                </div>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Deductions by Type</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {deductionTypes.length > 0 ? (
-                        deductionTypes.map((deduction) => (
-                          <div key={deduction.type} className="space-y-1">
-                            <div className="flex items-center justify-between text-sm">
-                              <div className="font-medium">{deduction.type}</div>
-                              <div>
-                                ₹{deduction.amount.toLocaleString()} ({deduction.count} employees)
-                              </div>
-                            </div>
-                            <div className="h-2 w-full rounded-full bg-muted">
-                              <div
-                                className={`h-2 rounded-full ${deduction.color}`}
-                                style={{ width: `${Math.min((deduction.amount / Math.max(totalDeductions, 1)) * 100, 100)}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-sm text-muted-foreground text-center py-4">
-                          No deductions found for this month
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity -translate-y-2 group-hover:translate-y-0">
+                <ArrowUpRight className="w-4 h-4" />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
 
-        <TabsContent value="history">
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment History</CardTitle>
-              <CardDescription>Record of processed payrolls</CardDescription>
-            </CardHeader>
-            <CardContent>
+            <div 
+              onClick={() => navigate('/payroll')}
+              className="bg-[#f3f0ff] dark:bg-purple-900/20 rounded-[20px] p-6 cursor-pointer hover:shadow-sm transition-all group relative overflow-hidden flex flex-col justify-between min-h-[140px]"
+            >
+              <div>
+                <div className="w-10 h-10 rounded-full bg-white/60 dark:bg-black/20 flex items-center justify-center mb-4 text-purple-700 dark:text-purple-400 shadow-sm">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-lg">Manage Deductions</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
+                  Review PF, ESI, tax, and other statutory deductions.
+                </p>
+              </div>
+              <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity -translate-y-2 group-hover:translate-y-0">
+                <ArrowUpRight className="w-4 h-4" />
+              </div>
+            </div>
+
+            <div 
+              onClick={() => navigate('/all-employees')}
+              className="bg-[#f3f0ff] dark:bg-purple-900/20 rounded-[20px] p-6 cursor-pointer hover:shadow-sm transition-all group relative overflow-hidden flex flex-col justify-between min-h-[140px]"
+            >
+              <div>
+                <div className="w-10 h-10 rounded-full bg-white/60 dark:bg-black/20 flex items-center justify-center mb-4 text-purple-700 dark:text-purple-400 shadow-sm">
+                  <Users className="w-5 h-5" />
+                </div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-lg">Employee Directory</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
+                  Access employee financial records and details.
+                </p>
+              </div>
+              <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity -translate-y-2 group-hover:translate-y-0">
+                <ArrowUpRight className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+
+          {/* OVERVIEW STATS */}
+          <div className="bg-white dark:bg-slate-900 rounded-[20px] border border-slate-100 dark:border-slate-800 p-6 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+            <h3 className="font-bold text-lg text-slate-900 dark:text-white">Current Cycle Overview</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-6">Key metrics for the current payroll period</p>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-slate-50/50 dark:bg-slate-800/50 rounded-xl p-4 flex flex-col items-center justify-center border border-slate-100/50 dark:border-slate-700/50">
+                <span className="text-3xl font-bold text-slate-900 dark:text-white mb-2">₹{(totalPayroll || 0).toLocaleString()}</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Total Payroll</span>
+              </div>
+              <div className="bg-slate-50/50 dark:bg-slate-800/50 rounded-xl p-4 flex flex-col items-center justify-center border border-slate-100/50 dark:border-slate-700/50">
+                <span className="text-3xl font-bold text-amber-600 dark:text-amber-500 mb-2">{pendingPaymentsCount || 0}</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Pending Payments</span>
+              </div>
+              <div className="bg-slate-50/50 dark:bg-slate-800/50 rounded-xl p-4 flex flex-col items-center justify-center border border-slate-100/50 dark:border-slate-700/50">
+                <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-500 mb-2">{payrollProcessed || 0}</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Processed</span>
+              </div>
+              <div className="bg-slate-50/50 dark:bg-slate-800/50 rounded-xl p-4 flex flex-col items-center justify-center border border-slate-100/50 dark:border-slate-700/50">
+                <span className="text-3xl font-bold text-purple-600 dark:text-purple-500 mb-2">₹{(totalDeductions || 0).toLocaleString()}</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Total Deductions</span>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            {payrollStatus && payrollStatus.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                    <h4 className="text-sm font-semibold mb-3">Processing Status</h4>
+                    <div className="flex h-3 items-center rounded-full overflow-hidden">
+                        {payrollStatus.map((status, index) => (
+                        <div
+                            key={status.name}
+                            className={`h-full ${status.color}`}
+                            style={{ width: `${(status.count / Math.max(stats.employees || 1, 1)) * 100}%` }}
+                        ></div>
+                        ))}
+                    </div>
+                    <div className="flex justify-between gap-4 mt-3 flex-wrap">
+                        {payrollStatus.map((status) => (
+                        <div key={status.name} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                            <span className={`w-2.5 h-2.5 rounded-full ${status.color}`}></span>
+                            {status.name} ({status.count})
+                        </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Pending Actions */}
+            <div className="bg-white dark:bg-slate-900 rounded-[20px] border border-slate-100 dark:border-slate-800 p-6 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+              <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-6">Pending Actions</h3>
               <div className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="rounded-lg border p-4">
-                    <div className="text-sm font-medium">Total Payments</div>
-                    <div className="mt-1 text-2xl font-bold">₹{paymentHistory.totalPayments.toLocaleString()}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">This year</div>
-                  </div>
-                  <div className="rounded-lg border p-4">
-                    <div className="text-sm font-medium">Payments Processed</div>
-                    <div className="mt-1 text-2xl font-bold">{paymentHistory.paymentsProcessed}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">This year</div>
-                  </div>
-                  <div className="rounded-lg border p-4">
-                    <div className="text-sm font-medium">Average Payment</div>
-                    <div className="mt-1 text-2xl font-bold">₹{Math.round(paymentHistory.averagePayment).toLocaleString()}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">Per employee</div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-medium mb-3">Recent Payroll Runs</h3>
-                  <div className="rounded-md border">
-                    <div className="grid grid-cols-5 bg-muted/50 p-3 text-xs font-medium">
-                      <div>Month</div>
-                      <div>Employees</div>
-                      <div>Total Amount</div>
-                      <div>Status</div>
-                      <div>Actions</div>
-                    </div>
-                    <div className="divide-y">
-                      {paymentHistory.recentRuns.length > 0 ? (
-                        paymentHistory.recentRuns.map((run) => (
-                          <div key={run.id} className="grid grid-cols-5 p-3 text-sm items-center">
-                            <div>{run.date}</div>
-                            <div>{run.employees}</div>
-                            <div>{run.amount}</div>
-                            <div>
-                              <Badge variant="outline" className={getStatusBadgeVariant(run.status)}>
-                                {run.status}
-                              </Badge>
-                            </div>
-                            <div>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => navigate('/payroll')}
-                              >
-                                View Details
-                              </Button>
-                            </div>
+                  {pendingPayrollActions?.length > 0 ? (
+                      pendingPayrollActions.map((payment) => (
+                      <div key={payment.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+                          <div>
+                              <p className="text-sm font-semibold text-slate-900 dark:text-white">{payment.name}</p>
+                              <p className="text-xs text-slate-500">{payment.department}</p>
                           </div>
-                        ))
-                      ) : (
-                        <div className="p-4 text-center text-sm text-muted-foreground">
-                          No recent payroll runs
-                        </div>
-                      )}
+                          <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
+                              <span className="font-medium text-sm">{payment.amount}</span>
+                              <Badge variant="outline" className={getStatusBadgeVariant(payment.status)}>{payment.status}</Badge>
+                              <button className="text-purple-600 hover:text-purple-700 text-xs font-semibold">Process</button>
+                          </div>
+                      </div>
+                      ))
+                  ) : (
+                      <div className="p-4 text-center text-sm text-slate-500">No pending actions</div>
+                  )}
+              </div>
+            </div>
+
+            {/* Deductions Breakdown */}
+            <div className="bg-white dark:bg-slate-900 rounded-[20px] border border-slate-100 dark:border-slate-800 p-6 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+              <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-6">Deductions Breakdown</h3>
+              <div className="space-y-4">
+                  {deductionTypes?.length > 0 ? (
+                      deductionTypes.map((deduction) => (
+                      <div key={deduction.type} className="space-y-1.5 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-slate-900 dark:text-white">{deduction.type}</span>
+                          <span className="text-slate-600 dark:text-slate-400 text-xs">₹{(deduction.amount || 0).toLocaleString()} • {deduction.count} emp</span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                          <div
+                              className={`h-full rounded-full ${deduction.color}`}
+                              style={{ width: `${Math.min(((deduction.amount || 0) / Math.max(totalDeductions || 1, 1)) * 100, 100)}%` }}
+                          ></div>
+                          </div>
+                      </div>
+                      ))
+                  ) : (
+                      <div className="p-4 text-center text-sm text-slate-500">No deductions found</div>
+                  )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* SIDEBAR - SMART ALERTS */}
+        <div className="xl:w-[320px] shrink-0 h-full">
+          <div className="sticky top-[88px]">
+            <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-6">Payroll Alerts</h3>
+            
+            <div className="space-y-4">
+              {smartAlerts.length > 0 ? (
+                smartAlerts.map(alert => (
+                  <div key={alert.id} className={cn("p-4 rounded-[16px] border shadow-sm", alert.bg)}>
+                    <div className="flex gap-3">
+                      <div className="shrink-0 mt-0.5">
+                         {alert.icon}
+                      </div>
+                      <div>
+                        <h4 className="text-[13px] font-bold text-slate-900">{alert.title}</h4>
+                        <p className="text-[13px] text-slate-500 mt-1 leading-relaxed">
+                          {alert.desc}
+                        </p>
+                      </div>
                     </div>
                   </div>
+                ))
+              ) : (
+                <div className="p-4 rounded-[16px] border border-slate-200 bg-slate-50 text-center text-[13px] text-slate-500">
+                  No new alerts.
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              )}
+            </div>
+            
+            <div className="mt-6 bg-white dark:bg-slate-900 rounded-[20px] border border-slate-100 dark:border-slate-800 p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-4">Payment History</h4>
+                <div className="space-y-3">
+                    {paymentHistory?.recentRuns?.slice(0, 3).map(run => (
+                        <div key={run.id} className="flex justify-between items-center text-xs">
+                            <span className="font-medium text-slate-600 dark:text-slate-300">{run.date}</span>
+                            <span className="text-slate-900 dark:text-white font-semibold">{run.amount}</span>
+                        </div>
+                    ))}
+                    <Button variant="link" className="w-full text-xs h-auto p-0 text-purple-600" onClick={() => navigate('/payroll')}>View Full History</Button>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

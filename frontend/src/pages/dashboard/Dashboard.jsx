@@ -71,7 +71,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="p-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
+    <div className="w-full h-full">
       {getDashboardByRole()}
     </div>
   );

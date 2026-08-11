@@ -2,32 +2,21 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Calendar, 
-  FileText, 
-  DollarSign, 
   CheckCircle, 
   Clock, 
-  Download, 
-  Briefcase, 
-  Building2, 
-  Mail, 
-  User,
-  FileCheck
+  ArrowUpRight,
+  ListTodo
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { useAuth } from '@/contexts/AuthContext';
-import StatsCard from "@/components/dashboard/StatsCard";
-import ApplyLeaveModal from "@/components/dashboard/ApplyLeaveModal"; 
+import ApplyLeaveModal from "@/components/dashboard/ApplyLeaveModal";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
+import { cn } from "@/lib/utils";
 
+// eslint-disable-next-line no-unused-vars
 const EmployeeDashboard = ({ stats = {}, isLoading = false }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
-  const [documentRequestsCount, setDocumentRequestsCount] = useState(stats?.documentsRequested || 5);
-
-  const roleStr = (typeof user?.role === 'string' ? user.role : user?.role?.name || '').toUpperCase();
-  const isHr = roleStr.includes('HR');
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -36,282 +25,342 @@ const EmployeeDashboard = ({ stats = {}, isLoading = false }) => {
     return "Good Evening";
   };
 
-  // Hardcoded balances for UI demo
-  const leaveBalances = [
-    { type: "Annual", used: 5, total: 20, color: "bg-blue-500" },
-    { type: "Sick", used: 2, total: 10, color: "bg-emerald-500" },
-    { type: "Casual", used: 0, total: 5, color: "bg-purple-500" },
+  // Mock data for graphs & lists (simulating real HRMS data as requested)
+  const attendanceData = [
+    { name: 'Apr', present: 20 },
+    { name: 'May', present: 22 },
+    { name: 'Jun', present: 21 },
+    { name: 'Jul', present: 22 },
+    { name: 'Aug', present: 18 },
   ];
 
-  const handleLeaveSuccess = () => {
-    console.log("Leave applied successfully - Refreshing data...");
-  };
+  const taskWorkload = [
+    { name: 'To do', value: 0, color: '#64748b' },
+    { name: 'Acknowledged', value: 0, color: '#10b981' },
+    { name: 'In progress', value: 0, color: '#f59e0b' },
+    { name: 'In review', value: 0, color: '#0ea5e9' },
+    { name: 'Done', value: 2, color: '#8b5cf6' },
+  ];
+  
+  const totalTasks = taskWorkload.reduce((sum, item) => sum + item.value, 0);
+
+  const pendingTasks = []; // Setting this to empty to match screenshot empty state
+
+  const smartAlerts = [
+    {
+      id: 1,
+      type: 'holiday',
+      title: 'Upcoming Holiday',
+      desc: 'Independence Day on 15-08-2026. Office closed.',
+      icon: <Calendar className="w-4 h-4 text-blue-600" />,
+      bg: 'bg-blue-50 border-blue-100',
+      iconBg: 'bg-blue-100'
+    },
+    {
+      id: 2,
+      type: 'task',
+      title: 'New task assigned',
+      desc: 'Arya Sharma assigned you "Create Database Queries".',
+      icon: <CheckCircle className="w-4 h-4 text-emerald-600" />,
+      bg: 'bg-emerald-50 border-emerald-100',
+      iconBg: 'bg-emerald-100'
+    },
+    {
+      id: 3,
+      type: 'task',
+      title: 'New task assigned',
+      desc: 'Arya Sharma assigned you "Design database Schema".',
+      icon: <CheckCircle className="w-4 h-4 text-emerald-600" />,
+      bg: 'bg-emerald-50 border-emerald-100',
+      iconBg: 'bg-emerald-100'
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 p-6 space-y-8 font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 p-6 lg:p-8 font-sans">
       
-      {/* 1. HEADER SECTION & DATA FRESHNESS */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div className="flex flex-col space-y-1">
-          <h2 className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-            Employee Portal
-          </h2>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            {getGreeting()}, <span className="font-bold">{user?.firstName || "Malhar"}</span> 👋
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Welcome back. Here's today's overview.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 self-start sm:self-auto text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700/60 shadow-xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-          <span>Last Updated: <strong className="text-slate-700 dark:text-slate-200 font-medium">Just now</strong></span>
-        </div>
+      {/* HEADER SECTION */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">
+          {getGreeting()}, {user?.firstName || "Bhavna"}
+        </h1>
+        <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
+          Here's a quick overview of your workday and pending activities.
+        </p>
       </div>
 
-      {/* 2. STATS ROW (KPI Cards matching Attendance Analytics design) */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Leave Balance"
-          value={stats?.leaveBalance || 12}
-          subtitle="35 total allocated"
-          icon={<Calendar className="h-5 w-5" />}
-          variant="blue"
-          isLoading={isLoading}
-          onClick={() => navigate('/attendance/my-leaves')}
-        />
-        <StatsCard
-          title="Document Requests"
-          value={documentRequestsCount}
-          subtitle="Avg processing: 1.4 days"
-          icon={<FileText className="h-5 w-5" />}
-          variant="purple"
-          isLoading={isLoading}
-          onClick={() => navigate(isHr ? (roleStr.includes('OFFICER') ? '/role/hr_officer/document-requests' : '/role/hr_manager/document-requests') : '/role/employee/document-requests')}
-        />
-        <StatsCard
-          title="Payroll Status"
-          value="Processed"
-          subtitle="Disbursed for Jan 2026"
-          icon={<DollarSign className="h-5 w-5" />}
-          variant="green"
-          isLoading={isLoading}
-          onClick={() => navigate('/payroll/salary-slip')}
-        />
-        <StatsCard
-          title="Tasks Assigned"
-          value="8"
-          subtitle="3 pending review"
-          icon={<CheckCircle className="h-5 w-5" />}
-          variant="orange"
-          isLoading={isLoading}
-          onClick={() => navigate('/dashboard/employee/tasks')}
-        />
-      </div>
-
-      {/* 3. ACTION BAR */}
-      <div className="rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/50 dark:to-[#1e1b4b]/50 border border-blue-100 dark:border-blue-800/50 p-6 shadow-sm">
-        <div className="flex flex-wrap gap-4 items-center">
-            {/* Main Action Button */}
-            <Button 
-                onClick={() => setIsLeaveModalOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-medium border-none px-6 shadow-md cursor-pointer transition-all duration-300 ease-out hover:-translate-y-0.5"
+      <div className="flex flex-col xl:flex-row gap-6">
+        {/* MAIN CONTENT COLUMN */}
+        <div className="flex-1 space-y-6">
+          
+          {/* QUICK ACTIONS ROW */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Action 1 */}
+            <div 
+              onClick={() => setIsLeaveModalOpen(true)}
+              className="bg-[#f3f0ff] dark:bg-purple-900/20 rounded-[20px] p-6 cursor-pointer hover:shadow-sm transition-all group relative overflow-hidden flex flex-col justify-between min-h-[140px]"
             >
-                <Calendar className="mr-2 h-4 w-4" /> Apply for Leave
-            </Button>
-            
-            {/* Secondary Actions - Adaptive Role-Based Buttons */}
-            {isHr ? (
-              <Button 
-                  onClick={() => navigate(roleStr.includes('OFFICER') ? '/role/hr_officer/document-requests' : '/role/hr_manager/document-requests')}
-                  variant="outline" 
-                  className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-white bg-transparent cursor-pointer transition-all duration-300 ease-out hover:-translate-y-0.5"
-              >
-                  <FileCheck className="mr-2 h-4 w-4 text-purple-600 dark:text-purple-400" /> Pending Approvals
-              </Button>
-            ) : (
-              <Button 
-                  onClick={() => navigate('/role/employee/document-requests')}
-                  variant="outline" 
-                  className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-white bg-transparent cursor-pointer transition-all duration-300 ease-out hover:-translate-y-0.5"
-              >
-                  <FileText className="mr-2 h-4 w-4 text-purple-600 dark:text-purple-400" /> Request Document
-              </Button>
-            )}
-            
-            <Button 
-                onClick={() => navigate('/dashboard/employee/attendance')}
-                variant="outline" 
-                className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-white bg-transparent cursor-pointer transition-all duration-300 ease-out hover:-translate-y-0.5"
-            >
-                <Clock className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" /> View Attendance
-            </Button>
-            
-            <Button 
-                onClick={() => navigate('/payroll/salary-slip')}
-                variant="outline" 
-                className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-white bg-transparent cursor-pointer transition-all duration-300 ease-out hover:-translate-y-0.5"
-            >
-                <Download className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Download Payslip
-            </Button>
-        </div>
-      </div>
+              <div>
+                <div className="w-10 h-10 rounded-full bg-white/60 dark:bg-black/20 flex items-center justify-center mb-4 text-purple-700 dark:text-purple-400 shadow-sm">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-lg">Apply Leave</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
+                  Request casual, sick, or planned leave in just a few clicks.
+                </p>
+              </div>
+              <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity -translate-y-2 group-hover:translate-y-0">
+                <ArrowUpRight className="w-4 h-4" />
+              </div>
+            </div>
 
-      {/* 4. TABS SECTION WITH DYNAMIC COUNTERS & ACTIVE HIGHLIGHT */}
-      <Tabs defaultValue="leave" className="space-y-6">
-        <div className="border-b border-slate-200 dark:border-slate-800">
-            <TabsList className="bg-slate-100 dark:bg-slate-800/60 p-1 rounded-xl gap-1 h-auto">
-                <TabsTrigger 
-                    value="profile" 
-                    className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
-                >
-                    My Profile
-                </TabsTrigger>
-                <TabsTrigger 
-                    value="leave" 
-                    className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
-                >
-                    Leave Balance ({stats?.leaveBalance || 12})
-                </TabsTrigger>
-                <TabsTrigger 
-                    value="documents" 
-                    className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
-                >
-                    Documents ({documentRequestsCount})
-                </TabsTrigger>
-                <TabsTrigger 
-                    value="payroll" 
-                    className="rounded-lg px-4 py-2 text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm data-[state=active]:font-semibold hover:text-slate-900 dark:hover:text-slate-200"
-                >
-                    Payroll
-                </TabsTrigger>
-            </TabsList>
-        </div>
+            {/* Action 2 */}
+            <div 
+              onClick={() => navigate('/dashboard/employee/attendance')}
+              className="bg-[#f3f0ff] dark:bg-purple-900/20 rounded-[20px] p-6 cursor-pointer hover:shadow-sm transition-all group relative overflow-hidden flex flex-col justify-between min-h-[140px]"
+            >
+              <div>
+                <div className="w-10 h-10 rounded-full bg-white/60 dark:bg-black/20 flex items-center justify-center mb-4 text-purple-700 dark:text-purple-400 shadow-sm">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-lg">Mark attendance</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
+                  Check in for today and keep your attendance record up to date.
+                </p>
+              </div>
+              <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity -translate-y-2 group-hover:translate-y-0">
+                <ArrowUpRight className="w-4 h-4" />
+              </div>
+            </div>
 
-        {/* --- LEAVE TAB CONTENT --- */}
-        <TabsContent value="leave" className="space-y-6">
-            <Card className="bg-white dark:bg-[#1e293b] border-slate-200 dark:border-slate-700 shadow-sm">
-                <CardHeader>
-                    <CardTitle className="text-slate-900 dark:text-white text-lg flex items-center gap-2">
-                        <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" /> Leave Balance
-                    </CardTitle>
-                    <CardDescription className="text-slate-500 dark:text-slate-400">Your available leave balances and requests</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {/* Summary Stats */}
-                    <div className="grid gap-4 md:grid-cols-3 mb-8">
-                       <div className="p-5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 text-center">
-                            <div className="text-3xl font-bold text-slate-900 dark:text-white">35</div>
-                            <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mt-1">Total Leave Days</div>
-                       </div>
-                       <div className="p-5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 text-center">
-                            <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">7</div>
-                            <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mt-1">Days Used</div>
-                       </div>
-                       <div className="p-5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 text-center">
-                            <div className="text-3xl font-bold text-yellow-500 dark:text-yellow-400">3</div>
-                            <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mt-1">Pending Requests</div>
-                       </div>
+            {/* Action 3 */}
+            <div 
+              onClick={() => navigate('/dashboard/employee/tasks')}
+              className="bg-[#f3f0ff] dark:bg-purple-900/20 rounded-[20px] p-6 cursor-pointer hover:shadow-sm transition-all group relative overflow-hidden flex flex-col justify-between min-h-[140px]"
+            >
+              <div>
+                <div className="w-10 h-10 rounded-full bg-white/60 dark:bg-black/20 flex items-center justify-center mb-4 text-purple-700 dark:text-purple-400 shadow-sm">
+                  <ListTodo className="w-5 h-5" />
+                </div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-lg">View tasks</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
+                  See assigned work, update status, and track progress.
+                </p>
+              </div>
+              <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity -translate-y-2 group-hover:translate-y-0">
+                <ArrowUpRight className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+
+          {/* LEAVE BALANCE SECTION */}
+          <div className="bg-white dark:bg-slate-900 rounded-[20px] border border-slate-100 dark:border-slate-800 p-6 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+            <h3 className="font-bold text-lg text-slate-900 dark:text-white">Leave balance</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-6">2026 entitlement · Standard policy</p>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-slate-50/50 dark:bg-slate-800/50 rounded-xl p-4 flex flex-col items-center justify-center border border-slate-100/50 dark:border-slate-700/50">
+                <span className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{stats?.leaveBalance || 30}</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Total Leaves</span>
+              </div>
+              <div className="bg-slate-50/50 dark:bg-slate-800/50 rounded-xl p-4 flex flex-col items-center justify-center border border-slate-100/50 dark:border-slate-700/50">
+                <span className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{stats?.leaveBalance || 30}</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Available</span>
+              </div>
+              <div className="bg-slate-50/50 dark:bg-slate-800/50 rounded-xl p-4 flex flex-col items-center justify-center border border-slate-100/50 dark:border-slate-700/50">
+                <span className="text-3xl font-bold text-slate-900 dark:text-white mb-2">0</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Used</span>
+              </div>
+              <div className="bg-slate-50/50 dark:bg-slate-800/50 rounded-xl p-4 flex flex-col items-center justify-center border border-slate-100/50 dark:border-slate-700/50">
+                <span className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{stats?.leaveRequests || 0}</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Pending Approval</span>
+              </div>
+            </div>
+          </div>
+
+          {/* PENDING TASKS & APPLICATIONS */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white dark:bg-slate-900 rounded-[20px] border border-slate-100 dark:border-slate-800 p-6 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] min-h-[220px] flex flex-col">
+              <div className="flex justify-between items-start mb-6">
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white">Pending Tasks</h3>
+                <button onClick={() => navigate('/dashboard/employee/tasks')} className="text-sm font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 cursor-pointer">View All</button>
+              </div>
+              
+              {pendingTasks.length > 0 ? (
+                <div className="space-y-4 mt-auto mb-auto">
+                    {/* Compact empty state matching screenshot since the actual tasks table would be too large here, the screenshot shows empty state usually or 1 task */}
+                    <div className="flex flex-col items-center justify-center h-full text-center text-slate-500 opacity-60">
+                        <div className="w-10 h-10 border-2 border-dashed border-slate-300 rounded-full flex items-center justify-center mb-3">
+                            <ListTodo className="w-4 h-4" />
+                        </div>
+                        <p className="text-sm">No open tasks assigned to you.</p>
                     </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-center">
+                    <div className="w-12 h-12 border border-dashed border-slate-200 dark:border-slate-700 rounded-full flex items-center justify-center mb-4 text-slate-300 dark:text-slate-600">
+                        <ListTodo className="w-5 h-5 opacity-50" />
+                    </div>
+                    <p className="text-[13px] text-slate-500 dark:text-slate-400">No open tasks assigned to you.</p>
+                </div>
+              )}
+            </div>
 
-                    {/* Progress Bars */}
-                    <div className="space-y-6">
-                        {leaveBalances.map((leave) => (
-                            <div key={leave.type} className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-700 dark:text-slate-200 font-medium">{leave.type} Leave</span>
-                                    <span className="text-slate-500 dark:text-slate-400">{leave.total - leave.used} / {leave.total} days left</span>
-                                </div>
-                                <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                    <div 
-                                        className={`h-full ${leave.color}`} 
-                                        style={{ width: `${((leave.total - leave.used) / leave.total) * 100}%` }}
-                                    ></div>
-                                </div>
+            <div className="bg-white dark:bg-slate-900 rounded-[20px] border border-slate-100 dark:border-slate-800 p-6 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] min-h-[220px] flex flex-col">
+              <div className="flex justify-between items-start mb-6">
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white">Pending Applications</h3>
+                <button onClick={() => navigate('/attendance/my-leaves')} className="text-sm font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 cursor-pointer">View All</button>
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center text-center">
+                <p className="text-[13px] text-slate-500 dark:text-slate-400">No leave applications waiting for approval.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* CHARTS ROW */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Attendance Summary */}
+            <div className="bg-white dark:bg-slate-900 rounded-[20px] border border-slate-100 dark:border-slate-800 p-6 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+              <h3 className="font-bold text-lg text-slate-900 dark:text-white">Attendance Summary</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-6">Last 5 Months Performance</p>
+              
+              <div className="h-[180px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={attendanceData} margin={{ top: 0, right: 0, left: -30, bottom: 0 }}>
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 11, fill: '#94a3b8' }} 
+                      dy={10} 
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 11, fill: '#94a3b8' }} 
+                      ticks={[0, 6, 12, 18, 24]}
+                    />
+                    <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Bar dataKey="present" fill="#8b5cf6" radius={[4, 4, 4, 4]} barSize={24} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-6 mb-2">
+                <div className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 px-3 py-1.5 rounded-full text-xs font-semibold">
+                  50% Attendance Rate
+                </div>
+                <div className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-3 py-1.5 rounded-full text-xs font-semibold">
+                  02/04 Days Present
+                </div>
+                <div className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 px-3 py-1.5 rounded-full text-xs font-semibold">
+                  02 Days Absent
+                </div>
+              </div>
+              <div className="mt-4 text-center">
+                <button onClick={() => navigate('/dashboard/employee/attendance')} className="text-[13px] font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 cursor-pointer">View all</button>
+              </div>
+            </div>
+
+            {/* Task Workload */}
+            <div className="bg-white dark:bg-slate-900 rounded-[20px] border border-slate-100 dark:border-slate-800 p-6 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+              <h3 className="font-bold text-lg text-slate-900 dark:text-white">Task Workload</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-6">Your assigned tasks by status</p>
+              
+              <div className="flex items-center justify-between">
+                  <div className="relative w-[150px] h-[150px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={taskWorkload}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={70}
+                          paddingAngle={0}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {taskWorkload.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-[28px] font-bold text-slate-900 dark:text-white">{totalTasks}</span>
+                        <span className="text-[13px] text-slate-500 font-medium">tasks</span>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 pl-8 space-y-2.5">
+                     {taskWorkload.map((item) => (
+                        <div key={item.name} className="flex items-center justify-between text-[13px]">
+                            <div className="flex items-center gap-2.5">
+                                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                                <span className="text-slate-600 dark:text-slate-300">{item.name}</span>
                             </div>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
-        </TabsContent>
-
-        {/* --- PROFILE TAB CONTENT --- */}
-        <TabsContent value="profile">
-            <Card className="bg-white dark:bg-[#1e293b] border-slate-200 dark:border-slate-700 shadow-sm">
-                <CardHeader>
-                    <CardTitle className="text-slate-900 dark:text-white">My Profile</CardTitle>
-                    <CardDescription className="text-slate-500 dark:text-slate-400">Your personal and employment details</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-lg">
-                            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Full Name</p>
-                            <p className="text-lg text-slate-900 dark:text-white font-medium flex items-center gap-2">
-                                <User className="h-4 w-4 text-blue-600 dark:text-blue-400" /> {user?.firstName} {user?.lastName}
-                            </p>
+                            <div className="flex items-center gap-4">
+                                <span className="font-bold text-slate-900 dark:text-white w-2 text-right">{item.value}</span>
+                                <span className="text-slate-400 w-8 text-right font-medium">{totalTasks ? Math.round((item.value / totalTasks) * 100) : 0}%</span>
+                            </div>
                         </div>
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-lg">
-                            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Employee ID</p>
-                            <p className="text-lg text-slate-900 dark:text-white font-medium flex items-center gap-2">
-                                <Briefcase className="h-4 w-4 text-purple-600 dark:text-purple-400" /> {user?.employeeId || "EMP-12345"}
-                            </p>
-                        </div>
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-lg">
-                            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Department</p>
-                            <p className="text-lg text-slate-900 dark:text-white font-medium flex items-center gap-2">
-                                <Building2 className="h-4 w-4 text-orange-600 dark:text-orange-400" /> {user?.department || "Information Technology"}
-                            </p>
-                        </div>
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-lg">
-                            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Email</p>
-                            <p className="text-lg text-slate-900 dark:text-white font-medium flex items-center gap-2">
-                                <Mail className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> {user?.email}
-                            </p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        </TabsContent>
-
-        {/* --- DOCUMENTS TAB CONTENT (Polished Empty State) --- */}
-        <TabsContent value="documents">
-            <Card className="bg-white dark:bg-[#1e293b] border-slate-200 dark:border-slate-700 shadow-sm p-12 text-center">
-                <div className="flex flex-col items-center justify-center space-y-3">
-                  <div className="p-3 bg-purple-50 dark:bg-purple-950/40 rounded-full text-purple-600 dark:text-purple-400">
-                    <FileText className="w-6 h-6" />
+                     ))}
                   </div>
-                  <h4 className="text-base font-semibold text-slate-800 dark:text-slate-200">No document history available</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
-                    Your requested documents and file history will appear here once submitted and processed.
-                  </p>
-                </div>
-            </Card>
-        </TabsContent>
+              </div>
 
-        {/* --- PAYROLL TAB CONTENT (Polished Empty State) --- */}
-        <TabsContent value="payroll">
-             <Card className="bg-white dark:bg-[#1e293b] border-slate-200 dark:border-slate-700 shadow-sm p-12 text-center">
-                <div className="flex flex-col items-center justify-center space-y-3">
-                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-full text-emerald-600 dark:text-emerald-400">
-                    <DollarSign className="w-6 h-6" />
+              <div className="flex items-center gap-6 mt-6 ml-2">
+                 <div className="text-[13px] text-slate-500 font-medium px-3 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-md border border-slate-100 dark:border-slate-700">0 open</div>
+                 <div className="text-[13px] text-slate-500 font-medium">100% complete</div>
+              </div>
+
+              <div className="mt-4 text-center">
+                <button onClick={() => navigate('/dashboard/employee/tasks')} className="text-[13px] font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 cursor-pointer">View all</button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* SIDEBAR - SMART ALERTS */}
+        <div className="xl:w-[320px] shrink-0 h-full">
+          <div className="sticky top-[88px]">
+            <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-6">Smart Alerts</h3>
+            
+            <div className="space-y-4">
+              {smartAlerts.length > 0 ? (
+                smartAlerts.map(alert => (
+                  <div key={alert.id} className={cn("p-4 rounded-[16px] border shadow-sm", alert.bg)}>
+                    <div className="flex gap-3">
+                      <div className="shrink-0 mt-0.5">
+                         {alert.icon}
+                      </div>
+                      <div>
+                        <h4 className="text-[13px] font-bold text-slate-900">{alert.title}</h4>
+                        <p className="text-[13px] text-slate-500 mt-1 leading-relaxed">
+                          {alert.desc}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <h4 className="text-base font-semibold text-slate-800 dark:text-slate-200">No payroll records available</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
-                    Payroll information will appear once payroll for the current period has been processed.
-                  </p>
+                ))
+              ) : (
+                <div className="p-4 rounded-[16px] border border-slate-200 bg-slate-50 text-center text-[13px] text-slate-500">
+                  No new alerts.
                 </div>
-            </Card>
-        </TabsContent>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
-      </Tabs>
-
-      {/* MODAL */}
       <ApplyLeaveModal 
         isOpen={isLeaveModalOpen} 
         onClose={() => setIsLeaveModalOpen(false)} 
-        onSuccess={handleLeaveSuccess}
+        onSuccess={() => {}}
       />
-
     </div>
   );
 };

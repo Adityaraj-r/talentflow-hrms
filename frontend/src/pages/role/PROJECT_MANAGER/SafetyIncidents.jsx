@@ -59,7 +59,7 @@ const SafetyIncidents = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Safety Incidents</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-2xl">Safety Incidents</h1>
           <p className="text-muted-foreground">Report and track safety incidents</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>

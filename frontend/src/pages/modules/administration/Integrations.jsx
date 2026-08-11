@@ -124,11 +124,11 @@ const Integrations = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
-          <p className="text-muted-foreground">Manage enterprise connections with third-party services.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Integrations</h1>
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">Manage enterprise connections with third-party services.</p>
         </div>
         <Button variant="outline" size="sm">
            <RefreshCw className="mr-2 h-4 w-4" /> Sync All
@@ -137,7 +137,7 @@ const Integrations = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {integrations.map((item) => (
-          <Card key={item.id} className="flex flex-col transition-all border-none shadow-sm bg-card hover:shadow-md">
+          <Card key={item.id} className="flex flex-col transition-all border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 hover:shadow-md overflow-hidden">
             <CardHeader className="pb-4">
               <div className="flex justify-between items-start">
                 <div className={cn("p-3 rounded-xl", item.bg)}>

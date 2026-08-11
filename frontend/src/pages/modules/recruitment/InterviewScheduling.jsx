@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Search, Calendar, Loader2, Video, Clock3, MapPin, CheckCircle2, XCircle, UserCheck, UserX } from "lucide-react"
+import { Pagination } from "@/components/ui/pagination"
+import { Search, Calendar, Loader2, Video, Clock3, MapPin, CheckCircle2, XCircle, UserCheck, UserX, Clock, Map, Building, Phone, Send, Info, Eye, ExternalLink, CalendarDays } from "lucide-react"
 import { format, isValid, parse } from "date-fns"
 import { toast } from "sonner"
 
@@ -23,6 +24,7 @@ const InterviewScheduling = () => {
   const canWrite = user?.can?.("recruitment", "write") && isRecruitmentOperator
   const [applications, setApplications] = useState([])
   const [employees, setEmployees] = useState([])
+  const [currentPage, setCurrentPage] = useState(1)
   const [fetchingEmployees, setFetchingEmployees] = useState(false)
   const [search, setSearch] = useState("")
   const [selected, setSelected] = useState(null)
@@ -367,14 +369,14 @@ const InterviewScheduling = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Interview Scheduling</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Interview Scheduling</h1>
         </div>
       </div>
 
-      <Card>
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
         <div className="p-4 border-b flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-muted/20">
           <div className="relative flex-1 min-w-[200px] lg:w-72">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -472,7 +474,7 @@ const InterviewScheduling = () => {
                       No candidates match the selected filters.
                     </td>
                   </tr>
-                ) : candidates.map((c) => (
+                ) : candidates.slice((currentPage - 1) * 10, currentPage * 10).map((c) => (
                   <tr key={c._id} className="hover:bg-muted/30 transition-colors group">
                     <td className="px-6 py-4 font-medium text-foreground">{c.name}</td>
                     <td className="px-6 py-4 text-muted-foreground">{c.email}</td>
@@ -598,6 +600,15 @@ const InterviewScheduling = () => {
                 ))}
               </tbody>
             </table>
+            {candidates.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(candidates.length / 10)}
+                totalItems={candidates.length}
+                itemsPerPage={10}
+                onPageChange={setCurrentPage}
+              />
+            )}
           </div>
         </CardContent>
       </Card>

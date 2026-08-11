@@ -11,7 +11,7 @@ import ProductivityCards from "@/components/reports/ProductivityCards";
 import TopLowPerformers from "@/components/reports/TopLowPerformers";
 import AbsenteeismCard from "@/components/reports/AbsenteeismCard";
 import { Button } from "@/components/ui/button";
-import { Download, FileText } from "lucide-react";
+import { Download, FileText , Trophy, TrendingDown, UserX } from "lucide-react";
 
 export default function DashboardSection({
   data,
@@ -271,29 +271,29 @@ export default function DashboardSection({
 
           {/* Department Insights */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Team Strength
               </p>
-              <h3 className="text-3xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.headcount }
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Avg Productivity
               </p>
-              <h3 className="text-3xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.avgWorkingHours } hrs
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Pending Requests
               </p>
-              <h3 className="text-3xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.pendingRequests }
               </h3>
             </div>
@@ -319,38 +319,38 @@ export default function DashboardSection({
           {/* Executive KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
 
-            <div className="bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
-              <p className="text-sm text-muted-foreground">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 System Health Score
               </p>
-              <h3 className="text-2xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.workforceHealthScore }%
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
-              <p className="text-sm text-muted-foreground">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Total Payroll
               </p>
-              <h3 className="text-2xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 ₹{data?.summary?.totalPayroll }
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
-              <p className="text-sm text-muted-foreground">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Attrition Rate
               </p>
-              <h3 className="text-2xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.attritionRate }%
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
-              <p className="text-sm text-muted-foreground">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Open Positions
               </p>
-              <h3 className="text-2xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.openPositions }
               </h3>
             </div>
@@ -387,31 +387,52 @@ export default function DashboardSection({
 
           {/* Admin Insights */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
-                Best Department
-              </p>
-              <h3 className="text-3xl font-bold mt-2">
-                {data?.ceoInsights?.bestDepartment || "N/A"}
-              </h3>
+            <div className="group relative bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 hover:border-primary/40 dark:hover:border-slate-700 shadow-sm hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-slate-950/40 transition-all duration-300 ease-out hover:-translate-y-1 p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Best Department
+                  </p>
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
+                    {data?.ceoInsights?.bestDepartment || "N/A"}
+                  </h3>
+                </div>
+                <div className="h-10 w-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                  <Trophy size={18} />
+                </div>
+              </div>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
-                Highest Attrition
-              </p>
-              <h3 className="text-3xl font-bold mt-2">
-                {data?.ceoInsights?.highestAttrition || "N/A"}
-              </h3>
+            <div className="group relative bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 hover:border-primary/40 dark:hover:border-slate-700 shadow-sm hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-slate-950/40 transition-all duration-300 ease-out hover:-translate-y-1 p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Highest Attrition
+                  </p>
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
+                    {data?.ceoInsights?.highestAttrition || "N/A"}
+                  </h3>
+                </div>
+                <div className="h-10 w-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                  <TrendingDown size={18} />
+                </div>
+              </div>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
-                Lowest Attendance
-              </p>
-              <h3 className="text-3xl font-bold mt-2">
-                {data?.ceoInsights?.lowestAttendance || "N/A"}
-              </h3>
+            <div className="group relative bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 hover:border-primary/40 dark:hover:border-slate-700 shadow-sm hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-slate-950/40 transition-all duration-300 ease-out hover:-translate-y-1 p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Lowest Attendance
+                  </p>
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
+                    {data?.ceoInsights?.lowestAttendance || "N/A"}
+                  </h3>
+                </div>
+                <div className="h-10 w-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                  <UserX size={18} />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -497,29 +518,29 @@ export default function DashboardSection({
 
           {/* Team Insights */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Team Size
               </p>
-              <h3 className="text-3xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.headcount }
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Avg Team Score
               </p>
-              <h3 className="text-3xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.score }
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Pending Approvals
               </p>
-              <h3 className="text-3xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.pendingApprovals }
               </h3>
             </div>
@@ -573,31 +594,52 @@ export default function DashboardSection({
 
           {/* HR Insights */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
-                Best Department
-              </p>
-              <h3 className="text-3xl font-bold mt-2">
-                {data?.ceoInsights?.bestDepartment || "IT"}
-              </h3>
+            <div className="group relative bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 hover:border-primary/40 dark:hover:border-slate-700 shadow-sm hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-slate-950/40 transition-all duration-300 ease-out hover:-translate-y-1 p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Best Department
+                  </p>
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
+                    {data?.ceoInsights?.bestDepartment || "IT"}
+                  </h3>
+                </div>
+                <div className="h-10 w-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                  <Trophy size={18} />
+                </div>
+              </div>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
-                Highest Attrition
-              </p>
-              <h3 className="text-3xl font-bold mt-2">
-                {data?.ceoInsights?.highestAttrition || "N/A"}
-              </h3>
+            <div className="group relative bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 hover:border-primary/40 dark:hover:border-slate-700 shadow-sm hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-slate-950/40 transition-all duration-300 ease-out hover:-translate-y-1 p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Highest Attrition
+                  </p>
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
+                    {data?.ceoInsights?.highestAttrition || "N/A"}
+                  </h3>
+                </div>
+                <div className="h-10 w-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                  <TrendingDown size={18} />
+                </div>
+              </div>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
-                Lowest Attendance
-              </p>
-              <h3 className="text-3xl font-bold mt-2">
-                {data?.ceoInsights?.lowestAttendance || "N/A"}
-              </h3>
+            <div className="group relative bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 hover:border-primary/40 dark:hover:border-slate-700 shadow-sm hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-slate-950/40 transition-all duration-300 ease-out hover:-translate-y-1 p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Lowest Attendance
+                  </p>
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
+                    {data?.ceoInsights?.lowestAttendance || "N/A"}
+                  </h3>
+                </div>
+                <div className="h-10 w-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                  <UserX size={18} />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -621,38 +663,38 @@ export default function DashboardSection({
           {/* Executive KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
 
-            <div className="bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
-              <p className="text-sm text-muted-foreground">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Workforce Health Score
               </p>
-              <h3 className="text-2xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data.summary?.workforceHealthScore }%
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
-              <p className="text-sm text-muted-foreground">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Payroll Cost
               </p>
-              <h3 className="text-2xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 ₹{data.summary?.totalPayroll }
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
-              <p className="text-sm text-muted-foreground">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Attrition Risk
               </p>
-              <h3 className="text-2xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data.summary?.attritionRate }%
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
-              <p className="text-sm text-muted-foreground">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Avg Productivity
               </p>
-              <h3 className="text-2xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data.summary?.avgWorkingHours } hrs
               </h3>
             </div>
@@ -661,7 +703,7 @@ export default function DashboardSection({
 
           {/* Workforce Growth Trend */}
           {data.workforceTrend?.length > 0 && (
-            <div className="bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
               <h2 className="text-xl font-semibold mb-4">
                 Workforce Growth Trend
               </h2>
@@ -678,7 +720,7 @@ export default function DashboardSection({
 
           {/* Department Comparison */}
           {data.departmentWorkingHours?.length > 0 && (
-            <div className="bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
               <h2 className="text-xl font-semibold mb-4">
                 Department Comparison
               </h2>
@@ -725,7 +767,7 @@ export default function DashboardSection({
           {data.ceoInsights && (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
-              <div className="bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
+              <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">
                   Top Performers
                 </h2>
@@ -740,7 +782,7 @@ export default function DashboardSection({
                 ))}
               </div>
 
-              <div className="bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
+              <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">
                   Performance Distribution
                 </h2>
@@ -759,31 +801,52 @@ export default function DashboardSection({
           {/* Smart Executive Insights */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-            <div className="bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
-              <p className="text-sm text-muted-foreground">
-                Best Department
-              </p>
-              <h3 className="text-xl font-bold mt-2">
-                {data?.ceoInsights?.bestDepartment || "N/A"}
-              </h3>
+            <div className="group relative bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 hover:border-primary/40 dark:hover:border-slate-700 shadow-sm hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-slate-950/40 transition-all duration-300 ease-out hover:-translate-y-1 p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Best Department
+                  </p>
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
+                    {data?.ceoInsights?.bestDepartment || "N/A"}
+                  </h3>
+                </div>
+                <div className="h-10 w-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                  <Trophy size={18} />
+                </div>
+              </div>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
-              <p className="text-sm text-muted-foreground">
-                Highest Attrition
-              </p>
-              <h3 className="text-xl font-bold mt-2">
-                {data?.ceoInsights?.highestAttrition || "N/A"}
-              </h3>
+            <div className="group relative bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 hover:border-primary/40 dark:hover:border-slate-700 shadow-sm hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-slate-950/40 transition-all duration-300 ease-out hover:-translate-y-1 p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Highest Attrition
+                  </p>
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
+                    {data?.ceoInsights?.highestAttrition || "N/A"}
+                  </h3>
+                </div>
+                <div className="h-10 w-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                  <TrendingDown size={18} />
+                </div>
+              </div>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border p-6 shadow-sm">
-              <p className="text-sm text-muted-foreground">
-                Lowest Attendance
-              </p>
-              <h3 className="text-xl font-bold mt-2">
-                {data?.ceoInsights?.lowestAttendance || "N/A"}
-              </h3>
+            <div className="group relative bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 hover:border-primary/40 dark:hover:border-slate-700 shadow-sm hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-slate-950/40 transition-all duration-300 ease-out hover:-translate-y-1 p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Lowest Attendance
+                  </p>
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
+                    {data?.ceoInsights?.lowestAttendance || "N/A"}
+                  </h3>
+                </div>
+                <div className="h-10 w-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                  <UserX size={18} />
+                </div>
+              </div>
             </div>
 
           </div>
@@ -836,29 +899,29 @@ export default function DashboardSection({
 
           {/* Operations Insights */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Efficiency Rate
               </p>
-              <h3 className="text-3xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.efficiencyRate }%
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Overtime Hours
               </p>
-              <h3 className="text-3xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.overtimeHours }
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Workforce Utilization
               </p>
-              <h3 className="text-3xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.utilization }%
               </h3>
             </div>
@@ -907,29 +970,29 @@ export default function DashboardSection({
 
           {/* HR Insights Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Pending Leaves
               </p>
-              <h3 className="text-3xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.pendingLeaves }
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 New Joiners
               </p>
-              <h3 className="text-3xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.newJoiners }
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Probation Employees
               </p>
-              <h3 className="text-3xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.probationEmployees }
               </h3>
             </div>
@@ -973,29 +1036,29 @@ export default function DashboardSection({
 
           {/* Personal Insights */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 My Attendance
               </p>
-              <h3 className="text-3xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.avgAttendance }%
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Leave Balance
               </p>
-              <h3 className="text-3xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.leaveBalance }
               </h3>
             </div>
 
-            <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6">
-              <p className="text-muted-foreground text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Performance Score
               </p>
-              <h3 className="text-3xl font-bold mt-2">
+              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1.5">
                 {data?.summary?.score }
               </h3>
             </div>
@@ -1012,3 +1075,5 @@ export default function DashboardSection({
     </div>
   );
 }
+
+

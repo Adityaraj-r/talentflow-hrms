@@ -30,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { RecruitmentKpiCard, RecruitmentEmptyState } from "@/components/recruitment/RecruitmentUI";
+import { Pagination } from "@/components/ui/pagination";
 
 export default function EmployeeReferrals() {
   const [activeTab, setActiveTab] = useState("open-jobs");
@@ -37,6 +38,9 @@ export default function EmployeeReferrals() {
   const [myReferrals, setMyReferrals] = useState([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [loadingReferrals, setLoadingReferrals] = useState(true);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -167,17 +171,24 @@ export default function EmployeeReferrals() {
   const myTotalRef = myReferrals.length;
   const myPending = myReferrals.filter((r) => r.status === "Invited").length;
   const myHired = myReferrals.filter((r) => r.progress === "Hired").length;
+  
+  const totalMyReferralsPages = Math.ceil(myTotalRef / itemsPerPage) || 1;
+  const paginatedMyReferrals = myReferrals.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] flex items-center gap-3 text-2xl">
             <UserPlus className="h-8 w-8 text-cyan-600 dark:text-cyan-400" />
             Employee Referral
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
             Refer talented candidates for open positions and track your referral status.
           </p>
         </div>
@@ -281,7 +292,7 @@ export default function EmployeeReferrals() {
               {filteredJobs.map((job) => (
                 <Card
                   key={job._id}
-                  className="rounded-xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-950/70 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden"
+                  className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 transition-all flex flex-col justify-between hover:shadow-md"
                 >
                   <CardHeader className="p-5 pb-3">
                     <div className="flex justify-between items-start gap-2">
@@ -350,7 +361,7 @@ export default function EmployeeReferrals() {
 
         {/* Tab 2: My Referrals */}
         <TabsContent value="my-referrals">
-          <Card className="rounded-xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-950/70 shadow-sm overflow-hidden">
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader className="p-5 border-b border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900/50">
               <CardTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">
                 My Referred Candidates
@@ -385,7 +396,7 @@ export default function EmployeeReferrals() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-slate-700 dark:text-slate-300 font-medium">
-                      {myReferrals.map((ref) => (
+                      {paginatedMyReferrals.map((ref) => (
                         <tr key={ref._id} className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors">
                           <td className="p-4">
                             <div className="font-semibold text-slate-900 dark:text-slate-100">
@@ -453,6 +464,18 @@ export default function EmployeeReferrals() {
                 </div>
               )}
             </CardContent>
+            
+            {myTotalRef > 0 && (
+              <div className="p-4 border-t border-slate-200 dark:border-white/10">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalMyReferralsPages}
+                  totalItems={myTotalRef}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            )}
           </Card>
         </TabsContent>
       </Tabs>
