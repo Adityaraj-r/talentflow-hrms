@@ -7,7 +7,10 @@ import Job from "../models/job.model";
 import Application from "../models/application.model";
 import Employee from "../models/Employee.model";
 import User from "../models/User.model";
+import AuditLog from "../models/AuditLog";
+import ReferralPolicy from "../models/ReferralPolicy.model";
 import { sendReferralEmail } from "../utils/sendEmail";
+import { getOrCreateReferralPolicy } from "../services/referral.service";
 
 const normalizeStr = (str?: string) => (str || "").trim().toLowerCase();
 
@@ -38,6 +41,11 @@ export const createReferral = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ success: false, error: "Authentication required" });
     }
 
+    const policy = await getOrCreateReferralPolicy();
+    if (!policy.programEnabled) {
+      return res.status(400).json({ success: false, error: "Employee referral program is currently disabled by HR" });
+    }
+
     const user = await User.findById(userId).select("employeeId firstName lastName email");
     let employeeId = user?.employeeId;
     if (!employeeId) {
@@ -47,6 +55,19 @@ export const createReferral = async (req: AuthRequest, res: Response) => {
 
     if (!employeeId) {
       return res.status(400).json({ success: false, error: "No employee profile found for logged-in user" });
+    }
+
+    // Validate active referral limit per employee
+    const activeCount = await Referral.countDocuments({
+      referredByEmployeeId: employeeId,
+      status: "Invited",
+    });
+
+    if (policy.maxActiveReferralsPerEmployee && activeCount >= policy.maxActiveReferralsPerEmployee) {
+      return res.status(400).json({
+        success: false,
+        error: `You have reached the maximum limit of ${policy.maxActiveReferralsPerEmployee} active pending referrals.`,
+      });
     }
 
     const {
@@ -98,8 +119,8 @@ export const createReferral = async (req: AuthRequest, res: Response) => {
     if (existingApp) {
       return res.status(400).json({
         success: false,
-        error: "Already applied for this role",
-        message: "Already applied for this role",
+        error: "This candidate has already submitted an application for this position.",
+        message: "Candidate already exists in ATS for this position",
       });
     }
 
@@ -107,6 +128,7 @@ export const createReferral = async (req: AuthRequest, res: Response) => {
       ? [{ candidatePhone: { $regex: new RegExp(last10Phone) } }]
       : [];
 
+    // Check if another employee already referred this candidate
     const existingRef = await Referral.findOne({
       jobId,
       status: { $in: ["Invited", "Applied"] },
@@ -114,14 +136,42 @@ export const createReferral = async (req: AuthRequest, res: Response) => {
         { candidateEmail: normEmail },
         ...refPhoneCondition,
       ],
-    }).lean();
+    });
 
     if (existingRef) {
-      return res.status(400).json({
-        success: false,
-        error: "Already referred for this role",
-        message: "Already referred for this role",
-      });
+      // Conflict Handling: Store secondary referral attempt in conflictDetails
+      if (String(existingRef.referredByEmployeeId) !== String(employeeId)) {
+        existingRef.conflictStatus = "Conflict_Detected";
+        existingRef.conflictDetails = existingRef.conflictDetails || [];
+        existingRef.conflictDetails.push({
+          referredByEmployeeId: employeeId as any,
+          referredAt: new Date(),
+          relationship: relationship || "",
+          referralNote: referralNote || "",
+          notes: `Secondary referral claim submitted by ${user?.firstName} ${user?.lastName}`,
+        });
+        await existingRef.save();
+
+        await AuditLog.create({
+          userId: userId as string,
+          userName: `${user?.firstName} ${user?.lastName}`.trim(),
+          userRole: req.user?.role || "Employee",
+          action: "REFERRAL_CONFLICT_LOGGED",
+          module: "Referral",
+          details: `Logged referral conflict for candidate ${normEmail} on job ${jobId}. First referrer: ${existingRef.referredByEmployeeId}, Second referrer: ${employeeId}.`,
+          status: "Success",
+        });
+
+        return res.status(400).json({
+          success: false,
+          error: "This candidate was already referred by another employee for this position. A referral conflict record has been logged for HR review.",
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: "You have already referred this candidate for this position.",
+        });
+      }
     }
 
     const invitationToken = crypto.randomBytes(32).toString("hex");
@@ -141,41 +191,90 @@ export const createReferral = async (req: AuthRequest, res: Response) => {
       invitationExpiry,
     });
 
-    const frontendBaseUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
-    const applyLink = `${frontendBaseUrl}/careers/apply/${jobId}?referralToken=${invitationToken}`;
+    const frontendBaseUrl = (process.env.FRONTEND_URL || process.env.NGROK_URL || "http://localhost:5173").trim().replace(/\/$/, "");
+    const applyLink = `${frontendBaseUrl}/referral/apply/${invitationToken}`;
 
     const referrerName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "A colleague";
 
     let emailResult: any = null;
-    try {
-      emailResult = await sendReferralEmail(normEmail, {
-        companyName: "InternsLand",
-        candidateName: candidateName.trim(),
-        referrerName,
-        jobTitle: job.jobTitle,
-        department: job.department,
-        location: job.officeLocation || "On-site",
-        employmentType: job.employmentType,
-        applicationDeadline: job.deadline ? new Date(job.deadline).toLocaleDateString() : undefined,
-        applyLink,
-      });
-
-      if (!emailResult?.success) {
-        console.warn("[ReferralEmailWarning] Email not sent:", emailResult?.reason);
-      } else {
-        console.log("[ReferralEmailSuccess] Invitation sent to:", normEmail);
+    if (req.body.invitationType !== "ShareableLink") {
+      try {
+        emailResult = await sendReferralEmail(normEmail, {
+          companyName: "InternsLand",
+          candidateName: candidateName.trim(),
+          referrerName,
+          jobTitle: job.jobTitle,
+          department: job.department,
+          location: job.officeLocation || "On-site",
+          employmentType: job.employmentType,
+          applicationDeadline: job.deadline ? new Date(job.deadline).toLocaleDateString() : undefined,
+          applyLink,
+        });
+      } catch (emailErr: any) {
+        console.error("[ReferralEmailError]", emailErr.message);
       }
-    } catch (emailErr: any) {
-      console.error("[ReferralEmailError]", emailErr.message);
     }
+
+    const isEmailSent = Boolean(emailResult?.success);
+    const message = isEmailSent
+      ? "Referral submitted successfully. An invitation has been sent to the candidate."
+      : "Referral submitted successfully, but the candidate invitation could not be sent. Please retry the invitation.";
 
     res.status(201).json({
       success: true,
-      message: emailResult?.success
-        ? "Referral created and invitation email sent successfully"
-        : `Referral created successfully. (Email notification status: ${emailResult?.reason || "Check SMTP configuration"})`,
-      emailSent: Boolean(emailResult?.success),
+      message,
+      shareableLink: applyLink,
+      emailSent: isEmailSent,
       emailReason: emailResult?.reason,
+      data: referral,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const generateShareableLink = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { jobId } = req.body;
+
+    if (!jobId) {
+      return res.status(400).json({ success: false, error: "Job ID required" });
+    }
+
+    const user = await User.findById(userId).select("employeeId email");
+    let employeeId = user?.employeeId;
+    if (!employeeId) {
+      const emp = await Employee.findOne({ email: { $regex: new RegExp(`^${user?.email}$`, "i") } });
+      employeeId = emp?._id;
+    }
+
+    const job = await Job.findById(jobId);
+    if (!job || job.status !== "Published") {
+      return res.status(400).json({ success: false, error: "Job opening is not active" });
+    }
+
+    const invitationToken = crypto.randomBytes(32).toString("hex");
+    const invitationExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
+    const referral = await Referral.create({
+      jobId,
+      referredByEmployeeId: employeeId,
+      candidateName: "Shareable Link Candidate",
+      candidateEmail: `shareable_${Date.now()}@placeholder.local`,
+      status: "Invited",
+      invitationToken,
+      invitationExpiry,
+    });
+
+    const frontendBaseUrl = (process.env.FRONTEND_URL || process.env.NGROK_URL || "http://localhost:5173").trim().replace(/\/$/, "");
+    const shareableLink = `${frontendBaseUrl}/referral/apply/${invitationToken}`;
+
+    res.status(201).json({
+      success: true,
+      message: "Shareable referral link generated successfully",
+      shareableLink,
+      token: invitationToken,
       data: referral,
     });
   } catch (error: any) {
@@ -203,46 +302,53 @@ export const getMyReferrals = async (req: AuthRequest, res: Response) => {
 
     const referrals = await Referral.find({ referredByEmployeeId: employeeId })
       .populate("jobId", "jobTitle department officeLocation employmentType")
-      .populate("applicationId", "status currentRound")
+      .populate("applicationId", "status currentRound updatedAt createdAt backgroundVerification workflowState")
+      .populate("rewardId", "rewardStatus isProbationCompleted probationDays probationEndDate hiredDate")
       .sort({ createdAt: -1 })
       .lean();
 
     const safeReferrals = referrals.map((ref: any) => {
-      let progress = "Application Pending";
+      let progress = ref.status || "Invited";
 
-      if (ref.status === "Cancelled") {
-        progress = "Cancelled";
+      if (ref.status === "Withdrawn" || ref.status === "Cancelled") {
+        progress = "Withdrawn";
       } else if (ref.status === "Expired") {
         progress = "Expired";
+      } else if (ref.status === "Conflict") {
+        progress = "Conflict Review";
       } else if (ref.applicationId) {
         const appStatus = (ref.applicationId.status || "").toLowerCase();
         if (appStatus === "applied" || appStatus === "new") {
-          progress = "Application Received";
-        } else if (appStatus === "shortlisted" || appStatus === "under review" || appStatus === "screening") {
-          progress = "Under Review";
-        } else if (appStatus.includes("interview") || appStatus === "interview scheduled") {
-          progress = "Interview Process";
-        } else if (appStatus === "selected" || appStatus === "offered") {
+          progress = "Applied";
+        } else if (
+          appStatus === "hr screening" ||
+          appStatus === "under review" ||
+          appStatus === "shortlisted" ||
+          appStatus === "screening" ||
+          appStatus.includes("interview")
+        ) {
+          progress = "In Process";
+        } else if (
+          appStatus === "selected" ||
+          appStatus === "approved" ||
+          appStatus === "offered" ||
+          appStatus === "offer accepted" ||
+          appStatus === "background verification"
+        ) {
           progress = "Selected";
         } else if (appStatus === "hired" || appStatus === "joined") {
-          progress = "Hired";
+          progress = "Successful";
         } else if (appStatus === "rejected" || appStatus === "declined") {
-          progress = "Not Selected";
-        } else {
-          progress = "Under Review";
+          progress = "Rejected";
         }
       }
 
       return {
-        _id: ref._id,
-        candidateName: ref.candidateName,
-        candidateEmail: ref.candidateEmail,
-        candidatePhone: ref.candidatePhone,
-        jobTitle: ref.jobId?.jobTitle || "Job Position",
-        department: ref.jobId?.department || "",
-        location: ref.jobId?.officeLocation || "",
+        ...ref,
         referralDate: ref.createdAt,
-        status: ref.status,
+        lastUpdated: ref.applicationId?.updatedAt || ref.updatedAt,
+        jobTitle: ref.jobId?.jobTitle || "Position",
+        department: ref.jobId?.department || "General",
         progress,
       };
     });
@@ -258,20 +364,25 @@ export const cancelReferral = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const userId = req.user?.id;
 
-    const user = await User.findById(userId).select("employeeId email");
+    const user = await User.findById(userId).select("employeeId email role");
     let employeeId = user?.employeeId;
     if (!employeeId) {
       const emp = await Employee.findOne({ email: { $regex: new RegExp(`^${user?.email}$`, "i") } });
       employeeId = emp?._id;
     }
 
-    const referral = await Referral.findOne({ _id: id, referredByEmployeeId: employeeId });
+    const referral = await Referral.findById(id);
     if (!referral) {
-      return res.status(404).json({ success: false, error: "Referral not found" });
+      return res.status(404).json({ success: false, error: "Referral record not found" });
     }
 
-    if (referral.status !== "Invited") {
-      return res.status(400).json({ success: false, error: "Only pending invited referrals can be cancelled" });
+    const isAdmin = ["ADMIN", "SUPER ADMIN", "SUPER_ADMIN", "HR_MANAGER"].includes((user?.role || "").toUpperCase());
+    if (!isAdmin && String(referral.referredByEmployeeId) !== String(employeeId)) {
+      return res.status(403).json({ success: false, error: "You can only cancel your own referrals" });
+    }
+
+    if (referral.status === "Applied" || referral.applicationId) {
+      return res.status(400).json({ success: false, error: "Cannot cancel a referral that has already submitted an application" });
     }
 
     referral.status = "Cancelled";
@@ -285,48 +396,268 @@ export const cancelReferral = async (req: AuthRequest, res: Response) => {
 
 export const verifyReferralToken = async (req: AuthRequest, res: Response) => {
   try {
-    const token = (req.query.token || "").toString().trim();
+    const token = (req.query.token || req.params.token || "").toString().trim();
     if (!token) {
       return res.status(400).json({ success: false, error: "Token parameter required" });
     }
 
     const referral = await Referral.findOne({ invitationToken: token })
       .populate("jobId")
-      .populate("referredByEmployeeId", "name employeeCode email department");
+      .populate("referredByEmployeeId", "name firstName lastName employeeCode email department");
 
     if (!referral) {
-      return res.status(404).json({ success: false, error: "Invalid referral invitation link" });
+      return res.status(404).json({ success: false, error: "This referral link is invalid or unavailable." });
     }
 
-    if (referral.status === "Applied") {
+    if (referral.status === "Applied" || referral.applicationId) {
       return res.status(400).json({ success: false, error: "This referral invitation has already been used" });
     }
 
     if (referral.status === "Cancelled") {
-      return res.status(400).json({ success: false, error: "This referral invitation has been cancelled" });
+      return res.status(400).json({ success: false, error: "This referral invitation is no longer active." });
     }
 
     if (new Date() > new Date(referral.invitationExpiry)) {
       referral.status = "Expired";
       await referral.save();
-      return res.status(400).json({ success: false, error: "This referral invitation link has expired" });
+      return res.status(400).json({ success: false, error: "This referral invitation has expired. Please contact the person who referred you or the recruitment team." });
     }
+
+    const emp = referral.referredByEmployeeId as any;
+    const referrerName = emp ? (emp.name || `${emp.firstName || ""} ${emp.lastName || ""}`.trim() || "An Employee") : "An Employee";
+
+    const job = referral.jobId as any;
 
     res.json({
       success: true,
       data: {
         referralId: referral._id,
-        jobId: referral.jobId?._id,
+        jobId: job?._id,
         candidateName: referral.candidateName,
-        candidateEmail: referral.candidateEmail,
-        candidatePhone: referral.candidatePhone,
-        referredBy: referral.referredByEmployeeId
-          ? {
-              name: (referral.referredByEmployeeId as any).name,
-              employeeCode: (referral.referredByEmployeeId as any).employeeCode,
-            }
-          : null,
+        candidateEmail: (referral.candidateEmail || "").includes("@placeholder.local") ? "" : referral.candidateEmail,
+        candidatePhone: referral.candidatePhone || "",
+        referredBy: {
+          name: referrerName,
+        },
+        jobDetails: job ? {
+          jobTitle: job.jobTitle,
+          department: job.department,
+          officeLocation: job.officeLocation || "On-site",
+          employmentType: job.employmentType || "Full-Time",
+          aboutRole: job.aboutRole || "",
+          keyResponsibilities: job.keyResponsibilities || "",
+          requiredSkills: job.requiredSkills || job.skills || [],
+          hiringRoles: job.hiringRoles || [],
+          deadline: job.deadline,
+        } : null,
       },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const getReferralPolicy = async (req: AuthRequest, res: Response) => {
+  try {
+    const policy = await getOrCreateReferralPolicy();
+    res.json({ success: true, data: policy });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const updateReferralPolicy = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    let policy = await getOrCreateReferralPolicy();
+
+    const allowedFields = [
+      "programEnabled",
+      "invitationExpiryDays",
+      "shareableLinkExpiryDays",
+      "minEmployeeTenureDays",
+      "probationDurationDays",
+      "maxActiveReferralsPerEmployee",
+      "defaultBonusAmount",
+      "currency",
+      "probationEligibilityRule",
+    ];
+
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        (policy as any)[field] = req.body[field];
+      }
+    });
+
+    if (userId) policy.updatedBy = userId as any;
+    await policy.save();
+
+    await AuditLog.create({
+      userId: userId || "Unknown",
+      userName: req.user?.email || "Admin",
+      userRole: req.user?.role || "HR/Admin",
+      action: "REFERRAL_POLICY_UPDATED",
+      module: "Referral",
+      details: "Updated Referral Policy settings.",
+      status: "Success",
+    });
+
+    res.json({ success: true, message: "Referral policy updated successfully", data: policy });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const getReferralConflicts = async (req: AuthRequest, res: Response) => {
+  try {
+    const conflicts = await Referral.find({ conflictStatus: "Conflict_Detected" })
+      .populate("jobId", "jobTitle department")
+      .populate("referredByEmployeeId", "firstName lastName email department employeeCode")
+      .populate("conflictDetails.referredByEmployeeId", "firstName lastName email department employeeCode")
+      .sort({ updatedAt: -1 })
+      .lean();
+
+    res.json({ success: true, data: conflicts });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const resolveReferralConflict = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { chosenReferrerId, notes } = req.body;
+    const userId = req.user?.id;
+
+    if (!chosenReferrerId) {
+      return res.status(400).json({ success: false, error: "chosenReferrerId is required to resolve conflict" });
+    }
+
+    const referral = await Referral.findById(id);
+    if (!referral) {
+      return res.status(404).json({ success: false, error: "Referral record not found" });
+    }
+
+    referral.referredByEmployeeId = chosenReferrerId;
+    referral.conflictStatus = "Resolved";
+    referral.resolvedBy = {
+      userId: userId as any,
+      resolvedAt: new Date(),
+      chosenReferrerId: chosenReferrerId as any,
+      notes: notes || "Resolved by HR Admin",
+    };
+
+    await referral.save();
+
+    await AuditLog.create({
+      userId: userId || "Unknown",
+      userName: req.user?.email || "HR Admin",
+      userRole: req.user?.role || "HR",
+      action: "REFERRAL_CONFLICT_RESOLVED",
+      module: "Referral",
+      details: `Resolved referral conflict for ${referral.candidateEmail}. Chosen referrer: ${chosenReferrerId}.`,
+      status: "Success",
+    });
+
+    res.json({ success: true, message: "Referral conflict resolved successfully", data: referral });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const resendInvitation = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    const userRole = req.user?.role || "";
+
+    const user = await User.findById(userId).select("employeeId firstName lastName email role");
+    let employeeId = user?.employeeId;
+    if (!employeeId) {
+      const emp = await Employee.findOne({ email: { $regex: new RegExp(`^${user?.email}$`, "i") } });
+      employeeId = emp?._id;
+    }
+
+    const referral = await Referral.findById(id).populate("jobId");
+    if (!referral) {
+      return res.status(404).json({ success: false, error: "Referral record not found" });
+    }
+
+    // RBAC: Verify user owns the referral or has HR/Admin privileges
+    const isOwner = employeeId && String(referral.referredByEmployeeId) === String(employeeId);
+    const isHR = ["HR", "Admin", "HR Manager"].includes(userRole);
+    if (!isOwner && !isHR) {
+      return res.status(403).json({ success: false, error: "You are not authorized to resend this referral invitation" });
+    }
+
+    if (referral.status === "Applied" || referral.status === "Successful") {
+      return res.status(400).json({ success: false, error: "Candidate has already applied. Invitation cannot be resent." });
+    }
+
+    const policy = await getOrCreateReferralPolicy();
+    const expiryDays = policy.invitationExpiryDays || 14;
+
+    // Secure Token Rotation & Hashing
+    const oldToken = referral.invitationToken || "";
+    const previousTokenHash = crypto.createHash("sha256").update(oldToken).digest("hex");
+
+    const newToken = crypto.randomBytes(32).toString("hex");
+    const newExpiry = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
+
+    referral.invitationToken = newToken;
+    referral.invitationExpiry = newExpiry;
+    if (referral.status === "Expired") {
+      referral.status = "Invited";
+    }
+
+    referral.resendHistory = referral.resendHistory || [];
+    referral.resendHistory.push({
+      resentAt: new Date(),
+      resentBy: userId as any,
+      previousTokenHash,
+      newExpiry,
+    });
+
+    await referral.save();
+
+    const frontendBaseUrl = (process.env.FRONTEND_URL || process.env.NGROK_URL || "http://localhost:5173").trim().replace(/\/$/, "");
+    const applyLink = `${frontendBaseUrl}/referral/apply/${newToken}`;
+
+    const referrerName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "A colleague";
+
+    let emailResult: any = null;
+    try {
+      emailResult = await sendReferralEmail(referral.candidateEmail, {
+        companyName: "HRMS Portal",
+        candidateName: referral.candidateName,
+        referrerName,
+        jobTitle: referral.jobId?.jobTitle || "Position",
+        department: referral.jobId?.department || "General",
+        location: referral.jobId?.officeLocation || "On-site",
+        employmentType: referral.jobId?.employmentType || "Full-time",
+        applicationDeadline: referral.jobId?.deadline ? new Date(referral.jobId.deadline).toLocaleDateString() : undefined,
+        applyLink,
+      });
+    } catch (emailErr: any) {
+      console.error("[ReferralResendEmailError]", emailErr.message);
+    }
+
+    await AuditLog.create({
+      userId: userId || "Unknown",
+      userName: req.user?.email || "User",
+      userRole: userRole || "Employee",
+      action: "REFERRAL_INVITATION_RESENT",
+      module: "Referral",
+      details: `Resent referral invitation to ${referral.candidateEmail}. Token rotated and old token invalidated (Hash stored).`,
+      status: "Success",
+    });
+
+    res.json({
+      success: true,
+      message: `Referral invitation resent to ${referral.candidateEmail}. Token refreshed.`,
+      emailSent: Boolean(emailResult?.success),
+      applyLink,
+      data: referral,
     });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

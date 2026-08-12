@@ -8,18 +8,18 @@ const apiClient = axios.create({
   withCredentials: true, // send/receive the httpOnly accessToken/refreshToken cookies
   headers: {
     "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
   },
 });
 
-// Plain axios instance with NO interceptors, used only for the refresh/logout
-// calls themselves — keeps them from ever recursing back into this same
-// response interceptor. Still needs withCredentials so the refresh cookie
-// actually gets sent.
 const refreshClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
   withCredentials: true,
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
+  },
 });
 
 apiClient.interceptors.request.use(
