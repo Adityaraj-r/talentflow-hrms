@@ -311,14 +311,14 @@ export default function CreateJob() {
   const inputBase = "w-full h-11 px-3 bg-white dark:bg-slate-900 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-slate-400 shadow-sm"
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 pb-12 font-sans text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-gray-950 p-6 font-sans text-slate-900 dark:text-slate-100">
       
       {/* Header */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 pt-8 pb-6 px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Create Job Opening</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Create and publish a new job opening for candidates.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Create Job Opening</h1>
+            <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">Create and publish a new job opening for candidates.</p>
           </div>
         </div>
       </div>

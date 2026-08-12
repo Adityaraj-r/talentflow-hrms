@@ -240,11 +240,11 @@ const CompanyStructure = () => {
     }
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-full pb-10">
         <div className="flex flex-col sm:flex-row justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Company Structure</h1>
-            <p className="text-muted-foreground text-sm">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Company Structure</h1>
+            <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
               Manage departments and assignments.
             </p>
             {syncing && (
@@ -275,7 +275,7 @@ const CompanyStructure = () => {
           {filtered.map((dept) => (
             <Card
               key={dept._id}
-              className="group cursor-pointer hover:border-primary transition-all border-l-4 border-l-transparent hover:border-l-primary"
+              className="group cursor-pointer border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 overflow-hidden hover:border-primary transition-all border-l-4 border-l-transparent hover:border-l-primary"
               onClick={() => handleManageDepartment(dept._id)}
             >
               <CardContent className="p-6">

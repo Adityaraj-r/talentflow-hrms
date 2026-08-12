@@ -161,7 +161,7 @@ export default function KPISection({
                         }
                       </p>
 
-                      <h3 className="text-2xl font-bold tracking-tight text-foreground mt-1.5">
+                      <h3 className="text-xl font-bold tracking-tight text-foreground mt-1.5">
                         <CountUp
                           end={
                             Number(

@@ -97,6 +97,7 @@ import ShiftRoster from "./pages/modules/attendance/ShiftRoster"
 import HolidayManagement from "./pages/modules/attendance/HolidayManagement"
 import ManualAttendance from "./pages/modules/attendance/ManualAttendance"
 import MyAttendance from "./pages/modules/attendance/MyAttendance"
+import Meetings from "./pages/modules/meetings/Meetings"
 import LeaveManagement from "./pages/modules/attendance/LeaveApprovals"
 import CorrectionRequests from "./pages/modules/attendance/CorrectionRequests"
 import OvertimeApprovals from "./pages/modules/attendance/OvertimeApprovals"
@@ -374,6 +375,12 @@ function App() {
                 <DashboardLayout><UserManagement /></DashboardLayout>
               </ProtectedRoute>
             } />
+            <Route
+              path="/meetings"
+              element={
+                <DashboardLayout><Meetings /></DashboardLayout>
+              }
+            />
             <Route path="/settings" element={
               <ProtectedRoute requiredPermission={{ module: "settings", action: "read" }}>
                 <DashboardLayout><SystemSettings /></DashboardLayout>
@@ -824,7 +831,7 @@ function App() {
 
             {/* ── Employee Self-Service ────────────────────────── */}
             <Route path="/dashboard/employee/attendance" element={
-              <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER", "FINANCE_MANAGER", "HR_MANAGER", "HR_OFFICER", "PAYROLL_OFFICER"]}>
+              <ProtectedRoute>
                 <DashboardLayout><MyAttendance /></DashboardLayout>
               </ProtectedRoute>
             } />

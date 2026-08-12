@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
+import { Pagination } from "@/components/ui/pagination"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -52,7 +54,8 @@ const UserManagement = () => {
   const [isDeleting, setIsDeleting] = useState(false)
   const [formData, setFormData] = useState(EMPTY_FORM)
   const [activeCard, setActiveCard] = useState("total")
-
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
   const [onboardedList, setOnboardedList] = useState([])
 
   useEffect(() => {
@@ -276,6 +279,8 @@ const UserManagement = () => {
     return res;
   }, [users, activeCard]);
 
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+
   const renderSalarySection = () => (
     <div className="space-y-3 border rounded-lg p-4 bg-muted/20">
       <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
@@ -355,11 +360,11 @@ const UserManagement = () => {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-          <p className="text-muted-foreground">Administer employee accounts and system access levels.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">User Management</h1>
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">Administer employee accounts and system access levels.</p>
         </div>
         <div className="flex gap-2">
 
@@ -673,7 +678,7 @@ const UserManagement = () => {
         />
       </div>
 
-      <Card>
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 overflow-hidden">
         <div className="p-4 border-b flex flex-col md:flex-row gap-4 items-center justify-between bg-muted/20">
           <div className="flex gap-2 w-full md:w-auto">
             <div className="relative flex-1 md:w-80">
@@ -689,13 +694,34 @@ const UserManagement = () => {
               onChange={(v) => setFilters(p => ({ ...p, role: v }))}
               options={[{value: 'all', label: 'All Roles'}, ...Object.entries(ROLES).map(([k, v]) => ({value: k, label: v}))]}
               placeholder="All Roles"
-              className="w-40"
+              className="w-32"
             />
           </div>
-          <Button variant="outline" size="sm" onClick={fetchUsers} disabled={isLoading}>
-            <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
-            Sync Data
-          </Button>
+          <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={exportToCSV} disabled={users.length === 0 || isExporting} className="h-9 w-9 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 shrink-0 text-slate-500">
+                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isExporting ? "Exporting..." : "Export CSV"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={fetchUsers} disabled={isLoading} className="h-9 w-9 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 shrink-0 text-slate-500">
+                    <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Sync Data</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
         </div>
         <CardContent className="p-0">
           <Table>
@@ -724,7 +750,7 @@ const UserManagement = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredUsers.map((user) => (
+                filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((user) => (
                   <TableRow key={user.id} className="hover:bg-muted/10 transition-colors">
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -793,15 +819,21 @@ const UserManagement = () => {
               )}
             </TableBody>
           </Table>
-          <div className="p-4 border-t flex items-center justify-between text-xs text-muted-foreground font-medium">
-            <span>Displaying {filteredUsers.length} records from MongoDB</span>
-            <span>System Status: Stable</span>
-          </div>
+          {filteredUsers.length > 0 && (
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredUsers.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
   )
 }
-
 
 export default UserManagement

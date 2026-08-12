@@ -92,15 +92,15 @@ export default function AdminRecruitmentSuggestions() {
   }
 
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="space-y-8 max-w-full pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Suggest to HR Manager</h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Suggest to HR Manager</h1>
+        <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
           Governance feedback on recruitment & staffing. This does not change records; HR Manager can review and respond.
         </p>
       </div>
 
-      <Card>
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader>
           <CardTitle>New suggestion</CardTitle>
           <CardDescription>
@@ -160,7 +160,7 @@ export default function AdminRecruitmentSuggestions() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader>
           <CardTitle>Your recent suggestions</CardTitle>
           <CardDescription>Status updates when HR Manager acknowledges.</CardDescription>

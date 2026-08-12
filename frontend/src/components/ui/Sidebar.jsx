@@ -5,7 +5,7 @@ import {
   FileCheck, Home, ChevronDown, ChevronRight, ChevronLeft,
   Briefcase, Plane, Calculator, LogOut, Clock, Settings,
   FileText, ArrowLeftRight, TrendingUp, Shield, Layers, Database, Building, Building2,
-  LayoutDashboard, CircleDollarSign, Target, Network, FileBadge, BarChart2, FileSignature, UserPlus
+  LayoutDashboard, CircleDollarSign, Target, Network, FileBadge, BarChart2, FileSignature, UserPlus, Video
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ROLES } from "@/constants/roles"
@@ -361,6 +361,7 @@ const Sidebar = ({
           )}
 
           <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+            <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
             <SubLink to="/attendance/analytics" label="Attendance Analytics" />
             <SubLink to="/attendance" label="Attendance Records" />
             <SubLink to="/attendance/manual" label="Manual Attendance" />
@@ -405,6 +406,7 @@ const Sidebar = ({
           </SidebarGroup>
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          <SidebarLink to="/meetings" icon={Video} label="Meetings" />
           <SidebarLink to="/dashboard/employee/make-transfer" icon={ArrowLeftRight} label="Make Transfer Request" />
           <SidebarLink to="/employee/referrals" icon={UserPlus} label="Employee Referral" />
           <SidebarLink to="/employee/resignation" icon={AlertTriangle} label="Initiate Separation" />
@@ -458,6 +460,7 @@ const Sidebar = ({
 
           {canSee("attendance") && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+              <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
               <SubLink to="/attendance/analytics" label="Attendance Analytics" />
               <SubLink to="/attendance" label="Attendance Records" />
               <SubLink to="/attendance/manual" label="Manual Attendance" />
@@ -472,6 +475,7 @@ const Sidebar = ({
           )}
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          <SidebarLink to="/meetings" icon={Video} label="Meetings" />
           <SidebarLink to="/employee/referrals" icon={UserPlus} label="Employee Referral" />
 
           {canSee("employees") && (
@@ -519,6 +523,7 @@ const Sidebar = ({
           )}
           {canSee('attendance') && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+              <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
               <SubLink to="/attendance" label="Attendance Records" />
               <SubLink to="/attendance/manual" label="Manual Attendance" />
               <SubLink to="/attendance/leave-management" label="Leave Approvals" />
@@ -528,6 +533,7 @@ const Sidebar = ({
           )}
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          <SidebarLink to="/meetings" icon={Video} label="Meetings" />
           <SidebarLink to="/employee/referrals" icon={UserPlus} label="Employee Referral" />
 
           <HRPayrollSidebarGroup />
@@ -601,6 +607,7 @@ const Sidebar = ({
 
           {canSee("attendance") && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+              <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
               <SubLink to="/attendance/analytics" label="Attendance Analytics" />
               <SubLink to="/attendance" label="All Attendance Records" />
               <SubLink to="/attendance/holidays" label="Holiday List" />
@@ -658,6 +665,7 @@ const Sidebar = ({
           )}
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          <SidebarLink to="/meetings" icon={Video} label="Meetings" />
           <SidebarLink to="/reports" icon={TrendingUp} label="Reports & Analytics" />
 
           {canSee("performance") && (
@@ -697,6 +705,7 @@ const Sidebar = ({
           )}
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          <SidebarLink to="/meetings" icon={Video} label="Meetings" />
 
           <SidebarGroup id="appraisal" icon={Award} label="Appraisal">
             <SubLink to="/role/direct_manager/appraisal" label="Team Appraisals" />
@@ -725,6 +734,7 @@ const Sidebar = ({
             </SidebarGroup>
           )}
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          <SidebarLink to="/meetings" icon={Video} label="Meetings" />
           <FullPayrollSidebarGroup label={getPayrollLabel()} />
 
           <SidebarGroup id="appraisal" icon={Award} label="Performance (bonus)">
@@ -740,6 +750,7 @@ const Sidebar = ({
           <SidebarLink to="/dashboard" icon={Home} label="Dashboard" />
           {canSee('attendance') && (
             <SidebarGroup id="timeAttendance" icon={Clock} label="Time & Attendance">
+              <SubLink to="/dashboard/employee/attendance" label="My Attendance" />
               <SubLink to="/attendance" label="Attendance Records" />
               <SubLink to="/attendance/holidays" label="Holiday List" />
             </SidebarGroup>
@@ -781,6 +792,7 @@ const Sidebar = ({
             </SidebarGroup>
           )}
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
+          <SidebarLink to="/meetings" icon={Video} label="Meetings" />
           {canSee("employees") && (
             <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
           )}
@@ -820,7 +832,7 @@ const Sidebar = ({
       <aside
         className={cn(
           "fixed left-0 top-0 z-50 flex h-screen flex-col border-r bg-background/95 backdrop-blur transition-all duration-300 ease-in-out shadow-xl shadow-black/10",
-          isCollapsed ? "w-20" : "w-80",
+          isCollapsed ? "w-20" : "w-[260px]",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >

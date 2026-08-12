@@ -1,4 +1,5 @@
 import * as React from "react"
+import { formatChildren } from "@/lib/utils"
 
 const Table = React.forwardRef(({ className, ...props }, ref) => (
   <div className="relative w-full overflow-auto">
@@ -12,7 +13,7 @@ const Table = React.forwardRef(({ className, ...props }, ref) => (
 Table.displayName = "Table"
 
 const TableHeader = React.forwardRef(({ className, ...props }, ref) => (
-  <thead ref={ref} className={`[&_tr]:border-b ${className}`} {...props} />
+  <thead ref={ref} className={`bg-slate-50/50 dark:bg-slate-800/50 [&_tr]:border-b ${className}`} {...props} />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -46,18 +47,20 @@ TableRow.displayName = "TableRow"
 const TableHead = React.forwardRef(({ className, ...props }, ref) => (
   <th
     ref={ref}
-    className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 ${className}`}
+    className={`h-12 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 [&:has([role=checkbox])]:pr-0 ${className}`}
     {...props}
   />
 ))
 TableHead.displayName = "TableHead"
 
-const TableCell = React.forwardRef(({ className, ...props }, ref) => (
+const TableCell = React.forwardRef(({ className, children, ...props }, ref) => (
   <td
     ref={ref}
     className={`p-4 align-middle [&:has([role=checkbox])]:pr-0 ${className}`}
     {...props}
-  />
+  >
+    {formatChildren(children)}
+  </td>
 ))
 TableCell.displayName = "TableCell"
 

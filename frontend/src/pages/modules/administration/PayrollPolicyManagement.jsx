@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Pagination } from "@/components/ui/pagination";
 
 const POLICY_TYPES = ['PF_RATE', 'ESI_RATE', 'PT_SLAB', 'TAX_SLAB'];
 
@@ -32,6 +33,8 @@ const PayrollPolicyManagement = () => {
     const [showPolicyModal, setShowPolicyModal] = useState(false);
     const [editingPolicy, setEditingPolicy] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const [formData, setFormData] = useState({
         policyType: 'PF_RATE',
@@ -234,12 +237,12 @@ const PayrollPolicyManagement = () => {
     }
 
     return (
-        <div className="h-full bg-gray-50 dark:bg-gray-900 ">
-            <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b px-6 py-4">
+        <div className="space-y-6 max-w-full pb-10">
+            <div className="sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4">
                 <div className="flex items-center justify-between max-w-7xl mx-auto">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Payroll Policies</h1>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Payroll Policies</h1>
+                        <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
                             Manage statutory rates for PF, ESI, Professional Tax, and Income Tax
                         </p>
                     </div>
@@ -252,7 +255,7 @@ const PayrollPolicyManagement = () => {
 
             <div className="max-w-7xl mx-auto p-6 space-y-6">
                 {showForm && (
-                    <Card>
+                    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 overflow-hidden">
                         <CardHeader>
                             <CardTitle className="text-lg">
                                 {editingPolicy ? "Edit Policy" : "Create Policy Version"}
@@ -477,7 +480,7 @@ const PayrollPolicyManagement = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {policies.map((p) => {
+                                        {policies.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((p) => {
                                             const meta = POLICY_TYPE_META[p.policyType] || {};
                                             const TypeIcon = meta.icon || Landmark;
                                             return (
@@ -561,6 +564,17 @@ const PayrollPolicyManagement = () => {
                                         })}
                                     </tbody>
                                 </table>
+                            </div>
+                        )}
+                        {policies.length > 0 && (
+                            <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalPages={Math.ceil(policies.length / itemsPerPage) || 1}
+                                    totalItems={policies.length}
+                                    itemsPerPage={itemsPerPage}
+                                    onPageChange={(page) => setCurrentPage(page)}
+                                />
                             </div>
                         )}
                     </CardContent>

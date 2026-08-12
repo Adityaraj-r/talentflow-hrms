@@ -102,13 +102,13 @@ const SystemSettings = () => {
   }
 
   return (
-    <div className="h-full bg-gray-50 dark:bg-gray-900">
+    <div className="space-y-6 max-w-full pb-10">
       {/* Header Bar */}
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Settings</h1>
+            <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
               Manage your organization's system configuration
             </p>
           </div>
@@ -157,7 +157,7 @@ const SystemSettings = () => {
 
           {/* Company Tab */}
           <TabsContent value="company" className="space-y-6">
-            <Card>
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 overflow-hidden">
               <CardHeader>
                 <CardTitle className="text-lg">Company Information</CardTitle>
                 <CardDescription>
@@ -217,7 +217,7 @@ const SystemSettings = () => {
 
           {/* Preferences Tab */}
           <TabsContent value="preferences" className="space-y-6">
-            <Card>
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 overflow-hidden">
               <CardHeader>
                 <CardTitle className="text-lg">Regional Settings</CardTitle>
                 <CardDescription>
@@ -292,7 +292,7 @@ const SystemSettings = () => {
 
           {/* Notifications Tab */}
           <TabsContent value="notifications" className="space-y-6">
-            <Card>
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 overflow-hidden">
               <CardHeader>
                 <CardTitle className="text-lg">Notification Preferences</CardTitle>
                 <CardDescription>
@@ -344,7 +344,7 @@ const SystemSettings = () => {
 
           {/* Security Tab */}
           <TabsContent value="security" className="space-y-6">
-            <Card>
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 overflow-hidden">
               <CardHeader>
                 <CardTitle className="text-lg">Security Settings</CardTitle>
                 <CardDescription>
@@ -403,7 +403,7 @@ const SystemSettings = () => {
           </TabsContent>
 
           <TabsContent value="email" className="space-y-6">
-            <Card>
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 overflow-hidden">
               <CardHeader>
                 <CardTitle className="text-lg">HR Outbound Email (SMTP)</CardTitle>
                 <CardDescription>

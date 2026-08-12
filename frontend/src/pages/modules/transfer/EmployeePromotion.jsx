@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import apiClient from "@/services/apiClient"
 import { cn } from "@/lib/utils"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { Pagination } from "@/components/ui/pagination"
 
 const EmployeePromotion = () => {
   const { user } = useAuth()
@@ -73,6 +74,7 @@ const ApprovalBoard = ({ userRole }) => {
   })
 
   const promotions = response?.data || []
+  const paginationInfo = response?.pagination || { total: 0, page: 1, totalPages: 1 }
 
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }) => apiClient.patch(`/promotions/update/${id}`, payload),
@@ -101,7 +103,7 @@ const ApprovalBoard = ({ userRole }) => {
     <div className="space-y-4">
       {/* COUNTRY MANAGER EDIT MODAL*/}
       {verifyData && (
-        <Card className="border-blue-200 shadow-md bg-blue-50/50 dark:bg-blue-900/10 mb-6 animate-in slide-in-from-top-4">
+        <Card className="border border-blue-200 dark:border-blue-900/30 shadow-sm rounded-[16px] bg-blue-50/50 dark:bg-blue-900/10 mb-6 animate-in slide-in-from-top-4 overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg text-blue-700 dark:text-blue-400 flex items-center gap-2">
               <Edit className="h-5 w-5" /> Verify & Adjust Promotion for {verifyData.employeeName}
@@ -138,7 +140,7 @@ const ApprovalBoard = ({ userRole }) => {
         </Card>
       )}
 
-      <Card className="shadow-sm border">
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-lg">Promotion Requests</CardTitle>
           <div className="relative">
@@ -282,6 +284,17 @@ const ApprovalBoard = ({ userRole }) => {
               </tbody>
             </table>
           </div>
+          {paginationInfo.totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t bg-slate-50/50 dark:bg-slate-900/30">
+              <Pagination 
+                currentPage={paginationInfo.page} 
+                totalPages={paginationInfo.totalPages} 
+                totalItems={paginationInfo.total} 
+                itemsPerPage={10}
+                onPageChange={(p) => setPage(p)} 
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
       
@@ -411,7 +424,7 @@ const NominationForm = ({ user }) => {
     })
   }
   return (
-    <Card className="max-w-4xl mx-auto shadow-sm border">
+    <Card className="max-w-4xl mx-auto border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 overflow-hidden">
       <CardHeader className="bg-muted/20 border-b">
         <CardTitle className="flex items-center gap-2">
           <Award className="h-5 w-5 text-primary" /> Create Promotion Business Case

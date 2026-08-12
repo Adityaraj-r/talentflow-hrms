@@ -161,14 +161,14 @@ const RecruitmentAnalytics = () => {
   };
 
   return (
-    <div id="report-container" className="space-y-6">
+    <div id="report-container" className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-700 dark:text-cyan-200">
             <Brain className="h-3.5 w-3.5" />
             Recruitment Business Intelligence
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white md:text-4xl">Recruitment Analytics & Intelligence</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Recruitment Analytics & Intelligence</h1>
           <p className="mt-2 max-w-3xl text-sm text-slate-500 dark:text-slate-400">
             Executive hiring intelligence across funnel health, recruiter productivity, source quality, hiring velocity, and staffing demand.
           </p>

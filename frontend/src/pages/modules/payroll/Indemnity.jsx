@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Pagination } from "@/components/ui/pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,9 +60,9 @@ const Indemnity = () => {
   const defaultTab = isStaff ? "calculator" : canApprove ? "pending" : "history";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Indemnity Management</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Indemnity Management</h1>
         <p className="text-muted-foreground">Calculate and manage gratuity payments under Indian labour law.</p>
       </div>
 
@@ -193,7 +194,7 @@ const IndemnityCalculator = () => {
 
   if (!canManageIndemnity(user)) {
     return (
-      <Card>
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
         <CardContent className="py-12 text-center text-muted-foreground">
           You don't have permission to create indemnity requests.
         </CardContent>
@@ -204,7 +205,7 @@ const IndemnityCalculator = () => {
   return (
     <div className="grid lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2">
-        <Card>
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader>
             <CardTitle>Gratuity Calculator</CardTitle>
             <CardDescription>
@@ -341,7 +342,7 @@ const IndemnityCalculator = () => {
       </div>
 
       <div className="lg:col-span-1">
-        <Card className="bg-slate-50 dark:bg-slate-900 border-dashed h-full">
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-slate-50 dark:bg-slate-900 h-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calculator className="w-5 h-5" /> Gratuity Result
@@ -474,6 +475,9 @@ const PendingIndemnities = () => {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ joiningDate: "", lastWorkingDate: "", reason: "", notes: "" });
   const [viewingRecord, setViewingRecord] = useState(null);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fetchPending = async () => {
     try {
@@ -553,13 +557,17 @@ const PendingIndemnities = () => {
   };
 
   if (loading) return (
-    <Card><CardContent className="flex justify-center py-12">
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900"><CardContent className="flex justify-center py-12">
       <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
     </CardContent></Card>
   );
 
+  const totalItems = records.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const paginatedRecords = records.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
-    <Card>
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
       <CardHeader>
         <CardTitle>Pending Indemnity Approvals</CardTitle>
         <CardDescription>{records.length} request(s) in the approval pipeline</CardDescription>
@@ -586,7 +594,7 @@ const PendingIndemnities = () => {
                   No pending indemnity requests.
                 </TableCell>
               </TableRow>
-            ) : records.map(r => {
+            ) : paginatedRecords.map(r => {
               const myTurn = canActOnStage(r.workflowStage);
               return (
                 <TableRow key={r._id}>
@@ -658,6 +666,17 @@ const PendingIndemnities = () => {
           </TableBody>
         </Table>
       </CardContent>
+      {totalItems > 0 && (
+        <div className="p-4 border-t">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
 
       <Dialog open={!!editingId} onOpenChange={(open) => { if (!open) setEditingId(null); }}>
         <DialogContent className="max-w-md">
@@ -714,6 +733,9 @@ const IndemnityHistory = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch]   = useState("");
   const [viewingRecord, setViewingRecord] = useState(null);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     payrollService.getIndemnities().then(res => {
@@ -733,14 +755,18 @@ const IndemnityHistory = () => {
     return nameMatch || reasonMatch || emailMatch || deptMatch || empCodeMatch;
   });
 
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const paginatedFiltered = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   if (loading) return (
-    <Card><CardContent className="flex justify-center py-12">
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900"><CardContent className="flex justify-center py-12">
       <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
     </CardContent></Card>
   );
 
   return (
-    <Card>
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>All indemnities</CardTitle>
@@ -773,7 +799,7 @@ const IndemnityHistory = () => {
                   No records found.
                 </TableCell>
               </TableRow>
-            ) : filtered.map(r => (
+            ) : paginatedFiltered.map(r => (
               <TableRow key={r._id}>
                 <TableCell className="align-middle">
                   <div className="flex flex-col">
@@ -809,6 +835,17 @@ const IndemnityHistory = () => {
           </TableBody>
         </Table>
       </CardContent>
+      {totalItems > 0 && (
+        <div className="p-4 border-t">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
       <IndemnityDetailDialog record={viewingRecord} onClose={() => setViewingRecord(null)} />
     </Card>
   );

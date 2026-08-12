@@ -199,103 +199,92 @@ const PayrollLockPanel = ({ onLockChange }) => {
 
   return (
     <>
-      <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
-        <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Lock className="w-4 h-4 text-slate-500" />
-                Payroll Lock Checkpoint
-              </CardTitle>
-              <CardDescription className="mt-0.5">
-                Freeze attendance records for a period before payroll processing.
-              </CardDescription>
-            </div>
-            {checkingStatus ? (
-              <div className="h-7 w-36 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-full" />
-            ) : (
-              <LockStatusBadge isLocked={isLocked} />
-            )}
+      <div className="bg-white dark:bg-[#1a1f2b] rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800/50">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Lock className="w-4 h-4 text-slate-400" />
+              Payroll Lock Checkpoint
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Freeze attendance records for a period before payroll processing.
+            </p>
           </div>
-        </CardHeader>
+          {checkingStatus ? (
+            <div className="h-7 w-36 bg-slate-800 animate-pulse rounded-full" />
+          ) : (
+            <LockStatusBadge isLocked={isLocked} />
+          )}
+        </div>
 
-        <CardContent className="pt-4 space-y-5">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Select Period
-              </span>
+        <div className="space-y-5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Calendar className="w-4 h-4 text-slate-400" />
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300 mr-2">
+              Select Period
+            </span>
+            {[
+              { label: "This Month", offset: 0 },
+              { label: "Last Month", offset: -1 },
+              { label: "2 Months Ago", offset: -2 },
+            ].map(({ label, offset }) => {
+              const range = getMonthRange(offset);
+              const isActive = startDate === range.start && endDate === range.end;
+              return (
+                <button
+                  key={offset}
+                  onClick={() => applyMonthPreset(offset)}
+                  className={`px-3 py-1 text-xs rounded-full transition-colors font-medium border ${
+                    isActive
+                      ? "bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-transparent dark:border-transparent dark:text-slate-400 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-slate-50 dark:bg-[#141821] rounded-xl p-4 border border-slate-100 dark:border-transparent shadow-inner">
+              <Label className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mb-2">
+                Start Date
+              </Label>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-8 text-sm font-medium bg-transparent border-0 p-0 shadow-none focus-visible:ring-0 w-full text-slate-900 dark:text-white"
+              />
             </div>
-
-            <div className="flex flex-wrap gap-2">
-              {[
-                { label: "This Month", offset: 0 },
-                { label: "Last Month", offset: -1 },
-                { label: "2 Months Ago", offset: -2 },
-              ].map(({ label, offset }) => {
-                const range = getMonthRange(offset);
-                const isActive = startDate === range.start && endDate === range.end;
-                return (
-                  <button
-                    key={offset}
-                    onClick={() => applyMonthPreset(offset)}
-                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                      isActive
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Start Date</Label>
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="h-9 text-sm"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">End Date</Label>
-                <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="h-9 text-sm"
-                />
-              </div>
+            <div className="bg-slate-50 dark:bg-[#141821] rounded-xl p-4 border border-slate-100 dark:border-transparent shadow-inner">
+              <Label className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mb-2">
+                End Date
+              </Label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="h-8 text-sm font-medium bg-transparent border-0 p-0 shadow-none focus-visible:ring-0 w-full text-slate-900 dark:text-white"
+              />
             </div>
           </div>
 
           {lastAction && (
-            <div className="flex items-start gap-2.5 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400">
-              <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-blue-500" />
+            <div className="flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-indigo-500 dark:text-indigo-400" />
               <span>
-                Last action:{" "}
-                <span className="font-medium text-slate-800 dark:text-slate-200 capitalize">
-                  {lastAction.type}
-                </span>{" "}
-                by{" "}
-                <span className="font-medium text-slate-800 dark:text-slate-200">
-                  {lastAction.by}
-                </span>{" "}
-                on {formatDisplayDate(lastAction.date)}
+                Last action: <span className="font-medium text-slate-900 dark:text-slate-200 capitalize">{lastAction.type}</span> by <span className="font-medium text-slate-900 dark:text-slate-200">{lastAction.by}</span> on {formatDisplayDate(lastAction.date)}
               </span>
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-2 pt-1">
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <Button
               onClick={() => openModal("lock")}
               disabled={isLocked || checkingStatus || loading}
-              className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white gap-2"
+              className="flex-1 h-12 rounded-xl bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20 dark:hover:bg-red-500/20 shadow-sm disabled:opacity-50 gap-2 transition-all font-medium"
             >
               <Lock className="w-4 h-4" />
               {isLocked ? "Already Locked" : "Lock Attendance"}
@@ -305,8 +294,7 @@ const PayrollLockPanel = ({ onLockChange }) => {
               <Button
                 onClick={() => openModal("unlock")}
                 disabled={!isLocked || checkingStatus || loading}
-                variant="outline"
-                className="flex-1 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/20 disabled:opacity-40 gap-2"
+                className="flex-1 h-12 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20 dark:hover:bg-amber-500/20 shadow-sm disabled:opacity-50 gap-2 transition-all font-medium"
               >
                 <Unlock className="w-4 h-4" />
                 Emergency Unlock
@@ -314,15 +302,12 @@ const PayrollLockPanel = ({ onLockChange }) => {
             )}
           </div>
 
-          <div className="flex items-start gap-2 text-xs text-muted-foreground border-t border-slate-100 dark:border-slate-800 pt-3">
-            <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-500" />
-            <span>
-              Once locked, all attendance corrections return 403 Forbidden for all roles.
-              Only Admin can perform an emergency unlock. Every unlock creates an immutable audit log entry.
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-2">
+            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+            Once locked, corrections return 403 Forbidden. Only Admin can emergency unlock (logged in audit).
+          </p>
+        </div>
+      </div>
 
       <ConfirmModal
         open={modalOpen}

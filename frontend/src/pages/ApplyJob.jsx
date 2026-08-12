@@ -297,7 +297,7 @@ const ApplyJob = () => {
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 mb-4 border border-slate-200 dark:border-slate-700">
                 {job?.department || "General"}
               </span>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
+              <h1 className="text-2xl md:text-2xl font-bold tracking-tight mb-4">
                 {selectedRole?.roleName || job?.jobTitle || "Role not specified"}
               </h1>
               

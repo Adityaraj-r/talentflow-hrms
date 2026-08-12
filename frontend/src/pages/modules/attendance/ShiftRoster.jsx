@@ -10,6 +10,7 @@ import apiClient from "@/services/apiClient";
 import shiftService from "@/services/shiftService";
 import { toast } from "sonner";
 import { useUser } from "@/contexts/UserContext";
+import { Pagination } from "@/components/ui/pagination";
 
 const ShiftRoster = () => {
   const { user } = useUser();
@@ -92,29 +93,29 @@ const ShiftRoster = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">
             Employee Shift Roster
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
             View current shift assignments and reassign employees to different working hours.
           </p>
         </div>
         <Button
           onClick={() => setIsAssignModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
         >
           <Users className="w-4 h-4 mr-2" /> Assign Shifts
         </Button>
       </div>
 
-      <Card className="border-slate-200 dark:border-slate-800">
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader className="border-b p-4">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <CardTitle className="text-lg flex items-center gap-2 shrink-0">
-              <Briefcase className="w-5 h-5 text-blue-600" />
+              <Briefcase className="w-5 h-5 text-indigo-600" />
               Current Assignments
             </CardTitle>
 
@@ -234,7 +235,7 @@ const ShiftRoster = () => {
                         </TableCell>
                         <TableCell>
                           {shift ? (
-                            <div className="flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400">
+                            <div className="flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400">
                               <Clock className="w-3.5 h-3.5" />
                               {shift.startTime} - {shift.endTime}
                             </div>
@@ -263,53 +264,13 @@ const ShiftRoster = () => {
 
           {/* Pagination Footer */}
           {totalItems > 0 && (
-            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/30">
-              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                Showing <span className="font-semibold text-slate-900 dark:text-slate-100">{((currentPage - 1) * pageSize) + 1}</span> to{" "}
-                <span className="font-semibold text-slate-900 dark:text-slate-100">{Math.min(currentPage * pageSize, totalItems)}</span> of{" "}
-                <span className="font-semibold text-slate-900 dark:text-slate-100">{totalItems}</span> employees
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  className="h-8 px-2.5 text-xs border-slate-200 dark:border-slate-800 cursor-pointer"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
-                </Button>
-
-                <div className="flex items-center gap-1 mx-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`h-8 w-8 text-xs font-semibold rounded-lg transition cursor-pointer ${
-                        currentPage === pageNum
-                          ? "bg-blue-600 text-white shadow-xs"
-                          : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  ))}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  className="h-8 px-2.5 text-xs border-slate-200 dark:border-slate-800 cursor-pointer"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={pageSize}
+              onPageChange={(page) => setCurrentPage(page)}
+            />
           )}
         </CardContent>
       </Card>

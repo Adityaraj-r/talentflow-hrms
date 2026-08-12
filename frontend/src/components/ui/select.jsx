@@ -4,7 +4,7 @@ import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 
-import { cn } from "@/lib/utils"
+import { cn, formatChildren } from "@/lib/utils"
 
 function Select({
   ...props
@@ -105,7 +105,7 @@ function SelectItem({
           <CheckIcon className="size-4" />
         </SelectPrimitive.ItemIndicator>
       </span>
-      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+      <SelectPrimitive.ItemText>{formatChildren(children)}</SelectPrimitive.ItemText>
     </SelectPrimitive.Item>)
   );
 }

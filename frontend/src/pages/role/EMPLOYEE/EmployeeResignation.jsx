@@ -115,7 +115,7 @@ const EmployeeResignation = () => {
   return (
     <div className="max-w-3xl mx-auto space-y-6 mt-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Initiate Separation</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-2xl">Initiate Separation</h1>
         <p className="text-muted-foreground">Submit and track your formal resignation request.</p>
       </div>
 

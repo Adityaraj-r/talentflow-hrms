@@ -63,6 +63,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { RecruitmentKpiCard } from "@/components/recruitment/RecruitmentUI";
+import { Pagination } from "@/components/ui/pagination";
 
 const analyticsColors = ["#38bdf8", "#34d399", "#fbbf24", "#a78bfa", "#fb7185", "#2dd4bf"];
 
@@ -504,8 +505,8 @@ export function ExportCenter({ onExport }) {
 export function AnalyticsTable({ title, rows = [], columns = [] }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState({ key: columns[0]?.key, dir: "asc" });
-  const [page, setPage] = useState(0);
-  const pageSize = 6;
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   const filtered = useMemo(() => {
     const text = query.toLowerCase();
@@ -520,11 +521,11 @@ export function AnalyticsTable({ title, rows = [], columns = [] }) {
   }, [rows, query, sort]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const visible = filtered.slice(page * pageSize, page * pageSize + pageSize);
+  const visible = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const toggleSort = (key) => {
     setSort((current) => ({ key, dir: current.key === key && current.dir === "asc" ? "desc" : "asc" }));
-    setPage(0);
+    setCurrentPage(1);
   };
 
   return (
@@ -533,7 +534,7 @@ export function AnalyticsTable({ title, rows = [], columns = [] }) {
         <h3 className="font-bold text-slate-800 dark:text-slate-100 tracking-tight text-sm md:text-base">{title}</h3>
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 dark:text-slate-500" />
-          <Input value={query} onChange={(e) => { setQuery(e.target.value); setPage(0); }} placeholder="Filter table records..." className="border-slate-200 dark:border-white/10 bg-white/50 dark:bg-slate-950/50 pl-9 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-xs rounded-lg" />
+          <Input value={query} onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }} placeholder="Filter table records..." className="border-slate-200 dark:border-white/10 bg-white/50 dark:bg-slate-950/50 pl-9 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-xs rounded-lg" />
         </div>
       </div>
       <div className="overflow-x-auto custom-scrollbar">
@@ -579,13 +580,14 @@ export function AnalyticsTable({ title, rows = [], columns = [] }) {
           </tbody>
         </table>
       </div>
-      <div className="flex items-center justify-between border-t border-slate-200 dark:border-white/10 p-4 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-50/20 dark:bg-white/[0.005]">
-        <span>Showing {visible.length} of {filtered.length} rows</span>
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="h-7 w-7 cursor-pointer hover:bg-slate-100 dark:hover:bg-white/10" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}><ChevronLeft className="h-4 w-4" /></Button>
-          <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Page {page + 1} of {pages}</span>
-          <Button variant="ghost" size="icon" className="h-7 w-7 cursor-pointer hover:bg-slate-100 dark:hover:bg-white/10" disabled={page + 1 >= pages} onClick={() => setPage((value) => Math.min(pages - 1, value + 1))}><ChevronRight className="h-4 w-4" /></Button>
-        </div>
+      <div className="p-4 border-t border-slate-200 dark:border-white/10 bg-slate-50/20 dark:bg-white/[0.005]">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={pages}
+          totalItems={filtered.length}
+          itemsPerPage={pageSize}
+          onPageChange={(p) => setCurrentPage(p)}
+        />
       </div>
     </div>
   );

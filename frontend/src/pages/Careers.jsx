@@ -143,7 +143,7 @@ const Careers = () => {
         
         {/* Header Section */}
         <div className="flex flex-col gap-3">
-          <h1 className="text-[40px] font-bold text-slate-900 dark:text-white leading-tight">Careers</h1>
+          <h1 className="text-[40px] font-bold text-slate-900 dark:text-white leading-tight text-2xl tracking-tight">Careers</h1>
           <p className="text-[16px] text-slate-600 dark:text-slate-400">
             Build your future with us. Explore exciting opportunities and grow your career.
           </p>

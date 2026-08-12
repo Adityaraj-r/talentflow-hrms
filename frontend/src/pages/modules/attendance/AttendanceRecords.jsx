@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Pagination } from "@/components/ui/pagination";
 import { useUser } from "@/contexts/UserContext";
 import attendanceService from "@/services/attendanceService";
 import PayrollLockPanel from "./PayrollLockPanel";
@@ -63,6 +64,8 @@ const AttendanceRecord = () => {
 
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const userRole = user?.role?.toUpperCase();
   const showLockPanel = ["HR_MANAGER", "PAYROLL_OFFICER", "ADMIN", "SUPER_ADMIN"].includes(userRole);
@@ -152,6 +155,8 @@ const AttendanceRecord = () => {
     return true;
   });
 
+  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
+
   const getStatusColor = (status) => {
     switch (status) {
       case "Present":
@@ -182,12 +187,12 @@ const AttendanceRecord = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 max-w-full pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
           Organization Attendance
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-xs text-muted-foreground mt-0.5">
           Daily high-level overview of company workforce.
         </p>
       </div>
@@ -237,7 +242,7 @@ const AttendanceRecord = () => {
         />
       </div>
 
-      <Card className="border-slate-200 dark:border-slate-800">
+      <Card className="border border-slate-100 dark:border-slate-800 shadow-sm rounded-xl overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader className="border-b p-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <CardTitle>Daily Employee Logs</CardTitle>
@@ -303,7 +308,7 @@ const AttendanceRecord = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredRecords.map((record) => {
+                  filteredRecords.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((record) => {
                     const otFormatted = formatOTHours(record.overtimeHours);
                     return (
                       <TableRow
@@ -351,7 +356,7 @@ const AttendanceRecord = () => {
                         <TableCell className="text-right text-sm text-slate-600 dark:text-slate-400">
                           {formatBreakTime(record.totalBreakMinutes)}
                         </TableCell>
-                        <TableCell className="text-right text-sm font-medium text-blue-600 dark:text-blue-400">
+                        <TableCell className="text-right text-sm font-medium text-indigo-600 dark:text-indigo-400">
                           {calculateDuration(
                             record.clockIn,
                             record.clockOut,
@@ -400,7 +405,7 @@ const AttendanceRecord = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEditClick(record)}
-                              className="h-8 w-8 p-0 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                              className="h-8 w-8 p-0 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -413,6 +418,17 @@ const AttendanceRecord = () => {
               </TableBody>
             </Table>
           </div>
+          {filteredRecords.length > 0 && (
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredRecords.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

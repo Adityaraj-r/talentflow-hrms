@@ -230,7 +230,7 @@ export default function ReportsPage() {
     };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
 
       <ReportsHeader
         filters={filters}
@@ -278,7 +278,7 @@ export default function ReportsPage() {
               ) => (
                 <Card
                   key={i}
-                  className="rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group h-full bg-card cursor-pointer"
+                  className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 cursor-pointer h-full"
                 >
                   <CardContent className="p-6 relative z-10 flex flex-col h-full justify-between gap-4">
                     <div>

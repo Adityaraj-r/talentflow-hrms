@@ -58,6 +58,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CandidateAvatar, RecruitmentEmptyState, RecruitmentKpiCard, RecruitmentStatusBadge } from "@/components/recruitment/RecruitmentUI"
+import { Pagination } from "@/components/ui/pagination"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -797,12 +798,14 @@ export function OfferTable({ offers, sort, onSort, page, pageSize, onPageChange,
           </tbody>
         </table>
       </div>
-      <div className="flex flex-col gap-3 border-t border-white/10 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-muted-foreground">Page {page} of {pages}</p>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>Previous</Button>
-          <Button size="sm" variant="outline" disabled={page >= pages} onClick={() => onPageChange(page + 1)}>Next</Button>
-        </div>
+      <div className="p-4 border-t border-white/10">
+        <Pagination
+          currentPage={page}
+          totalPages={pages}
+          totalItems={offers.length}
+          itemsPerPage={pageSize}
+          onPageChange={onPageChange}
+        />
       </div>
     </section>
   )

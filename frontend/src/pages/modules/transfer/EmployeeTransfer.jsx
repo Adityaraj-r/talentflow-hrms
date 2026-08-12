@@ -6,11 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { StatsCard } from "@/components/ui/stats-card"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { FileText, Check, X, Search, ArrowLeftRight, CheckCircle2, Clock, XCircle, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import apiClient from "@/services/apiClient"
 import { cn } from "@/lib/utils"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { Pagination } from "@/components/ui/pagination"
 import EmployeePromotion from "./EmployeePromotion"
 import OffboardingRequests from "./OffboardingRequests"
 
@@ -31,10 +34,10 @@ const EmployeeTransfer = () => {
   const visibleTabsCount = 1 + (canViewPromotions ? 1 : 0) + (canViewOffboarding ? 1 : 0)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Lifecycle Approvals</h1>
-        <p className="text-muted-foreground">Manage employee mobility, promotions, and separation requests.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Lifecycle Approvals</h1>
+        <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">Manage employee mobility, promotions, and separation requests.</p>
       </div>
 
       <Tabs defaultValue="transfers" className="w-full">
@@ -149,10 +152,10 @@ const AdminTransferView = ({ user }) => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Requests" value={stats.total} icon={<ArrowLeftRight className="h-5 w-5 text-blue-700 dark:text-blue-400" />} color="text-blue-800 dark:text-blue-400" gradient="from-blue-100 via-blue-50 to-white dark:from-blue-950/60 dark:via-blue-900/20 dark:to-background border-blue-200 dark:border-blue-900" />
-        <StatCard title="Approved" value={stats.approved} icon={<CheckCircle2 className="h-5 w-5 text-green-700 dark:text-green-400" />} color="text-green-800 dark:text-green-400" gradient="from-green-100 via-green-50 to-white dark:from-green-950/60 dark:via-green-900/20 dark:to-background border-green-200 dark:border-green-900" />
-        <StatCard title="Pending" value={stats.pending} icon={<Clock className="h-5 w-5 text-orange-700 dark:text-orange-400" />} color="text-orange-800 dark:text-orange-400" gradient="from-orange-100 via-orange-50 to-white dark:from-orange-950/60 dark:via-orange-900/20 dark:to-background border-orange-200 dark:border-orange-900" />
-        <StatCard title="Rejected" value={stats.rejected} icon={<XCircle className="h-5 w-5 text-red-700 dark:text-red-400" />} color="text-red-800 dark:text-red-400" gradient="from-red-100 via-red-50 to-white dark:from-red-950/60 dark:via-red-900/20 dark:to-background border-red-200 dark:border-red-900" />
+        <StatsCard title="Total Requests" value={stats.total} icon={<ArrowLeftRight />} variant="blue" />
+        <StatsCard title="Approved" value={stats.approved} icon={<CheckCircle2 />} variant="green" />
+        <StatsCard title="Pending" value={stats.pending} icon={<Clock />} variant="orange" />
+        <StatsCard title="Rejected" value={stats.rejected} icon={<XCircle />} variant="red" />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -164,13 +167,31 @@ const AdminTransferView = ({ user }) => {
           
           <div className="flex items-center gap-2">
             {["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER_ADMIN", "CEO", "COUNTRY_MANAGER", "DEPARTMENT_MANAGER"].includes(userRole) && (
-              <Button size="sm" onClick={() => setInitiateModalOpen(true)}>
-                <ArrowLeftRight className="h-4 w-4 mr-2" /> Initiate Transfer
-              </Button>
+              <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="default" size="icon" onClick={() => setInitiateModalOpen(true)} className="h-9 w-9 shrink-0">
+                    <ArrowLeftRight className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Initiate Transfer</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             )}
-            <Button variant="outline" size="sm" onClick={() => toast.success("Compiling Approved Transfers for Export...")}>
-              <FileText className="h-4 w-4 mr-2" /> Export Pipeline
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={() => toast.success("Compiling Approved Transfers for Export...")} className="h-9 w-9 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 shrink-0 text-slate-500">
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Export Pipeline</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
 
@@ -336,7 +357,7 @@ const EmployeeTransferView = ({ user }) => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Transfer Request</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-2xl">Transfer Request</h1>
           <p className="text-muted-foreground">Submit and track your department transfer requests</p>
         </div>
         {!formOpen && (
@@ -428,17 +449,13 @@ const EmployeeTransferView = ({ user }) => {
           </div>
           {pagination.totalPages > 1 && (
             <div className="p-4 border-t flex justify-between items-center bg-muted/20">
-              <span className="text-xs text-muted-foreground">
-                Showing page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
-              </span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={pagination.page === 1}>
-                  Previous
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={pagination.page === pagination.totalPages}>
-                  Next
-                </Button>
-              </div>
+              <Pagination 
+                currentPage={pagination.page} 
+                totalPages={pagination.totalPages} 
+                totalItems={pagination.total} 
+                itemsPerPage={10}
+                onPageChange={(p) => setPage(p)} 
+              />
             </div>
           )}
         </CardContent>
@@ -449,7 +466,7 @@ const EmployeeTransferView = ({ user }) => {
 
 const StatCard = ({ title, value, icon, color = "text-foreground", gradient = "from-background to-transparent" }) => (
   <Card className={cn(
-    "relative overflow-hidden shadow-sm transition-all duration-300 ease-out border",
+    "relative overflow-hidden shadow-sm transition-all duration-300 ease-out border border-slate-200 dark:border-slate-800 rounded-[16px]",
     "hover:shadow-lg hover:-translate-y-1 hover:brightness-95 dark:hover:brightness-110 group",
     `bg-gradient-to-br ${gradient}`
   )}>
@@ -467,7 +484,7 @@ const StatCard = ({ title, value, icon, color = "text-foreground", gradient = "f
 
 const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTerm, onSearchChange, pagination, onPageChange, canApproveReject = true, canRecommend = false, onRecommend, onViewDetails, userRole }) => {
   return (
-    <Card className="shadow-md border overflow-hidden transition-all duration-300 hover:shadow-lg">
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
       {isHistory && (
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-lg">Transfer Logs</CardTitle>
@@ -608,27 +625,13 @@ const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTe
         </div>
         {pagination && pagination.totalPages > 1 && (
           <div className="p-4 border-t flex justify-between items-center bg-muted/20">
-            <span className="text-xs text-muted-foreground">
-              Showing page {pagination.page} of {pagination.totalPages} ({pagination.total} total records)
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange(pagination.page - 1)}
-                disabled={pagination.page === 1}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange(pagination.page + 1)}
-                disabled={pagination.page === pagination.totalPages}
-              >
-                Next
-              </Button>
-            </div>
+            <Pagination 
+              currentPage={pagination.page} 
+              totalPages={pagination.totalPages} 
+              totalItems={pagination.total} 
+              itemsPerPage={10}
+              onPageChange={(p) => onPageChange(p)} 
+            />
           </div>
         )}
       </CardContent>

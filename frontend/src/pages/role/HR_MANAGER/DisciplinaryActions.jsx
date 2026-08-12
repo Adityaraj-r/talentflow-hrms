@@ -114,7 +114,7 @@ const DisciplinaryActions = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Disciplinary</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-2xl">Disciplinary</h1>
         <p className="text-muted-foreground">
           {isHr ? "Review disciplinary cases and track case status" : "Report incidents and view submitted cases"}
         </p>

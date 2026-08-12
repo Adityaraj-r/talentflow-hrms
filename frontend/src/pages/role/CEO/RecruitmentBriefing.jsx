@@ -64,7 +64,7 @@ const RecruitmentBriefing = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-2xl">
             CEO Briefing
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">

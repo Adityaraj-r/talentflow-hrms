@@ -25,9 +25,7 @@ export default function AbsenteeismCard({
     rows.reduce(
       (sum, item) =>
         sum +
-        Number(
-          item?.lateMarks 
-        ),
+        Number(item?.lateMarks || 0),
       0
     );
 
@@ -35,9 +33,7 @@ export default function AbsenteeismCard({
     leaveRows.reduce(
       (sum, item) =>
         sum +
-        Number(
-          item?.value 
-        ),
+        Number(item?.value || 0),
       0
     );
 
@@ -45,9 +41,7 @@ export default function AbsenteeismCard({
     rows.reduce(
       (sum, item) =>
         sum +
-        Number(
-          item?.absentDays 
-        ),
+        Number(item?.absentDays || 0),
       0
     );
 
@@ -100,7 +94,7 @@ export default function AbsenteeismCard({
     <div className="space-y-4">
 
       <div>
-        <h2 className="text-2xl font-bold">
+        <h2 className="text-[17px] font-bold text-slate-900 dark:text-white">
           Absenteeism Summary
         </h2>
 
@@ -135,7 +129,7 @@ export default function AbsenteeismCard({
                         }
                       </p>
 
-                      <h3 className="text-2xl font-bold tracking-tight text-foreground mt-1.5">
+                      <h3 className="text-xl font-bold tracking-tight text-foreground mt-1.5">
                         {
                           item.value
                         }

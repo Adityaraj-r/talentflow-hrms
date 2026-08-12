@@ -108,7 +108,7 @@ const TransferRequestForm = ({ onSuccess }) => {
 
     return (
         <div className="w-full">
-            <div className="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-6 transition-all duration-300">
+            <div className="w-full bg-white dark:bg-slate-900 rounded-[16px] shadow-sm border border-slate-200 dark:border-slate-800 p-6 transition-all duration-300">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                         {/* Employee Select for HR & Admin */}

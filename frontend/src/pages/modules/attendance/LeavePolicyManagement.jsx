@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Pagination } from "@/components/ui/pagination";
 import { useUser } from "@/contexts/UserContext";
 import leaveService from "@/services/leaveService";
 import {
@@ -106,7 +107,7 @@ const PolicyFormModal = ({ open, onClose, onSave, editPolicy, loading }) => {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-blue-600" />
+            <ShieldCheck className="w-5 h-5 text-indigo-600" />
             {editPolicy ? "Edit Leave Policy" : "Create Leave Policy"}
           </DialogTitle>
           <DialogDescription>
@@ -231,7 +232,7 @@ const PolicyFormModal = ({ open, onClose, onSave, editPolicy, loading }) => {
             <Button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               {loading
                 ? "Saving..."
@@ -260,6 +261,8 @@ const LeavePolicyManagement = () => {
   const [editPolicy, setEditPolicy] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [activeCard, setActiveCard] = useState("total");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fetchPolicies = async () => {
     try {
@@ -338,14 +341,16 @@ const LeavePolicyManagement = () => {
     return true;
   });
 
+  const totalPages = Math.ceil(filteredPolicies.length / itemsPerPage);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">
             Leave Policy Management
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
             Define leave types, annual entitlements and carry-forward rules.
           </p>
         </div>
@@ -363,7 +368,7 @@ const LeavePolicyManagement = () => {
           )}
           <Button
             onClick={() => { setEditPolicy(null); setModalOpen(true); }}
-            className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
           >
             <Plus className="w-4 h-4" /> Add Policy
           </Button>
@@ -397,10 +402,10 @@ const LeavePolicyManagement = () => {
         />
       </div>
 
-      <Card className="border-slate-200 dark:border-slate-800">
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader className="border-b p-4">
           <CardTitle className="text-base flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-blue-600" />
+            <ShieldCheck className="w-4 h-4 text-indigo-600" />
             Configured Leave Policies
           </CardTitle>
           <CardDescription>
@@ -437,7 +442,7 @@ const LeavePolicyManagement = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredPolicies.map((policy) => (
+                  filteredPolicies.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((policy) => (
                     <TableRow
                       key={policy._id}
                       className="hover:bg-slate-50 dark:hover:bg-slate-800/50"
@@ -453,7 +458,7 @@ const LeavePolicyManagement = () => {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                        <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
                           {policy.annualLimit} days
                         </span>
                       </TableCell>
@@ -474,7 +479,7 @@ const LeavePolicyManagement = () => {
                               ? "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300"
                               : policy.applicableTo === "Female"
                               ? "bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/20 dark:text-pink-400"
-                              : "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400"
+                              : "bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-400"
                           }
                         >
                           {policy.applicableTo}
@@ -497,7 +502,7 @@ const LeavePolicyManagement = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => { setEditPolicy(policy); setModalOpen(true); }}
-                            className="h-8 w-8 p-0 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                            className="h-8 w-8 p-0 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
@@ -520,6 +525,17 @@ const LeavePolicyManagement = () => {
               </TableBody>
             </Table>
           </div>
+          {filteredPolicies.length > 0 && (
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredPolicies.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

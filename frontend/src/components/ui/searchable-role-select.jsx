@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
+import { cn, formatChildren } from "@/lib/utils";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Search, Check } from "lucide-react";
@@ -53,11 +53,11 @@ export function SearchableRoleSelect({ value, onChange, options, placeholder = "
           aria-expanded={open}
           className={cn("w-[200px] justify-between font-normal", className)}
         >
-          <span className="truncate">{selectedLabel}</span>
+          <span className="truncate">{formatChildren(selectedLabel)}</span>
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent side="bottom" sideOffset={8} avoidCollisions={false} className="w-[280px] p-0 border-border bg-popover shadow-md" align="start">
+      <PopoverContent side="bottom" sideOffset={8} avoidCollisions={false} className="w-[200px] p-0 border-border bg-popover shadow-md" align="start">
         <div className="flex items-center border-b border-border px-3">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <input
@@ -92,7 +92,7 @@ export function SearchableRoleSelect({ value, onChange, options, placeholder = "
                     value === opt.value ? "opacity-100" : "opacity-0"
                   )}
                 />
-                <span className="truncate">{opt.label}</span>
+                <span className="truncate">{formatChildren(opt.label)}</span>
               </div>
             ))
           )}
