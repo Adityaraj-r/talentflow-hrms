@@ -28,7 +28,10 @@ export interface AppraisalCycle {
 export type NotificationType =
   | "appraisal_cycle_active"
   | "appraisal_result_published"
-  | "team_appraisals_complete";
+  | "team_appraisals_complete"
+  | "task_assigned"
+  | "task_in_progress"
+  | "task_completed";
 
 export interface NotificationItem {
   _id: string;

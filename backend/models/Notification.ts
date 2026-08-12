@@ -19,6 +19,9 @@ export enum NotificationType {
   TICKET_PENDING_PAYROLL_APPROVAL = 'ticket_pending_payroll_approval',
   TICKET_APPROVED = 'ticket_approved',
   TICKET_REJECTED = 'ticket_rejected',
+  TASK_ASSIGNED = 'task_assigned',
+  TASK_IN_PROGRESS = 'task_in_progress',
+  TASK_COMPLETED = 'task_completed',
 }
 
 export interface INotification extends Document {

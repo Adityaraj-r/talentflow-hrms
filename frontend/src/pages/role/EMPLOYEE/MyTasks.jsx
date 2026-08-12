@@ -66,9 +66,9 @@ const TASK_STATUS = {
 }
 
 const STATUS_TRANSITIONS = {
-  [TASK_STATUS.TO_DO]:       [TASK_STATUS.IN_PROGRESS],
+  [TASK_STATUS.TO_DO]: [TASK_STATUS.IN_PROGRESS],
   [TASK_STATUS.IN_PROGRESS]: [TASK_STATUS.DONE],
-  [TASK_STATUS.DONE]:        [],
+  [TASK_STATUS.DONE]: [],
 }
 
 const STATUS_LABELS = {
@@ -175,7 +175,13 @@ const MyTasks = () => {
   
   const totalPages = Math.ceil(filteredTasks.length / rowsPerPage)
   const paginatedTasks = filteredTasks.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+const getNextStatus = (task) => {
+  if (!task) return null
 
+  const transitions = STATUS_TRANSITIONS[task.status] || []
+
+  return transitions.length > 0 ? transitions[0] : null
+}
   const handleStatusUpdate = async () => {
     const { task, newStatus } = statusDialog
     if (!task || !newStatus) return
@@ -191,7 +197,11 @@ const MyTasks = () => {
       toast.success(`Task moved to "${STATUS_LABELS[newStatus]}"`)
     } catch (err) {
       setTasks(previousTasks) 
-      toast.error(err?.response?.data?.error || "Failed to update task status")
+      toast.error(
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Failed to update task status"
+      )
     } finally {
       setUpdating(null)
     }
@@ -471,87 +481,135 @@ const MyTasks = () => {
                     <th className="px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left w-[13%]">DUE</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {paginatedTasks.map((task) => {
-                    const intData = getInterviewData(task)
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {paginatedTasks.map((task) => {
+                      const intData = getInterviewData(task)
 
-                    return (
-                      <tr
-                        key={task._id}
-                        className="group transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
-                        onClick={() => {
-                          if (intData?.candidateName) {
-                            setInterviewModal({ open: true, task, intData });
-                          } else {
-                            setDetailsDialog({ open: true, task, intData });
-                          }
-                        }}
-                      >
-                        <td className="px-5 py-4 align-middle">
-                          <div className="flex flex-col gap-1">
-                            <span className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-tight">
-                              {intData?.candidateName 
-                                ? `Interview with ${intData.candidateName}`
-                                : task.title}
+                      return (
+                        <tr
+                          key={task._id}
+                          className="group transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
+                          onClick={() => {
+                            if (intData?.candidateName) {
+                              setInterviewModal({
+                                open: true,
+                                task,
+                                intData,
+                              })
+                            } else {
+                              setDetailsDialog({
+                                open: true,
+                                task,
+                                intData,
+                              })
+                            }
+                          }}
+                        >
+                          {/* TITLE */}
+                          <td className="px-5 py-4 align-middle">
+                            <div className="flex flex-col gap-1">
+                              <span className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-tight">
+                                {intData?.candidateName
+                                  ? `Interview with ${intData.candidateName}`
+                                  : task.title}
+                              </span>
+
+                              <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
+                                {intData ? "Recruitment" : (task.project || "V-ONE - HRMS")}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* ASSIGNEE */}
+                          <td className="px-5 py-4 align-middle">
+                            <span className="text-sm text-slate-600 dark:text-slate-300 font-semibold">
+                              {intData?.interviewerName ||
+                                getAssignerName(task.assignedBy) ||
+                                "Unknown"}
                             </span>
-                            <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
-                              {intData ? "Recruitment" : (task.project || "V-ONE - HRMS")}
+                          </td>
+
+                          {/* PRIORITY */}
+                          <td className="px-5 py-4 align-middle">
+                            <span
+                              className={cn(
+                                "text-[10px] uppercase font-bold px-3 py-1 rounded-full",
+                                String(task.priority || "LOW").toUpperCase() === "HIGH"
+                                  ? "bg-red-50 text-red-500 dark:bg-red-900/20"
+                                  : String(task.priority || "LOW").toUpperCase() === "MEDIUM"
+                                    ? "bg-amber-50 text-amber-500 dark:bg-amber-900/20"
+                                    : "bg-blue-50 text-blue-500 dark:bg-blue-900/20"
+                              )}
+                            >
+                              {task.priority
+                                ? String(task.priority).charAt(0).toUpperCase() +
+                                String(task.priority).slice(1).toLowerCase()
+                                : "Low"}
                             </span>
-                          </div>
-                        </td>
+                          </td>
 
-                        <td className="px-5 py-4 align-middle">
-                          <span className="text-sm text-slate-600 dark:text-slate-300 font-semibold">
-                            {intData?.interviewerName || getAssignerName(task.assignedBy) || "Unknown"}
-                          </span>
-                        </td>
+                          {/* STATUS */}
+                          <td className="px-5 py-4 align-middle">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
 
-                        <td className="px-5 py-4 align-middle">
-                          <span className={cn(
-                            "text-[10px] uppercase font-bold px-3 py-1 rounded-full",
-                            String(task.priority || "Low").toUpperCase() === "HIGH" ? "bg-red-50 text-red-500 dark:bg-red-900/20" :
-                            String(task.priority || "Low").toUpperCase() === "MEDIUM" ? "bg-amber-50 text-amber-500 dark:bg-amber-900/20" :
-                            "bg-blue-50 text-blue-500 dark:bg-blue-900/20"
-                          )}>
-                            {task.priority ? String(task.priority).charAt(0).toUpperCase() + String(task.priority).slice(1).toLowerCase() : "Low"}
-                          </span>
-                        </td>
+                                const nextStatus = getNextStatus(task)
 
-                        <td className="px-5 py-4 align-middle">
-                          <button
-                            onClick={(e) => {
-                               e.stopPropagation();
-                               openStatusDialog(task, task.status);
-                            }}
-                            className={cn(
-                              "flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors",
-                              task.status === TASK_STATUS.DONE ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                              task.status === TASK_STATUS.IN_PROGRESS ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
-                              "bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                            )}
-                          >
-                            <span className={cn(
-                              "w-1.5 h-1.5 rounded-full",
-                              task.status === TASK_STATUS.DONE ? "bg-green-500" :
-                              task.status === TASK_STATUS.IN_PROGRESS ? "bg-amber-500" :
-                              "bg-slate-400"
-                            )} />
-                            {STATUS_LABELS[task.status] ?? task.status}
-                            <ChevronDown className="w-3 h-3 ml-0.5 opacity-50" />
-                          </button>
-                        </td>
+                                if (!nextStatus) {
+                                  toast.info("This task has no available status transition.")
+                                  return
+                                }
 
-                        <td className="px-5 py-4 align-middle whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                          {task.createdAt ? formatDate(task.createdAt) : "06-08-2026"}
-                        </td>
+                                openStatusDialog(task, nextStatus)
+                              }}
+                              className={cn(
+                                "flex items-center gap-1.5 px-3 py-1 rounded-full",
+                                "text-[11px] font-bold border border-transparent",
+                                "hover:border-slate-200 dark:hover:border-slate-700",
+                                "transition-colors",
+                                task.status === TASK_STATUS.DONE
+                                  ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                  : task.status === TASK_STATUS.IN_PROGRESS
+                                    ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                    : "bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  "w-1.5 h-1.5 rounded-full",
+                                  task.status === TASK_STATUS.DONE
+                                    ? "bg-green-500"
+                                    : task.status === TASK_STATUS.IN_PROGRESS
+                                      ? "bg-amber-500"
+                                      : "bg-slate-400"
+                                )}
+                              />
 
-                        <td className="px-5 py-4 align-middle whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                          {intData?.interviewDate ? formatDate(intData.interviewDate) : formatDate(task.dueDate)}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
+                              {STATUS_LABELS[task.status] ?? task.status}
+
+                              <ChevronDown className="w-3 h-3 ml-0.5 opacity-50" />
+                            </button>
+                          </td>
+
+                          {/* ASSIGNED */}
+                          <td className="px-5 py-4 align-middle whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                            {task.createdAt
+                              ? formatDate(task.createdAt)
+                              : "06-08-2026"}
+                          </td>
+
+                          {/* DUE */}
+                          <td className="px-5 py-4 align-middle whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                            {intData?.interviewDate
+                              ? formatDate(intData.interviewDate)
+                              : formatDate(task.dueDate)}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
               </table>
             </div>
           )}

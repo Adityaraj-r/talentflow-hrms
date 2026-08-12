@@ -2,6 +2,11 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Task from "../models/task.model";
 import User from "../models/User.model";
+import {
+  notifyTaskAssigned,
+  notifyTaskCompleted,
+  notifyTaskInProgress,
+} from "../services/notification.service";
 
 const VALID_STATUSES = ["TO_DO", "IN_PROGRESS", "DONE"] as const;
 type TaskStatus = typeof VALID_STATUSES[number];
@@ -9,18 +14,109 @@ type TaskStatus = typeof VALID_STATUSES[number];
 export const getMyTasks = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
+
     if (!userId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
     }
 
-    const tasks = await Task.find({ assignedTo: userId })
-      .populate("assignedBy", "firstName lastName email role")
-      .sort({ dueDate: 1 });
+    const user = await User.findById(userId).select("role");
 
-    res.json({ success: true, data: tasks });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const role = user.role?.toUpperCase();
+
+    let query: Record<string, unknown>;
+
+    /*
+     * Employees and normal users:
+     * Show tasks assigned directly to them.
+     */
+    if (
+      role === "EMPLOYEE" ||
+      role === "HR_OFFICER" ||
+      role === "FINANCE_MANAGER" ||
+      role === "PAYROLL_OFFICER" ||
+      role === "OPERATIONS_MANAGER" ||
+      role === "PROJECT_MANAGER"
+    ) {
+      query = {
+        assignedTo: userId,
+      };
+    }
+
+    /*
+     * Managers:
+     * Show tasks they created for their team
+     * AND tasks directly assigned to themselves.
+     */
+    else if (
+      role === "DEPARTMENT_MANAGER" ||
+      role === "DIRECT_MANAGER" ||
+      role === "HR_MANAGER"
+    ) {
+      query = {
+        $or: [
+          { assignedTo: userId },
+          { createdBy: userId },
+        ],
+      };
+    }
+
+    /*
+     * Admin / Super Admin:
+     * Show everything.
+     */
+    else if (
+      role === "ADMIN" ||
+      role === "SUPER_ADMIN"
+    ) {
+      query = {};
+    }
+
+    /*
+     * Other roles:
+     * Default to their own assigned tasks.
+     */
+    else {
+      query = {
+        assignedTo: userId,
+      };
+    }
+
+    const tasks = await Task.find(query)
+      .populate(
+        "assignedTo",
+        "firstName lastName department role employeeCode"
+      )
+      .populate(
+        "assignedBy",
+        "firstName lastName email role"
+      )
+      .sort({
+        dueDate: 1,
+        createdAt: -1,
+      });
+
+    return res.json({
+      success: true,
+      data: tasks,
+    });
+
   } catch (error) {
     console.error("getMyTasks error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -93,6 +189,15 @@ export const createTask = async (req: Request, res: Response) => {
       dueDate,
       createdBy,
     });
+    try {
+      await notifyTaskAssigned(
+        assignedTo,
+        newTask._id.toString(),
+        newTask.title
+      );
+    } catch (notificationError) {
+      console.error("Failed to create task notification:", notificationError);
+    }
 
     const populated = await Task.findById(newTask._id)
       .populate("assignedTo", "firstName lastName department role employeeCode")
@@ -122,10 +227,19 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
     const { status } = req.body;
     const user = req.user;
 
+    // -----------------------------------------
+    // 1. Authentication
+    // -----------------------------------------
     if (!user) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
     }
 
+    // -----------------------------------------
+    // 2. Validate requested status
+    // -----------------------------------------
     if (!VALID_STATUSES.includes(status as TaskStatus)) {
       return res.status(400).json({
         success: false,
@@ -133,15 +247,32 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       });
     }
 
+    // -----------------------------------------
+    // 3. Find task
+    // -----------------------------------------
     const task = await Task.findById(id);
+
     if (!task) {
-      return res.status(404).json({ success: false, message: "Task not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Task not found",
+      });
     }
 
+    // -----------------------------------------
+    // 4. Check permissions
+    // -----------------------------------------
     const role = user.role?.toUpperCase();
-    const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
-    const isAssignee = task.assignedTo?.toString() === user.id;
-    const isCreator = task.createdBy?.toString() === user.id;
+
+    const isAdmin =
+      role === "ADMIN" ||
+      role === "SUPER_ADMIN";
+
+    const isAssignee =
+      task.assignedTo?.toString() === user.id;
+
+    const isCreator =
+      task.createdBy?.toString() === user.id;
 
     if (!isAdmin && !isAssignee && !isCreator) {
       return res.status(403).json({
@@ -150,27 +281,129 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       });
     }
 
+    // -----------------------------------------
+    // 5. Get current status
+    // -----------------------------------------
     const currentStatus = task.status as TaskStatus;
-    const allowed = ALLOWED_TRANSITIONS[currentStatus] ?? [];
+
+    // -----------------------------------------
+    // 6. Prevent unnecessary status update
+    // -----------------------------------------
+    if (currentStatus === status) {
+      return res.status(400).json({
+        success: false,
+        message: `Task is already ${status}`,
+      });
+    }
+
+    // -----------------------------------------
+    // 7. Validate allowed status transition
+    // -----------------------------------------
+    const allowed =
+      ALLOWED_TRANSITIONS[currentStatus] ?? [];
+
     const isReopenByCreator =
       currentStatus === "DONE" &&
       status === "IN_PROGRESS" &&
       (isAdmin || isCreator);
 
-    if (!allowed.includes(status as TaskStatus) && !isReopenByCreator) {
+    if (
+      !allowed.includes(status as TaskStatus) &&
+      !isReopenByCreator
+    ) {
       return res.status(400).json({
         success: false,
         message: `Cannot transition from ${currentStatus} to ${status}`,
       });
     }
 
+    // -----------------------------------------
+    // 8. Save new task status
+    // -----------------------------------------
     task.status = status as TaskStatus;
+
     await task.save();
 
-    res.json({ success: true, message: "Task status updated", data: task });
+    // -----------------------------------------
+    // 9. CREATE NOTIFICATION
+    // -----------------------------------------
+    //
+    // Notifications go to the person who created
+    // / assigned the task.
+    //
+    // TO_DO -> IN_PROGRESS
+    //      => Task in progress notification
+    //
+    // IN_PROGRESS -> DONE
+    //      => Task completed notification
+    //
+    // -----------------------------------------
+
+    if (task.createdBy) {
+      try {
+        const taskId = task._id.toString();
+        const taskTitle = task.title;
+        const creatorId = task.createdBy;
+
+        // -----------------------------------------
+        // IN PROGRESS
+        // -----------------------------------------
+        if (status === "IN_PROGRESS") {
+          await notifyTaskInProgress(
+            creatorId,
+            taskId,
+            taskTitle
+          );
+
+          console.log(
+            `Task in-progress notification created for task: ${taskId}`
+          );
+        }
+
+        // -----------------------------------------
+        // DONE
+        // -----------------------------------------
+        else if (status === "DONE") {
+          await notifyTaskCompleted(
+            creatorId,
+            taskId,
+            taskTitle
+          );
+
+          console.log(
+            `Task completed notification created for task: ${taskId}`
+          );
+        }
+
+      } catch (notificationError) {
+        // Notification failure should NOT make the
+        // task status update fail.
+        console.error(
+          "Failed to create task status notification:",
+          notificationError
+        );
+      }
+    }
+
+    // -----------------------------------------
+    // 10. Return updated task
+    // -----------------------------------------
+    return res.json({
+      success: true,
+      message: "Task status updated",
+      data: task,
+    });
+
   } catch (error) {
-    console.error("updateTaskStatus error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error(
+      "updateTaskStatus error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 

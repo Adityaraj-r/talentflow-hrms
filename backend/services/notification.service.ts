@@ -460,3 +460,49 @@ export async function notifyTicketRejected(
     isDeleted: false,
   });
 }
+export async function notifyTaskAssigned(
+  employeeId: mongoose.Types.ObjectId | string,
+  taskId: string,
+  taskTitle: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employeeId)),
+    type: NotificationType.TASK_ASSIGNED,
+    title: "New task assigned",
+    body: `You have been assigned the task "${taskTitle}".`,
+    metadata: { taskId },
+    isDeleted: false,
+  });
+}
+
+
+export async function notifyTaskInProgress(
+  userId: mongoose.Types.ObjectId | string,
+  taskId: string,
+  taskTitle: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(userId)),
+    type: NotificationType.TASK_IN_PROGRESS,
+    title: "Task in progress",
+    body: `The task "${taskTitle}" is now in progress.`,
+    metadata: { taskId },
+    isDeleted: false,
+  });
+}
+
+
+export async function notifyTaskCompleted(
+  creatorId: mongoose.Types.ObjectId | string,
+  taskId: string,
+  taskTitle: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(creatorId)),
+    type: NotificationType.TASK_COMPLETED,
+    title: "Task completed",
+    body: `The task "${taskTitle}" has been completed.`,
+    metadata: { taskId },
+    isDeleted: false,
+  });
+}

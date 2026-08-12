@@ -27,7 +27,11 @@ function iconForType(type: NotificationType) {
     case "payroll_pending_ceo_approval":
       return ClipboardList;
     case "payroll_pending_finance_approval":
-      return ClipboardList;  
+      return ClipboardList; 
+    case "task_assigned":
+    case "task_in_progress":
+    case "task_completed":
+      return ClipboardList;
     default:
       return ClipboardList;
   }
@@ -74,6 +78,10 @@ function routeForNotification(
     case "ticket_approved":
     case "ticket_rejected": 
       return "/indemnity";
+    case "task_assigned":
+    case "task_in_progress":
+    case "task_completed":
+      return "/dashboard/employee/tasks";
     default:
       return "/dashboard";
   }
