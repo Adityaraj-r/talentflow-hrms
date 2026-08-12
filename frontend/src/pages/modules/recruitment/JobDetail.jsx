@@ -155,7 +155,7 @@ const JobDetail = () => {
   const isOpen = job.status === "Open" || (job.status === "Published" && !job.deadline)
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-full pb-10">
       {/* Header Panel */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/50 dark:bg-slate-900/20 border border-slate-200/80 dark:border-white/10 p-5 rounded-xl">
         <div className="space-y-1.5">
@@ -166,7 +166,7 @@ const JobDetail = () => {
             <ArrowLeft className="h-3 w-3" /> Back to Job list
           </button>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">{job.jobTitle}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-2xl">{job.jobTitle}</h1>
             <RecruitmentStatusBadge status={isOpen ? "Open" : job.status} />
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-mono tracking-wider">Job Code: {job.jobCode}</p>
@@ -239,7 +239,7 @@ const JobDetail = () => {
       </div>
 
       {showEditForm ? (
-        <Card className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-slate-950/70 shadow-lg shadow-black/5">
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardContent className="p-6">
             <div className="mb-4 flex items-center justify-between border-b pb-3">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Edit Job Information</h2>
@@ -365,7 +365,7 @@ const JobDetail = () => {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Job Details panel */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="rounded-xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-950/70 p-6 shadow-md">
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-6">
               <div className="space-y-6">
                 <div>
                   <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b pb-2 mb-3">
@@ -417,7 +417,7 @@ const JobDetail = () => {
 
             {/* Hiring Roles Grid breakdown if multiple roles are linked */}
             {Array.isArray(job.hiringRoles) && job.hiringRoles.length > 0 && (
-              <Card className="rounded-xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-950/70 p-6 shadow-md">
+              <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-6">
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Hiring Roles Details</h2>
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-xs md:text-sm">
@@ -449,7 +449,7 @@ const JobDetail = () => {
 
           {/* Quick Specifications Right sidebar */}
           <div className="space-y-6">
-            <Card className="rounded-xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-950/70 p-5 shadow-md">
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-5">
               <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4">Quick Specifications</h2>
               
               <div className="space-y-4">
@@ -508,7 +508,7 @@ const JobDetail = () => {
             </Card>
 
             {/* Staffing ownership details */}
-            <Card className="rounded-xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-950/70 p-5 shadow-md">
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-5">
               <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4">Staffing Ownership</h2>
               
               <div className="space-y-3.5 text-xs">

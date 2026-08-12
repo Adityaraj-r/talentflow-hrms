@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Pagination } from "@/components/ui/pagination";
 import { useUser } from "@/contexts/UserContext";
 import attendanceService from "@/services/attendanceService";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -142,6 +143,8 @@ const CorrectionRequests = () => {
 
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const isHrOrAdmin = ["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER_ADMIN", "SUPER ADMIN", "CEO", "EXECUTIVE", "FINANCE_MANAGER", "COUNTRY_MANAGER"].includes(userRole);
 
@@ -220,16 +223,17 @@ const CorrectionRequests = () => {
     );
   });
 
+  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
   const pendingCount = requests.filter((r) => r.status === "Pending").length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">
             Correction Requests
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
             Review and action employee attendance correction requests.
           </p>
         </div>
@@ -242,12 +246,12 @@ const CorrectionRequests = () => {
         )}
       </div>
 
-      <Card className="border-slate-200 dark:border-slate-800">
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader className="border-b p-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
-                <ClipboardList className="w-4 h-4 text-blue-600" />
+                <ClipboardList className="w-4 h-4 text-indigo-600" />
                 {isHrOrAdmin ? "Organisation-Wide Requests" : "Team Requests"}
               </CardTitle>
               <CardDescription className="mt-0.5">
@@ -324,7 +328,7 @@ const CorrectionRequests = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredRequests.map((req) => {
+                  filteredRequests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((req) => {
                     const attendance = req.attendanceId;
                     return (
                       <TableRow
@@ -385,7 +389,7 @@ const CorrectionRequests = () => {
                           <div className="flex flex-col gap-0.5 text-xs">
                             <span className="text-slate-600 dark:text-slate-400">
                               In:{" "}
-                              <span className="font-medium text-blue-600 dark:text-blue-400">
+                              <span className="font-medium text-indigo-600 dark:text-indigo-400">
                                 {req.requestedClockIn
                                   ? formatTime(req.requestedClockIn)
                                   : "-"}
@@ -393,7 +397,7 @@ const CorrectionRequests = () => {
                             </span>
                             <span className="text-slate-600 dark:text-slate-400">
                               Out:{" "}
-                              <span className="font-medium text-blue-600 dark:text-blue-400">
+                              <span className="font-medium text-indigo-600 dark:text-indigo-400">
                                 {req.requestedClockOut
                                   ? formatTime(req.requestedClockOut)
                                   : "-"}
@@ -466,6 +470,17 @@ const CorrectionRequests = () => {
               </TableBody>
             </Table>
           </div>
+          {filteredRequests.length > 0 && (
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredRequests.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

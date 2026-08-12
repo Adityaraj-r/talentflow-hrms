@@ -332,7 +332,7 @@ const Profile = () => {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">My Profile</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-foreground text-2xl">My Profile</h1>
           <p className="text-muted-foreground mt-1 text-sm">
             Manage your personal and employment details.
           </p>

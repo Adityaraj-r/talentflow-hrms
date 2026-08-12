@@ -40,6 +40,10 @@ import {
   Play,
   Video,
   MapPin,
+  ClipboardList,
+  CircleDashed,
+  LayoutGrid,
+  CheckCircle,
 } from "lucide-react"
 
 import {
@@ -54,6 +58,7 @@ import CreateTaskModal from "@/components/ui/CreateTaskModal"
 import InterviewTaskModal from "@/components/ui/InterviewTaskModal"
 
 import { StatsCard } from "@/components/ui/stats-card"
+import { Pagination } from "@/components/ui/pagination"
 const TASK_STATUS = {
   TO_DO:       "TO_DO",
   IN_PROGRESS: "IN_PROGRESS",
@@ -90,7 +95,6 @@ const MyTasks = () => {
   const [filterStatus, setFilterStatus] = useState("ALL")
   const [filterPriority, setFilterPriority] = useState("ALL")
   const [sortBy, setSortBy]             = useState("dueDate")
-  const [activeCard, setActiveCard]     = useState("total")
   
   const [currentPage, setCurrentPage] = useState(1)
   const rowsPerPage = 10
@@ -146,19 +150,7 @@ const MyTasks = () => {
       result = result.filter(t => t.status === filterStatus)
     }
     if (filterPriority !== "ALL") {
-      result = result.filter(t => t.priority?.toUpperCase() === filterPriority)
-    }
-
-    if (activeCard === "completed") {
-      result = result.filter(t => t.status === TASK_STATUS.DONE)
-    }
-    if (activeCard === "inProgress") {
-      result = result.filter(t => t.status === TASK_STATUS.IN_PROGRESS)
-    }
-    if (activeCard === "overdue") {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      result = result.filter(t => t.status !== TASK_STATUS.DONE && t.dueDate && new Date(t.dueDate) < today)
+      result = result.filter(t => String(t.priority || "").toUpperCase() === filterPriority)
     }
 
     result.sort((a, b) => {
@@ -175,11 +167,11 @@ const MyTasks = () => {
     })
 
     return result
-  }, [tasks, searchQuery, filterStatus, filterPriority, sortBy, activeCard])
+  }, [tasks, searchQuery, filterStatus, filterPriority, sortBy])
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery, filterStatus, filterPriority, sortBy, activeCard])
+  }, [searchQuery, filterStatus, filterPriority, sortBy])
   
   const totalPages = Math.ceil(filteredTasks.length / rowsPerPage)
   const paginatedTasks = filteredTasks.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
@@ -327,26 +319,18 @@ const MyTasks = () => {
     )
   }
 
-  const hasActiveFilters = filterStatus !== "ALL" || filterPriority !== "ALL" || searchQuery.trim() || activeCard !== "total"
+  const hasActiveFilters = filterStatus !== "ALL" || filterPriority !== "ALL" || searchQuery.trim()
 
   return (
     <div className="space-y-6">
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <ListTodo className="w-5 h-5 text-blue-500" />
-            <span className="text-sm text-muted-foreground font-medium">
-              {stats.total} task{stats.total !== 1 ? "s" : ""} assigned to you
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm: text-2xl">
             My Tasks
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {canCreateTask
-              ? "Create and manage tasks for your team."
-              : "Manage your assigned work and deadlines."}
+            Manage your assigned work and deadlines.
           </p>
         </div>
 
@@ -357,137 +341,114 @@ const MyTasks = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatsCard
-          title="Total Tasks"
-          value={stats.total}
-          icon={<ListTodo className="h-8 w-8" />}
-          variant="blue"
-          isActive={activeCard === "total"}
-          onClick={() => setActiveCard(activeCard === "total" ? "total" : "total")}
-        />
-        <StatsCard
-          title="Completed"
-          value={stats.completed}
-          icon={<CheckCircle2 className="h-8 w-8" />}
-          variant="green"
-          isActive={activeCard === "completed"}
-          onClick={() => setActiveCard(activeCard === "completed" ? "total" : "completed")}
-        />
-        <StatsCard
-          title="In Progress"
-          value={stats.inProgress}
-          icon={<Clock className="h-8 w-8" />}
-          variant="amber"
-          isActive={activeCard === "inProgress"}
-          onClick={() => setActiveCard(activeCard === "inProgress" ? "total" : "inProgress")}
-        />
-        <StatsCard
-          title="Overdue"
-          value={stats.overdue}
-          icon={<AlertCircle className="h-8 w-8" />}
-          variant="orange"
-          isActive={activeCard === "overdue"}
-          onClick={() => setActiveCard(activeCard === "overdue" ? "total" : "overdue")}
-        />
-      </div>
-
-      <Card className="border-slate-200 dark:border-slate-800 overflow-hidden">
-        <CardHeader className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-              <Filter className="w-4 h-4 text-blue-500" />
-              Assigned Task List
-            </CardTitle>
-
-            <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
-              <div className="relative w-full md:w-56">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search tasks..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-8 h-9"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9 gap-1">
-                    <Filter className="h-3.5 w-3.5" />
-                    {filterStatus === "ALL" ? "Status" : STATUS_LABELS[filterStatus]}
-                    <ChevronDown className="h-3.5 w-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setFilterStatus("ALL")}>All statuses</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  {Object.entries(STATUS_LABELS).map(([val, label]) => (
-                    <DropdownMenuItem key={val} onClick={() => setFilterStatus(val)}>
-                      {label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9 gap-1">
-                    {filterPriority === "ALL" ? "Priority" : filterPriority}
-                    <ChevronDown className="h-3.5 w-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setFilterPriority("ALL")}>All priorities</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  {["HIGH","MEDIUM","LOW"].map(p => (
-                    <DropdownMenuItem key={p} onClick={() => setFilterPriority(p)}>
-                      {p.charAt(0) + p.slice(1).toLowerCase()}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9 gap-1">
-                    {sortBy === "dueDate" ? "Sort: Due Date" : "Sort: Priority"}
-                    <ChevronDown className="h-3.5 w-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setSortBy("dueDate")}>
-                    Due Date {sortBy === "dueDate" && "✓"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSortBy("priority")}>
-                    Priority {sortBy === "priority" && "✓"}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {hasActiveFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 text-muted-foreground"
-                  onClick={() => { setSearchQuery(""); setFilterStatus("ALL"); setFilterPriority("ALL") }}
-                >
-                  <X className="h-3.5 w-3.5 mr-1" /> Clear
-                </Button>
-              )}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between h-[120px]">
+          <div className="flex justify-between items-start">
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Total</span>
+            <div className="w-8 h-8 rounded-full bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+              <ClipboardList className="w-4 h-4" />
             </div>
           </div>
-        </CardHeader>
+          <span className="text-3xl font-bold text-slate-900 dark:text-white">{stats.total}</span>
+        </div>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between h-[120px]">
+          <div className="flex justify-between items-start">
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">To do</span>
+            <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400">
+              <CircleDashed className="w-4 h-4" />
+            </div>
+          </div>
+          <span className="text-3xl font-bold text-slate-900 dark:text-white">{stats.pending}</span>
+        </div>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between h-[120px]">
+          <div className="flex justify-between items-start">
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Acknowledged</span>
+            <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+          </div>
+          <span className="text-3xl font-bold text-slate-900 dark:text-white">0</span>
+        </div>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between h-[120px]">
+          <div className="flex justify-between items-start">
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">In progress</span>
+            <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <LayoutGrid className="w-4 h-4" />
+            </div>
+          </div>
+          <span className="text-3xl font-bold text-slate-900 dark:text-white">{stats.inProgress}</span>
+        </div>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between h-[120px]">
+          <div className="flex justify-between items-start">
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Done</span>
+            <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <CheckCircle className="w-4 h-4" />
+            </div>
+          </div>
+          <span className="text-3xl font-bold text-slate-900 dark:text-white">{stats.completed}</span>
+        </div>
+      </div>
 
-        <CardContent className="p-0">
+      <div className="bg-white dark:bg-slate-900 rounded-[24px] border border-slate-100 dark:border-slate-800 p-2 flex flex-col md:flex-row justify-between items-center gap-4 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+        <div className="relative w-full md:w-[450px]">
+          <Search className="absolute left-4 top-1.5 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search tasks, assignees, projects..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="pl-10 h-7 text-sm bg-transparent border-none focus-visible:ring-0 shadow-none"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-4 top-1.5 text-slate-400 hover:text-slate-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 px-4 rounded-full bg-slate-50 dark:bg-slate-800 border-transparent text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 whitespace-nowrap">
+                <span className="w-2 h-2 rounded-full bg-slate-400 mr-2" />
+                {filterStatus === "ALL" ? "All status" : STATUS_LABELS[filterStatus]}
+                <ChevronDown className="h-3.5 w-3.5 ml-2 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setFilterStatus("ALL")}>All statuses</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                <DropdownMenuItem key={val} onClick={() => setFilterStatus(val)}>
+                  {label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button variant="outline" size="sm" className="h-9 px-4 rounded-full bg-slate-50 dark:bg-slate-800 border-transparent text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 hidden sm:flex whitespace-nowrap">
+             <LayoutGrid className="h-4 w-4 mr-2 text-slate-400" /> All projects <ChevronDown className="h-3.5 w-3.5 ml-2 opacity-50" />
+          </Button>
+
+          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-full border border-slate-100 dark:border-slate-700 h-9">
+            <button className="w-7 h-7 flex items-center justify-center rounded-full bg-primary text-white shadow-sm shrink-0">
+              <ListTodo className="w-3.5 h-3.5" />
+            </button>
+            <button className="w-7 h-7 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors shrink-0">
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <Button variant="ghost" size="sm" className="h-9 px-4 rounded-full bg-slate-50 dark:bg-slate-800 font-semibold hover:bg-slate-100 dark:hover:bg-slate-700">
+             All projects <ChevronDown className="h-3.5 w-3.5 ml-2 opacity-50" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] overflow-hidden">
+
+        <div className="p-0">
           {filteredTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
               <ListTodo className="w-10 h-10 mb-3 opacity-30" />
@@ -501,184 +462,91 @@ const MyTasks = () => {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left rounded-tl-lg w-[35%]">Task</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center w-[80px]">Priority</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left w-[15%]">Assigner / Interviewer</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left w-[15%]">Due Date</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left w-[15%]">Time</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left w-[100px]">Status</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center w-[150px] rounded-r-xl">Actions</th>
+                  <tr className="border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+                    <th className="px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left w-[30%]">TITLE</th>
+                    <th className="px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left w-[18%]">ASSIGNEES</th>
+                    <th className="px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left w-[12%]">PRIORITY</th>
+                    <th className="px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left w-[15%]">STATUS</th>
+                    <th className="px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left w-[12%]">ASSIGNED</th>
+                    <th className="px-5 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-left w-[13%]">DUE</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {paginatedTasks.map((task) => {
-                    const overdue = isOverdue(task)
-                    const availableTransitions = STATUS_TRANSITIONS[task.status] ?? []
                     const intData = getInterviewData(task)
 
                     return (
                       <tr
                         key={task._id}
-                        className="group transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/30"
+                        className="group transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
+                        onClick={() => {
+                          if (intData?.candidateName) {
+                            setInterviewModal({ open: true, task, intData });
+                          } else {
+                            setDetailsDialog({ open: true, task, intData });
+                          }
+                        }}
                       >
-                        <td className="px-4 py-3 align-middle">
-                          <div className="flex flex-col gap-1 max-w-[300px]">
-                            <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-tight whitespace-normal break-words">
+                        <td className="px-5 py-4 align-middle">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-tight">
                               {intData?.candidateName 
                                 ? `Interview with ${intData.candidateName}`
                                 : task.title}
                             </span>
-                            <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-full">
-                              {task.description || "No description provided"}
-                            </span>
-                            <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-fit px-1.5 py-0.5 rounded shadow-sm font-mono tracking-wider">
-                              {intData ? "INT-" : "TSK-"}{(task._id || task.id || "000000").slice(-6).toUpperCase()}
+                            <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
+                              {intData ? "Recruitment" : (task.project || "V-ONE - HRMS")}
                             </span>
                           </div>
                         </td>
 
-                        <td className="px-4 py-3 align-middle">
-                          <PriorityDot priority={task.priority} />
+                        <td className="px-5 py-4 align-middle">
+                          <span className="text-sm text-slate-600 dark:text-slate-300 font-semibold">
+                            {intData?.interviewerName || getAssignerName(task.assignedBy) || "Unknown"}
+                          </span>
                         </td>
 
-                        <td className="px-4 py-3 align-middle">
-                          <TooltipProvider delayDuration={200}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate max-w-[140px] block cursor-default">
-                                  {intData?.interviewerName 
-                                    ? intData.interviewerName 
-                                    : getAssignerName(task.assignedBy)}
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {intData?.interviewerName 
-                                  ? intData.interviewerName 
-                                  : getAssignerName(task.assignedBy)}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                        <td className="px-5 py-4 align-middle">
+                          <span className={cn(
+                            "text-[10px] uppercase font-bold px-3 py-1 rounded-full",
+                            String(task.priority || "Low").toUpperCase() === "HIGH" ? "bg-red-50 text-red-500 dark:bg-red-900/20" :
+                            String(task.priority || "Low").toUpperCase() === "MEDIUM" ? "bg-amber-50 text-amber-500 dark:bg-amber-900/20" :
+                            "bg-blue-50 text-blue-500 dark:bg-blue-900/20"
+                          )}>
+                            {task.priority ? String(task.priority).charAt(0).toUpperCase() + String(task.priority).slice(1).toLowerCase() : "Low"}
+                          </span>
                         </td>
 
-                        <td className="px-4 py-3 align-middle whitespace-nowrap">
-                          <div className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-300">
-                            <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                            <span className="tabular-nums font-medium">
-                              {intData?.interviewDate ? formatDate(intData.interviewDate) : formatDate(task.dueDate)}
-                            </span>
-                          </div>
-                        </td>
-
-                        <td className="px-4 py-3 align-middle whitespace-nowrap">
-                          {intData?.startTime && intData?.endTime ? (
-                            <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">
-                              {intData.startTime} &rarr; {intData.endTime}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-slate-400 italic">N/A</span>
-                          )}
-                        </td>
-
-
-                        <td className="px-4 py-3 align-middle whitespace-nowrap">
-                          <Badge variant="outline" className={cn("text-[11px] px-2.5 py-0.5 border font-semibold shadow-sm w-fit", getStatusStyle(task.status))}>
+                        <td className="px-5 py-4 align-middle">
+                          <button
+                            onClick={(e) => {
+                               e.stopPropagation();
+                               openStatusDialog(task, task.status);
+                            }}
+                            className={cn(
+                              "flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors",
+                              task.status === TASK_STATUS.DONE ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                              task.status === TASK_STATUS.IN_PROGRESS ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+                              "bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                            )}
+                          >
+                            <span className={cn(
+                              "w-1.5 h-1.5 rounded-full",
+                              task.status === TASK_STATUS.DONE ? "bg-green-500" :
+                              task.status === TASK_STATUS.IN_PROGRESS ? "bg-amber-500" :
+                              "bg-slate-400"
+                            )} />
                             {STATUS_LABELS[task.status] ?? task.status}
-                          </Badge>
+                            <ChevronDown className="w-3 h-3 ml-0.5 opacity-50" />
+                          </button>
                         </td>
 
-                        <td className="px-4 py-2.5 whitespace-nowrap">
-                          {updating === task._id ? (
-                            <div className="w-5 h-5 rounded-full border-2 border-blue-600 border-t-transparent animate-spin mx-auto" />
-                          ) : (
-                            <TooltipProvider delayDuration={200}>
-                              <div className="flex items-center justify-center gap-1.5 transition-opacity">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon" 
-                                      className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                                      onClick={() => {
-                                        if (intData?.candidateName) {
-                                          setInterviewModal({ open: true, task, intData });
-                                        } else {
-                                          setDetailsDialog({ open: true, task, intData });
-                                        }
-                                      }}
-                                    >
-                                      <Eye className="w-4 h-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>View Details</TooltipContent>
-                                </Tooltip>
+                        <td className="px-5 py-4 align-middle whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                          {task.createdAt ? formatDate(task.createdAt) : "06-08-2026"}
+                        </td>
 
-                                {intData?.mode?.toLowerCase() === "online" && intData?.meetingLink && intData.meetingLink !== "N/A" && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                                        onClick={() => window.open(intData.meetingLink, "_blank")}
-                                      >
-                                        <Video className="w-4 h-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Join Meeting</TooltipContent>
-                                  </Tooltip>
-                                )}
-
-                                {intData?.mode?.toLowerCase() === "offline" && intData?.location && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                                        onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(intData.location)}`, "_blank")}
-                                      >
-                                        <MapPin className="w-4 h-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>View Location</TooltipContent>
-                                  </Tooltip>
-                                )}
-
-                                {availableTransitions.includes(TASK_STATUS.IN_PROGRESS) && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="h-8 w-8 text-slate-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/30"
-                                        onClick={() => openStatusDialog(task, TASK_STATUS.IN_PROGRESS)}
-                                      >
-                                        <Play className="w-4 h-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Start Task</TooltipContent>
-                                  </Tooltip>
-                                )}
-                                
-                                {availableTransitions.includes(TASK_STATUS.DONE) && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="h-8 w-8 text-slate-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30"
-                                        onClick={() => openStatusDialog(task, TASK_STATUS.DONE)}
-                                      >
-                                        <Check className="w-4 h-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Mark Complete</TooltipContent>
-                                  </Tooltip>
-                                )}
-                              </div>
-                            </TooltipProvider>
-                          )}
+                        <td className="px-5 py-4 align-middle whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                          {intData?.interviewDate ? formatDate(intData.interviewDate) : formatDate(task.dueDate)}
                         </td>
                       </tr>
                     )
@@ -687,46 +555,18 @@ const MyTasks = () => {
               </table>
             </div>
           )}
-          {totalPages > 1 && (
+        </div>  {totalPages > 1 && (
             <div className="border-t border-slate-100 dark:border-slate-800 px-5 py-3 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/30">
-              <span className="text-sm text-slate-500 dark:text-slate-400">
-                Showing {((currentPage - 1) * rowsPerPage) + 1}-{Math.min(currentPage * rowsPerPage, filteredTasks.length)} of {filteredTasks.length} Tasks
-              </span>
-              <div className="flex items-center gap-1">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-8 px-2"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="sm"
-                    className={page === currentPage ? "h-8 w-8 bg-blue-600 hover:bg-blue-700" : "h-8 w-8"}
-                    onClick={() => setCurrentPage(page)}
-                  >
-                    {page}
-                  </Button>
-                ))}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-8 px-2"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
+              <Pagination 
+                currentPage={currentPage} 
+                totalPages={totalPages} 
+                totalItems={filteredTasks.length} 
+                itemsPerPage={rowsPerPage}
+                onPageChange={(page) => setCurrentPage(page)} 
+              />
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
       {canCreateTask && (
         <CreateTaskModal

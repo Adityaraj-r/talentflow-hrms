@@ -289,7 +289,7 @@ const CandidateDetail = () => {
     : ""
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-full pb-10">
       {/* Header Workspace */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/50 dark:bg-slate-900/20 border border-slate-200/80 dark:border-white/10 p-5 rounded-xl">
         <div className="space-y-1.5">
@@ -300,7 +300,7 @@ const CandidateDetail = () => {
             <ArrowLeft className="h-3 w-3" /> Back to Candidate list
           </button>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">{app.name}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-2xl">{app.name}</h1>
             <RecruitmentStatusBadge status={app.status} />
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{app.jobId?.jobTitle || "Unassigned Position"} • Match score: <span className="font-bold text-cyan-600 dark:text-cyan-400">{app.aiFitScore || app.matchScore || 0}% Match</span></p>
@@ -327,7 +327,7 @@ const CandidateDetail = () => {
       </div>
       
       {workflowStatus?.hasWorkflow && (
-        <Card className="rounded-xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-950/70 p-6 shadow-md mb-6">
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
@@ -361,7 +361,7 @@ const CandidateDetail = () => {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Main Candidate Card */}
-          <Card className="rounded-xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-950/70 p-6 shadow-md">
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-6">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b pb-2 mb-4">
               <User className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
               Candidate Profile Info
@@ -460,7 +460,7 @@ const CandidateDetail = () => {
           </Card>
 
           {/* Resume PDF Section */}
-          <Card className="rounded-xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-950/70 p-6 shadow-md">
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="space-y-1">
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -495,7 +495,7 @@ const CandidateDetail = () => {
           </Card>
 
           {/* Evaluation & Feedback Logs */}
-          <Card className="rounded-xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-950/70 p-6 shadow-md">
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-6">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b pb-2 mb-4">
               <MessageSquare className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
               Interview Evaluation Logs
@@ -529,7 +529,7 @@ const CandidateDetail = () => {
           
           {/* Offer Package Workspace */}
           {canWrite && (
-            <Card className="rounded-xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-950/70 p-5 shadow-md">
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-5">
               <div className="flex items-center justify-between mb-4 border-b pb-2">
                 <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
                   <FileText className="h-4.5 w-4.5 text-cyan-600 dark:text-cyan-400" />
@@ -666,7 +666,7 @@ const CandidateDetail = () => {
           
           {/* BGV verification checklist workspace (available if status is Selected or offered) */}
           {["Selected", "bgv", "hired", "offer"].some(v => (app.status || "").toLowerCase().includes(v)) && (
-            <Card className="rounded-xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-950/70 p-5 shadow-md">
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-5">
               <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <ShieldCheck className="h-4.5 w-4.5 text-emerald-500" />
                 Background Verification (BGV)
@@ -711,7 +711,7 @@ const CandidateDetail = () => {
 
           {/* Schedule Interview Workspace */}
           {canWrite && (
-            <Card className="rounded-xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-950/70 p-5 shadow-md">
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-5">
               <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Calendar className="h-4.5 w-4.5 text-cyan-600" />
                 Schedule Interview
@@ -829,7 +829,7 @@ const CandidateDetail = () => {
 
           {/* Record Feedback Workspace */}
           {canWrite && (
-            <Card className="rounded-xl border border-slate-200/85 dark:border-white/10 bg-white dark:bg-slate-950/70 p-5 shadow-md">
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-5">
               <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Send className="h-4.5 w-4.5 text-cyan-600" />
                 Add Evaluation Feedback

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import * as payrollService from "@/services/payrollService";
@@ -41,10 +42,10 @@ const Tickets = () => {
   const isStaff = canManageTickets(user);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Tickets & Advances</h1>
-        <p className="text-muted-foreground">Manage employee travel tickets and salary advance requests.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Tickets & Advances</h1>
+        <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">Manage employee travel tickets and salary advance requests.</p>
       </div>
 
       <Tabs defaultValue="all" className="w-full">
@@ -130,7 +131,7 @@ const TicketForm = ({ onSuccess }) => {
   };
 
   return (
-    <Card>
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
       <CardHeader>
         <CardTitle>New Ticket / Advance Request</CardTitle>
         <CardDescription>Submit a travel ticket or salary advance request for an employee.</CardDescription>
@@ -252,6 +253,7 @@ const TicketListTable = ({ mode }) => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -281,13 +283,13 @@ const TicketListTable = ({ mode }) => {
   });
 
   if (loading) return (
-    <Card><CardContent className="flex justify-center py-12">
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900"><CardContent className="flex justify-center py-12">
       <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
     </CardContent></Card>
   );
 
   return (
-    <Card>
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>{mode === "all" ? "All tickets" : "Pending approvals"}</CardTitle>
@@ -322,7 +324,7 @@ const TicketListTable = ({ mode }) => {
                   No records found.
                 </TableCell>
               </TableRow>
-            ) : filtered.map(t => (
+            ) : filtered.slice((currentPage - 1) * 10, currentPage * 10).map(t => (
               <TableRow key={t._id}>
                 <TableCell className="align-middle text-center">
                   <div className="w-full flex flex-col items-center justify-center">
@@ -401,6 +403,15 @@ const TicketListTable = ({ mode }) => {
             ))}
           </TableBody>
         </Table>
+        {filtered.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filtered.length / 10)}
+            totalItems={filtered.length}
+            itemsPerPage={10}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </CardContent>
     </Card>
   );

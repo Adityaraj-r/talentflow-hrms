@@ -117,7 +117,7 @@ const TaskAnalytics = () => {
               {isCountryManager ? "Region-scoped view" : "Organisation-wide view"}
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm: text-2xl">
             Task Analytics
           </h1>
           <p className="text-sm text-muted-foreground mt-1">

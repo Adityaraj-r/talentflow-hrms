@@ -2,10 +2,10 @@ import TransferRequestForm from "@/pages/modules/transfer/TransferRequestForm";
 
 const MakeTransferPage = () => {
   return (
-    <div className="p-1 md:p-0 space-y-2">
+    <div className="space-y-6 max-w-full pb-10">
       <div>
-        <h1 className="text-3xl  font-bold dark:text-white">Make Transfer Request</h1>
-        <p className="text-m  pt-1 text-muted-foreground">Submit your request for department or location change.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Make Transfer Request</h1>
+        <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">Submit your request for department or location change.</p>
       </div>
       <TransferRequestForm />
     </div>

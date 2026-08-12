@@ -107,8 +107,8 @@ const EmployeeProfileView = () => {
   const visibleTabs = isHR ? TABS : ["Overview"]
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-gray-950 p-6">
+      <div className="max-w-4xl mx-auto space-y-6 pb-10">
 
         <button
           onClick={() => navigate("/employee-center/all-employees")}
@@ -118,10 +118,10 @@ const EmployeeProfileView = () => {
         </button>
 
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Employee Profile</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Employee Profile</h1>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 shadow-sm">
+        <div className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
             <div className="flex items-center gap-5">
               <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center text-3xl font-black text-primary border-2 border-primary/20 flex-shrink-0">
@@ -193,7 +193,7 @@ const EmployeeProfileView = () => {
 
         {activeTab === "Overview" && (
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
+          <div className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
               <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
                   Personal Information
@@ -207,7 +207,7 @@ const EmployeeProfileView = () => {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
+          <div className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
               <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
                   Work Information
@@ -363,7 +363,7 @@ const SalaryTab = ({ userId, employeeName }) => {
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-5">
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
+          <div className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-green-600" />
               <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
@@ -379,7 +379,7 @@ const SalaryTab = ({ userId, employeeName }) => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm">
+          <div className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
               <TrendingDown className="h-4 w-4 text-red-500" />
               <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
@@ -406,7 +406,7 @@ const SalaryTab = ({ userId, employeeName }) => {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm sticky top-6">
+          <div className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 sticky top-6">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-blue-600" />
               <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">

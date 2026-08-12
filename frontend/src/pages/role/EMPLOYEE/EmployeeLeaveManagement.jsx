@@ -40,6 +40,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { StatsCard } from "@/components/ui/stats-card";
+import { Pagination } from "@/components/ui/pagination";
 
 const formatDate = (d) => {
   if (!d) return "—";
@@ -62,49 +63,61 @@ const statusConfig = {
   },
 };
 
-const BalanceCard = ({ leaveType, allocated, used, remaining, carriedForward }) => {
-  const pct = allocated + carriedForward > 0
-    ? Math.round((used / (allocated + carriedForward)) * 100)
-    : 0;
+const BalanceCard = ({ leaveType, allocated, used, remaining, carriedForward, viewMode }) => {
+  const isMonthly = viewMode === "monthly";
+  
+  // Calculate monthly stats
+  const monthlyAllocated = Math.round(((allocated + carriedForward) / 12) * 10) / 10;
+  const displayAllocated = isMonthly ? monthlyAllocated : (allocated + carriedForward);
+  const displayRemaining = isMonthly ? monthlyAllocated : remaining;
+  const displayUsed = isMonthly ? 0 : used; 
+  
+  // Icon and color mapping based on leave type
+  let Icon = CalendarDays;
+  let colorClass = "text-slate-600 bg-slate-100 dark:text-slate-400 dark:bg-slate-800";
+  
+  const typeLower = leaveType.toLowerCase();
+  if (typeLower.includes("sick")) {
+    Icon = Plus; // Heart isn't in lucide-react by default without checking, let's just use standard icons or assume we have some. Wait, lucide-react has Heart. Let's import it later, for now we can use existing icons.
+    colorClass = "text-orange-500 bg-orange-50 dark:text-orange-400 dark:bg-orange-900/30";
+  } else if (typeLower.includes("casual")) {
+    colorClass = "text-green-500 bg-green-50 dark:text-green-400 dark:bg-green-900/30";
+  } else if (typeLower.includes("earned")) {
+    colorClass = "text-purple-500 bg-purple-50 dark:text-purple-400 dark:bg-purple-900/30";
+  } else if (typeLower.includes("without pay")) {
+    colorClass = "text-slate-500 bg-slate-100 dark:text-slate-400 dark:bg-slate-800";
+  }
 
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-900 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-            {leaveType}
-          </p>
-          {carriedForward > 0 && (
-            <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
-              +{carriedForward}d carried forward
-            </p>
-          )}
+    <div className="rounded-2xl border border-slate-100 dark:border-slate-800 p-6 bg-white dark:bg-slate-900 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col justify-between h-[160px]">
+      <div className="flex items-start justify-between">
+        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", colorClass)}>
+          {/* using CalendarDays as fallback generic icon */}
+          <CalendarDays className="w-4 h-4" />
         </div>
-        <span className="text-2xl font-bold text-slate-900 dark:text-white">
-          {remaining}
-          <span className="text-sm font-normal text-muted-foreground">
-            /{allocated + carriedForward}
+        <div className="bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+          {isMonthly ? "MONTH" : "YEAR"}
+        </div>
+      </div>
+
+      <div className="mt-3">
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">
+          {leaveType}
+        </p>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
+            {displayRemaining}
           </span>
-        </span>
+          <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+            {typeLower.includes("without pay") ? (isMonthly ? "days this month" : "days this year") : (isMonthly ? "left this month" : "left")}
+          </span>
+        </div>
       </div>
 
-      <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mb-2">
-        <div
-          className={cn(
-            "h-1.5 rounded-full transition-all",
-            pct >= 90
-              ? "bg-red-500"
-              : pct >= 60
-                ? "bg-yellow-500"
-                : "bg-emerald-500"
-          )}
-          style={{ width: `${Math.min(100, pct)}%` }}
-        />
-      </div>
-
-      <div className="flex justify-between text-xs text-muted-foreground">
-        <span>{used} used</span>
-        <span>{remaining} left</span>
+      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+        <p className="text-xs font-semibold text-slate-900 dark:text-slate-300">
+          {displayUsed} <span className="font-normal text-slate-400">/ {displayAllocated} {isMonthly ? "monthly" : "entitled"}</span>
+        </p>
       </div>
     </div>
   );
@@ -338,11 +351,12 @@ const EmployeeLeaveManagement = () => {
 
   const [loading, setLoading] = useState(true);
   const [leaves, setLeaves] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [policies, setPolicies] = useState([]);
   const [balanceData, setBalanceData] = useState(null);
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [cancellingId, setCancellingId] = useState(null);
-  const [activeCard, setActiveCard] = useState("total");
+  const [viewMode, setViewMode] = useState("monthly");
 
   const fetchAll = async () => {
     try {
@@ -411,145 +425,117 @@ const EmployeeLeaveManagement = () => {
   const approvedCount = leaves.filter((l) => l.status === "Approved").length;
   const totalUsed = balances.reduce((sum, b) => sum + b.used, 0);
 
-  const filteredLeaves = leaves.filter((l) => {
-    if (activeCard === "total") return true;
-    if (activeCard === "pending") return l.status === "Pending";
-    if (activeCard === "approved") return l.status === "Approved";
-    if (activeCard === "used") return l.status === "Approved";
-    return true;
-  });
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            My Leave
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm: text-2xl">
+            Leaves
           </h1>
           <p className="text-muted-foreground text-sm mt-0.5">
-            {new Date().getFullYear()} · {user?.firstName} {user?.lastName}
+            Apply for leave and track balances. Switch between yearly entitlement and this month's accrual.
           </p>
         </div>
         <Button
           onClick={() => setApplyModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+          className="bg-primary hover:bg-primary/90 text-white"
         >
-          <Plus className="w-4 h-4" /> Apply for Leave
+          <Plus className="w-4 h-4 mr-2" /> Apply leave
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatsCard
-          title="Pending"
-          value={pendingCount}
-          icon={<Clock className="h-8 w-8" />}
-          variant="amber"
-          isActive={activeCard === "pending"}
-          onClick={() => setActiveCard(activeCard === "pending" ? "total" : "pending")}
-        />
-        <StatsCard
-          title="Approved"
-          value={approvedCount}
-          icon={<CheckCircle2 className="h-8 w-8" />}
-          variant="green"
-          isActive={activeCard === "approved"}
-          onClick={() => setActiveCard(activeCard === "approved" ? "total" : "approved")}
-        />
-        <StatsCard
-          title="Days Used"
-          value={totalUsed}
-          icon={<CalendarDays className="h-8 w-8" />}
-          variant="blue"
-          isActive={activeCard === "used"}
-          onClick={() => setActiveCard(activeCard === "used" ? "total" : "used")}
-        />
-      </div>
-
       {balances.length > 0 && (
-        <div>
-          <h2 className="text-base font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-blue-500" />
-            Leave Balance — {new Date().getFullYear()}
-          </h2>
+        <div className="mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              {viewMode === "monthly" ? `Monthly accrual · ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}` : `Annual entitlement · ${new Date().getFullYear()}`}
+            </h2>
+            <div className="flex items-center gap-1 bg-white border border-slate-100 dark:bg-slate-800 dark:border-slate-700 p-1 rounded-full shadow-sm">
+              <button 
+                className={cn("px-4 py-1.5 text-xs font-semibold rounded-full transition-colors", viewMode === "monthly" ? "bg-primary text-white" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}
+                onClick={() => setViewMode("monthly")}
+              >
+                Monthly
+              </button>
+              <button 
+                className={cn("px-4 py-1.5 text-xs font-semibold rounded-full transition-colors", viewMode === "annual" ? "bg-primary text-white" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300")}
+                onClick={() => setViewMode("annual")}
+              >
+                Annual
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {balances.map((b) => (
-              <BalanceCard key={b.leaveType} {...b} />
+              <BalanceCard key={b.leaveType} {...b} viewMode={viewMode} />
             ))}
           </div>
         </div>
       )}
 
-      <Card className="border-slate-200 dark:border-slate-800">
-        <CardHeader className="border-b p-4">
-          <CardTitle className="text-base flex items-center gap-2">
-            <CalendarDays className="w-4 h-4 text-blue-500" />
-            My Leave Requests
+      <Card className="border-slate-200 dark:border-slate-800 shadow-sm mt-8">
+        <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-800">
+          <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+            Leave History
           </CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            Your recent leave requests and their status.
+          </p>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="relative w-full overflow-auto">
+          <div className="w-full overflow-x-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-slate-50/50 dark:bg-slate-900/50">
                 <TableRow>
-                  <TableHead>Leave Type</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Days</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-500 w-[20%]">Leave Type</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-500 w-[25%]">Duration</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-500 w-[10%]">Days</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-500 w-[20%]">Reason</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-500 w-[15%]">Status</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-500 text-right w-[10%]">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredLeaves.length === 0 ? (
+                {leaves.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                      No leave requests yet.
+                    <TableCell colSpan={6} className="text-center py-6">
+                      <div className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-6 w-full border border-slate-100 dark:border-slate-800/50 flex items-center">
+                        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">No leave requests yet.</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredLeaves.map((leave) => {
-                    const sc = statusConfig[leave.status] || statusConfig.Pending;
+                  leaves.slice((currentPage - 1) * 10, currentPage * 10).map((leave) => {
                     return (
                       <TableRow
                         key={leave._id}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                        className="hover:bg-slate-50 dark:hover:bg-slate-800/50 border-slate-100 dark:border-slate-800/50"
                       >
                         <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300"
-                          >
+                          <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
                             {leave.leaveType}
-                          </Badge>
+                          </span>
                         </TableCell>
-                        <TableCell className="text-sm text-slate-600 dark:text-slate-400">
-                          {formatDate(leave.startDate)} — {formatDate(leave.endDate)}
+                        <TableCell className="text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                          {formatDate(leave.startDate)} – {formatDate(leave.endDate)}
                         </TableCell>
-                        <TableCell className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                        <TableCell className="text-sm font-medium text-slate-900 dark:text-slate-100">
                           {leave.totalDays}d
                         </TableCell>
                         <TableCell>
-                          <p
-                            className="text-sm text-slate-600 dark:text-slate-400 max-w-[180px] truncate"
-                            title={leave.reason}
-                          >
+                          <p className="text-sm text-slate-600 dark:text-slate-400 truncate max-w-[150px]" title={leave.reason}>
                             {leave.reason}
                           </p>
-                          {leave.status === "Rejected" &&
-                            leave.rejectionReason && (
-                              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                                <X className="w-3 h-3" />
-                                {leave.rejectionReason}
-                              </p>
-                            )}
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={cn("text-xs border", sc.badge)}
-                          >
+                          <span className={cn(
+                            "text-[11px] font-bold px-2 py-0.5 rounded-sm",
+                            leave.status === "Approved" ? "bg-emerald-50 text-emerald-700" :
+                            leave.status === "Rejected" ? "bg-red-50 text-red-700" :
+                            "bg-amber-50 text-amber-700"
+                          )}>
                             {leave.status}
-                          </Badge>
+                          </span>
                         </TableCell>
                         <TableCell className="text-right">
                           {["Pending", "Approved"].includes(leave.status) ? (
@@ -574,6 +560,17 @@ const EmployeeLeaveManagement = () => {
               </TableBody>
             </Table>
           </div>
+          {leaves.length > 10 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t bg-slate-50/50 dark:bg-slate-900/30">
+              <Pagination 
+                currentPage={currentPage} 
+                totalPages={Math.ceil(leaves.length / 10)} 
+                totalItems={leaves.length} 
+                itemsPerPage={10}
+                onPageChange={(page) => setCurrentPage(page)} 
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

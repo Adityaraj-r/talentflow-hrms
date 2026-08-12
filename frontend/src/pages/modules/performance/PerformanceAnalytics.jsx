@@ -20,8 +20,11 @@ import {
   BarChart3,
   ClipboardList,
   Layers,
+  Clock,
+  AlertTriangle,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Pagination } from "@/components/ui/pagination";
 import apiClient from "@/services/apiClient";
 import SkeletonCard from "@/components/reports/SkeletonCard";
 import { performanceApi } from "@/services/performanceApi";
@@ -58,6 +61,8 @@ const PerformanceAnalytics = () => {
   });
   const [dashboard, setDashboard] = useState(null);
   const [ratingTrend, setRatingTrend] = useState([]);
+  const [pageCycleRows, setPageCycleRows] = useState(1);
+  const [pageTopPerformers, setPageTopPerformers] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -168,9 +173,9 @@ const PerformanceAnalytics = () => {
     );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-y border-r border-slate-200 dark:border-slate-800 border-l-4 border-l-blue-500 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardContent className="p-6">
             <div className="mb-2 flex items-center gap-2">
               <Users className="h-5 w-5 text-blue-500" />
@@ -186,7 +191,7 @@ const PerformanceAnalytics = () => {
             </p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-y border-r border-slate-200 dark:border-slate-800 border-l-4 border-l-green-500 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardContent className="p-6">
             <div className="mb-2 flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-green-500" />
@@ -202,7 +207,7 @@ const PerformanceAnalytics = () => {
             </p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-purple-500">
+        <Card className="border-y border-r border-slate-200 dark:border-slate-800 border-l-4 border-l-purple-500 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardContent className="p-6">
             <div className="mb-2 flex items-center gap-2">
               <Target className="h-5 w-5 text-purple-500" />
@@ -215,7 +220,7 @@ const PerformanceAnalytics = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-amber-500">
+        <Card className="border-y border-r border-slate-200 dark:border-slate-800 border-l-4 border-l-amber-500 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardContent className="p-6">
             <div className="mb-2 flex items-center gap-2">
               <ClipboardList className="h-5 w-5 text-amber-500" />
@@ -234,7 +239,7 @@ const PerformanceAnalytics = () => {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-violet-500" />
@@ -272,7 +277,7 @@ const PerformanceAnalytics = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-indigo-500" />
@@ -296,7 +301,7 @@ const PerformanceAnalytics = () => {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-emerald-500" />
@@ -314,7 +319,7 @@ const PerformanceAnalytics = () => {
               </div>
             ) : (
               <div className="space-y-5">
-                {cycleRows.map((row) => (
+                {cycleRows.slice((pageCycleRows - 1) * 10, pageCycleRows * 10).map((row) => (
                   <div key={row.cycleId} className="space-y-2">
                     <div className="flex flex-wrap justify-between gap-2 text-sm">
                       <span className="font-medium">{row.name}</span>
@@ -328,10 +333,19 @@ const PerformanceAnalytics = () => {
                 ))}
               </div>
             )}
+            {cycleRows.length > 0 && (
+              <Pagination
+                currentPage={pageCycleRows}
+                totalPages={Math.ceil(cycleRows.length / 10)}
+                totalItems={cycleRows.length}
+                itemsPerPage={10}
+                onPageChange={setPageCycleRows}
+              />
+            )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-orange-500" />
@@ -446,7 +460,7 @@ const PerformanceAnalytics = () => {
                     </td>
                   </tr>
                 ) : (
-                  topPerformers.map((performer, index) => (
+                  topPerformers.slice((pageTopPerformers - 1) * 10, pageTopPerformers * 10).map((performer, index) => (
                     <tr key={performer.reviewId || index} className="hover:bg-muted/50">
                       <td className="px-6 py-4">
                         <span className="font-bold">#{index + 1}</span>
@@ -475,6 +489,15 @@ const PerformanceAnalytics = () => {
                 )}
               </tbody>
             </table>
+            {topPerformers.length > 0 && (
+              <Pagination
+                currentPage={pageTopPerformers}
+                totalPages={Math.ceil(topPerformers.length / 10)}
+                totalItems={topPerformers.length}
+                itemsPerPage={10}
+                onPageChange={setPageTopPerformers}
+              />
+            )}
           </div>
         </CardContent>
       </Card>

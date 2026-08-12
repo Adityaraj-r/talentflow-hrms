@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Pagination } from "@/components/ui/pagination";
 
 const EmployeeOverview = () => {
   const [employeeData, setEmployeeData] = useState([]);
@@ -24,6 +25,8 @@ const EmployeeOverview = () => {
   const [sortBy, setSortBy] = useState("rating-desc");
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -84,6 +87,10 @@ const EmployeeOverview = () => {
       }
     });
 
+  const totalItems = filteredEmployees.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   const topPerformers = employeeData.filter(emp => (emp.avgRating || 0) >= 4.5).length;
   const needsImprovement = employeeData.filter(emp => (emp.avgRating || 0) < 3.0).length;
 
@@ -121,7 +128,7 @@ const EmployeeOverview = () => {
   if (loading) return <div className="p-8 text-center text-muted-foreground">Loading employees...</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="grid gap-5 md:grid-cols-3">
         <Card className="group relative border border-green-200/80 dark:border-green-500/30 bg-green-50/50 dark:bg-green-500/10 shadow-sm hover:shadow-lg hover:shadow-green-500/5 hover:-translate-y-1 hover:border-green-300 dark:hover:border-green-400/50 transition-all duration-300 ease-out overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-300 group-hover:scale-110">
@@ -170,7 +177,7 @@ const EmployeeOverview = () => {
         </Card>
       </div>
 
-      <Card className="border-border/50 shadow-sm rounded-xl overflow-hidden flex flex-col">
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden flex flex-col bg-white dark:bg-slate-900">
         <CardHeader className="bg-muted/20 border-b border-border/50 px-6 py-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -232,9 +239,6 @@ const EmployeeOverview = () => {
                   <SelectItem value="reviews-desc">Most Reviews</SelectItem>
                 </SelectContent>
               </Select>
-              <span className="text-sm font-medium text-muted-foreground ml-auto bg-muted/40 px-3 py-1 rounded-full">
-                {filteredEmployees.length} of {employeeData.length}
-              </span>
             </div>
           </div>
 
@@ -253,14 +257,14 @@ const EmployeeOverview = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredEmployees.length === 0 ? (
+                {paginatedEmployees.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-6 py-12 text-center text-muted-foreground bg-background">
                       No employees found matching the filters.
                     </td>
                   </tr>
                 ) : (
-                  filteredEmployees.map((employee) => (
+                  paginatedEmployees.map((employee) => (
                     <tr key={employee.id} className="group hover:bg-blue-600/5 dark:hover:bg-blue-500/10 transition-colors bg-background">
                       <td className="px-6 py-4 border-b border-border/50 align-middle">
                         <div className="font-semibold text-sm text-foreground">{employee.name}</div>
@@ -304,6 +308,17 @@ const EmployeeOverview = () => {
               </tbody>
             </table>
           </div>
+          {totalItems > 0 && (
+            <div className="p-4 border-t border-border/50">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>

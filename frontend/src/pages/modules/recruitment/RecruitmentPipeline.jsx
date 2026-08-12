@@ -329,7 +329,7 @@ const RecruitmentPipeline = () => {
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <RecruitmentPageHeader
         title="Recruitment Pipeline"
         actions={

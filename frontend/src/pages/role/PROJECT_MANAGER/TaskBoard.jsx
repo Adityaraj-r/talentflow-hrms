@@ -605,7 +605,7 @@ const TaskBoard = () => {
               {tasks.length} task{tasks.length !== 1 ? "s" : ""} across your team
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm: text-2xl">
             Task Board
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Manage tasks using Kanban board</p>

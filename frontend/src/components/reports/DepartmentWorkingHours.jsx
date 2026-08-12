@@ -19,7 +19,7 @@
 //           <p className="mt-3 text-sm text-gray-500">
 //             Total Working Hours
 //           </p>
-//           <p className="text-2xl font-bold">
+//           <p className="text-[17px] font-bold text-slate-900 dark:text-white">
 //             {item.totalHours} hrs
 //           </p>
 
@@ -75,7 +75,7 @@ export default function DepartmentWorkingHours({ data }) {
                   <p className="text-sm text-muted-foreground">
                     Total Working Hours
                   </p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-[17px] font-bold text-slate-900 dark:text-white">
                     <CountUp
                       end={item.totalHours }
                       duration={1.5}

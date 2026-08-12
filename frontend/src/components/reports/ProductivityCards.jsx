@@ -71,7 +71,7 @@ export default function ProductivityCards({
     <div className="space-y-4">
 
       <div>
-        <h2 className="text-2xl font-bold">
+        <h2 className="text-[17px] font-bold text-slate-900 dark:text-white">
           Department Productivity
         </h2>
 
@@ -106,7 +106,7 @@ export default function ProductivityCards({
                         }
                       </p>
 
-                      <h3 className="text-2xl font-bold tracking-tight text-foreground mt-1.5">
+                      <h3 className="text-xl font-bold tracking-tight text-foreground mt-1.5">
                         {
                           item.value
                         }

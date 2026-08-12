@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate, Navigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -12,6 +13,7 @@ import { ROLES } from "@/constants/roles"
 import { useAuth } from "@/contexts/AuthContext"
 import { cn } from "@/lib/utils"
 import { StatsCard } from "@/components/ui/stats-card"
+import { Pagination } from "@/components/ui/pagination"
 
 const AllEmployees = () => {
   const navigate = useNavigate()
@@ -129,13 +131,13 @@ const AllEmployees = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">
             {user?.role === 'DEPARTMENT_MANAGER' ? 'Department Directory' : 'All Employees'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
             {user?.role === 'DEPARTMENT_MANAGER' 
               ? 'View and browse employee profiles within your department.' 
               : 'View and browse all employee profiles in the system.'}
@@ -186,7 +188,7 @@ const AllEmployees = () => {
         />
       </div>
 
-      <Card>
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
         <div className="p-4 border-b flex flex-col md:flex-row gap-4 items-center justify-between bg-muted/20">
           <div className="flex flex-wrap gap-2 w-full md:w-auto">
             <div className="relative flex-1 md:w-80">
@@ -203,18 +205,35 @@ const AllEmployees = () => {
               onChange={v => setFilters(p => ({ ...p, role: v, page: 1 }))}
               options={[{value: 'all', label: 'All Roles'}, ...Object.entries(ROLES).map(([k, v]) => ({value: k, label: v}))]}
               placeholder="All Roles"
-              className="w-40"
+              className="w-32"
             />
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={exportToCSV} disabled={employees.length === 0 || isExporting}>
-              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-              {isExporting ? "Exporting..." : "Export CSV"}
-            </Button>
-            <Button variant="outline" size="sm" onClick={fetchEmployees} disabled={isLoading}>
-              <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
-              Sync Data
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={exportToCSV} disabled={employees.length === 0 || isExporting} className="h-9 w-9 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 shrink-0 text-slate-500">
+                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isExporting ? "Exporting..." : "Export CSV"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={fetchEmployees} disabled={isLoading} className="h-9 w-9 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 shrink-0 text-slate-500">
+                    <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Sync Data</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
 
@@ -311,32 +330,15 @@ const AllEmployees = () => {
             </TableBody>
           </Table>
           
-          <div className="p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground font-medium">
-            <span>
-              Displaying {employees.length > 0 ? ((pagination.currentPage - 1) * filters.limit) + 1 : 0} - {Math.min(pagination.currentPage * filters.limit, pagination.totalItems)} of {pagination.totalItems} records
-            </span>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8 text-xs"
-                disabled={pagination.currentPage <= 1 || isLoading} 
-                onClick={() => setFilters(p => ({ ...p, page: p.page - 1 }))}
-              >
-                Previous
-              </Button>
-              <span className="px-2">Page {pagination.currentPage} of {pagination.totalPages}</span>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8 text-xs"
-                disabled={pagination.currentPage >= pagination.totalPages || isLoading} 
-                onClick={() => setFilters(p => ({ ...p, page: p.page + 1 }))}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
+          {pagination.totalItems > 0 && (
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.totalItems}
+              itemsPerPage={filters.limit}
+              onPageChange={(page) => setFilters((p) => ({ ...p, page }))}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

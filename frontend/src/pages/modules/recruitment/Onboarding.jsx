@@ -440,10 +440,10 @@ const Onboarding = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 max-w-full pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Onboarding & KYC</h1>
-        <p className="text-muted-foreground">Complete employee master data creation.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Onboarding & KYC</h1>
+        <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">Complete employee master data creation.</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -455,7 +455,7 @@ const Onboarding = () => {
         </TabsList>
 
         <TabsContent value="personal">
-          <Card>
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5" /> Personal Information</CardTitle>
             </CardHeader>
@@ -588,7 +588,7 @@ const Onboarding = () => {
         </TabsContent>
 
         <TabsContent value="employment">
-          <Card>
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5" /> Official Details</CardTitle>
               <CardDescription>Enter official identification and structural details.</CardDescription>
@@ -714,7 +714,7 @@ const Onboarding = () => {
         </TabsContent>
 
         <TabsContent value="banking">
-          <Card>
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5" /> Bank & Statutory Details</CardTitle>
               <CardDescription>Enter bank account information and government ID details (KYC).</CardDescription>
@@ -849,7 +849,7 @@ const Onboarding = () => {
         </TabsContent>
 
         <TabsContent value="documents">
-          <Card>
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Document Upload</CardTitle>
               <CardDescription>Upload clear scans of original documents</CardDescription>

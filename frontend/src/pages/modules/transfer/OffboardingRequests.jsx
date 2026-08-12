@@ -9,11 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Textarea } from "@/components/ui/textarea"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Check, X, Loader2, Search, UserMinus, Eye, FileText, CheckCircle2, Clock, Undo2 } from "lucide-react"
 import { toast } from "sonner"
 import apiClient from "@/services/apiClient"
 import { cn } from "@/lib/utils"
 import InitiateSeparationModal from "@/components/modals/InitiateSeparationModal" 
+import { Pagination } from "@/components/ui/pagination"
 
 const OffboardingRequests = () => {
   const { user } = useAuth()
@@ -35,11 +38,13 @@ const OffboardingRequests = () => {
 
   const { data: response, isLoading } = useQuery({
     queryKey: ['offboarding', page, searchTerm],
-    queryFn: () => apiClient.get(`/offboarding/all?page=${page}&limit=100&search=${searchTerm}`),
+    queryFn: () => apiClient.get(`/offboarding/all?page=${page}&limit=10&search=${searchTerm}`),
     keepPreviousData: true
   })
 
   let requests = response?.data || []
+  const paginationInfo = response?.pagination || { total: 0, page: 1, totalPages: 1 }
+
   if (statusFilter !== 'ALL') {
       requests = requests.filter(req => req.status === statusFilter)
   }
@@ -115,7 +120,7 @@ const OffboardingRequests = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-sm border">
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 overflow-hidden">
         <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b">
           <div>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -154,40 +159,40 @@ const OffboardingRequests = () => {
               />
             </div>
             {canInitiatePathB && (
-              <Button variant="destructive" onClick={() => setInitiateModalOpen(true)}>
-                 Initiate Separation
-              </Button>
+              <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={() => setInitiateModalOpen(true)} className="h-9 w-9 shrink-0 border-red-200 bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+                    <UserMinus className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Initiate Separation</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             )}
           </div>
         </CardHeader>
         
         <CardContent className="p-0">
           <div className="rounded-md overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-muted/50 border-b">
-                <tr className="whitespace-nowrap">
-                  <th className="px-4 py-3 font-medium">Employee</th>
-                  <th className="px-4 py-3 font-medium text-center">Department</th>
-                  <th className="px-4 py-3 font-medium text-center">Type</th>
-                  <th className="px-4 py-3 font-medium">LWD (Proposed)</th>
-                  <th className="px-4 py-3 font-medium text-center">Status</th>
-                  <th className="px-4 py-3 font-medium text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="font-bold w-[25%]">Employee</TableHead>
+                  <TableHead className="font-bold text-center w-[15%]">Department</TableHead>
+                  <TableHead className="font-bold text-center w-[15%]">Type</TableHead>
+                  <TableHead className="font-bold w-[15%]">LWD (Proposed)</TableHead>
+                  <TableHead className="font-bold text-center w-[20%]">Status</TableHead>
+                  <TableHead className="font-bold text-center w-[10%]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-                      Loading pipeline...
-                    </td>
-                  </tr>
+                  <TableRow><TableCell colSpan={6} className="h-64 text-center"><div className="flex flex-col items-center justify-center text-muted-foreground space-y-2"><Loader2 className="h-8 w-8 animate-spin opacity-50" /><p className="text-sm font-medium">Loading pipeline...</p></div></TableCell></TableRow>
                 ) : requests.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                      Pipeline is empty. No active separations matching criteria.
-                    </td>
-                  </tr>
+                  <TableRow><TableCell colSpan={6} className="h-64 text-center"><div className="flex flex-col items-center justify-center text-muted-foreground space-y-2"><UserMinus className="h-10 w-10 opacity-20" /><p className="text-sm font-medium">Pipeline is empty. No active separations matching criteria.</p></div></TableCell></TableRow>
                 ) : (
                   requests.map((req) => {
                     const nextStatus = getNextStatus(req.status, userRole);
@@ -195,41 +200,41 @@ const OffboardingRequests = () => {
                     const canWithdraw = req.initiatedBy === currentUserId && req.status?.includes('Pending');
 
                     return (
-                      <tr key={req._id} className="hover:bg-muted/20 transition-colors">
-                        <td className="px-4 py-3">
+                      <TableRow key={req._id} className="hover:bg-muted/10 transition-colors">
+                        <TableCell>
                           <p className="font-semibold text-sm">{req.employeeName}</p>
                           <p className="text-xs text-muted-foreground">{req.employeeId}</p>
-                        </td>
-                        <td className="px-4 py-3 text-center">
+                        </TableCell>
+                        <TableCell className="text-center">
                           <p className="text-sm font-medium mx-auto">{req.department}</p>
                           <p className="text-xs text-muted-foreground truncate max-w-[150px] mx-auto">{req.designation}</p>
-                        </td>
-                        <td className="px-4 py-3 text-center">
+                        </TableCell>
+                        <TableCell className="text-center">
                           <span className={cn(
                             "px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase border shadow-sm whitespace-nowrap",
-                            req.type?.toLowerCase().includes("resignation") ? "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/40 dark:text-orange-400 dark:border-orange-800" :
-                            req.type?.toLowerCase().includes("termination") ? "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/40 dark:text-red-400 dark:border-red-800" :
-                            req.type?.toLowerCase().includes("absconding") ? "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/40 dark:text-purple-400 dark:border-purple-800" :
-                            "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/40 dark:text-blue-400 dark:border-blue-800"
+                            req.type?.toLowerCase().includes("resignation") ? "bg-orange-500/10 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800" :
+                            req.type?.toLowerCase().includes("termination") ? "bg-red-500/10 text-red-600 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800" :
+                            req.type?.toLowerCase().includes("absconding") ? "bg-purple-500/10 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800" :
+                            "bg-blue-500/10 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
                           )}>
                             {req.type}
                           </span>
-                        </td>
-                        <td className="px-4 py-3 font-medium whitespace-nowrap text-sm">
+                        </TableCell>
+                        <TableCell className="font-medium whitespace-nowrap text-sm">
                           {new Date(req.noticePeriod?.proposedExitDate || req.proposedExitDate || req.exitDate || req.createdAt).toLocaleDateString('en-GB')}
-                        </td>
+                        </TableCell>
                         
-                        <td className="px-4 py-3 text-center">
+                        <TableCell className="text-center">
                             <span className={cn(
                               "px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border whitespace-nowrap inline-flex items-center gap-1",
-                              req.status === 'Withdrawal Pending' ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400" :
-                              req.status === "Exited" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400" :
-                              req.status.includes("High Priority") ? "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/50 dark:text-red-300" :
-                              req.status.includes("Withdrawn") ? "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300" :
-                              req.status.includes("Rejected") ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400" :
-                              req.status?.includes("Pending") ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400" :
-                              req.status?.includes("Exit Clearance") ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400" :
-                              "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400"
+                              req.status === 'Withdrawal Pending' ? "bg-orange-500/10 text-orange-600 border-orange-200" :
+                              req.status === "Exited" ? "bg-green-500/10 text-green-600 border-green-200" :
+                              req.status.includes("High Priority") ? "bg-red-500/10 text-red-600 border-red-200" :
+                              req.status.includes("Withdrawn") ? "bg-slate-500/10 text-slate-600 border-slate-200" :
+                              req.status.includes("Rejected") ? "bg-red-500/10 text-red-600 border-red-200" :
+                              req.status?.includes("Pending") ? "bg-blue-500/10 text-blue-600 border-blue-200" :
+                              req.status?.includes("Exit Clearance") ? "bg-purple-500/10 text-purple-600 border-purple-200" :
+                              "bg-yellow-500/10 text-yellow-600 border-yellow-200"
                             )}>
                               {req.status === 'Withdrawal Pending' ? 'Withdrawal Pending' : (
                                 <>
@@ -238,14 +243,12 @@ const OffboardingRequests = () => {
                                 </>
                               )}
                             </span>
-                        </td>
+                        </TableCell>
                         
-                        <td className="px-4 py-3">
+                        <TableCell>
                           <div className="flex items-center justify-center gap-2">
                              <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="h-7 text-[11px]"
+                              variant="outline" size="sm" className="h-8 text-[11px] font-medium bg-white hover:bg-slate-50 border-slate-200"
                               onClick={() => openDetailsModal(req)}
                             >
                               <Eye className="h-3.5 w-3.5 mr-1" /> View Details
@@ -263,14 +266,25 @@ const OffboardingRequests = () => {
                                 </Button>
                             )}
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     )
                   })
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
+          {paginationInfo.totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t bg-slate-50/50 dark:bg-slate-900/30">
+              <Pagination 
+                currentPage={paginationInfo.page} 
+                totalPages={paginationInfo.totalPages} 
+                totalItems={paginationInfo.total} 
+                itemsPerPage={10}
+                onPageChange={(p) => setPage(p)} 
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

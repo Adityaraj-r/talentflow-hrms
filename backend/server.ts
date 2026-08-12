@@ -52,6 +52,7 @@ import notificationRoutes from './routes/notification.routes';
 import offerRoutes from './routes/offer.routes';
 import disciplinaryRoutes from './routes/disciplinary.routes';
 import referralRoutes from './routes/referral.routes';
+import meetingRoutes from './routes/meeting.routes';
 import User from './models/User.model';
 import { initCronJobs } from './scripts/cronJobs';
 import dns from 'dns'
@@ -140,7 +141,8 @@ app.get('/api', (req, res) => {
       employees: '/api/employees',
       attendance: '/api/attendance',
       leaves: '/api/leaves',
-      performance: '/api/performance'
+      performance: '/api/performance',
+      meetings: '/api/meetings'
     }
   });
 });
@@ -148,6 +150,7 @@ app.get('/api', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/employees', employeeRoutes);
+app.use('/api/meetings', meetingRoutes);
 
 app.use('/api/admin', adminRoutes);
 app.use('/api/audit', auditRoutes);

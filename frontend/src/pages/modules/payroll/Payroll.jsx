@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Pagination } from "@/components/ui/pagination"
 import { toast } from "sonner";
 import * as payrollService from "@/services/payrollService";
 import apiClient from "@/services/apiClient";
@@ -77,6 +78,9 @@ const PayrollProcessing = () => {
   const [skipLockCheck, setSkipLockCheck] = useState(false)
   const [auditLogs, setAuditLogs] = useState([])
   const [auditLoading, setAuditLoading] = useState(false)
+  const [pagePending, setPagePending] = useState(1)
+  const [pageRecords, setPageRecords] = useState(1)
+  const [pageAudit, setPageAudit] = useState(1)
   const [compliance, setCompliance] = useState(null)
   const [complianceLoading, setComplianceLoading] = useState(false)
   const [selectedPending, setSelectedPending] = useState(new Set())
@@ -466,12 +470,11 @@ const PayrollProcessing = () => {
       : employees
 
   return (
-    <div className="space-y-6">
-
+    <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Payroll</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Payroll</h1>
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
             {isTeamPayrollViewer(userRole)
               ? "Team payroll visibility (department / reporting scope)."
               : "Manage and process monthly employee payroll."}
@@ -603,7 +606,7 @@ const PayrollProcessing = () => {
 
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <Card>
+              <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
                 <CardHeader>
                   <CardTitle>Single Employee Payroll</CardTitle>
                   <CardDescription>Process payroll for one employee with custom adjustments.</CardDescription>
@@ -747,7 +750,7 @@ const PayrollProcessing = () => {
             </div>
 
             <div className="lg:col-span-1">
-              <Card className="bg-slate-50 dark:bg-slate-900 border-dashed h-full">
+              <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-slate-50 dark:bg-slate-900 h-full">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Calculator className="w-5 h-5" /> Preview
@@ -840,7 +843,7 @@ const PayrollProcessing = () => {
       )}
 
       {activeTab === "pending" && (
-        <Card>
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Pending Payroll</CardTitle>
@@ -907,7 +910,7 @@ const PayrollProcessing = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pending.map(emp => (
+                  {pending.slice((pagePending - 1) * 10, pagePending * 10).map(emp => (
                     <TableRow key={emp._id} className="hover:bg-primary/5 transition-colors duration-200 cursor-pointer group">
                       {canProcessPayroll(userRole) && (
                         <TableCell>
@@ -949,6 +952,15 @@ const PayrollProcessing = () => {
                 </TableBody>
               </Table>
             )}
+            {pending.length > 0 && (
+              <Pagination
+                currentPage={pagePending}
+                totalPages={Math.ceil(pending.length / 10)}
+                totalItems={pending.length}
+                itemsPerPage={10}
+                onPageChange={setPagePending}
+              />
+            )}
           </CardContent>
         </Card>
       )}
@@ -966,14 +978,14 @@ const PayrollProcessing = () => {
           </div>
 
           {records.length === 0 ? (
-            <Card>
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
               <CardContent className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                 <UserX className="h-10 w-10 mx-auto mb-3 opacity-20" />
                 <p>No payroll records for {month} {year}.</p>
               </CardContent>
             </Card>
           ) : (
-            records.map(record => (
+            records.slice((pageRecords - 1) * 10, pageRecords * 10).map(record => (
               <RecordCard
                 key={record._id}
                 record={record}
@@ -985,11 +997,20 @@ const PayrollProcessing = () => {
               />
             ))
           )}
+          {records.length > 0 && (
+            <Pagination
+              currentPage={pageRecords}
+              totalPages={Math.ceil(records.length / 10)}
+              totalItems={records.length}
+              itemsPerPage={10}
+              onPageChange={setPageRecords}
+            />
+          )}
         </div>
       )}
 
       {activeTab === "compliance" && canViewCompliance(userRole) && (
-        <Card>
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5" />
@@ -1024,7 +1045,7 @@ const PayrollProcessing = () => {
       )}
 
       {activeTab === "audit" && canViewPayrollAudit(userRole) && (
-        <Card>
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ClipboardList className="h-5 w-5" />
@@ -1054,7 +1075,7 @@ const PayrollProcessing = () => {
                         No audit entries yet.
                       </TableCell>
                     </TableRow>
-                  ) : auditLogs.map(row => (
+                  ) : auditLogs.slice((pageAudit - 1) * 10, pageAudit * 10).map(row => (
                     <TableRow key={row._id}>
                       <TableCell className="text-xs whitespace-nowrap">
                         {row.createdAt ? new Date(row.createdAt).toLocaleString() : "—"}
@@ -1066,6 +1087,15 @@ const PayrollProcessing = () => {
                   ))}
                 </TableBody>
               </Table>
+            )}
+            {auditLogs.length > 0 && (
+              <Pagination
+                currentPage={pageAudit}
+                totalPages={Math.ceil(auditLogs.length / 10)}
+                totalItems={auditLogs.length}
+                itemsPerPage={10}
+                onPageChange={setPageAudit}
+              />
             )}
           </CardContent>
         </Card>

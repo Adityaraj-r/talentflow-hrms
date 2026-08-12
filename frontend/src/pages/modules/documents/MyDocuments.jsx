@@ -58,12 +58,12 @@ const MyDocuments = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">My Documents</h1>
-        <p className="text-muted-foreground">Securely view and download your uploaded compliance records.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">My Documents</h1>
+        <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">Securely view and download your uploaded compliance records.</p>
       </div>
 
       {docs.length === 0 ? (
-        <Card className="border-dashed bg-muted/30">
+        <Card className="border border-dashed border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 bg-muted/30">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <FolderOpen className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
             <h3 className="text-lg font-semibold">No Documents Found</h3>
@@ -85,7 +85,7 @@ const MyDocuments = () => {
           <TabsContent value={activeTab} className="mt-0">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredDocs.map((doc) => (
-                <Card key={doc._id} className="flex flex-col overflow-hidden transition-all hover:shadow-md border-muted">
+                <Card key={doc._id} className="flex flex-col overflow-hidden transition-all border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900">
                   <CardHeader className="bg-muted/30 pb-4 border-b">
                     <div className="flex justify-between items-start">
                       <div className="p-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm border">

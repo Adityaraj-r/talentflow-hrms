@@ -75,7 +75,7 @@ const TimeSelect = ({ value, name, onChange }) => {
         <select
           value={ampm}
           onChange={(e) => updateTime(h12 || "09", m || "00", e.target.value)}
-          className="bg-transparent hover:bg-muted focus:bg-muted focus:outline-none appearance-none cursor-pointer text-center w-12 py-1 font-bold text-blue-600 dark:text-blue-400 rounded-sm transition-colors"
+          className="bg-transparent hover:bg-muted focus:bg-muted focus:outline-none appearance-none cursor-pointer text-center w-12 py-1 font-bold text-indigo-600 dark:text-indigo-400 rounded-sm transition-colors"
         >
           <option value="AM">AM</option>
           <option value="PM">PM</option>
@@ -223,17 +223,17 @@ const ShiftManagement = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Shift Management</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Shift Management</h1>
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
             Define working hours and late mark rules for your employees.
           </p>
         </div>
         <Button
           onClick={() => setIsAssignModalOpen(true)}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+          className="bg-slate-800 hover:bg-slate-900 dark:bg-white dark:hover:bg-slate-200 dark:text-slate-900 text-white shadow-sm"
         >
           <Users className="w-4 h-4 mr-2" /> Assign Shifts
         </Button>
@@ -241,10 +241,10 @@ const ShiftManagement = () => {
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">
-          <Card className="sticky top-6 border-slate-200 dark:border-slate-800">
+          <Card className="sticky top-6 border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Plus className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <Plus className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                 Add New Shift
               </CardTitle>
               <CardDescription>Create a new time slot for rostering.</CardDescription>
@@ -295,7 +295,7 @@ const ShiftManagement = () => {
                   <p className="text-xs text-muted-foreground">Grace period before marking 'Late'.</p>
                 </div>
 
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-2">
+                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white mt-2">
                   Create Shift
                 </Button>
               </form>
@@ -307,7 +307,7 @@ const ShiftManagement = () => {
           <div className="grid md:grid-cols-2 gap-4">
             {loading ? (
               [1, 2].map((i) => (
-                <Card key={i} className="border-slate-200 dark:border-slate-800">
+                <Card key={i} className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
                   <CardHeader className="space-y-2">
                     <Skeleton className="h-4 w-1/2" />
                     <Skeleton className="h-3 w-1/3" />
@@ -326,10 +326,10 @@ const ShiftManagement = () => {
                 editingId === shift._id ? (
                   <Card
                     key={shift._id}
-                    className="border-blue-300 dark:border-blue-700 shadow-sm bg-blue-50/30 dark:bg-blue-900/10"
+                    className="border-indigo-300 dark:border-indigo-700 shadow-sm bg-indigo-50/30 dark:bg-indigo-900/10"
                   >
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-semibold text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold text-indigo-700 dark:text-indigo-400 flex items-center gap-2">
                         <Pencil className="h-4 w-4" /> Editing Shift
                       </CardTitle>
                     </CardHeader>
@@ -366,7 +366,7 @@ const ShiftManagement = () => {
                       <div className="space-y-1.5">
                         <label className="text-xs font-medium text-muted-foreground flex items-center justify-between">
                           Grace Period (minutes)
-                          <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                          <span className="text-indigo-600 dark:text-indigo-400 font-semibold">
                             {editData.graceMinutes}m
                           </span>
                         </label>
@@ -378,7 +378,7 @@ const ShiftManagement = () => {
                           step="5"
                           value={editData.graceMinutes}
                           onChange={handleEditChange}
-                          className="w-full accent-blue-600"
+                          className="w-full accent-indigo-600"
                         />
                         <div className="flex justify-between text-xs text-muted-foreground">
                           <span>0m</span>
@@ -392,7 +392,7 @@ const ShiftManagement = () => {
                           size="sm"
                           onClick={() => handleEditSave(shift._id)}
                           disabled={editLoading}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs"
+                          className="flex-1 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white h-8 text-xs"
                         >
                           <Check className="h-3.5 w-3.5 mr-1" />
                           {editLoading ? "Saving..." : "Save"}
@@ -412,14 +412,14 @@ const ShiftManagement = () => {
                 ) : (
                   <Card
                     key={shift._id}
-                    className="border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
+                    className="border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group relative overflow-hidden rounded-[16px] bg-white dark:bg-slate-900"
                   >
                     <CardHeader className="flex flex-row items-start justify-between pb-2">
                       <div>
                         <CardTitle className="text-lg font-semibold flex items-center gap-2">
                           {shift.name}
                           {shift.isActive && (
-                            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 text-[10px] px-2 py-0">
+                            <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 text-[10px] px-2 py-0">
                               Active
                             </Badge>
                           )}
@@ -428,7 +428,7 @@ const ShiftManagement = () => {
                           {formatTime12Hour(shift.startTime)} - {formatTime12Hour(shift.endTime)}
                         </CardDescription>
                       </div>
-                      <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-full text-blue-600 dark:text-blue-400">
+                      <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-full text-indigo-600 dark:text-indigo-400">
                         <Clock className="h-5 w-5" />
                       </div>
                     </CardHeader>
@@ -451,7 +451,7 @@ const ShiftManagement = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditStart(shift)}
-                          className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 h-8"
+                          className="text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 h-8"
                         >
                           <Pencil className="h-4 w-4 mr-2" /> Edit
                         </Button>

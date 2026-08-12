@@ -136,7 +136,7 @@ export default function AppraisalCyclesPage() {
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Appraisal cycles</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Appraisal cycles</h1>
             <p className="text-muted-foreground">
               Payroll bonus settlement is tied to cycle status (draft → active → closed → processed).
             </p>

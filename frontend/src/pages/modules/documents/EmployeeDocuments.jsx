@@ -109,7 +109,7 @@ const EmployeeDocuments = () => {
   const renderDocumentGrid = (docsList) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {docsList.map((doc) => (
-        <Card key={doc._id} className="flex flex-col overflow-hidden transition-all hover:shadow-md border-muted">
+        <Card key={doc._id} className="flex flex-col overflow-hidden transition-all border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900">
           <CardHeader className="bg-muted/30 pb-4 border-b">
             <div className="flex justify-between items-start">
               <div className="p-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm border">
@@ -158,12 +158,12 @@ const EmployeeDocuments = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Employee Documents</h1>
-        <p className="text-muted-foreground">Search and view compliance and employment documents across all modules.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Employee Documents</h1>
+        <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">Search and view compliance and employment documents across all modules.</p>
       </div>
 
       {/* Search Section */}
-      <Card className="border border-muted relative z-30">
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 relative z-30">
         <CardContent className="pt-6">
           <div className="relative" ref={dropdownRef}>
             <div className="relative">

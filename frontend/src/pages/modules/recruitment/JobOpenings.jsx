@@ -17,6 +17,7 @@ import {
   RecruitmentPageHeader,
   RecruitmentStatusBadge,
 } from "@/components/recruitment/RecruitmentUI"
+import { Pagination } from "@/components/ui/pagination"
 
 const JobOpenings = () => {
   const { user } = useUser()
@@ -287,10 +288,10 @@ const JobOpenings = () => {
   }, [filteredJobs, currentPage, pageSize])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Job Openings</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Job Openings</h1>
         </div>
         {canWrite && (
           <Button onClick={() => navigate("/dashboard/jobs/create")}>
@@ -309,7 +310,7 @@ const JobOpenings = () => {
 
 
       {canWrite && showForm && (
-        <Card className="border-white/10 bg-card/80 shadow-lg">
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardContent className="p-6 space-y-6">
             <h2 className="text-xl font-bold tracking-tight text-foreground">
               {editingJobId ? "Edit Job Details" : "Create Job Opening"}
@@ -703,52 +704,14 @@ const JobOpenings = () => {
 
         {/* Pagination Footer */}
         {totalItems > 0 && (
-          <div className="px-6 py-4 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/30">
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Showing <span className="font-semibold text-slate-900 dark:text-slate-100">{((currentPage - 1) * pageSize) + 1}</span> to{" "}
-              <span className="font-semibold text-slate-900 dark:text-slate-100">{Math.min(currentPage * pageSize, totalItems)}</span> of{" "}
-              <span className="font-semibold text-slate-900 dark:text-slate-100">{totalItems}</span> job openings
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                className="h-8 px-2.5 text-xs border-slate-200 dark:border-slate-800 cursor-pointer"
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous
-              </Button>
-
-              <div className="flex items-center gap-1 mx-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                  <button
-                    key={pageNum}
-                    onClick={() => setCurrentPage(pageNum)}
-                    className={`h-8 w-8 text-xs font-semibold rounded-lg transition cursor-pointer ${
-                      currentPage === pageNum
-                        ? "bg-blue-600 text-white shadow-xs"
-                        : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                ))}
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                className="h-8 px-2.5 text-xs border-slate-200 dark:border-slate-800 cursor-pointer"
-              >
-                Next
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
+          <div className="px-6 py-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/30">
+            <Pagination 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+              totalItems={totalItems} 
+              itemsPerPage={pageSize}
+              onPageChange={(page) => setCurrentPage(page)} 
+            />
           </div>
         )}
         </CardContent>
@@ -882,3 +845,4 @@ const JobOpenings = () => {
 }
 
 export default JobOpenings
+

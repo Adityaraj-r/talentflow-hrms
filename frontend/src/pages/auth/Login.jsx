@@ -160,7 +160,7 @@ const Login = () => {
                 </div>
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow-lg">{companyName}</h1>
+                <h1 className="text-2xl font-bold text-white tracking-tight drop-shadow-lg">{companyName}</h1>
                 <p className="text-blue-50 dark:text-blue-300 text-sm font-medium">Enterprise HRMS Platform</p>
               </div>
             </div>
@@ -235,7 +235,7 @@ const Login = () => {
                   <Building2 className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  <h1 className="text-2xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent text-2xl tracking-tight">
                     {companyName}
                   </h1>
                   <p className="text-xs text-gray-600 dark:text-gray-400">Enterprise HRMS</p>

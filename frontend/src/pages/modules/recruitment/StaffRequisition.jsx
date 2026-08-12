@@ -22,6 +22,7 @@ import {
   RecruitmentPageHeader,
   RecruitmentStatusBadge,
 } from "@/components/recruitment/RecruitmentUI"
+import { Pagination } from "@/components/ui/pagination"
 
 const StaffRequisition = () => {
   const { user } = useUser()
@@ -56,10 +57,10 @@ const StaffRequisition = () => {
   }, [fetchStats])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Staff Requisitions</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Staff Requisitions</h1>
         </div>
       </div>
 
@@ -319,7 +320,7 @@ const RequisitionForm = ({ onSubmitted }) => {
   };
 
   return (
-    <Card className="rounded-[16px] border border-border shadow-sm bg-card overflow-hidden">
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
       <CardHeader className="pt-6 pb-4 border-b border-border/50 bg-muted/20">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
@@ -639,7 +640,7 @@ const PendingRequisitions = ({ onChanged, externalFilter }) => {
   }
 
   return (
-    <Card className="border-border/50 shadow-sm rounded-xl overflow-hidden">
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
       <CardHeader className="border-b border-border/50 bg-muted/10 pb-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -864,31 +865,13 @@ const PendingRequisitions = ({ onChanged, externalFilter }) => {
         {/* Professional Pagination Footer */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-border/50 bg-background/50 rounded-b-xl">
-            <div className="text-[13px] text-muted-foreground font-medium hidden sm:block">
-              Showing {filteredData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} records
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2 ml-auto">
-              <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3 rounded-lg text-[13px]" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}>
-                Previous
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages }).map((_, i) => {
-                  const p = i + 1;
-                  if (p === 1 || p === totalPages || Math.abs(currentPage - p) <= 1) {
-                    return (
-                      <Button key={p} variant={currentPage === p ? "default" : "ghost"} className={`h-8 w-8 p-0 rounded-lg text-[13px] font-medium ${currentPage !== p ? "hover:bg-muted" : ""}`} onClick={() => setCurrentPage(p)}>
-                        {p}
-                      </Button>
-                    )
-                  }
-                  if (p === 2 || p === totalPages - 1) return <span key={p} className="px-1 text-muted-foreground text-xs">...</span>
-                  return null
-                })}
-              </div>
-              <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3 rounded-lg text-[13px]" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}>
-                Next
-              </Button>
-            </div>
+            <Pagination 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+              totalItems={filteredData.length} 
+              itemsPerPage={itemsPerPage}
+              onPageChange={(page) => setCurrentPage(page)} 
+            />
           </div>
         )}
       </CardContent>
@@ -1072,7 +1055,7 @@ const RequisitionHistory = ({ externalFilter }) => {
   }
 
   return (
-    <Card className="border-border/50 shadow-sm rounded-xl overflow-hidden">
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
       <CardHeader className="border-b border-border/50 bg-muted/10 pb-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -1280,31 +1263,13 @@ const RequisitionHistory = ({ externalFilter }) => {
         {/* Professional Pagination Footer */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-border/50 bg-background/50 rounded-b-xl">
-            <div className="text-[13px] text-muted-foreground font-medium hidden sm:block">
-              Showing {filteredData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} records
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2 ml-auto">
-              <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3 rounded-lg text-[13px]" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}>
-                Previous
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages }).map((_, i) => {
-                  const p = i + 1;
-                  if (p === 1 || p === totalPages || Math.abs(currentPage - p) <= 1) {
-                    return (
-                      <Button key={p} variant={currentPage === p ? "default" : "ghost"} className={`h-8 w-8 p-0 rounded-lg text-[13px] font-medium ${currentPage !== p ? "hover:bg-muted" : ""}`} onClick={() => setCurrentPage(p)}>
-                        {p}
-                      </Button>
-                    )
-                  }
-                  if (p === 2 || p === totalPages - 1) return <span key={p} className="px-1 text-muted-foreground text-xs">...</span>
-                  return null
-                })}
-              </div>
-              <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3 rounded-lg text-[13px]" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}>
-                Next
-              </Button>
-            </div>
+            <Pagination 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+              totalItems={filteredData.length} 
+              itemsPerPage={itemsPerPage}
+              onPageChange={(page) => setCurrentPage(page)} 
+            />
           </div>
         )}
       </CardContent>

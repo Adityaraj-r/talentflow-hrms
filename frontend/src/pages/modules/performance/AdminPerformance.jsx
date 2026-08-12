@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, Plus, Calendar, Users, FileText, X, Loader2, Award,  Eye, Pencil, Trash2 } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination"
 import { toast } from "sonner";
 import EmployeeOverview from "@/pages/modules/employee-center/EmployeeOverview"
 import PerformanceAnalytics from "@/pages/modules/performance/PerformanceAnalytics"
@@ -40,6 +41,7 @@ const AdminPerformance = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("cycles");
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [performanceData, setPerformanceData] = useState({
     totalCycles: 0,
     activeCycles: 0,
@@ -249,13 +251,13 @@ const AdminPerformance = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 p-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="max-w-7xl mx-auto space-y-8">
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Performance Management</h1>
-            <p className="text-muted-foreground text-sm mt-1.5">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-2xl">Performance Management</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5">
               Track appraisal cycles, reviews, and employee performance metrics
             </p>
           </div>
@@ -347,7 +349,7 @@ const AdminPerformance = () => {
         </div>
 
         {activeTab === "cycles" ? (
-          <div className="bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden flex flex-col max-h-[600px]">
+          <div className="bg-white dark:bg-slate-900 rounded-[16px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col max-h-[600px]">
             <div className="p-5 border-b border-border/50 bg-muted/20 backdrop-blur-md">
               <h2 className="text-lg font-bold text-foreground">Appraisal Cycles</h2>
               <p className="text-muted-foreground text-sm mt-1">Manage performance review periods</p>
@@ -389,7 +391,7 @@ const AdminPerformance = () => {
                       </td>
                     </tr>
                   ) : (
-                    performanceData.cycles.map((cycle) => (
+                    performanceData.cycles.slice((currentPage - 1) * 10, currentPage * 10).map((cycle) => (
                       <tr key={cycle._id} className="group hover:bg-blue-600/5 dark:hover:bg-blue-500/10 transition-colors bg-background">
                         <td className="px-6 py-4 border-b border-border/50 align-middle">
                           <span className="font-semibold text-sm text-foreground">{cycle.name}</span>
@@ -444,6 +446,15 @@ const AdminPerformance = () => {
                   )}
                 </tbody>
               </table>
+              {performanceData.cycles.length > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(performanceData.cycles.length / 10)}
+                  totalItems={performanceData.cycles.length}
+                  itemsPerPage={10}
+                  onPageChange={setCurrentPage}
+                />
+              )}
             </div>
           </div>
         ) : activeTab === "analytics" ? (

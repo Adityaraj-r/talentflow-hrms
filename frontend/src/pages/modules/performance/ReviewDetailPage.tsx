@@ -640,7 +640,7 @@ const loadGoals = useCallback(async () => {
     String(review.status || "").toLowerCase().includes("feedback");
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6">
+    <div className="space-y-6 max-w-full pb-10">
       <div className="mx-auto max-w-4xl space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-4">
@@ -661,7 +661,7 @@ const loadGoals = useCallback(async () => {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-2xl">
                 {empName}
               </h1>
               <p className="text-sm text-muted-foreground">
@@ -705,7 +705,7 @@ const loadGoals = useCallback(async () => {
           </Card>
         ) : null}
 
-        <Card>
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader>
             <CardTitle>Pipeline stages</CardTitle>
             <CardDescription>
@@ -720,7 +720,7 @@ const loadGoals = useCallback(async () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader className="flex flex-row items-center gap-2">
             <Target className="h-5 w-5 text-primary" />
             <CardTitle className="text-base">Goals</CardTitle>
@@ -797,7 +797,7 @@ const loadGoals = useCallback(async () => {
         </Card>
 
         {(review.selfRating != null || review.selfComments) && (
-          <Card>
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader>
               <CardTitle className="text-base">Self-assessment</CardTitle>
               <CardDescription>Submitted by employee</CardDescription>
@@ -819,7 +819,7 @@ const loadGoals = useCallback(async () => {
         )}
 
         <div className="grid gap-4 md:grid-cols-2">
-          <Card>
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Employee</CardTitle>
             </CardHeader>
@@ -832,7 +832,7 @@ const loadGoals = useCallback(async () => {
               ) : null}
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Reviewer (manager)</CardTitle>
             </CardHeader>
@@ -846,7 +846,7 @@ const loadGoals = useCallback(async () => {
           </Card>
         </div>
 
-        <Card>
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader>
             <CardTitle className="text-base">Overall rating</CardTitle>
           </CardHeader>
@@ -870,7 +870,7 @@ const loadGoals = useCallback(async () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader>
             <CardTitle className="text-base">Competencies (manager)</CardTitle>
           </CardHeader>
@@ -910,7 +910,7 @@ const loadGoals = useCallback(async () => {
         </Card>
 
         {review.managerComments ? (
-          <Card>
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Manager comments</CardTitle>
             </CardHeader>
@@ -921,7 +921,7 @@ const loadGoals = useCallback(async () => {
         ) : null}
 
         {review.adminFeedback ? (
-          <Card>
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">HR feedback</CardTitle>
               <CardDescription>
@@ -937,7 +937,7 @@ const loadGoals = useCallback(async () => {
         ) : null}
 
         {review.ceoComments ? (
-          <Card>
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">CEO comments</CardTitle>
               {review.ceoReviewedAt ? (
@@ -953,7 +953,7 @@ const loadGoals = useCallback(async () => {
         ) : null}
 
         {review.calibrationNotes ? (
-          <Card>
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Calibration</CardTitle>
               {review.calibratedAt ? (
@@ -969,7 +969,7 @@ const loadGoals = useCallback(async () => {
         ) : null}
 
         <div className="grid gap-4 md:grid-cols-2">
-          <Card>
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Strengths</CardTitle>
             </CardHeader>
@@ -977,7 +977,7 @@ const loadGoals = useCallback(async () => {
               {String(review.strengths || "—")}
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Areas for improvement</CardTitle>
             </CardHeader>

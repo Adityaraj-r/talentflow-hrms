@@ -7,6 +7,7 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { Link, useLocation } from "react-router-dom";
 import { ArrowLeft, BriefcaseBusiness, RefreshCw, Send, CheckCircle2, XCircle, BadgeCheck, Pencil, Search, ChevronDown, Clock3, AlertTriangle, CircleDollarSign, Eye, UserCheck, FileText, Download, UserPlus, Archive, ShieldCheck, ExternalLink } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RecruitmentKpiCard } from "@/components/recruitment/RecruitmentUI";
@@ -283,7 +284,7 @@ const OfferOperations = () => {
   return (
     <div className="min-h-screen bg-background text-foreground p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Offer Operations</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-foreground text-2xl">Offer Operations</h1>
         <div className="flex flex-wrap items-center gap-2">
           <Link to="/dashboard/offer-management">
             <Button variant="outline" className="h-9"><ArrowLeft className="mr-2 h-4 w-4" />Classic Offers</Button>
@@ -398,32 +399,13 @@ const OfferOperations = () => {
 
                 {/* PAGINATION FOOTER */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-border bg-card/50 text-xs text-muted-foreground">
-                  <div>
-                    Showing {filteredOffers.length === 0 ? 0 : (page - 1) * ITEMS_PER_PAGE + 1} to {Math.min(page * ITEMS_PER_PAGE, filteredOffers.length)} of {filteredOffers.length} entries
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page <= 1}
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      className="h-8 px-3 text-xs cursor-pointer"
-                    >
-                      Previous
-                    </Button>
-                    <span className="font-semibold text-foreground px-1">
-                      Page {page} of {totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page >= totalPages}
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                      className="h-8 px-3 text-xs cursor-pointer"
-                    >
-                      Next
-                    </Button>
-                  </div>
+                  <Pagination 
+                    currentPage={page} 
+                    totalPages={totalPages} 
+                    totalItems={filteredOffers.length} 
+                    itemsPerPage={ITEMS_PER_PAGE}
+                    onPageChange={(p) => setPage(p)} 
+                  />
                 </div>
               </div>
             </>

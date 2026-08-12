@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Pagination } from "@/components/ui/pagination"
 import { toast } from "sonner"
 import { useAuth } from "@/contexts/AuthContext"
 import * as payrollService from "@/services/payrollService"
 import apiClient from "@/services/apiClient"
 
-const MONTHS = ["January","February","March","April","May","June",
-                "July","August","September","October","November","December"]
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
 const STATUS_COLORS = {
   Generated:     "bg-blue-100 text-blue-700",
@@ -42,7 +42,7 @@ const SalarySlip = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Salary Slips</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-2xl">Salary Slips</h1>
         <p className="text-muted-foreground">
           {isStaff ? "View and download employee salary slips." : "View and download your monthly salary slips."}
         </p>
@@ -55,8 +55,9 @@ const SalarySlip = () => {
 const HRSlipView = () => {
   const [employees, setEmployees]   = useState([])
   const [selectedUser, setSelectedUser] = useState("")
-  const [month, setMonth]           = useState(MONTHS[new Date().getMonth()])
-  const [year, setYear]             = useState(new Date().getFullYear())
+  const [month, setMonth] = useState(MONTHS[new Date().getMonth()])
+  const [year, setYear] = useState(String(new Date().getFullYear()))
+  const [currentPage, setCurrentPage] = useState(1)
   const [slip, setSlip]             = useState(null)
   const [payrollId, setPayrollId]   = useState(null)
   const [loading, setLoading]       = useState(false)
@@ -130,8 +131,8 @@ const HRSlipView = () => {
   const selectedEmp = employees.find(e => String(e._id) === String(selectedUser))
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-6 max-w-full pb-10">
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader>
           <CardTitle>Find Salary Slip</CardTitle>
           <CardDescription>Select employee and period to view their payslip.</CardDescription>
@@ -277,14 +278,14 @@ const EmployeeSlipView = ({ userId }) => {
   }
 
   if (loading) return (
-    <Card><CardContent className="flex justify-center py-12">
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900"><CardContent className="flex justify-center py-12">
       <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
     </CardContent></Card>
   )
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader>
           <CardTitle>My Salary Slips</CardTitle>
           <CardDescription>Slips appear after payroll has been paid or locked.</CardDescription>
@@ -306,7 +307,7 @@ const EmployeeSlipView = ({ userId }) => {
                     No salary slips found yet.
                   </TableCell>
                 </TableRow>
-              ) : records.map(r => (
+              ) : records.slice((currentPage - 1) * 10, currentPage * 10).map(r => (
                 <TableRow key={String(r.payrollId)}>
                   <TableCell className="font-medium">{r.month} {r.year}</TableCell>
                   <TableCell className="font-bold text-green-600">
@@ -346,6 +347,15 @@ const EmployeeSlipView = ({ userId }) => {
               ))}
             </TableBody>
           </Table>
+          {records.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(records.length / 10)}
+              totalItems={records.length}
+              itemsPerPage={10}
+              onPageChange={setCurrentPage}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -406,7 +416,7 @@ const SlipCard = ({ slip, employeeName, onDownload, downloading }) => {
   const dedMeta = slipDeductionRows(slip)
 
   return (
-    <Card className="border-2 border-blue-100">
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
       <CardHeader className="bg-blue-50 dark:bg-blue-950 rounded-t-lg">
         <div className="flex justify-between items-start">
           <div>
