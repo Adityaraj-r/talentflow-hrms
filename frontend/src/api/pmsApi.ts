@@ -31,7 +31,11 @@ export type NotificationType =
   | "team_appraisals_complete"
   | "task_assigned"
   | "task_in_progress"
-  | "task_completed";
+  | "task_completed"
+  | "disciplinary_case_created"
+  | "disciplinary_review_requested"
+  | "disciplinary_case_in_progress"
+  | "disciplinary_case_completed";
 
 export interface NotificationItem {
   _id: string;

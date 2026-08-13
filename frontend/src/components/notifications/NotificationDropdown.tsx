@@ -36,6 +36,11 @@ function iconForType(type: NotificationType) {
     case "leave_approved":
     case "leave_rejected":
       return ClipboardList;
+    case "disciplinary_case_created":
+    case "disciplinary_review_requested":
+    case "disciplinary_case_in_progress":
+    case "disciplinary_case_completed":
+      return ClipboardList;
     default:
       return ClipboardList;
   }
@@ -90,6 +95,11 @@ function routeForNotification(
     case "leave_approved":
     case "leave_rejected":
       return "/time-attendance";
+    case "disciplinary_case_created":
+    case "disciplinary_review_requested":
+    case "disciplinary_case_in_progress":
+    case "disciplinary_case_completed":
+      return "/disciplinary";
     default:
       return "/dashboard";
   }

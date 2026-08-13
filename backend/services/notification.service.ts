@@ -576,3 +576,63 @@ export async function notifyLeaveRejected(
     isDeleted: false,
   });
 }
+export async function notifyDisciplinaryCaseCreated(
+  userId: mongoose.Types.ObjectId | string,
+  caseId: string,
+  employeeName: string,
+  category: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(userId)),
+    type: NotificationType.DISCIPLINARY_CASE_CREATED,
+    title: "New disciplinary case",
+    body: `A new disciplinary case (${caseId}) has been created for ${employeeName}. Category: ${category}.`,
+    metadata: { caseId },
+    isDeleted: false,
+  });
+}
+
+export async function notifyDisciplinaryReviewRequested(
+  userId: mongoose.Types.ObjectId | string,
+  caseId: string,
+  employeeName: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(userId)),
+    type: NotificationType.DISCIPLINARY_REVIEW_REQUESTED,
+    title: "Disciplinary review requested",
+    body: `A disciplinary case (${caseId}) requires your review for ${employeeName}.`,
+    metadata: { caseId },
+    isDeleted: false,
+  });
+}
+
+export async function notifyDisciplinaryCaseInProgress(
+  userId: mongoose.Types.ObjectId | string,
+  caseId: string,
+  employeeName: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(userId)),
+    type: NotificationType.DISCIPLINARY_CASE_IN_PROGRESS,
+    title: "Disciplinary case in progress",
+    body: `The disciplinary case (${caseId}) for ${employeeName} is now in progress.`,
+    metadata: { caseId },
+    isDeleted: false,
+  });
+}
+
+export async function notifyDisciplinaryCaseCompleted(
+  userId: mongoose.Types.ObjectId | string,
+  caseId: string,
+  employeeName: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(userId)),
+    type: NotificationType.DISCIPLINARY_CASE_COMPLETED,
+    title: "Disciplinary case completed",
+    body: `The disciplinary case (${caseId}) for ${employeeName} has been completed.`,
+    metadata: { caseId },
+    isDeleted: false,
+  });
+}

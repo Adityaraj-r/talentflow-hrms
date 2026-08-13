@@ -5,6 +5,12 @@ import Employee from "../models/Employee.model";
 import User from "../models/User.model";
 import fs from "fs";
 import path from "path";
+import {
+  notifyDisciplinaryCaseCreated,
+  notifyDisciplinaryReviewRequested,
+  notifyDisciplinaryCaseInProgress,
+  notifyDisciplinaryCaseCompleted,
+} from "../services/notification.service";
 
 const STATUSES: DisciplinaryStatus[] = ["Pending Review", "In Progress", "Completed"];
 const HR_ROLES = ["ADMIN", "SUPER_ADMIN", "HR_MANAGER", "HR_OFFICER"];
@@ -242,7 +248,40 @@ export const createDisciplinaryCase = async (req: Request, res: Response) => {
       createdBy: user.id as any,
       updatedBy: user.id as any,
     });
+    // Notify all active HR users about the new disciplinary case
+    try {
+      const hrUsers = await User.find({
+        role: {
+          $in: ["ADMIN", "SUPER_ADMIN", "HR_MANAGER", "HR_OFFICER"],
+        },
+        isActive: true,
+        isDeleted: false,
+      }).select("_id");
 
+      const employeeName = [
+        targetEmployee.firstName,
+        targetEmployee.MiddleName,
+        targetEmployee.lastName,
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+      await Promise.all(
+        hrUsers.map((hrUser) =>
+          notifyDisciplinaryCaseCreated(
+            hrUser._id,
+            disciplinaryCase.caseId,
+            employeeName,
+            disciplinaryCase.category
+          )
+        )
+      );
+    } catch (notificationError) {
+      console.error(
+        "Failed to create disciplinary case notifications:",
+        notificationError
+      );
+    }
     res.status(201).json({ success: true, data: await caseWithEmployee(disciplinaryCase) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
@@ -267,9 +306,57 @@ export const updateDisciplinaryCase = async (req: Request, res: Response) => {
     }
 
     if (isHrOfficer(user?.role)) {
-      disciplinaryCase.hrRemarks = req.body.hrRemarks ?? disciplinaryCase.hrRemarks;
+      disciplinaryCase.hrRemarks =
+        req.body.hrRemarks ?? disciplinaryCase.hrRemarks;
+
       if (typeof req.body.managerReviewRequested === "boolean") {
-        disciplinaryCase.managerReviewRequested = req.body.managerReviewRequested;
+        const wasRequested = disciplinaryCase.managerReviewRequested;
+
+        disciplinaryCase.managerReviewRequested =
+          req.body.managerReviewRequested;
+
+        // Notify HR Managers only when review is newly requested
+        if (
+          !wasRequested &&
+          req.body.managerReviewRequested === true
+        ) {
+          try {
+            const employee = await findEmployeeByIdentifier(
+              disciplinaryCase.employeeId
+            );
+
+            const employeeName = employee
+              ? [
+                employee.firstName,
+                employee.MiddleName,
+                employee.lastName,
+              ]
+                .filter(Boolean)
+                .join(" ")
+              : disciplinaryCase.employeeId;
+
+            const hrManagers = await User.find({
+              role: "HR_MANAGER",
+              isActive: true,
+              isDeleted: false,
+            }).select("_id");
+
+            await Promise.all(
+              hrManagers.map((manager) =>
+                notifyDisciplinaryReviewRequested(
+                  manager._id,
+                  disciplinaryCase.caseId,
+                  employeeName
+                )
+              )
+            );
+          } catch (notificationError) {
+            console.error(
+              "Failed to create disciplinary review notification:",
+              notificationError
+            );
+          }
+        }
       }
     }
 
@@ -320,10 +407,92 @@ export const updateDisciplinaryStatus = async (req: Request, res: Response) => {
     );
 
     if (!disciplinaryCase) {
-      return res.status(404).json({ success: false, error: "Case not found" });
+      return res.status(404).json({
+        success: false,
+        error: "Case not found",
+      });
     }
 
-    res.json({ success: true, data: await caseWithEmployee(disciplinaryCase) });
+    // ---------------------------------------------------------
+    // NOTIFICATIONS: DISCIPLINARY STATUS
+    // ---------------------------------------------------------
+
+    try {
+      const employee = await findEmployeeByIdentifier(
+        disciplinaryCase.employeeId
+      );
+
+      const employeeName = employee
+        ? [
+          employee.firstName,
+          employee.MiddleName,
+          employee.lastName,
+        ]
+          .filter(Boolean)
+          .join(" ")
+        : disciplinaryCase.employeeId;
+
+      const recipientIds = new Set<string>();
+
+      // Case creator
+      if (disciplinaryCase.createdBy) {
+        recipientIds.add(disciplinaryCase.createdBy.toString());
+      }
+
+      // Employee's User account
+      if (employee) {
+        const employeeUser = await User.findOne({
+          $or: [
+            ...(employee.employeeCode
+              ? [{ employeeCode: employee.employeeCode }]
+              : []),
+            ...(employee.email
+              ? [{ email: employee.email }, { workEmail: employee.email }]
+              : []),
+          ],
+          isActive: true,
+          isDeleted: false,
+        }).select("_id");
+
+        if (employeeUser) {
+          recipientIds.add(employeeUser._id.toString());
+        }
+      }
+
+      if (status === "In Progress") {
+        await Promise.all(
+          Array.from(recipientIds).map((recipientId) =>
+            notifyDisciplinaryCaseInProgress(
+              recipientId,
+              disciplinaryCase.caseId,
+              employeeName
+            )
+          )
+        );
+      }
+
+      if (status === "Completed") {
+        await Promise.all(
+          Array.from(recipientIds).map((recipientId) =>
+            notifyDisciplinaryCaseCompleted(
+              recipientId,
+              disciplinaryCase.caseId,
+              employeeName
+            )
+          )
+        );
+      }
+    } catch (notificationError) {
+      console.error(
+        "Failed to create disciplinary status notification:",
+        notificationError
+      );
+    }
+
+    res.json({
+      success: true,
+      data: await caseWithEmployee(disciplinaryCase),
+    });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

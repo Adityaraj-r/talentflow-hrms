@@ -25,6 +25,10 @@ export enum NotificationType {
   LEAVE_REQUESTED = "leave_requested",
   LEAVE_APPROVED = "leave_approved",
   LEAVE_REJECTED = "leave_rejected",
+  DISCIPLINARY_CASE_CREATED = "disciplinary_case_created",
+  DISCIPLINARY_REVIEW_REQUESTED = "disciplinary_review_requested",
+  DISCIPLINARY_CASE_IN_PROGRESS = "disciplinary_case_in_progress",
+  DISCIPLINARY_CASE_COMPLETED = "disciplinary_case_completed",
 }
 
 export interface INotification extends Document {
