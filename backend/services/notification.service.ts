@@ -636,3 +636,85 @@ export async function notifyDisciplinaryCaseCompleted(
     isDeleted: false,
   });
 }
+export async function notifyTransferRequested(
+  userId: mongoose.Types.ObjectId | string,
+  transferId: string,
+  employeeName: string,
+  currentDepartment: string,
+  newDepartment: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(userId)),
+    type: NotificationType.TRANSFER_REQUESTED,
+    title: "New transfer request",
+    body: `${employeeName} has requested a transfer from ${currentDepartment} to ${newDepartment}.`,
+    metadata: {
+      transferId,
+      employeeName,
+      currentDepartment,
+      newDepartment,
+    },
+    isDeleted: false,
+  });
+}
+
+
+export async function notifyTransferManagerRecommendation(
+  userId: mongoose.Types.ObjectId | string,
+  transferId: string,
+  employeeName: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(userId)),
+    type: NotificationType.TRANSFER_MANAGER_RECOMMENDATION,
+    title: "Transfer recommendation submitted",
+    body: `A manager has submitted a recommendation for ${employeeName}'s transfer request.`,
+    metadata: {
+      transferId,
+      employeeName,
+    },
+    isDeleted: false,
+  });
+}
+
+
+export async function notifyTransferApproved(
+  userId: mongoose.Types.ObjectId | string,
+  transferId: string,
+  employeeName: string,
+  newDepartment: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(userId)),
+    type: NotificationType.TRANSFER_APPROVED,
+    title: "Transfer approved",
+    body: `Your transfer request for ${employeeName} has been approved. Your new department is ${newDepartment}.`,
+    metadata: {
+      transferId,
+      employeeName,
+      newDepartment,
+    },
+    isDeleted: false,
+  });
+}
+
+
+export async function notifyTransferRejected(
+  userId: mongoose.Types.ObjectId | string,
+  transferId: string,
+  employeeName: string,
+  reason: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(userId)),
+    type: NotificationType.TRANSFER_REJECTED,
+    title: "Transfer request rejected",
+    body: `The transfer request for ${employeeName} has been rejected. Reason: ${reason}`,
+    metadata: {
+      transferId,
+      employeeName,
+      reason,
+    },
+    isDeleted: false,
+  });
+} 

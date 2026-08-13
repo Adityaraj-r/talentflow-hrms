@@ -3,6 +3,12 @@ import { AuthRequest } from '../middleware/auth.middleware';
 import Transfer from '../models/Transfer.model';
 import Employee from '../models/Employee.model';
 import User from '../models/User.model';
+import {
+    notifyTransferRequested,
+    notifyTransferManagerRecommendation,
+    notifyTransferApproved,
+    notifyTransferRejected
+} from '../services/notification.service';
 
 export const createTransferRequest = async (req: AuthRequest, res: Response) => {
     try {
@@ -31,7 +37,40 @@ export const createTransferRequest = async (req: AuthRequest, res: Response) => 
         });
 
         const savedTransfer = await transferData.save();
+        // ---------------------------------------------------------
+        // NOTIFICATION: TRANSFER REQUESTED
+        // ---------------------------------------------------------
+        try {
+            const managers = await User.find({
+                role: {
+                    $in: [
+                        'DEPARTMENT_MANAGER',
+                        'DIRECT_MANAGER',
+                        'OPERATIONS_MANAGER',
+                        'PROJECT_MANAGER',
+                        'HR_MANAGER',
+                        'HR_OFFICER'
+                    ]
+                },
+                isActive: true,
+                isDeleted: false
+            }).select('_id');
 
+            for (const manager of managers) {
+                await notifyTransferRequested(
+                    manager._id,
+                    savedTransfer._id.toString(),
+                    savedTransfer.employeeName,
+                    savedTransfer.currentDepartment,
+                    savedTransfer.newDepartment
+                );
+            }
+        } catch (notificationError) {
+            console.error(
+                'Failed to create transfer request notification:',
+                notificationError
+            );
+        }
         res.status(201).json({
             success: true,
             data: savedTransfer
@@ -228,7 +267,68 @@ export const updateTransferStatus = async (req: AuthRequest, res: Response) => {
                 { department: transfer.currentDepartment }
             );
         }
+        // ---------------------------------------------------------
+        // NOTIFICATION: TRANSFER RESULT
+        // ---------------------------------------------------------
+        try {
+            if (updatedTransfer) {
+                // Find the employee's User account
+                const employeeUser = await User.findOne({
+                    employeeCode: transfer.employeeId,
+                    isActive: true,
+                    isDeleted: false
+                }).select('_id');
 
+                if (employeeUser) {
+                    if (status === 'Approved') {
+                        await notifyTransferApproved(
+                            employeeUser._id,
+                            transfer._id.toString(),
+                            transfer.employeeName,
+                            transfer.newDepartment
+                        );
+                    }
+
+                    if (status === 'Rejected') {
+                        await notifyTransferRejected(
+                            employeeUser._id,
+                            transfer._id.toString(),
+                            transfer.employeeName,
+                            adminRemarks || 'No reason provided.'
+                        );
+                    }
+                }
+
+                // Also notify the person who initiated the transfer
+                if (
+                    transfer.initiatedBy &&
+                    transfer.initiatedBy !== employeeUser?._id.toString()
+                ) {
+                    if (status === 'Approved') {
+                        await notifyTransferApproved(
+                            transfer.initiatedBy,
+                            transfer._id.toString(),
+                            transfer.employeeName,
+                            transfer.newDepartment
+                        );
+                    }
+
+                    if (status === 'Rejected') {
+                        await notifyTransferRejected(
+                            transfer.initiatedBy,
+                            transfer._id.toString(),
+                            transfer.employeeName,
+                            adminRemarks || 'No reason provided.'
+                        );
+                    }
+                }
+            }
+        } catch (notificationError) {
+            console.error(
+                'Failed to create transfer result notification:',
+                notificationError
+            );
+        }
         res.status(200).json({
             success: true,
             data: updatedTransfer
@@ -278,7 +378,33 @@ export const addManagerRecommendation = async (req: AuthRequest, res: Response) 
         });
 
         await transfer.save();
+        try {
+            const hrUsers = await User.find({
+                role: {
+                    $in: [
+                        'HR_MANAGER',
+                        'HR_OFFICER',
+                        'ADMIN',
+                        'SUPER_ADMIN'
+                    ]
+                },
+                isActive: true,
+                isDeleted: false
+            }).select('_id');
 
+            for (const hrUser of hrUsers) {
+                await notifyTransferManagerRecommendation(
+                    hrUser._id,
+                    transfer._id.toString(),
+                    transfer.employeeName
+                );
+            }
+        } catch (notificationError) {
+            console.error(
+                'Failed to create transfer recommendation notification:',
+                notificationError
+            );
+        }
         res.status(200).json({
             success: true,
             data: transfer

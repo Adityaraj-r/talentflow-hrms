@@ -29,6 +29,10 @@ export enum NotificationType {
   DISCIPLINARY_REVIEW_REQUESTED = "disciplinary_review_requested",
   DISCIPLINARY_CASE_IN_PROGRESS = "disciplinary_case_in_progress",
   DISCIPLINARY_CASE_COMPLETED = "disciplinary_case_completed",
+  TRANSFER_REQUESTED = "transfer_requested",
+  TRANSFER_MANAGER_RECOMMENDATION = "transfer_manager_recommendation",
+  TRANSFER_APPROVED = "transfer_approved",
+  TRANSFER_REJECTED = "transfer_rejected",
 }
 
 export interface INotification extends Document {
