@@ -32,6 +32,10 @@ function iconForType(type: NotificationType) {
     case "task_in_progress":
     case "task_completed":
       return ClipboardList;
+    case "leave_requested":
+    case "leave_approved":
+    case "leave_rejected":
+      return ClipboardList;
     default:
       return ClipboardList;
   }
@@ -82,6 +86,10 @@ function routeForNotification(
     case "task_in_progress":
     case "task_completed":
       return "/dashboard/employee/tasks";
+    case "leave_requested":
+    case "leave_approved":
+    case "leave_rejected":
+      return "/time-attendance";
     default:
       return "/dashboard";
   }

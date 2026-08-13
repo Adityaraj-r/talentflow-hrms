@@ -22,6 +22,9 @@ export enum NotificationType {
   TASK_ASSIGNED = 'task_assigned',
   TASK_IN_PROGRESS = 'task_in_progress',
   TASK_COMPLETED = 'task_completed',
+  LEAVE_REQUESTED = "leave_requested",
+  LEAVE_APPROVED = "leave_approved",
+  LEAVE_REJECTED = "leave_rejected",
 }
 
 export interface INotification extends Document {

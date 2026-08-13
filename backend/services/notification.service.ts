@@ -7,7 +7,6 @@ import {
 import { AppraisalCycleModel } from '../models/AppraisalCycle';
 import { PerformanceReviewModel } from '../models/PerformanceReview';
 import { WorkflowStage, canonicalStatus } from './pmsWorkflow.service';
-
 export interface NotificationFilters {
   limit?: number;
   skip?: number;
@@ -503,6 +502,77 @@ export async function notifyTaskCompleted(
     title: "Task completed",
     body: `The task "${taskTitle}" has been completed.`,
     metadata: { taskId },
+    isDeleted: false,
+  });
+}
+export async function notifyLeaveRequested(
+  managerId: mongoose.Types.ObjectId | string,
+  leaveId: string,
+  employeeName: string,
+  leaveType: string,
+  startDate: Date,
+  endDate: Date
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(managerId)),
+    type: NotificationType.LEAVE_REQUESTED,
+    title: "New leave request",
+    body: `${employeeName} has requested ${leaveType} leave.`,
+    metadata: {
+      leaveId,
+      employeeName,
+      leaveType,
+      startDate,
+      endDate,
+    },
+    isDeleted: false,
+  });
+}
+
+
+export async function notifyLeaveApproved(
+  employeeId: mongoose.Types.ObjectId | string,
+  leaveId: string,
+  leaveType: string,
+  startDate: Date,
+  endDate: Date
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employeeId)),
+    type: NotificationType.LEAVE_APPROVED,
+    title: "Leave approved",
+    body: `Your ${leaveType} leave request has been approved.`,
+    metadata: {
+      leaveId,
+      leaveType,
+      startDate,
+      endDate,
+    },
+    isDeleted: false,
+  });
+}
+
+
+export async function notifyLeaveRejected(
+  employeeId: mongoose.Types.ObjectId | string,
+  leaveId: string,
+  leaveType: string,
+  startDate: Date,
+  endDate: Date,
+  rejectionReason: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employeeId)),
+    type: NotificationType.LEAVE_REJECTED,
+    title: "Leave rejected",
+    body: `Your ${leaveType} leave request has been rejected. Reason: ${rejectionReason}`,
+    metadata: {
+      leaveId,
+      leaveType,
+      startDate,
+      endDate,
+      rejectionReason,
+    },
     isDeleted: false,
   });
 }

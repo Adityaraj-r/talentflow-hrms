@@ -4,6 +4,11 @@ import Leave from "../models/leave.model";
 import LeavePolicy from "../models/LeavePolicy.model";
 import LeaveBalance from "../models/LeaveBalance.model";
 import User from "../models/User.model";
+import {
+  notifyLeaveRequested,
+  notifyLeaveApproved,
+  notifyLeaveRejected,
+} from "../services/notification.service";
 
 const getCurrentYear = () => new Date().getFullYear();
 
@@ -250,10 +255,18 @@ export const applyLeave = async (req: Request, res: Response) => {
     const userId = req.user?.id;
     const { leaveType, startDate, endDate, reason } = req.body;
 
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
     if (!leaveType || !startDate || !endDate || !reason) {
-      return res
-        .status(400)
-        .json({ success: false, message: "All fields are required" });
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
     }
 
     const start = new Date(startDate);
@@ -268,9 +281,14 @@ export const applyLeave = async (req: Request, res: Response) => {
 
     let totalDays = 0;
     const current = new Date(start);
+
     while (current <= end) {
       const day = current.getDay();
-      if (day !== 0 && day !== 6) totalDays++;
+
+      if (day !== 0 && day !== 6) {
+        totalDays++;
+      }
+
       current.setDate(current.getDate() + 1);
     }
 
@@ -281,7 +299,11 @@ export const applyLeave = async (req: Request, res: Response) => {
       });
     }
 
-    const policy = await LeavePolicy.findOne({ leaveType, isActive: true });
+    const policy = await LeavePolicy.findOne({
+      leaveType,
+      isActive: true,
+    });
+
     if (!policy) {
       return res.status(400).json({
         success: false,
@@ -289,9 +311,20 @@ export const applyLeave = async (req: Request, res: Response) => {
       });
     }
 
-    const user = await User.findById(userId).select("gender");
+    const employee = await User.findById(userId).select(
+      "firstName lastName gender department"
+    );
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
     if (policy.applicableTo !== "All") {
-      const gender = user?.gender?.toLowerCase();
+      const gender = employee.gender?.toLowerCase();
+
       if (
         (policy.applicableTo === "Male" && gender !== "male") ||
         (policy.applicableTo === "Female" && gender !== "female")
@@ -304,8 +337,12 @@ export const applyLeave = async (req: Request, res: Response) => {
     }
 
     const year = start.getFullYear();
-    const balance = await ensureLeaveBalance(userId!, year);
-    const entry = balance.balances.find((b) => b.leaveType === leaveType);
+
+    const balance = await ensureLeaveBalance(userId, year);
+
+    const entry = balance.balances.find(
+      (b) => b.leaveType === leaveType
+    );
 
     if (!entry) {
       return res.status(400).json({
@@ -325,14 +362,18 @@ export const applyLeave = async (req: Request, res: Response) => {
       userId,
       status: { $in: ["Pending", "Approved"] },
       $or: [
-        { startDate: { $lte: end }, endDate: { $gte: start } },
+        {
+          startDate: { $lte: end },
+          endDate: { $gte: start },
+        },
       ],
     });
 
     if (overlap) {
       return res.status(400).json({
         success: false,
-        message: "You already have a leave request that overlaps with these dates",
+        message:
+          "You already have a leave request that overlaps with these dates",
       });
     }
 
@@ -346,13 +387,88 @@ export const applyLeave = async (req: Request, res: Response) => {
       status: "Pending",
     });
 
-    res.status(201).json({
+    try {
+      /*
+       * ---------------------------------------------------------
+       * NOTIFICATION: LEAVE REQUESTED
+       * ---------------------------------------------------------
+       *
+       * Department Manager / Direct Manager:
+       *   -> Notify managers belonging to the employee's department.
+       *
+       * HR Manager:
+       *   -> Notify HR Managers regardless of department.
+       *
+       * This is important because HR Managers may not have the
+       * same department value as the employee.
+       */
+
+      const managerIds = new Set<string>();
+
+      // ---------------------------------------------------------
+      // 1. Department Manager + Direct Manager
+      // ---------------------------------------------------------
+      if (employee.department) {
+        const departmentManagers = await User.find({
+          department: employee.department,
+          role: {
+            $in: ["DEPARTMENT_MANAGER", "DIRECT_MANAGER"],
+          },
+          isActive: true,
+          isDeleted: false,
+        }).select("_id");
+
+        for (const manager of departmentManagers) {
+          managerIds.add(manager._id.toString());
+        }
+      }
+
+      // ---------------------------------------------------------
+      // 2. HR Manager
+      // ---------------------------------------------------------
+      const hrManagers = await User.find({
+        role: "HR_MANAGER",
+        isActive: true,
+        isDeleted: false,
+      }).select("_id");
+
+      for (const hrManager of hrManagers) {
+        managerIds.add(hrManager._id.toString());
+      }
+
+      // ---------------------------------------------------------
+      // 3. Create notifications
+      // ---------------------------------------------------------
+      for (const managerId of managerIds) {
+        await notifyLeaveRequested(
+          new mongoose.Types.ObjectId(managerId),
+          newLeave._id.toString(),
+          `${employee.firstName} ${employee.lastName || ""}`.trim(),
+          leaveType,
+          start,
+          end
+        );
+      }
+
+    } catch (notificationError) {
+      console.error(
+        "Failed to create leave request notification:",
+        notificationError
+      );
+    }
+
+    return res.status(201).json({
       success: true,
       message: "Leave applied successfully",
       data: newLeave,
     });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("applyLeave error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
@@ -416,6 +532,15 @@ export const updateLeaveStatus = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { status, rejectionReason } = req.body;
 
+    const approverId = req.user?.id;
+
+    if (!approverId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
     if (!["Approved", "Rejected"].includes(status)) {
       return res.status(400).json({
         success: false,
@@ -431,10 +556,12 @@ export const updateLeaveStatus = async (req: Request, res: Response) => {
     }
 
     const leave = await Leave.findById(id);
+
     if (!leave) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Leave record not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Leave record not found",
+      });
     }
 
     if (leave.status !== "Pending") {
@@ -444,13 +571,29 @@ export const updateLeaveStatus = async (req: Request, res: Response) => {
       });
     }
 
-   const previousStatus = leave.status as "Pending" | "Approved" | "Rejected";
-    leave.status = status;
-    leave.approvedBy = new mongoose.Types.ObjectId(req.user?.id);
-    if (rejectionReason) leave.rejectionReason = rejectionReason;
+    const previousStatus = leave.status as
+      | "Pending"
+      | "Approved"
+      | "Rejected";
+
+    leave.status = status as "Approved" | "Rejected";
+
+    leave.approvedBy = new mongoose.Types.ObjectId(approverId);
+
+    if (status === "Rejected") {
+      leave.rejectionReason = rejectionReason.trim();
+    }
+
     await leave.save();
 
+    /*
+     * ---------------------------------------------------------
+     * UPDATE LEAVE BALANCE
+     * ---------------------------------------------------------
+     */
+
     const year = new Date(leave.startDate).getFullYear();
+
     const balance = await LeaveBalance.findOne({
       userId: leave.userId,
       year,
@@ -460,36 +603,87 @@ export const updateLeaveStatus = async (req: Request, res: Response) => {
       const entry = balance.balances.find(
         (b) => b.leaveType === leave.leaveType
       );
+
       if (entry) {
         if (status === "Approved") {
           entry.used = Math.min(
             entry.allocated + entry.carriedForward,
             entry.used + leave.totalDays
           );
+
           entry.remaining = Math.max(
             0,
-            entry.allocated + entry.carriedForward - entry.used
+            entry.allocated +
+              entry.carriedForward -
+              entry.used
           );
         } else if (
           status === "Rejected" &&
           previousStatus === "Approved"
         ) {
-          entry.used = Math.max(0, entry.used - leave.totalDays);
+          entry.used = Math.max(
+            0,
+            entry.used - leave.totalDays
+          );
+
           entry.remaining =
-            entry.allocated + entry.carriedForward - entry.used;
+            entry.allocated +
+            entry.carriedForward -
+            entry.used;
         }
+
         balance.lastSyncedAt = new Date();
+
         await balance.save();
       }
     }
 
-    res.json({
+    /*
+     * ---------------------------------------------------------
+     * NOTIFICATION TO EMPLOYEE
+     * ---------------------------------------------------------
+     */
+
+    try {
+      if (status === "Approved") {
+        await notifyLeaveApproved(
+          leave.userId,
+          leave._id.toString(),
+          leave.leaveType,
+          leave.startDate,
+          leave.endDate
+        );
+      }
+
+      if (status === "Rejected") {
+        await notifyLeaveRejected(
+          leave.userId,
+          leave._id.toString(),
+          leave.leaveType,
+          leave.startDate,
+          leave.endDate,
+          rejectionReason.trim()
+        );
+      }
+    } catch (notificationError) {
+      console.error(
+        "Failed to create leave status notification:",
+        notificationError
+      );
+    }
+
+    return res.json({
       success: true,
       message: `Leave ${status.toLowerCase()} successfully`,
       data: leave,
     });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("updateLeaveStatus error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
