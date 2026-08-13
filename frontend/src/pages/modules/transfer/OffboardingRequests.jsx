@@ -360,10 +360,7 @@ const OffboardingRequests = () => {
                                         setRejectMode(true)
                                         setRejectReason("")
                                         setRejectError("")
-                                      }}
-                                  >
-                                      <X className="w-4 h-4 mr-2" /> Reject
-                                  </Button>
+                                      }}> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>
                               </div>
                             ) : (
                               <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">

@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Pagination } from "@/components/ui/pagination"
-import { Search, Calendar, Loader2, Video, Clock3, MapPin, CheckCircle2, XCircle, UserCheck, UserX, Clock, Map, Building, Phone, Send, Info, Eye, ExternalLink, CalendarDays } from "lucide-react"
+import { Search, Calendar, Loader2, Video, Clock3, MapPin, CheckCircle2, XCircle, UserCheck, UserX, Clock, Map, Building, Phone, Send, Info, Eye, ExternalLink, CalendarDays, X } from "lucide-react"
 import { format, isValid, parse } from "date-fns"
 import { toast } from "sonner"
 
@@ -588,11 +588,7 @@ const InterviewScheduling = () => {
                             variant="outline"
                             className="border-rose-500/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-medium"
                             onClick={() => openDecisionModal(c, "Rejected")}
-                            title="Reject Candidate"
-                          >
-                            <UserX className="h-3.5 w-3.5 mr-1" />
-                            Reject
-                          </Button>
+                            title="Reject Candidate"> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>
                         </div>
                       )}
                     </td>

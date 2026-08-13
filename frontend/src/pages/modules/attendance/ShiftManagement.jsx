@@ -5,19 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Clock,
-  Plus,
-  Trash2,
-  Shield,
-  Briefcase,
-  AlertCircle,
-  Users,
-  Timer,
-  Pencil,
-  X,
-  Check,
-} from "lucide-react";
+import { Clock, Plus, Trash2, Shield, Briefcase, AlertCircle, Users, Timer, Pencil, X, Check, , Edit2 } from "lucide-react";
 import { toast } from "sonner";
 import { useConfirm } from "@/contexts/ConfirmContext";
 
@@ -451,18 +439,12 @@ const ShiftManagement = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditStart(shift)}
-                          className="text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 h-8"
-                        >
-                          <Pencil className="h-4 w-4 mr-2" /> Edit
-                        </Button>
+                          className="text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 h-8"> <span title="Edit" className="flex items-center justify-center w-full h-full text-amber-600 hover:text-amber-700"><Edit2 className="h-4 w-4" /><span className="sr-only">Edit</span></span></Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(shift._id)}
-                          className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-8"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" /> Delete
-                        </Button>
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-8"> <span title="Delete" className="flex items-center justify-center w-full h-full text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /><span className="sr-only">Delete</span></span></Button>
                       </div>
                     </CardContent>
                   </Card>

@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { FileText, Check, X, Search } from "lucide-react"
+import { FileText, Check, X, Search, Eye } from "lucide-react"
 import { toast } from "sonner"
 
 
@@ -520,10 +520,7 @@ const RequisitionHistory = () => {
                   setSelectedReq(req)
                   setViewOpen(true)
                 }}
-                className="cursor-pointer"
-              >
-                View
-              </Button>
+                className="cursor-pointer"> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
             </div>
           </div>
         ))}

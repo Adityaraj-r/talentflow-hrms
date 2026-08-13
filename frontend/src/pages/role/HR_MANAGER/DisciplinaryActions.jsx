@@ -605,11 +605,7 @@ const CaseDetails = ({ item, isHrOfficer, isHrManager, onClose, onUpdated }) => 
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }}
->
-  <Download className="h-4 w-4 mr-2" />
-  Download
-</Button>
+  }}> <span title="Download" className="flex items-center justify-center w-full h-full "><Download className="h-4 w-4" /><span className="sr-only">Download</span></span></Button>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">No attachment uploaded.</p>

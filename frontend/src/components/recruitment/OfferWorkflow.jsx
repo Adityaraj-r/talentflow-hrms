@@ -17,42 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
-import {
-  AlertTriangle,
-  Archive,
-  BadgeCheck,
-  Banknote,
-  BriefcaseBusiness,
-  CalendarClock,
-  CheckCircle2,
-  ChevronDown,
-  CircleDollarSign,
-  Clock3,
-  Copy,
-  Download,
-  Eye,
-  FileSignature,
-  FileText,
-  Filter,
-  MailCheck,
-  MessageSquareText,
-  MoreHorizontal,
-  NotebookPen,
-  PenLine,
-  RefreshCcw,
-  RefreshCw,
-  Search,
-  Send,
-  ShieldCheck,
-  Sparkles,
-  TrendingDown,
-  TrendingUp,
-  UserPlus,
-  UserRound,
-  Users,
-  X,
-  XCircle,
-} from "lucide-react"
+import { AlertTriangle, Archive, BadgeCheck, Banknote, BriefcaseBusiness, CalendarClock, CheckCircle2, ChevronDown, CircleDollarSign, Clock3, Copy, Download, Eye, FileSignature, FileText, Filter, MailCheck, MessageSquareText, MoreHorizontal, NotebookPen, PenLine, RefreshCcw, RefreshCw, Search, Send, ShieldCheck, Sparkles, TrendingDown, TrendingUp, UserPlus, UserRound, Users, X, XCircle, , Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -740,9 +705,7 @@ export function OfferTable({ offers, sort, onSort, page, pageSize, onPageChange,
                   <td className="px-4 py-4 text-muted-foreground">{new Date(offer.lastUpdated).toLocaleDateString()}</td>
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2">
-                      <Button size="sm" variant="outline" onClick={() => onView(offer)}>
-                        View
-                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => onView(offer)}> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button size="sm" variant="ghost" className="h-8 px-2 border border-white/10 text-xs">
@@ -1119,8 +1082,8 @@ export function OfferDetailsDrawer({ offer, open, onClose, onAction, isCeo, canW
             </div>
             <div className="flex flex-wrap gap-2 border-t border-white/10 p-4">
               <Button variant="outline" onClick={() => onPreviewLetter(offer)}><FileText className="mr-2 h-4 w-4" />Preview Letter</Button>
-              <Button variant="outline" onClick={() => onAction("download", offer)}><Download className="mr-2 h-4 w-4" />Download</Button>
-              {(isCeo || canApproveOffers) && (offer.status === "Pending CEO Approval" || offer.status === "Pending HR Manager Approval") && <Button onClick={() => onAction("approve", offer)}>Approve</Button>}
+              <Button variant="outline" onClick={() => onAction("download", offer)}> <span title="Download" className="flex items-center justify-center w-full h-full "><Download className="h-4 w-4" /><span className="sr-only">Download</span></span></Button>
+              {(isCeo || canApproveOffers) && (offer.status === "Pending CEO Approval" || offer.status === "Pending HR Manager Approval") && <Button onClick={() => onAction("approve", offer)}> <span title="Approve" className="flex items-center justify-center w-full h-full text-emerald-600 hover:text-emerald-700"><Check className="h-4 w-4" /><span className="sr-only">Approve</span></span></Button>}
               {canWrite && offer.status === "Offered" && (
                 <>
                   <Button onClick={() => onAction("accepted", offer)}>Mark Accepted</Button>
@@ -1412,12 +1375,12 @@ export function OfferActionBar({ offer, onAction, canWrite, isCeo, canApproveOff
         </Button>
       )}
       {canApproveOffers && offer?.status === "Offered" && <Button variant="outline" onClick={() => onAction("send", offer)}><Send className="mr-2 h-4 w-4" />Send Offer</Button>}
-      {(isCeo || canApproveOffers) && (offer?.status === "Pending CEO Approval" || offer?.status === "Pending HR Manager Approval") && <Button onClick={() => onAction("approve", offer)}><CheckCircle2 className="mr-2 h-4 w-4" />Approve</Button>}
-      {canApproveOffers && <Button variant="outline" onClick={() => onAction("reject", offer)}><XCircle className="mr-2 h-4 w-4" />Reject</Button>}
+      {(isCeo || canApproveOffers) && (offer?.status === "Pending CEO Approval" || offer?.status === "Pending HR Manager Approval") && <Button onClick={() => onAction("approve", offer)}> <span title="Approve" className="flex items-center justify-center w-full h-full text-emerald-600 hover:text-emerald-700"><Check className="h-4 w-4" /><span className="sr-only">Approve</span></span></Button>}
+      {canApproveOffers && <Button variant="outline" onClick={() => onAction("reject", offer)}> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>}
       {canApproveOffers && <Button variant="outline" onClick={() => onAction("renegotiate", offer)}><PenLine className="mr-2 h-4 w-4" />Re-negotiate</Button>}
       <Button variant="outline" onClick={() => onAction("download", offer)}><Download className="mr-2 h-4 w-4" />Download PDF</Button>
       {canApproveOffers && <Button variant="outline" onClick={() => onAction("duplicate", offer)}><Copy className="mr-2 h-4 w-4" />Duplicate</Button>}
-      {canApproveOffers && <Button variant="outline" onClick={() => onAction("archive", offer)}><Archive className="mr-2 h-4 w-4" />Archive</Button>}
+      {canApproveOffers && <Button variant="outline" onClick={() => onAction("archive", offer)}> <span title="Archive" className="flex items-center justify-center w-full h-full "><Archive className="h-4 w-4" /><span className="sr-only">Archive</span></span></Button>}
     </div>
   )
 }

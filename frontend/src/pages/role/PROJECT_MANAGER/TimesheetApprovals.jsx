@@ -150,18 +150,12 @@ const TimesheetApprovals = () => {
                           size="sm" 
                           variant="outline"
                           className="text-green-600 hover:bg-green-50"
-                          onClick={() => handleApprove(timesheet.id)}
-                        >
-                          <Check className="h-4 w-4 mr-1" /> Approve
-                        </Button>
+                          onClick={() => handleApprove(timesheet.id)}> <span title="Approve" className="flex items-center justify-center w-full h-full text-emerald-600 hover:text-emerald-700"><Check className="h-4 w-4" /><span className="sr-only">Approve</span></span></Button>
                         <Button 
                           size="sm" 
                           variant="outline"
                           className="text-red-600 hover:bg-red-50"
-                          onClick={() => handleReject(timesheet.id)}
-                        >
-                          <X className="h-4 w-4 mr-1" /> Reject
-                        </Button>
+                          onClick={() => handleReject(timesheet.id)}> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>
                       </div>
                     )}
                   </TableCell>

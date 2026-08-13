@@ -401,11 +401,7 @@ const LeaveApprovals = () => {
                               variant="outline"
                               onClick={() => handleApprove(leave._id)}
                               disabled={actionLoading}
-                              className="h-8 bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400 gap-1"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                              Approve
-                            </Button>
+                              className="h-8 bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400 gap-1"> <span title="Approve" className="flex items-center justify-center w-full h-full text-emerald-600 hover:text-emerald-700"><Check className="h-4 w-4" /><span className="sr-only">Approve</span></span></Button>
                             <Button
                               size="sm"
                               variant="outline"
@@ -414,11 +410,7 @@ const LeaveApprovals = () => {
                                 setRejectModalOpen(true);
                               }}
                               disabled={actionLoading}
-                              className="h-8 bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400 gap-1"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                              Reject
-                            </Button>
+                              className="h-8 bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400 gap-1"> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>
                           </div>
                         ) : (
                           <span className="text-xs text-muted-foreground">

@@ -363,17 +363,11 @@ const DocumentRequests = () => {
                               variant="outline"
                               size="sm"
                               className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                              onClick={() => setPreviewDoc(doc)}
-                            >
-                              <Eye className="h-3.5 w-3.5 mr-1" /> View
-                            </Button>
+                              onClick={() => setPreviewDoc(doc)}> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
                             <Button
                               size="sm"
                               className="h-8 px-3 text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-150 shadow-sm focus:ring-2 focus:ring-green-500 focus:outline-none flex items-center gap-1"
-                              onClick={() => downloadFile(doc)}
-                            >
-                              <Download className="h-3.5 w-3.5 mr-1" /> Download
-                            </Button>
+                              onClick={() => downloadFile(doc)}> <span title="Download" className="flex items-center justify-center w-full h-full "><Download className="h-4 w-4" /><span className="sr-only">Download</span></span></Button>
                           </div>
                         </div>
                       ))}

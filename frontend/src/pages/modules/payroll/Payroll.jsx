@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import {
-  Calculator, Users, Loader2, Download, RefreshCw,
-  CheckCircle, Zap, AlertCircle, UserX, ChevronDown, ChevronUp,
-  ClipboardList, ShieldCheck,
-} from "lucide-react";
+import { Calculator, Users, Loader2, Download, RefreshCw, CheckCircle, Zap, AlertCircle, UserX, ChevronDown, ChevronUp, ClipboardList, ShieldCheck, , X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1285,9 +1281,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
                   />
                   <Button size="sm" variant="destructive" className="text-xs h-8"
                     disabled={!rejectReason.trim()}
-                    onClick={() => runWorkflow("reject", { reason: rejectReason })}>
-                    Reject
-                  </Button>
+                    onClick={() => runWorkflow("reject", { reason: rejectReason })}> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>
                 </>
               )}
             {(isHRManager(userRole) || isAdmin(userRole)) &&
@@ -1308,9 +1302,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
                   />
                   <Button size="sm" variant="destructive" className="text-xs h-8"
                     disabled={!rejectReason.trim()}
-                    onClick={() => runWorkflow("reject", { reason: rejectReason })}>
-                    Reject
-                  </Button>
+                    onClick={() => runWorkflow("reject", { reason: rejectReason })}> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>
                 </>
               )}
             {(isCEO(userRole) || isAdmin(userRole)) &&
@@ -1328,9 +1320,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
                   />
                   <Button size="sm" variant="destructive" className="text-xs h-8"
                     disabled={!rejectReason.trim()}
-                    onClick={() => runWorkflow("reject", { reason: rejectReason })}>
-                    Reject
-                  </Button>
+                    onClick={() => runWorkflow("reject", { reason: rejectReason })}> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>
                 </>
               )}
             {(isPayrollOfficer(userRole) || isAdmin(userRole)) && st === "CEO_Approved" && (

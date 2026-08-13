@@ -24,35 +24,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  AlertTriangle,
-  ArrowDownRight,
-  ArrowUpRight,
-  BadgeCheck,
-  Bell,
-  Bot,
-  CalendarClock,
-  CheckCircle2,
-  CircleDollarSign,
-  Clock3,
-  Download,
-  Eye,
-  FileSignature,
-  FileText,
-  GitBranch,
-  Layers,
-  MailCheck,
-  MessageSquareText,
-  PenLine,
-  Send,
-  Settings2,
-  ShieldCheck,
-  Sparkles,
-  UserCheck,
-  Users,
-  XCircle,
-  Zap,
-} from "lucide-react";
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, BadgeCheck, Bell, Bot, CalendarClock, CheckCircle2, CircleDollarSign, Clock3, Download, Eye, FileSignature, FileText, GitBranch, Layers, MailCheck, MessageSquareText, PenLine, Send, Settings2, ShieldCheck, Sparkles, UserCheck, Users, XCircle, Zap, , X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -280,10 +252,7 @@ export function OfferApprovalTimeline({ offer, onAction, canWrite }) {
                 <Button 
                   variant="outline" 
                   onClick={() => onAction("reject", offer)} 
-                  className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"
-                >
-                  <XCircle className="mr-2 h-4 w-4" />Reject
-                </Button>
+                  className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>
                 <Button 
                   variant="outline" 
                   onClick={() => onAction("changes", offer)} 
@@ -303,8 +272,8 @@ export function OfferApprovalTimeline({ offer, onAction, canWrite }) {
             </>
           ) : (
             <div className="flex flex-wrap gap-2">
-              <Button onClick={() => onAction("approve", offer)} className="bg-emerald-400 text-white dark:text-slate-950 hover:bg-emerald-300"><CheckCircle2 className="mr-2 h-4 w-4" />Approve</Button>
-              <Button variant="outline" onClick={() => onAction("reject", offer)} className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"><XCircle className="mr-2 h-4 w-4" />Reject</Button>
+              <Button onClick={() => onAction("approve", offer)} className="bg-emerald-400 text-white dark:text-slate-950 hover:bg-emerald-300"> <span title="Approve" className="flex items-center justify-center w-full h-full text-emerald-600 hover:text-emerald-700"><Check className="h-4 w-4" /><span className="sr-only">Approve</span></span></Button>
+              <Button variant="outline" onClick={() => onAction("reject", offer)} className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>
               <Button variant="outline" onClick={() => onAction("changes", offer)} className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"><PenLine className="mr-2 h-4 w-4" />Request Changes</Button>
               <Button variant="outline" onClick={() => onAction("escalate", offer)} className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10"><AlertTriangle className="mr-2 h-4 w-4" />Escalate</Button>
             </div>

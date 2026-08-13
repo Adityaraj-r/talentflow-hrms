@@ -25,7 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Trash2, Eye } from "lucide-react";
+import { Plus, Trash2, Eye, Archive } from "lucide-react";
 import { format } from "date-fns";
 import type { AppraisalCycle, AppraisalCycleStatus } from "@/api/pmsApi";
 import { useAppraisalCycles, useDeleteCycle, useTransitionCycle } from "@/hooks/useAppraisalCycles";
@@ -287,10 +287,7 @@ export default function AppraisalCyclesPage() {
                 variant="destructive"
                 type="button"
                 disabled={del.isPending}
-                onClick={() => void confirmDelete()}
-              >
-                Archive
-              </Button>
+                onClick={() => void confirmDelete()}> <span title="Archive" className="flex items-center justify-center w-full h-full "><Archive className="h-4 w-4" /><span className="sr-only">Archive</span></span></Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

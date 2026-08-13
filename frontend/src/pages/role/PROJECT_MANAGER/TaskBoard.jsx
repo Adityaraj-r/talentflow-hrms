@@ -411,7 +411,7 @@ const DeleteDialog = ({ task, onConfirm, onCancel }) => (
       </p>
       <DialogFooter>
         <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
-        <Button variant="destructive" size="sm" onClick={() => onConfirm(task)}>Delete</Button>
+        <Button variant="destructive" size="sm" onClick={() => onConfirm(task)}> <span title="Delete" className="flex items-center justify-center w-full h-full text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /><span className="sr-only">Delete</span></span></Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

@@ -259,10 +259,7 @@ export const UploadedDocumentsModal = ({ open, onOpenChange, activeRequest, onVi
                       variant="outline"
                       size="sm"
                       className="h-9 w-28 justify-center rounded-lg border-slate-300 bg-white px-4 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-150 hover:bg-slate-50 hover:text-slate-900 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700/80 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      onClick={() => onViewFile(file)}
-                    >
-                      <Eye className="h-3.5 w-3.5" /> View
-                    </Button>
+                      onClick={() => onViewFile(file)}> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
                     <Button
                       size="sm"
                       className="h-9 w-28 justify-center rounded-lg bg-green-600 px-4 text-xs font-semibold text-white shadow-sm transition-all duration-150 hover:bg-green-700 hover:shadow focus:outline-none focus:ring-2 focus:ring-green-500"

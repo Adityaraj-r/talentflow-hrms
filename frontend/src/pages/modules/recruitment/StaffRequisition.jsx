@@ -843,9 +843,7 @@ const PendingRequisitions = ({ onChanged, externalFilter }) => {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-3 border-t border-border/50">
-                  <Button variant="outline" size="sm" className="h-8 px-3 rounded-lg flex-1" onClick={() => { setSelectedReq(req); setIsDetailsOpen(true); }}>
-                    <Eye className="h-4 w-4 mr-2" /> View
-                  </Button>
+                  <Button variant="outline" size="sm" className="h-8 px-3 rounded-lg flex-1" onClick={() => { setSelectedReq(req); setIsDetailsOpen(true); }}> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
                   {canApprove && (
                     <>
                       <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-lg text-emerald-600 border-emerald-600/20 bg-emerald-500/5 hover:bg-emerald-500/10" onClick={() => { setActionStatus('Approved'); setSelectedReq(req); setIsDetailsOpen(true); }}>

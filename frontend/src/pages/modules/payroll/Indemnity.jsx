@@ -652,10 +652,7 @@ const PendingIndemnities = () => {
                         {r.workflowStage !== "APPROVED" && (
                           <Button size="sm" variant="outline"
                             className="text-red-600 border-red-200 hover:bg-red-50"
-                            onClick={() => setRejectingId(r._id)}>
-                            <X className="h-4 w-4 mr-1" />
-                            Reject
-                          </Button>
+                            onClick={() => setRejectingId(r._id)}> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>
                         )}
                       </div>
                     )}

@@ -138,17 +138,11 @@ const EmployeeDocuments = () => {
             <Button 
               variant="outline" 
               className="w-full flex items-center justify-center gap-2"
-              onClick={() => setSelectedDoc(doc)}
-            >
-              <Eye className="h-4 w-4" /> View
-            </Button>
+              onClick={() => setSelectedDoc(doc)}> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
             <Button 
               variant="default" 
               className="w-full flex items-center justify-center gap-2"
-              onClick={() => downloadFile(doc)}
-            >
-              <Download className="h-4 w-4" /> Download
-            </Button>
+              onClick={() => downloadFile(doc)}> <span title="Download" className="flex items-center justify-center w-full h-full "><Download className="h-4 w-4" /><span className="sr-only">Download</span></span></Button>
           </CardFooter>
         </Card>
       ))}

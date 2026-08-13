@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Search, Loader2, Eye, CheckCircle2, XCircle, Clock, Download } from "lucide-react";
+import { FileText, Search, Loader2, Eye, CheckCircle2, XCircle, Clock, Download, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "@/services/apiClient";
 import { UploadedDocumentsModal, DocumentPreviewDialog, getAttachments, getFileUrl, forceCloudinaryDownload, getFileName, formatFileSize, downloadFile } from "@/components/ui/DocumentViewer";
@@ -278,26 +278,17 @@ const DocumentRequests = () => {
                                 variant="outline" 
                                 size="sm" 
                                 className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                onClick={() => handleOpenViewDetails(req)}
-                              >
-                                View
-                              </Button>
+                                onClick={() => handleOpenViewDetails(req)}> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
                               <Button 
                                 variant="outline" 
                                 size="sm" 
                                 className="h-8 px-3 text-xs font-semibold bg-green-50 hover:bg-green-100 border-green-200 text-green-700 dark:bg-green-950/20 dark:border-green-900/40 dark:text-green-400 dark:hover:bg-green-900/40 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                onClick={() => handleOpenApprove(req)}
-                              >
-                                Approve
-                              </Button>
+                                onClick={() => handleOpenApprove(req)}> <span title="Approve" className="flex items-center justify-center w-full h-full text-emerald-600 hover:text-emerald-700"><Check className="h-4 w-4" /><span className="sr-only">Approve</span></span></Button>
                               <Button 
                                 variant="outline" 
                                 size="sm" 
                                 className="h-8 px-3 text-xs font-semibold bg-red-50 hover:bg-red-100 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/40 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-red-500 focus:outline-none"
-                                onClick={() => handleOpenReject(req)}
-                              >
-                                Reject
-                              </Button>
+                                onClick={() => handleOpenReject(req)}> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>
                             </div>
                           </td>
                         </tr>
@@ -493,17 +484,11 @@ const DocumentRequests = () => {
                               variant="outline"
                               size="sm"
                               className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                              onClick={() => setPreviewDoc(doc)}
-                            >
-                              <Eye className="h-3.5 w-3.5 mr-1" /> View
-                            </Button>
+                              onClick={() => setPreviewDoc(doc)}> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
                             <Button
                               size="sm"
                               className="h-8 px-3 text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-150 shadow-sm focus:ring-2 focus:ring-green-500 focus:outline-none flex items-center gap-1"
-                              onClick={() => downloadFile(doc)}
-                            >
-                              <Download className="h-3.5 w-3.5 mr-1" /> Download
-                            </Button>
+                              onClick={() => downloadFile(doc)}> <span title="Download" className="flex items-center justify-center w-full h-full "><Download className="h-4 w-4" /><span className="sr-only">Download</span></span></Button>
                           </div>
                         </div>
                       ))}

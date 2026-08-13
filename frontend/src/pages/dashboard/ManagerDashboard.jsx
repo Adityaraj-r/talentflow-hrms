@@ -234,12 +234,8 @@ const ManagerDashboard = ({ stats = {}, isLoading = false }) => {
                             </div>
                         </div>
                         <div className="flex gap-2">
-                             <button className="flex-1 py-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-lg text-xs font-semibold border border-transparent hover:border-green-200 transition-colors">
-                               Approve
-                             </button>
-                             <button className="flex-1 py-1.5 bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 rounded-lg text-xs font-semibold border border-transparent hover:border-rose-200 transition-colors">
-                               Reject
-                             </button>
+                             <button className="flex-1 py-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-lg text-xs font-semibold border border-transparent hover:border-green-200 transition-colors"> <span title="Approve" className="flex items-center justify-center w-full h-full text-emerald-600 hover:text-emerald-700"><Check className="h-4 w-4" /><span className="sr-only">Approve</span></span></Button>
+                             <button className="flex-1 py-1.5 bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 rounded-lg text-xs font-semibold border border-transparent hover:border-rose-200 transition-colors"> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>
                         </div>
                       </div>
                     ))}

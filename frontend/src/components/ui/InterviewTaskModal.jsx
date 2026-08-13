@@ -307,17 +307,13 @@ const InterviewTaskModal = ({ open, onOpenChange, task, intData }) => {
                             {displayResume.split('/').pop()}
                           </p>
                           <div className="flex gap-1.5">
-                            <Button onClick={() => window.open(getResumeUrl(displayResume), "_blank")} size="sm" className="flex-1 gap-1.5 h-7 text-[11px]">
-                              <Eye className="w-3.5 h-3.5" /> View
-                            </Button>
+                            <Button onClick={() => window.open(getResumeUrl(displayResume), "_blank")} size="sm" className="flex-1 gap-1.5 h-7 text-[11px]"> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
                             <Button onClick={() => {
                                const a = document.createElement('a');
                                a.href = getResumeUrl(displayResume);
                                a.download = `${candidate.name || intData?.candidateName || 'Candidate'}_Resume.pdf`;
                                a.click();
-                            }} size="sm" variant="outline" className="flex-1 gap-1.5 h-7 text-[11px]">
-                              <Download className="w-3.5 h-3.5" /> Download
-                            </Button>
+                            }} size="sm" variant="outline" className="flex-1 gap-1.5 h-7 text-[11px]"> <span title="Download" className="flex items-center justify-center w-full h-full "><Download className="h-4 w-4" /><span className="sr-only">Download</span></span></Button>
                           </div>
                         </div>
                       ) : (
