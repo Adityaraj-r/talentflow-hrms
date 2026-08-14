@@ -107,8 +107,7 @@ const DigitalLocker = () => {
     try {
       await apiClient.post("/documents/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
-        timeout: 30000,
-      });
+        timeout: 30000});
       toast.success("Document uploaded successfully");
       setUploadOpen(false);
       setFile(null);
@@ -196,13 +195,13 @@ const DigitalLocker = () => {
                   if (cat.name !== "Onboarding") setTargetEmployeeId("");
                   if (cat.name === "Onboarding") { setTargetEmployeeId(""); setSearchQuery(""); }
                 }}
-                className={`flex-shrink-0 flex items-center justify-between rounded-md text-sm font-medium transition-colors cursor-pointer gap-3 px-3 py-2 lg:w-full lg:px-4 lg:py-2.5 ${selectedCategory === cat.name ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white" : "text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/50"}`}
+                className={`flex-shrink-0 flex items-center justify-between rounded-md text-sm font-medium transition-colors cursor-pointer gap-3 px-3 py-2 lg:w-full lg:px-4 lg:py-2.5 ${selectedCategory === cat.name ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary" : "text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/50"}`}
               >
                 <div className="flex items-center gap-2">
-                  <Folder className={`w-4 h-4 lg:w-5 lg:h-5 ${selectedCategory === cat.name ? "fill-slate-900 text-slate-900 dark:fill-white dark:text-white" : "text-slate-400"}`} />
+                  <Folder className={`w-4 h-4 lg:w-5 lg:h-5 ${selectedCategory === cat.name ? "fill-primary text-primary" : "text-slate-400"}`} />
                   <span className="whitespace-nowrap">{cat.label}</span>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full min-w-[1.5rem] text-center ${selectedCategory === cat.name ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"}`}>
+                <span className={`text-xs px-2 py-0.5 rounded-full min-w-[1.5rem] text-center ${selectedCategory === cat.name ? "bg-white text-primary shadow-sm dark:bg-slate-800 dark:text-primary" : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"}`}>
                   {count}
                 </span>
               </button>
