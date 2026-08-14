@@ -1,5 +1,8 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import apiClient from '@/services/apiClient';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
 const AuthContext = createContext();
 
@@ -36,22 +39,25 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('userRole');
   };
 
-  // On mount: we can't check for an accessToken cookie in JS (it's
-  // httpOnly — that's the point), so we just attempt the profile fetch.
-  // The browser attaches the cookie automatically if one exists; a 401
-  // here just means "not logged in."
+  // On mount: we attempt profile fetch with raw axios so a 401 response for guest
+  // users on public pages does not trigger global forceLogout to /login.
   useEffect(() => {
-    apiClient.get('/auth/profile')
+    axios.get(`${API_BASE_URL}/auth/profile`, {
+      withCredentials: true,
+      headers: { "ngrok-skip-browser-warning": "true" }
+    })
       .then((res) => {
-        // apiClient interceptor returns response.data
-        // backend returns { success: true, data: { user object } }
-        const userData = res.data ?? res;
-        setUser(userData);
-        setUserData(userData);
-        setIsAuthenticated(true);
-        localStorage.setItem('userRole', typeof userData.role === 'string'
-          ? userData.role
-          : userData.role?.name || '');
+        const userData = res.data?.data ?? res.data;
+        if (userData && (userData.id || userData._id || userData.email)) {
+          setUser(userData);
+          setUserData(userData);
+          setIsAuthenticated(true);
+          localStorage.setItem('userRole', typeof userData.role === 'string'
+            ? userData.role
+            : userData.role?.name || '');
+        } else {
+          clearAuthState();
+        }
       })
       .catch(() => {
         clearAuthState();

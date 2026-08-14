@@ -7,10 +7,12 @@ import Employee from "../models/Employee.model"
 import User from "../models/User.model"
 import Offer from "../models/Offer.model"
 import Referral from "../models/Referral.model"
+import AuditLog from "../models/AuditLog"
 import { getHrSenderEmail, sendInterviewScheduleEmail } from "../utils/sendEmail"
 import { sendApplicationStatusEmail } from "../utils/sendEmail";
 import { calculateResumeFit } from "../utils/resumeFit"
 import { WorkflowEngine } from '../services/workflowEngine';
+import { syncReferralStatusFromApplication, handleAutoRewardCreationOnHire } from "../services/referral.service";
 
 const selectedStatuses = ["selected", "hired"];
 
@@ -118,7 +120,51 @@ export const applyJob = async (req: Request, res: Response) => {
     let referralRecord: any = null;
     if (referralToken) {
       referralRecord = await Referral.findOne({ invitationToken: String(referralToken).trim() });
+      if (!referralRecord) {
+        // Token was provided but invalid/expired/used
+        res.status(400).json({
+          success: false,
+          message: "The referral invitation link is invalid, expired, or already used.",
+        });
+        return;
+      }
+
+      // Check job match (Security: Prevent job manipulation)
+      if (String(referralRecord.jobId) !== String(jobId)) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid referral/job combination.",
+        });
+        return;
+      }
+
+      if (referralRecord.status === "Applied" || referralRecord.applicationId) {
+        res.status(400).json({
+          success: false,
+          message: "This referral invitation has already been used.",
+        });
+        return;
+      }
+
+      if (referralRecord.status === "Cancelled") {
+        res.status(400).json({
+          success: false,
+          message: "This referral invitation is no longer active.",
+        });
+        return;
+      }
+
+      if (new Date() > new Date(referralRecord.invitationExpiry)) {
+        referralRecord.status = "Expired";
+        await referralRecord.save();
+        res.status(400).json({
+          success: false,
+          message: "This referral invitation link has expired.",
+        });
+        return;
+      }
     }
+
     if (!referralRecord && jobId && normEmail) {
       referralRecord = await Referral.findOne({
         jobId,
@@ -130,6 +176,7 @@ export const applyJob = async (req: Request, res: Response) => {
       });
     }
 
+    // STRICT SERVER-SIDE ATTRIBUTION DERIVATION
     const applicationSource = referralRecord ? "Employee Referral" : "Career Portal";
     const referralId = referralRecord ? referralRecord._id : null;
     const referredByEmployeeId = referralRecord ? referralRecord.referredByEmployeeId : null;
@@ -180,13 +227,30 @@ export const applyJob = async (req: Request, res: Response) => {
       source: applicationSource,
       referralId,
       referredByEmployeeId,
+      privacyConsentGiven: Boolean(req.body.privacyConsent),
+      privacyConsentAt: new Date(),
       ...fit,
     })
 
     if (referralRecord) {
       referralRecord.status = "Applied";
       referralRecord.applicationId = application._id;
+      // Preserve invitationToken for audit/history (reuse blocked by status/applicationId)
       await referralRecord.save();
+
+      try {
+        await AuditLog.create({
+          userId: referredByEmployeeId ? String(referredByEmployeeId) : "system",
+          userName: name,
+          userRole: "Candidate",
+          action: "REFERRAL_APPLICATION_SUBMITTED",
+          module: "Referral",
+          details: `Candidate ${name} (${email}) submitted application for job ${jobId} via referral from employee ${referredByEmployeeId}.`,
+          status: "Success",
+        });
+      } catch (auditErr) {
+        console.warn("[AuditLogWarning] Could not record referral application audit log");
+      }
     }
 
     // Initialize workflow state if job has workflow configured
@@ -279,7 +343,8 @@ export const getApplicationById = async (req: Request, res: Response) => {
   try {
     const application = await Application.findById(req.params.id)
       .populate("jobId")
-      .populate("referredByEmployeeId", "name employeeCode email department designation")
+      .populate("referredByEmployeeId", "name firstName lastName department designation email")
+      .populate("referralId")
     if (!application) {
       res.status(404).json({ success: false, message: "Application not found" })
       return
@@ -409,6 +474,16 @@ export const updateApplicationStatus = async (req: Request, res: Response) => {
     }
 
     await application.save()
+
+    // Trigger Referral ↔ ATS Status Synchronization
+    if (status) {
+      await syncReferralStatusFromApplication(application._id, status);
+    }
+
+    // Trigger Automatic Referral Reward Creation on Hiring
+    if (String(status || "").toLowerCase() === "hired" || String(status || "").toLowerCase() === "joined") {
+      await handleAutoRewardCreationOnHire(application);
+    }
 
     const beforeWasSelected = selectedStatuses.includes(String(beforeStatus || "").toLowerCase())
     const afterIsSelected = selectedStatuses.includes(String(status || "").toLowerCase())
@@ -793,6 +868,8 @@ export const updateBgvDetails = async (req: Request, res: Response) => {
       }
 
       appDoc.status = "Hired";
+      await syncReferralStatusFromApplication(appDoc._id, "Hired");
+      await handleAutoRewardCreationOnHire(appDoc);
     }
 
     await appDoc.save();

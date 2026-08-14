@@ -6,7 +6,7 @@ import {
   UploadCloud, FileText, CheckCircle, Share2, 
   Users, Calendar, ChevronDown, ChevronUp,
   User, Mail, Phone, Map, BookOpen, Search, Link, Github,
-  HelpCircle, Trash2
+  HelpCircle, Trash2, Sparkles, UserCheck
 } from "lucide-react"
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api"
@@ -76,7 +76,9 @@ const ApplyJob = () => {
   useEffect(() => {
     // Verify Referral Token if present
     if (referralToken) {
-      axios.get(`${API_BASE}/referrals/verify-token?token=${referralToken}`)
+      axios.get(`${API_BASE}/referrals/verify-token?token=${referralToken}`, {
+        headers: { "ngrok-skip-browser-warning": "true" }
+      })
         .then(res => {
           if (res.data?.success && res.data?.data) {
             const refData = res.data.data;
@@ -104,7 +106,9 @@ const ApplyJob = () => {
 
     const fetchJob = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/job-openings/published`)
+        const res = await axios.get(`${API_BASE}/job-openings/published`, {
+          headers: { "ngrok-skip-browser-warning": "true" }
+        })
         const foundJob = res.data.find(j => j._id === id || j.id === id)
         if (foundJob) {
           setJob(foundJob)
@@ -224,7 +228,12 @@ const ApplyJob = () => {
       const res = await axios.post(
         `${API_BASE}/applications/apply`,
         formPayload,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            "ngrok-skip-browser-warning": "true"
+          }
+        }
       )
 
       const created = res.data
@@ -275,6 +284,15 @@ const ApplyJob = () => {
           
           {/* Left Column: Job Details (55%) */}
           <div className="lg:w-[55%]">
+            {referredByInfo && (
+              <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-purple-50 via-cyan-50 to-blue-50 dark:from-slate-900 dark:to-cyan-950/40 border border-cyan-200 dark:border-cyan-800 text-slate-800 dark:text-slate-200 flex items-center gap-3 shadow-sm">
+                <Sparkles className="h-5 w-5 text-cyan-600 dark:text-cyan-400 shrink-0" />
+                <div className="text-xs md:text-sm font-medium">
+                  <span className="font-bold text-slate-900 dark:text-white">Referred Opportunity:</span> You were referred for this position by <strong className="underline text-cyan-700 dark:text-cyan-300">{referredByInfo.name}</strong>. Referral credit will be automatically attached upon submission.
+                </div>
+              </div>
+            )}
+
             <div className="mb-8">
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 mb-4 border border-slate-200 dark:border-slate-700">
                 {job?.department || "General"}

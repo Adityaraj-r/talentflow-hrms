@@ -3,6 +3,7 @@ import Employee from '../models/Employee.model';
 import User from '../models/User.model';
 import OffboardingRequest from '../models/OffboardingRequest.model';
 import { sendTerminationEmail, sendExitBlockedEmail } from '../utils/sendEmail';
+import { processProbationCompletions, checkExpiringReferralInvitations } from '../services/referral.service';
 
 export const initCronJobs = () => {
     // Run every day at midnight
@@ -126,6 +127,11 @@ export const initCronJobs = () => {
                     }
                 }
             }
+
+            // Phase 3: Referral Module Automated Probation Completion & Expiry Warnings
+            console.log('Running daily cron job for referral probation completions & invitation expiry checks...');
+            await processProbationCompletions();
+            await checkExpiringReferralInvitations();
 
         } catch (error) {
             console.error('Error during automated offboarding job:', error);

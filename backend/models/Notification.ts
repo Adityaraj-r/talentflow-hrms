@@ -33,6 +33,14 @@ export enum NotificationType {
   TRANSFER_MANAGER_RECOMMENDATION = "transfer_manager_recommendation",
   TRANSFER_APPROVED = "transfer_approved",
   TRANSFER_REJECTED = "transfer_rejected",
+  REFERRAL_SUBMITTED = 'referral_submitted',
+  REFERRAL_STATUS_UPDATED = 'referral_status_updated',
+  REFERRAL_CANDIDATE_HIRED = 'referral_candidate_hired',
+  REFERRAL_REWARD_CREATED = 'referral_reward_created',
+  REFERRAL_PROBATION_PASSED = 'referral_probation_passed',
+  REFERRAL_REWARD_APPROVED = 'referral_reward_approved',
+  REFERRAL_REWARD_PAID = 'referral_reward_paid',
+  REFERRAL_EXPIRING_SOON = 'referral_expiring_soon',
 }
 
 export interface INotification extends Document {

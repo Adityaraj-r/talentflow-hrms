@@ -28,10 +28,13 @@ import {
   Link as LinkIcon,
   ShieldCheck,
   Send,
-  MessageSquare
+  MessageSquare,
+  Sparkles,
 } from "lucide-react"
 import { RecruitmentStatusBadge } from "@/components/recruitment/RecruitmentUI"
 import { PriorityDot } from "@/components/ui/PriorityDot"
+import { Badge } from "@/components/ui/badge"
+import ReferralProgressTracker from "@/components/recruitment/ReferralProgressTracker"
 
 const bgvCategories = [
   { key: "address", label: "Address Verification" },
@@ -356,6 +359,28 @@ const CandidateDetail = () => {
         </Card>
       )}
 
+      {/* Referral Attribution & Live Progress Tracker */}
+      {(app.source === "Employee Referral" || app.referralId || app.referredByEmployeeId) && (
+        <div className="mb-6">
+          <ReferralProgressTracker
+            referral={
+              typeof app.referralId === "object" && app.referralId !== null
+                ? { ...app.referralId, referredByEmployeeId: app.referredByEmployeeId || app.referralId.referredByEmployeeId }
+                : {
+                    candidateName: app.name,
+                    jobTitle: app.selectedPositionTitle || app.hiringRoleName || app.jobId?.jobTitle,
+                    status: app.status,
+                    createdAt: app.createdAt,
+                    updatedAt: app.updatedAt,
+                    referredByEmployeeId: app.referredByEmployeeId,
+                  }
+            }
+            application={app}
+            showReferrerHeader={true}
+          />
+        </div>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left Column - Candidate Details, Resume preview, Evaluation Logs */}
         <div className="lg:col-span-2 space-y-6">
@@ -433,6 +458,50 @@ const CandidateDetail = () => {
                 </div>
               </div>
             </div>
+
+            {/* Referral Information Section */}
+            {(app.source === "Employee Referral" || app.referredByEmployeeId) && (
+              <div className="border-t pt-4 mt-5 bg-purple-50/50 dark:bg-purple-950/20 p-4 rounded-lg border border-purple-100 dark:border-purple-900/30">
+                <h3 className="text-sm font-bold text-purple-900 dark:text-purple-300 flex items-center gap-2 mb-3">
+                  <User className="h-4 w-4 text-purple-600" />
+                  Employee Referral Context
+                </h3>
+                <div className="grid gap-3 sm:grid-cols-2 text-xs">
+                  <div>
+                    <span className="font-semibold text-slate-500">Referred By:</span>{" "}
+                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                      {app.referredByEmployeeId?.name || app.referredByEmployeeId?.firstName ? `${app.referredByEmployeeId.firstName || app.referredByEmployeeId.name} ${app.referredByEmployeeId.lastName || ""}` : "Employee"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-500">Department:</span>{" "}
+                    <span className="font-medium text-slate-700 dark:text-slate-300">
+                      {app.referredByEmployeeId?.department || "General"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-500">Relationship:</span>{" "}
+                    <span className="font-medium text-slate-700 dark:text-slate-300">
+                      {app.referralId?.relationship || "Colleague / Professional"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-500">Referral Date:</span>{" "}
+                    <span className="font-medium text-slate-700 dark:text-slate-300">
+                      {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : "N/A"}
+                    </span>
+                  </div>
+                </div>
+                {app.referralId?.referralNote && (
+                  <div className="mt-2 text-xs">
+                    <span className="font-semibold text-slate-500">Recommendation Note:</span>
+                    <p className="mt-0.5 text-slate-700 dark:text-slate-300 italic bg-white/60 dark:bg-slate-900/60 p-2 rounded border border-purple-100 dark:border-purple-900/20">
+                      "{app.referralId.referralNote}"
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Social profiles links */}
             <div className="flex flex-wrap items-center gap-3 border-t pt-4 mt-5 text-xs font-semibold">
