@@ -194,7 +194,10 @@ const MyAttendance = () => {
     for (let i = 1; i <= daysInMonth; i++) {
       const date = new Date(cy, cm, i);
       const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-      const dateStr = date.toISOString().split("T")[0];
+      const year = date.getFullYear();
+      const monthStr = String(date.getMonth() + 1).padStart(2, '0');
+      const dayStr = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${monthStr}-${dayStr}`;
       const record = monthRecords.find(r => r.date === dateStr || (r.clockIn && r.clockIn.startsWith(dateStr)));
       const holiday = holidays.find(h => h.date === dateStr);
       
@@ -458,7 +461,20 @@ const MyAttendance = () => {
                 }
 
                 return (
-                  <div key={d.key} className={cn("min-h-[100px] border rounded-[12px] p-2.5 flex flex-col transition-colors", cellClass)}>
+                  <div 
+                    key={d.key} 
+                    onClick={() => {
+                      if (d.record) {
+                        setSelectedRecord(d.record);
+                        setCorrectionModalOpen(true);
+                      }
+                    }}
+                    className={cn(
+                      "min-h-[100px] border rounded-[12px] p-2.5 flex flex-col transition-colors", 
+                      cellClass,
+                      d.record ? "cursor-pointer hover:opacity-80 active:scale-[0.98]" : ""
+                    )}
+                  >
                     <div className="flex justify-between items-start mb-1.5">
                       <span className="text-[14px] font-bold text-slate-800 dark:text-slate-200">{d.dayNumber}</span>
                       {d.isToday && (
@@ -569,7 +585,7 @@ const MyAttendance = () => {
 
         <CorrectionRequestModal
           open={correctionModalOpen}
-          onOpenChange={setCorrectionModalOpen}
+          onClose={() => setCorrectionModalOpen(false)}
           record={selectedRecord}
           onSuccess={fetchData}
         />
