@@ -46,6 +46,7 @@ import JobOpenings from "./pages/modules/recruitment/JobOpenings"
 import CreateJob from "./pages/modules/recruitment/CreateJob"
 import JobDetail from "./pages/modules/recruitment/JobDetail"
 import ApplyJob from "./pages/ApplyJob"
+import ReferralApplyLandingPage from "./pages/ReferralApplyLandingPage"
 import CandidateApplications from "./pages/modules/recruitment/CandidateApplications"
 import CandidateDetail from "./pages/modules/recruitment/CandidateDetail"
 import RecruitmentPipeline from "./pages/modules/recruitment/RecruitmentPipeline"
@@ -60,6 +61,8 @@ import Payroll from "./pages/modules/payroll/Payroll"
 import Tickets from "./pages/modules/payroll/Tickets"
 import Indemnity from "./pages/modules/payroll/Indemnity"
 import SalarySlip from "./pages/modules/payroll/SalarySlip"
+import ReferralRewardManagement from "./pages/modules/payroll/ReferralRewardManagement"
+import ReferralAnalyticsDashboard from "./pages/modules/payroll/ReferralAnalyticsDashboard"
 import PayrollPolicyManagement from "./pages/modules/administration/PayrollPolicyManagement"
 
 // Transfer and Promotion Module
@@ -296,6 +299,7 @@ function App() {
 
             <Route path="/careers" element={<Careers />} />
             <Route path="/apply/:id" element={<ApplyJob />} />
+            <Route path="/referral/apply/:token" element={<ReferralApplyLandingPage />} />
             <Route path="/application-status" element={<ApplicationStatus />} />
 
             <Route
@@ -643,6 +647,26 @@ function App() {
             <Route path="/payroll/salary-slip" element={
               <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
                 <DashboardLayout><SalarySlip /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/payroll/referrals" element={
+              <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER ADMIN", "CEO", "FINANCE_MANAGER"]}>
+                <DashboardLayout><ReferralRewardManagement /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/referrals/analytics" element={
+              <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER ADMIN", "CEO", "FINANCE_MANAGER"]}>
+                <DashboardLayout><ReferralAnalyticsDashboard /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/recruitment/referrals/analytics" element={
+              <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER ADMIN", "CEO", "FINANCE_MANAGER"]}>
+                <DashboardLayout><ReferralAnalyticsDashboard /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/employee-center/referrals" element={
+              <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER", "FINANCE_MANAGER", "HR_MANAGER", "HR_OFFICER", "PAYROLL_OFFICER", "ADMIN", "SUPER ADMIN"]}>
+                <DashboardLayout><EmployeeReferrals /></DashboardLayout>
               </ProtectedRoute>
             } />
 

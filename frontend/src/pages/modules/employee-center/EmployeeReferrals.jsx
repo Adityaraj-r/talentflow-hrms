@@ -30,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { RecruitmentKpiCard, RecruitmentEmptyState } from "@/components/recruitment/RecruitmentUI";
+import ReferralProgressTracker from "@/components/recruitment/ReferralProgressTracker";
 import { Pagination } from "@/components/ui/pagination";
 
 export default function EmployeeReferrals() {
@@ -49,6 +50,7 @@ export default function EmployeeReferrals() {
   // Modals
   const [selectedJobForDetail, setSelectedJobForDetail] = useState(null);
   const [selectedJobForReferral, setSelectedJobForReferral] = useState(null);
+  const [selectedReferralForTracker, setSelectedReferralForTracker] = useState(null);
   const [isSubmittingReferral, setIsSubmittingReferral] = useState(false);
 
   // Referral Form State
@@ -445,7 +447,15 @@ export default function EmployeeReferrals() {
                               {ref.progress}
                             </span>
                           </td>
-                          <td className="p-4 text-right">
+                          <td className="p-4 text-right space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-cyan-600 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 text-xs font-semibold cursor-pointer"
+                              onClick={() => setSelectedReferralForTracker(ref)}
+                            >
+                              <Eye className="h-3.5 w-3.5 mr-1" /> Track Progress
+                            </Button>
                             {ref.status === "Invited" && (
                               <Button
                                 variant="ghost"
@@ -635,6 +645,35 @@ export default function EmployeeReferrals() {
                 </Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+      )}
+      {/* Modal 3: Referral Progress Tracker Modal */}
+      {selectedReferralForTracker && (
+        <Dialog open={!!selectedReferralForTracker} onOpenChange={() => setSelectedReferralForTracker(null)}>
+          <DialogContent className="max-w-3xl bg-white dark:bg-slate-950 p-6">
+            <DialogHeader className="pb-2 border-b">
+              <DialogTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-cyan-600" /> Live Referral Progress Tracker
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Track recruitment stage updates for your referred candidate.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-2">
+              <ReferralProgressTracker
+                referral={selectedReferralForTracker}
+                application={selectedReferralForTracker.applicationId || {}}
+                reward={selectedReferralForTracker.rewardId}
+              />
+            </div>
+
+            <DialogFooter className="border-t pt-3">
+              <Button variant="outline" size="sm" onClick={() => setSelectedReferralForTracker(null)}>
+                Close
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
