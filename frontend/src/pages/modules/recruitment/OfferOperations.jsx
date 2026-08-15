@@ -1,4 +1,6 @@
 import { PriorityDot } from "@/components/ui/PriorityDot";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import * as Motion from "framer-motion";
 import { toast } from "sonner";
@@ -328,13 +330,9 @@ const OfferOperations = () => {
         return (
           <div className="flex items-center justify-end gap-1">
             <ActionIcon icon={Eye} tooltip="View Details" onClick={(e) => { e.stopPropagation(); handleAction("preview", offer); }} />
-            <ActionIcon icon={Pencil} tooltip="Edit Offer" />
-            {canWrite && canSendOffer(offer) && (
-              <ActionIcon icon={Send} tooltip="Send Offer" onClick={(e) => { e.stopPropagation(); handleAction("send", offer); }} />
-            )}
-            {canApproveOffers && (
-              <ActionIcon icon={XCircle} tooltip="Cancel Offer" onClick={(e) => { e.stopPropagation(); handleAction("reject", offer); }} />
-            )}
+            <ActionIcon icon={Pencil} tooltip="Edit Offer" disabled={!canWrite} />
+            <ActionIcon icon={Send} tooltip="Send Offer" disabled={!(canWrite && canSendOffer(offer))} onClick={(e) => { e.stopPropagation(); handleAction("send", offer); }} />
+            <ActionIcon icon={XCircle} tooltip="Cancel Offer" disabled={!canApproveOffers} onClick={(e) => { e.stopPropagation(); handleAction("reject", offer); }} />
           </div>
         );
       },
@@ -407,7 +405,7 @@ const OfferOperations = () => {
           ) : showApprovalsOnly ? (
             <OfferApprovalTimeline offer={selectedOffer} onAction={handleAction} canWrite={canApproveOffers} />
           ) : (
-            <>
+            <div className="flex flex-col gap-6">
               {/* Recent Offer Activities & Operational Summary */}
               <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
                 {/* Recent Offer Activities */}
@@ -564,38 +562,40 @@ const OfferOperations = () => {
                   )}
                 </section>
               </div>
-              <OfferLifecycleTracker offer={selectedOffer} />
-              <div className="grid gap-6 2xl:grid-cols-[1.05fr_0.95fr]">
-                <OfferApprovalTimeline offer={selectedOffer} onAction={handleAction} canWrite={canApproveOffers} />
-                <CompensationBreakdownCard offer={selectedOffer} />
-              </div>
-              <div className="grid gap-6 2xl:grid-cols-[0.95fr_1.05fr]">
-                <NegotiationTimeline offer={selectedOffer} onAction={handleAction} canWrite={canApproveOffers} />
-                <NotificationCenter notifications={data?.notifications || []} />
-              </div>
-              <div className="grid gap-6 2xl:grid-cols-[1fr_1fr]">
-                <HiringActivityFeed activity={data?.activity || []} />
-                <CandidateComparisonPanel offers={offers} />
-              </div>
-              <OfferInsightsPanel insights={data?.insights || []} />
-              <OfferAutomationRules rules={selectedOffer?.automationRules || []} />
-              <TemplatesPanel offers={offers} selectedOffer={selectedOffer} onPreview={(templateId) => setPreviewOffer({ ...selectedOffer, previewTemplateId: templateId })} />
-              <PreOnboardingWorkflow offer={selectedOffer} />
               {selectedOffer && (
-                <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <BadgeCheck className="h-5 w-5 text-primary mt-1 shrink-0" strokeWidth={2} />
-                      <div>
-                        <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Offer Letter Preview</h2>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Review the selected candidate letter.</p>
-                      </div>
-                    </div>
-                    <Button onClick={() => setPreviewOffer(selectedOffer)} className="rounded-lg bg-cyan-600 dark:bg-cyan-500 text-white hover:bg-cyan-700 dark:hover:bg-cyan-600 transition-all shadow-sm hover:-translate-y-0.5">Preview Offer</Button>
+                <>
+                  <OfferLifecycleTracker offer={selectedOffer} />
+                  <div className="grid gap-6 2xl:grid-cols-[1.05fr_0.95fr]">
+                    <OfferApprovalTimeline offer={selectedOffer} onAction={handleAction} canWrite={canApproveOffers} />
+                    <CompensationBreakdownCard offer={selectedOffer} />
                   </div>
-                </section>
+                  <div className="grid gap-6 2xl:grid-cols-[0.95fr_1.05fr]">
+                    <NegotiationTimeline offer={selectedOffer} onAction={handleAction} canWrite={canApproveOffers} />
+                    <NotificationCenter notifications={data?.notifications || []} />
+                  </div>
+                  <div className="grid gap-6 2xl:grid-cols-[1fr_1fr]">
+                    <HiringActivityFeed activity={data?.activity || []} />
+                    <CandidateComparisonPanel offers={offers} />
+                  </div>
+                  <OfferInsightsPanel insights={data?.insights || []} />
+                  <OfferAutomationRules rules={selectedOffer?.automationRules || []} />
+                  <TemplatesPanel offers={offers} selectedOffer={selectedOffer} onPreview={(templateId) => setPreviewOffer({ ...selectedOffer, previewTemplateId: templateId })} />
+                  <PreOnboardingWorkflow offer={selectedOffer} />
+                  <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <BadgeCheck className="h-5 w-5 text-primary mt-1 shrink-0" strokeWidth={2} />
+                        <div>
+                          <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Offer Letter Preview</h2>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Review the selected candidate letter.</p>
+                        </div>
+                      </div>
+                      <Button onClick={() => setPreviewOffer(selectedOffer)} className="rounded-lg bg-cyan-600 dark:bg-cyan-500 text-white hover:bg-cyan-700 dark:hover:bg-cyan-600 transition-all shadow-sm hover:-translate-y-0.5">Preview Offer</Button>
+                    </div>
+                  </section>
+                </>
               )}
-            </>
+            </div>
           )}
         </>
       )}
