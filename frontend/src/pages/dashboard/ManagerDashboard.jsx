@@ -39,7 +39,7 @@ const ManagerDashboard = ({ stats = {}, isLoading = false }) => {
       requestedBy: "Emily Davis",
       date: "2025-04-19",
       status: "Pending",
-      icon: <Briefcase className="h-4 w-4 text-blue-600" />,
+      icon: <Briefcase className="h-4 w-4 text-purple-600" />,
     },
     {
       id: 3,
@@ -66,9 +66,9 @@ const ManagerDashboard = ({ stats = {}, isLoading = false }) => {
       type: 'performance',
       title: 'Performance Cycle',
       desc: 'Quarterly appraisals are due in 15 days.',
-      icon: <BarChart className="w-4 h-4 text-blue-600" />,
-      bg: 'bg-blue-50 border-blue-100',
-      iconBg: 'bg-blue-100'
+      icon: <BarChart className="w-4 h-4 text-purple-600" />,
+      bg: 'bg-purple-50 border-purple-100',
+      iconBg: 'bg-purple-100'
     },
     {
       id: 3,
@@ -234,8 +234,8 @@ const ManagerDashboard = ({ stats = {}, isLoading = false }) => {
                             </div>
                         </div>
                         <div className="flex gap-2">
-                             <button className="flex-1 py-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-lg text-xs font-semibold border border-transparent hover:border-green-200 transition-colors"> <span title="Approve" className="flex items-center justify-center w-full h-full text-emerald-600 hover:text-emerald-700"><Check className="h-4 w-4" /><span className="sr-only">Approve</span></span></Button>
-                             <button className="flex-1 py-1.5 bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 rounded-lg text-xs font-semibold border border-transparent hover:border-rose-200 transition-colors"> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>
+                             <button className="flex-1 py-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-lg text-xs font-semibold border border-transparent hover:border-green-200 transition-colors"> <span title="Approve" className="flex items-center justify-center w-full h-full text-emerald-600 hover:text-emerald-700"><Check className="h-4 w-4" /><span className="sr-only">Approve</span></span></button>
+                             <button className="flex-1 py-1.5 bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 rounded-lg text-xs font-semibold border border-transparent hover:border-rose-200 transition-colors"> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></button>
                         </div>
                       </div>
                     ))}

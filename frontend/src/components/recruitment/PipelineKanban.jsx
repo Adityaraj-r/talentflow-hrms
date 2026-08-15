@@ -57,7 +57,7 @@ import {
 
 export const PIPELINE_STAGES = [
   { id: "Applied", label: "Applied", apiStatus: "Applied", accent: "sky", color: "bg-sky-400" },
-  { id: "Under Review", label: "Under Review", apiStatus: "Under Review", accent: "indigo", color: "bg-indigo-400" },
+  { id: "Under Review", label: "Under Review", apiStatus: "Under Review", accent: "indigo", color: "bg-purple-400" },
   { id: "HR Screening", label: "HR Screening", apiStatus: "HR Screening", accent: "purple", color: "bg-purple-400" },
   { id: "Assessment", label: "Assessment", apiStatus: "Assessment", accent: "orange", color: "bg-orange-400" },
   { id: "Interview Round 1", label: "Interview Rd 1", apiStatus: "Interview Round 1", accent: "amber", color: "bg-amber-400" },
@@ -121,7 +121,7 @@ const getToneClass = (tone) => ({
   cyan: "border-cyan-400/30 bg-cyan-500/10 text-cyan-300",
   violet: "border-violet-400/30 bg-violet-500/10 text-violet-300",
   sky: "border-sky-400/30 bg-sky-500/10 text-sky-300",
-  indigo: "border-indigo-400/30 bg-indigo-500/10 text-indigo-300",
+  indigo: "border-purple-400/30 bg-purple-500/10 text-purple-300",
   purple: "border-purple-400/30 bg-purple-500/10 text-purple-300",
   orange: "border-orange-400/30 bg-orange-500/10 text-orange-300",
   yellow: "border-yellow-400/30 bg-yellow-500/10 text-yellow-300",

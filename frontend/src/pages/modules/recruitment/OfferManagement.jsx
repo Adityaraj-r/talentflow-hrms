@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatsCard } from "@/components/ui/stats-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useUser } from "@/contexts/UserContext"
 import apiClient from "@/services/apiClient"
 import { RecruitmentEmptyState, RecruitmentPageHeader, RecruitmentSkeleton } from "@/components/recruitment/RecruitmentUI"
@@ -402,23 +403,25 @@ const OfferManagement = () => {
                 className="grid gap-4 md:grid-cols-3"
               >
                 <div className="flex flex-col gap-1">
-                  <select
-                    name="candidateId"
+                  <Select
                     value={selectedCandidate?._id || ""}
-                    onChange={(e) => {
-                      const candidate = candidates.find(c => c._id === e.target.value)
+                    onValueChange={(val) => {
+                      const candidate = candidates.find(c => c._id === val)
                       setSelectedCandidate(candidate || null)
                     }}
                     required
-                    className="flex h-10 w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
                   >
-                    <option value="" disabled>Select Candidate</option>
-                    {candidates.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name} ({c.email || "No Email"})
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="flex h-10 w-full rounded-md border border-white/10 bg-background px-3 py-2 text-sm text-slate-900 dark:text-slate-100">
+                      <SelectValue placeholder="Select Candidate" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {candidates.map((c) => (
+                        <SelectItem key={c._id} value={c._id}>
+                          {c.name} ({c.email || "No Email"})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Input name="position" placeholder="Position" value={positionVal} onChange={(e) => setPositionVal(e.target.value)} />
                 <Input name="department" placeholder="Department" />

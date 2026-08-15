@@ -206,7 +206,7 @@ export const UploadedDocumentsModal = ({ open, onOpenChange, activeRequest, onVi
           <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4">
             <div className="min-w-0">
               <h3 className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
                   <FolderOpen className="h-5 w-5" />
                 </span>
                 <span className="truncate">{displayTitle}</span>
@@ -217,10 +217,10 @@ export const UploadedDocumentsModal = ({ open, onOpenChange, activeRequest, onVi
                 </p>
               )}
             </div>
-            <span className="hidden rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300 sm:inline-flex">
+            <span className="hidden rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700 dark:border-purple-500/20 dark:bg-purple-500/10 dark:text-purple-300 sm:inline-flex">
               {attachments.length} {attachments.length === 1 ? "Document" : "Documents"}
             </span>
-            <DialogClose className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition-all duration-150 hover:bg-white hover:text-slate-700 hover:shadow-sm dark:hover:bg-slate-800 dark:hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <DialogClose className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition-all duration-150 hover:bg-white hover:text-slate-700 hover:shadow-sm dark:hover:bg-slate-800 dark:hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500">
               <X className="h-4 w-4" />
             </DialogClose>
           </div>
@@ -236,7 +236,7 @@ export const UploadedDocumentsModal = ({ open, onOpenChange, activeRequest, onVi
                   className="grid min-h-[92px] w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-4 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/45 dark:hover:border-slate-700 sm:grid-cols-[auto_minmax(0,1fr)_auto]"
                 >
                   {/* File Info */}
-                  <div className="grid h-12 w-12 place-items-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                  <div className="grid h-12 w-12 place-items-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
                     <FileText className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 self-center text-left">
@@ -258,7 +258,7 @@ export const UploadedDocumentsModal = ({ open, onOpenChange, activeRequest, onVi
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-9 w-28 justify-center rounded-lg border-slate-300 bg-white px-4 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-150 hover:bg-slate-50 hover:text-slate-900 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700/80 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="h-9 w-28 justify-center rounded-lg border-slate-300 bg-white px-4 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-150 hover:bg-slate-50 hover:text-slate-900 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700/80 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       onClick={() => onViewFile(file)}> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
                     <Button
                       size="sm"
@@ -294,7 +294,7 @@ export const UploadedDocumentsModal = ({ open, onOpenChange, activeRequest, onVi
               <Button
                 onClick={downloadAllAsZip}
                 disabled={downloadingZip}
-                className="flex h-10 items-center gap-1.5 rounded-lg bg-blue-600 px-5 text-xs font-semibold text-white transition-all duration-150 hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex h-10 items-center gap-1.5 rounded-lg bg-purple-600 px-5 text-xs font-semibold text-white transition-all duration-150 hover:bg-purple-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 {downloadingZip ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -397,7 +397,7 @@ export const DocumentPreviewDialog = ({ previewDoc, onClose }) => {
           <Button 
             onClick={() => downloadFile(previewDoc, setDownloading)} 
             disabled={downloading}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg flex items-center gap-1.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all duration-150"
+            className="bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-lg flex items-center gap-1.5 focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all duration-150"
           >
             {downloading ? (
               <>

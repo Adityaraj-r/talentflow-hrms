@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { Pagination } from "@/components/ui/pagination";
+import { useState, useEffect, useMemo } from "react";
 import { useUser } from "@/contexts/UserContext";
 import attendanceService from "@/services/attendanceService";
 import PayrollLockPanel from "./PayrollLockPanel";
@@ -8,14 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
 import {
   Search,
   Users,
@@ -25,7 +18,6 @@ import {
   Pencil,
   Timer,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { StatsCard } from "@/components/ui/stats-card";
 
 const formatBreakTime = (totalMinutes) => {
@@ -42,6 +34,35 @@ const formatOTHours = (hours) => {
   if (h === 0) return `+${m}m`;
   if (m === 0) return `+${h}h`;
   return `+${h}h ${m}m`;
+};
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case "Present":
+      return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200";
+    case "Late":
+      return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200";
+    case "Absent":
+      return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200";
+    case "Half Day":
+      return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200";
+    default:
+      return "bg-gray-100 text-gray-700 border-gray-200";
+  }
+};
+
+const calculateDuration = (clockIn, clockOut, totalBreakMinutes = 0) => {
+  if (!clockIn || !clockOut) return "-";
+  const start = new Date(clockIn);
+  const end = new Date(clockOut);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return "-";
+  const diffMs = end - start;
+  if (diffMs < 0) return "-";
+  const grossMinutes = Math.floor(diffMs / 1000 / 60);
+  const netMinutes = Math.max(0, grossMinutes - (totalBreakMinutes || 0));
+  const hours = Math.floor(netMinutes / 60);
+  const minutes = Math.floor(netMinutes % 60);
+  return `${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}m`;
 };
 
 const AttendanceRecord = () => {
@@ -64,8 +85,6 @@ const AttendanceRecord = () => {
 
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   const userRole = user?.role?.toUpperCase();
   const showLockPanel = ["HR_MANAGER", "PAYROLL_OFFICER", "ADMIN", "SUPER_ADMIN"].includes(userRole);
@@ -155,36 +174,198 @@ const AttendanceRecord = () => {
     return true;
   });
 
-  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
+  const columns = useMemo(() => {
+    const cols = [
+      {
+        accessorKey: "employee",
+        header: "Employee",
+        cell: ({ row }) => {
+          const record = row.original;
+          return (
+            <div className="flex flex-col">
+              <span className="font-medium text-sm text-slate-900 dark:text-white">
+                {record.userId?.firstName} {record.userId?.lastName}
+              </span>
+              <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
+                {record.userId?.employeeCode || "N/A"}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {record.userId?.email}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "userId.employeeCode",
+        header: () => <div className="hidden md:block">Employee ID</div>,
+        cell: ({ row }) => {
+          const record = row.original;
+          return (
+            <div className="hidden md:block font-mono text-sm text-muted-foreground">
+              {record.userId?.employeeCode || "-"}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "userId.department",
+        header: "Department",
+        cell: ({ row }) => {
+          const record = row.original;
+          return (
+            <span className="text-sm text-slate-600 dark:text-slate-300">
+              {record.userId?.department || "-"}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: "clockIn",
+        header: "Clock In",
+        cell: ({ row }) => {
+          const record = row.original;
+          return (
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              {record.clockIn
+                ? new Date(record.clockIn).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "-"}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: "clockOut",
+        header: "Clock Out",
+        cell: ({ row }) => {
+          const record = row.original;
+          return (
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              {record.clockOut
+                ? new Date(record.clockOut).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "-"}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: "totalBreakMinutes",
+        header: () => <div className="text-right">Break</div>,
+        cell: ({ row }) => {
+          const record = row.original;
+          return (
+            <div className="text-right text-sm text-slate-600 dark:text-slate-400">
+              {formatBreakTime(record.totalBreakMinutes)}
+            </div>
+          );
+        },
+      },
+      {
+        id: "totalHrs",
+        header: () => <div className="text-right">Total Hrs</div>,
+        cell: ({ row }) => {
+          const record = row.original;
+          return (
+            <div className="text-right text-sm font-medium text-purple-600 dark:text-purple-400">
+              {calculateDuration(
+                record.clockIn,
+                record.clockOut,
+                record.totalBreakMinutes
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "overtimeHours",
+        header: () => <div className="text-right">OT Hrs</div>,
+        cell: ({ row }) => {
+          const record = row.original;
+          const otFormatted = formatOTHours(record.overtimeHours);
+          return (
+            <div className="text-right">
+              {otFormatted ? (
+                <span className="text-sm font-mono font-medium text-amber-600 dark:text-amber-400">
+                  {otFormatted}
+                </span>
+              ) : (
+                <span className="text-sm text-muted-foreground">-</span>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        id: "otStatus",
+        header: () => <div className="text-right">OT Status</div>,
+        cell: ({ row }) => {
+          const record = row.original;
+          const otFormatted = formatOTHours(record.overtimeHours);
+          return (
+            <div className="text-right">
+              {otFormatted ? (
+                record.isOtApproved ? (
+                  <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800 text-xs px-2 py-0.5">
+                    Approved
+                  </Badge>
+                ) : (
+                  <Badge className="bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800 text-xs px-2 py-0.5">
+                    Pending
+                  </Badge>
+                )
+              ) : (
+                <span className="text-sm text-muted-foreground">-</span>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "status",
+        header: () => <div className="text-right">Status</div>,
+        cell: ({ row }) => {
+          const record = row.original;
+          return (
+            <div className="text-right">
+              <Badge
+                variant="outline"
+                className={`${getStatusColor(record.status)} px-2 py-0.5 border`}
+              >
+                {record.status}
+              </Badge>
+            </div>
+          );
+        },
+      },
+    ];
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Present":
-        return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200";
-      case "Late":
-        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200";
-      case "Absent":
-        return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200";
-      case "Half Day":
-        return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200";
-      default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
+    if (canEdit) {
+      cols.push({
+        id: "actions",
+        header: () => <div className="text-right">Action</div>,
+        cell: ({ row }) => {
+          const record = row.original;
+          return (
+            <div className="text-right">
+              <ActionIcon
+                icon={Pencil}
+                tooltip="Edit Record"
+                onClick={() => handleEditClick(record)}
+              />
+            </div>
+          );
+        },
+      });
     }
-  };
-
-  const calculateDuration = (clockIn, clockOut, totalBreakMinutes = 0) => {
-    if (!clockIn || !clockOut) return "-";
-    const start = new Date(clockIn);
-    const end = new Date(clockOut);
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return "-";
-    const diffMs = end - start;
-    if (diffMs < 0) return "-";
-    const grossMinutes = Math.floor(diffMs / 1000 / 60);
-    const netMinutes = Math.max(0, grossMinutes - (totalBreakMinutes || 0));
-    const hours = Math.floor(netMinutes / 60);
-    const minutes = Math.floor(netMinutes % 60);
-    return `${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}m`;
-  };
+    
+    return cols;
+  }, [canEdit]);
 
   return (
     <div className="space-y-5 max-w-full pb-10">
@@ -268,166 +449,18 @@ const AttendanceRecord = () => {
           </div>
         </CardHeader>
 
-        <CardContent className="p-0">
-          <div className="relative w-full overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead className="hidden md:table-cell">Employee ID</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Clock In</TableHead>
-                  <TableHead>Clock Out</TableHead>
-                  <TableHead className="text-right">Break</TableHead>
-                  <TableHead className="text-right">Total Hrs</TableHead>
-                  <TableHead className="text-right">OT Hrs</TableHead>
-                  <TableHead className="text-right">OT Status</TableHead>
-                  <TableHead className="text-right">Status</TableHead>
-                  {canEdit && (
-                    <TableHead className="text-right">Action</TableHead>
-                  )}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={canEdit ? 11 : 10}
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      Loading organizational data...
-                    </TableCell>
-                  </TableRow>
-                ) : filteredRecords.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={canEdit ? 11 : 10}
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      No records found for the selected date.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredRecords.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((record) => {
-                    const otFormatted = formatOTHours(record.overtimeHours);
-                    return (
-                      <TableRow
-                        key={record._id}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                      >
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium text-sm text-slate-900 dark:text-white">
-                              {record.userId?.firstName}{" "}
-                              {record.userId?.lastName}
-                            </span>
-                            <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
-                              {record.userId?.employeeCode || "N/A"}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {record.userId?.email}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
-                          {record.userId?.employeeCode || "-"}
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-slate-600 dark:text-slate-300">
-                            {record.userId?.department || "-"}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-sm text-slate-600 dark:text-slate-400">
-                          {record.clockIn
-                            ? new Date(record.clockIn).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "-"}
-                        </TableCell>
-                        <TableCell className="text-sm text-slate-600 dark:text-slate-400">
-                          {record.clockOut
-                            ? new Date(record.clockOut).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "-"}
-                        </TableCell>
-                        <TableCell className="text-right text-sm text-slate-600 dark:text-slate-400">
-                          {formatBreakTime(record.totalBreakMinutes)}
-                        </TableCell>
-                        <TableCell className="text-right text-sm font-medium text-indigo-600 dark:text-indigo-400">
-                          {calculateDuration(
-                            record.clockIn,
-                            record.clockOut,
-                            record.totalBreakMinutes
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {otFormatted ? (
-                            <span className="text-sm font-mono font-medium text-amber-600 dark:text-amber-400">
-                              {otFormatted}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              -
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {otFormatted ? (
-                            record.isOtApproved ? (
-                              <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800 text-xs px-2 py-0.5">
-                                Approved
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800 text-xs px-2 py-0.5">
-                                Pending
-                              </Badge>
-                            )
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              -
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Badge
-                            variant="outline"
-                            className={`${getStatusColor(record.status)} px-2 py-0.5 border`}
-                          >
-                            {record.status}
-                          </Badge>
-                        </TableCell>
-                        {canEdit && (
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditClick(record)}
-                              className="h-8 w-8 p-0 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          {filteredRecords.length > 0 && (
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={filteredRecords.length}
-                itemsPerPage={itemsPerPage}
-                onPageChange={(page) => setCurrentPage(page)}
-              />
+        <CardContent className="p-4">
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Loading organizational data...
             </div>
+          ) : (
+            <DataTable 
+              columns={columns} 
+              data={filteredRecords} 
+              searchable={false} 
+              defaultPageSize={10} 
+            />
           )}
         </CardContent>
       </Card>

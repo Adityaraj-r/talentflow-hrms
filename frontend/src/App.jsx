@@ -201,7 +201,7 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission, requiredPe
     return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-950">
         <div className="text-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
+          <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto" />
           <p className="text-lg font-semibold text-gray-900 dark:text-white">
             {permLoading ? "Verifying permissions..." : "Loading..."}
           </p>
@@ -219,7 +219,7 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission, requiredPe
   if (needsMatrixGate) {
     if (hasPermission === null) return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-950">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
       </div>
     )
     return hasPermission ? children : <Navigate to="/unauthorized" replace />
@@ -250,7 +250,7 @@ const DashboardRouter = () => {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white dark:bg-gray-950">
         <div className="text-center space-y-4">
-          <Loader2 className="h-16 w-16 animate-spin text-blue-600 mx-auto" />
+          <Loader2 className="h-16 w-16 animate-spin text-purple-600 mx-auto" />
           <p className="text-lg font-semibold text-gray-900 dark:text-white">Loading Dashboard...</p>
           <p className="text-sm text-gray-500">Please wait</p>
         </div>

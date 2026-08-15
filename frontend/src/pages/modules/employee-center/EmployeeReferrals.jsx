@@ -29,8 +29,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { RecruitmentKpiCard, RecruitmentEmptyState } from "@/components/recruitment/RecruitmentUI";
+import { RecruitmentEmptyState } from "@/components/recruitment/RecruitmentUI";
 import { Pagination } from "@/components/ui/pagination";
+import { StatsCard } from "@/components/ui/stats-card";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function EmployeeReferrals() {
   const [activeTab, setActiveTab] = useState("open-jobs");
@@ -185,7 +189,7 @@ export default function EmployeeReferrals() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] flex items-center gap-3 text-2xl">
-            <UserPlus className="h-8 w-8 text-cyan-600 dark:text-cyan-400" />
+            <UserPlus className="h-8 w-8 text-primary dark:text-primary" />
             Employee Referral
           </h1>
           <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
@@ -196,37 +200,33 @@ export default function EmployeeReferrals() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <RecruitmentKpiCard
+        <StatsCard
           title="Open Positions"
           value={totalOpen}
-          icon={Briefcase}
-          helper="Available for referral"
-          accent="sky"
-          active={activeTab === "open-jobs"}
+          icon={<Briefcase className="h-8 w-8" />}
+          variant="blue"
+          isActive={activeTab === "open-jobs"}
           onClick={() => setActiveTab("open-jobs")}
         />
-        <RecruitmentKpiCard
+        <StatsCard
           title="My Referrals"
           value={myTotalRef}
-          icon={Users}
-          helper="Total referred candidates"
-          accent="violet"
-          active={activeTab === "my-referrals"}
+          icon={<Users className="h-8 w-8" />}
+          variant="purple"
+          isActive={activeTab === "my-referrals"}
           onClick={() => setActiveTab("my-referrals")}
         />
-        <RecruitmentKpiCard
+        <StatsCard
           title="Pending Invitations"
           value={myPending}
-          icon={Clock}
-          helper="Awaiting candidate application"
-          accent="amber"
+          icon={<Clock className="h-8 w-8" />}
+          variant="amber"
         />
-        <RecruitmentKpiCard
+        <StatsCard
           title="Successful Hires"
           value={myHired}
-          icon={CheckCircle2}
-          helper="Candidates hired via referral"
-          accent="emerald"
+          icon={<CheckCircle2 className="h-8 w-8" />}
+          variant="emerald"
         />
       </div>
 
@@ -235,13 +235,13 @@ export default function EmployeeReferrals() {
         <TabsList className="w-full flex justify-start gap-6 bg-transparent border-b border-slate-200 dark:border-white/10 rounded-none h-auto p-0 mb-6">
           <TabsTrigger
             value="open-jobs"
-            className="cursor-pointer bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 rounded-none px-2 py-3 text-sm font-semibold text-slate-600 dark:text-slate-400 data-[state=active]:text-cyan-600 dark:data-[state=active]:text-cyan-400 transition-all"
+            className="cursor-pointer bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 py-3 text-sm font-semibold text-slate-600 dark:text-slate-400 data-[state=active]:text-primary dark:data-[state=active]:text-primary transition-all"
           >
             Open Positions ({openJobs.length})
           </TabsTrigger>
           <TabsTrigger
             value="my-referrals"
-            className="cursor-pointer bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 rounded-none px-2 py-3 text-sm font-semibold text-slate-600 dark:text-slate-400 data-[state=active]:text-cyan-600 dark:data-[state=active]:text-cyan-400 transition-all"
+            className="cursor-pointer bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 py-3 text-sm font-semibold text-slate-600 dark:text-slate-400 data-[state=active]:text-primary dark:data-[state=active]:text-primary transition-all"
           >
             My Referrals ({myReferrals.length})
           </TabsTrigger>
@@ -262,25 +262,26 @@ export default function EmployeeReferrals() {
             </div>
 
             <div className="flex items-center gap-3">
-              <select
-                value={selectedDept}
-                onChange={(e) => setSelectedDept(e.target.value)}
-                className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900 px-3 text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
-              >
-                <option value="all">All Departments</option>
-                {departmentsList.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
-                  </option>
-                ))}
-              </select>
+              <Select value={selectedDept} onValueChange={setSelectedDept}>
+                <SelectTrigger className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900 px-3 text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-primary w-[180px]">
+                  <SelectValue placeholder="All Departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departmentsList.map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           {/* Job Cards Grid */}
           {loadingJobs ? (
             <div className="flex justify-center items-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : filteredJobs.length === 0 ? (
             <RecruitmentEmptyState
@@ -296,7 +297,7 @@ export default function EmployeeReferrals() {
                 >
                   <CardHeader className="p-5 pb-3">
                     <div className="flex justify-between items-start gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/20">
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 dark:bg-primary/100/10 text-primary dark:text-primary border border-primary/20 dark:border-primary/20">
                         {job.department || "General"}
                       </span>
                       <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
@@ -347,7 +348,7 @@ export default function EmployeeReferrals() {
                     </Button>
                     <Button
                       size="sm"
-                      className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-semibold cursor-pointer"
+                      className="flex-1 bg-primary hover:bg-primary/90 text-white text-xs font-semibold cursor-pointer"
                       onClick={() => setSelectedJobForReferral(job)}
                     >
                       <Send className="mr-1.5 h-3.5 w-3.5" /> Refer Candidate
@@ -373,7 +374,7 @@ export default function EmployeeReferrals() {
             <CardContent className="p-0">
               {loadingReferrals ? (
                 <div className="flex justify-center items-center py-16">
-                  <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : myReferrals.length === 0 ? (
                 <div className="p-8">
@@ -383,85 +384,111 @@ export default function EmployeeReferrals() {
                   />
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs md:text-sm">
-                    <thead className="bg-slate-100/70 dark:bg-slate-900/80 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-white/10">
-                      <tr>
-                        <th className="p-4">Candidate</th>
-                        <th className="p-4">Position</th>
-                        <th className="p-4">Referral Date</th>
-                        <th className="p-4">Invitation Status</th>
-                        <th className="p-4">Application Progress</th>
-                        <th className="p-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-slate-700 dark:text-slate-300 font-medium">
-                      {paginatedMyReferrals.map((ref) => (
-                        <tr key={ref._id} className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors">
-                          <td className="p-4">
+                <DataTable
+                  columns={[
+                    {
+                      accessorKey: "candidate",
+                      header: "Candidate",
+                      cell: ({ row }) => {
+                        const ref = row.original;
+                        return (
+                          <div>
                             <div className="font-semibold text-slate-900 dark:text-slate-100">
                               {ref.candidateName}
                             </div>
                             <div className="text-xs text-slate-500 dark:text-slate-400">
                               {ref.candidateEmail}
                             </div>
-                          </td>
-                          <td className="p-4">
+                          </div>
+                        );
+                      }
+                    },
+                    {
+                      accessorKey: "position",
+                      header: "Position",
+                      cell: ({ row }) => {
+                        const ref = row.original;
+                        return (
+                          <div>
                             <div className="font-semibold text-slate-900 dark:text-slate-100">
                               {ref.jobTitle}
                             </div>
                             <div className="text-xs text-slate-500 dark:text-slate-400">
                               {ref.department}
                             </div>
-                          </td>
-                          <td className="p-4 text-slate-500 dark:text-slate-400">
-                            {new Date(ref.referralDate).toLocaleDateString()}
-                          </td>
-                          <td className="p-4">
-                            <span
-                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                                ref.status === "Invited"
-                                  ? "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20"
-                                  : ref.status === "Applied"
-                                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20"
-                                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
-                              }`}
-                            >
-                              {ref.status}
-                            </span>
-                          </td>
-                          <td className="p-4">
-                            <span
-                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                                ref.progress === "Hired"
-                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
-                                  : ref.progress === "Selected"
-                                  ? "bg-cyan-100 text-cyan-800 dark:bg-cyan-500/20 dark:text-cyan-300"
-                                  : ref.progress === "Not Selected"
-                                  ? "bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300"
-                                  : "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
-                              }`}
-                            >
-                              {ref.progress}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right">
+                          </div>
+                        );
+                      }
+                    },
+                    {
+                      accessorKey: "referralDate",
+                      header: "Referral Date",
+                      cell: ({ row }) => <span className="text-slate-500 dark:text-slate-400">{new Date(row.original.referralDate).toLocaleDateString()}</span>
+                    },
+                    {
+                      accessorKey: "status",
+                      header: "Invitation Status",
+                      cell: ({ row }) => {
+                        const ref = row.original;
+                        return (
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                              ref.status === "Invited"
+                                ? "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20"
+                                : ref.status === "Applied"
+                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20"
+                                : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                            }`}
+                          >
+                            {ref.status}
+                          </span>
+                        );
+                      }
+                    },
+                    {
+                      accessorKey: "progress",
+                      header: "Application Progress",
+                      cell: ({ row }) => {
+                        const ref = row.original;
+                        return (
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                              ref.progress === "Hired"
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                : ref.progress === "Selected"
+                                ? "bg-primary/20 text-primary dark:bg-primary/100/20 dark:text-primary"
+                                : ref.progress === "Not Selected"
+                                ? "bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300"
+                                : "bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-300"
+                            }`}
+                          >
+                            {ref.progress}
+                          </span>
+                        );
+                      }
+                    },
+                    {
+                      id: "actions",
+                      header: () => <div className="text-right">Actions</div>,
+                      cell: ({ row }) => {
+                        const ref = row.original;
+                        return (
+                          <div className="flex justify-end">
                             {ref.status === "Invited" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-xs font-semibold cursor-pointer"
+                              <ActionIcon
+                                icon={Trash2}
+                                tooltip="Cancel Referral"
                                 onClick={() => handleCancelReferral(ref._id)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5 mr-1" /> Cancel
-                              </Button>
+                              />
                             )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                          </div>
+                        );
+                      }
+                    }
+                  ]}
+                  data={paginatedMyReferrals}
+                  searchable={false}
+                />
               )}
             </CardContent>
             
@@ -486,7 +513,7 @@ export default function EmployeeReferrals() {
           <DialogContent className="max-w-2xl bg-white dark:bg-slate-950">
             <DialogHeader>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary dark:bg-primary/100/10 dark:text-primary">
                   {selectedJobForDetail.department}
                 </span>
                 <span className="text-xs text-slate-500">{selectedJobForDetail.employmentType}</span>
@@ -542,7 +569,7 @@ export default function EmployeeReferrals() {
                 Close
               </Button>
               <Button
-                className="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold cursor-pointer"
+                className="bg-primary hover:bg-primary/90 text-white font-semibold cursor-pointer"
                 onClick={() => {
                   const j = selectedJobForDetail;
                   setSelectedJobForDetail(null);
@@ -562,7 +589,7 @@ export default function EmployeeReferrals() {
           <DialogContent className="max-w-md bg-white dark:bg-slate-950">
             <DialogHeader>
               <DialogTitle className="text-lg font-bold flex items-center gap-2">
-                <UserPlus className="h-5 w-5 text-cyan-600" /> Refer Candidate
+                <UserPlus className="h-5 w-5 text-primary" /> Refer Candidate
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
                 Position: <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedJobForReferral.jobTitle}</span> ({selectedJobForReferral.department})
@@ -630,7 +657,7 @@ export default function EmployeeReferrals() {
                 <Button variant="outline" type="button" onClick={() => setSelectedJobForReferral(null)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSubmittingReferral} className="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold cursor-pointer">
+                <Button type="submit" disabled={isSubmittingReferral} className="bg-primary hover:bg-primary/90 text-white font-semibold cursor-pointer">
                   {isSubmittingReferral ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />} Send Referral Link
                 </Button>
               </DialogFooter>

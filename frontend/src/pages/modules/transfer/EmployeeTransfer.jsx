@@ -8,12 +8,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea"
 import { StatsCard } from "@/components/ui/stats-card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { FileText, Check, X, Search, ArrowLeftRight, CheckCircle2, Clock, XCircle, Loader2 } from "lucide-react"
+import { Building2, Search, ArrowLeftRight, Clock, Plus, Loader2, Calendar, FileText, Check, X, ShieldCheck, UserCog, Briefcase, UserMinus, Pencil, CheckCircle2, XCircle } from "lucide-react"
 import { toast } from "sonner"
 import apiClient from "@/services/apiClient"
 import { cn } from "@/lib/utils"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Pagination } from "@/components/ui/pagination"
+import { DataTable } from "@/components/ui/data-table"
+import { ActionIcon } from "@/components/ui/action-icon"
 import EmployeePromotion from "./EmployeePromotion"
 import OffboardingRequests from "./OffboardingRequests"
 
@@ -153,9 +155,9 @@ const AdminTransferView = ({ user }) => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard title="Total Requests" value={stats.total} icon={<ArrowLeftRight />} variant="blue" />
-        <StatsCard title="Approved" value={stats.approved} icon={<CheckCircle2 />} variant="green" />
-        <StatsCard title="Pending" value={stats.pending} icon={<Clock />} variant="orange" />
-        <StatsCard title="Rejected" value={stats.rejected} icon={<XCircle />} variant="red" />
+        <StatsCard title="Approved" value={stats.approved} icon={<CheckCircle2 />} variant="emerald" />
+        <StatsCard title="Pending" value={stats.pending} icon={<Clock />} variant="amber" />
+        <StatsCard title="Rejected" value={stats.rejected} icon={<XCircle />} variant="rose" />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -353,6 +355,40 @@ const EmployeeTransferView = ({ user }) => {
     })
   }
 
+  const columns = [
+    {
+      accessorKey: "department",
+      header: "To Department",
+      cell: ({ row }) => <span className="font-medium">{row.original.requestedDepartment || row.original.newDepartment}</span>
+    },
+    {
+      accessorKey: "reason",
+      header: "Reason",
+      cell: ({ row }) => <span>{row.original.reason}</span>
+    },
+    {
+      accessorKey: "submitted",
+      header: "Submitted",
+      cell: ({ row }) => <span>{new Date(row.original.createdAt).toLocaleDateString()}</span>
+    },
+    {
+      accessorKey: "status",
+      header: () => <div className="text-center">Status</div>,
+      cell: ({ row }) => (
+        <div className="flex justify-center">
+          <span className={cn(
+            "px-2.5 py-0.5 rounded-full text-xs font-semibold",
+            row.original.status === "Approved" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+            row.original.status === "Rejected" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
+            "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+          )}>
+            {row.original.status}
+          </span>
+        </div>
+      )
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -408,44 +444,14 @@ const EmployeeTransferView = ({ user }) => {
           <CardTitle className="text-lg">My Transfer Requests</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="rounded-md overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 border-b">
-                <tr className="text-left font-medium">
-                  <th className="p-4">To Department</th>
-                  <th className="p-4">Reason</th>
-                  <th className="p-4">Submitted</th>
-                  <th className="p-4 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {isLoading ? (
-                  <tr><td colSpan="4" className="p-8 text-center text-muted-foreground">Loading your requests...</td></tr>
-                ) : myTransfers.length === 0 ? (
-                  <tr><td colSpan="4" className="p-8 text-center text-muted-foreground">No transfer requests found. Click New Request to submit one.</td></tr>
-                ) : (
-                  myTransfers.map(t => (
-                    <tr key={t._id} className="hover:bg-primary/5 transition-colors duration-200 cursor-pointer">
-                      <td className="p-4 font-medium">{t.requestedDepartment || t.newDepartment}</td>
-                      <td className="p-4">{t.reason}</td>
-                      <td className="p-4">{new Date(t.createdAt).toLocaleDateString()}</td>
-                      <td className="p-4">
-                        <div className="flex justify-center">
-                          <span className={cn(
-                            "px-2.5 py-0.5 rounded-full text-xs font-semibold",
-                            t.status === "Approved" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                            t.status === "Rejected" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
-                            "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                          )}>
-                            {t.status}
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div className="rounded-md overflow-hidden">
+            {isLoading ? (
+              <div className="p-8 text-center text-muted-foreground">Loading your requests...</div>
+            ) : myTransfers.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground">No transfer requests found. Click New Request to submit one.</div>
+            ) : (
+              <DataTable columns={columns} data={myTransfers} searchable={false} />
+            )}
           </div>
           {pagination.totalPages > 1 && (
             <div className="p-4 border-t flex justify-between items-center bg-muted/20">
@@ -483,6 +489,116 @@ const StatCard = ({ title, value, icon, color = "text-foreground", gradient = "f
 )
 
 const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTerm, onSearchChange, pagination, onPageChange, canApproveReject = true, canRecommend = false, onRecommend, onViewDetails, userRole }) => {
+  const columns = [
+    {
+      accessorKey: "employee",
+      header: "Employee",
+      cell: ({ row }) => <span className="font-medium">{row.original.employeeName}</span>
+    },
+    {
+      accessorKey: "employeeId",
+      header: "ID",
+      cell: ({ row }) => <span>{row.original.employeeId}</span>
+    },
+    {
+      accessorKey: "currentDept",
+      header: isHistory ? "From Dept" : "Current Dept",
+      cell: ({ row }) => <span>{row.original.currentDepartment}</span>
+    },
+    {
+      accessorKey: "newDept",
+      header: isHistory ? "To Dept" : "New Dept",
+      cell: ({ row }) => <span>{row.original.newDepartment}</span>
+    },
+    {
+      accessorKey: "type",
+      header: "Type",
+      cell: ({ row }) => <span>{row.original.transferType}</span>
+    },
+    {
+      accessorKey: "timeline",
+      header: "Timeline",
+      cell: ({ row }) => {
+        const item = row.original;
+        return (
+          <div className="space-y-1 text-xs whitespace-nowrap">
+            <div className="text-muted-foreground text-purple-600 dark:text-purple-400 font-medium">
+              Req: {new Date(item.requestDate || item.createdAt).toLocaleDateString()}
+            </div>
+            {item.status !== 'Pending' && item.actionedAt && (
+              <div className={item.status === 'Approved' ? 'text-green-600 dark:text-green-500 font-medium' : 'text-red-600 dark:text-red-500 font-medium'}>
+                {item.status === 'Approved' ? 'Appr' : 'Rej'}: {new Date(item.actionedAt).toLocaleDateString()}
+              </div>
+            )}
+          </div>
+        )
+      }
+    },
+    {
+      accessorKey: "actions",
+      header: () => <div className="text-center">{!canAction ? "Status" : (isHistory ? "Status & Override" : "Actions")}</div>,
+      cell: ({ row }) => {
+        const item = row.original;
+        const formattedUserRole = userRole ? userRole.replace('_', ' ') : '';
+        const hasRecommended = item.managerRecommendation && item.managerRecommendation.includes(`[${formattedUserRole}]`);
+        
+        if (!canAction) {
+          return (
+            <div className="flex justify-center">
+              <span className={cn(
+                "px-2.5 py-0.5 rounded-full text-xs font-semibold",
+                item.status === "Approved" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                item.status === "Rejected" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
+                "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+              )}>
+                {item.status}
+              </span>
+            </div>
+          )
+        }
+        
+        return (
+          <div className="flex items-center justify-center gap-2">
+            {isHistory && (
+              <span className={cn(
+                "px-2.5 py-0.5 rounded-full text-xs font-semibold mr-2",
+                item.status === "Approved" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+              )}>
+                {item.status}
+              </span>
+            )}
+            
+            {(isHistory || canApproveReject) && item.status !== "Approved" && (
+              <ActionIcon icon={CheckCircle2} tooltip={isHistory ? "Override to Approved" : "Approve"} onClick={() => onAction(item._id, 'Approved')} className="text-green-600 hover:bg-green-50" />
+            )}
+
+            {(isHistory || canApproveReject) && item.status !== "Rejected" && (
+              <ActionIcon icon={XCircle} tooltip={isHistory ? "Override to Rejected" : "Reject"} onClick={() => onAction(item._id, 'Rejected')} className="text-red-600 hover:bg-red-50" />
+            )}
+
+            {!isHistory && canRecommend && !hasRecommended && (
+              <ActionIcon icon={Pencil} tooltip="Recommend" onClick={() => onRecommend(item)} className="text-purple-600 hover:bg-purple-50" />
+            )}
+
+            {!isHistory && canRecommend && hasRecommended && (
+              <span className="px-2.5 py-1 bg-green-50 text-green-600 border border-green-200 rounded-md text-xs font-semibold">
+                Recommended
+              </span>
+            )}
+            
+            <ActionIcon 
+              icon={FileText} 
+              tooltip="View Details & Recommendations" 
+              onClick={() => onViewDetails(item)}
+              className={item.managerRecommendation ? "border-primary text-primary hover:bg-primary/10" : ""}
+            />
+          </div>
+        )
+      }
+    }
+  ];
+
   return (
     <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
       {isHistory && (
@@ -501,127 +617,14 @@ const TransferTable = ({ data, onAction, isHistory, loading, canAction, searchTe
         </CardHeader>
       )}
       <CardContent className={cn("p-0", isHistory ? "pt-2" : "pt-0")}>
-        <div className="rounded-md overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 border-b">
-              <tr className="text-left font-medium">
-                <th className="p-4">Employee</th>
-                <th className="p-4">ID</th>
-                <th className="p-4">{isHistory ? "From" : "Current"} Dept</th>
-                <th className="p-4">{isHistory ? "To" : "New"} Dept</th>
-                <th className="p-4">Type</th>
-                <th className="p-4">Timeline</th>
-                <th className="p-4 text-center">{!canAction ? "Status" : (isHistory ? "Status & Override" : "Actions")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {loading ? (
-                <tr><td colSpan="7" className="p-8 text-center text-muted-foreground">Loading data...</td></tr>
-              ) : data.length === 0 ? (
-                <tr><td colSpan="7" className="p-8 text-center text-muted-foreground">No records found</td></tr>
-              ) : (
-                data.map((item) => {
-                  const formattedUserRole = userRole ? userRole.replace('_', ' ') : '';
-                  const hasRecommended = item.managerRecommendation && item.managerRecommendation.includes(`[${formattedUserRole}]`);
-                  
-                  return (
-                  <tr key={item._id} className="hover:bg-primary/5 transition-colors duration-200 group">
-                    <td className="p-4 font-medium">{item.employeeName}</td>
-                    <td className="p-4">{item.employeeId}</td>
-                    <td className="p-4">{item.currentDepartment}</td>
-                    <td className="p-4">{item.newDepartment}</td>
-                    <td className="p-4">{item.transferType}</td>
-                    
-                    <td className="p-4 text-xs whitespace-nowrap  ">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-blue-600 dark:text-blue-400 font-medium">
-                          Req: {new Date(item.requestDate || item.createdAt).toLocaleDateString()}
-                        </div>
-                        {item.status !== 'Pending' && item.actionedAt && (
-                          <div className={item.status === 'Approved' ? 'text-green-600 dark:text-green-500 font-medium' : 'text-red-600 dark:text-red-500 font-medium'}>
-                            {item.status === 'Approved' ? 'Appr' : 'Rej'}: {new Date(item.actionedAt).toLocaleDateString()}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="p-4">
-                      {!canAction ? (
-                        <div className="flex justify-center">
-                          <span className={cn(
-                            "px-2.5 py-0.5 rounded-full text-xs font-semibold",
-                            item.status === "Approved" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                            item.status === "Rejected" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
-                            "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                          )}>
-                            {item.status}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center gap-2">
-                          {isHistory && (
-                            <span className={cn(
-                              "px-2.5 py-0.5 rounded-full text-xs font-semibold mr-2",
-                              item.status === "Approved" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                              "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                            )}>
-                              {item.status}
-                            </span>
-                          )}
-                          
-                          {(isHistory || canApproveReject) && item.status !== "Approved" && (
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 text-green-600 hover:bg-green-50"
-                              onClick={() => onAction(item._id, 'Approved')}
-                              title={isHistory ? "Override to Approved" : "Approve"}
-                            >
-                              <Check className="h-4 w-4" />
-                            </Button>
-                          )}
-
-                          {(isHistory || canApproveReject) && item.status !== "Rejected" && (
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 text-red-600 hover:bg-red-50"
-                              onClick={() => onAction(item._id, 'Rejected')}
-                              title={isHistory ? "Override to Rejected" : "Reject"}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-
-                          {!isHistory && canRecommend && !hasRecommended && (
-                            <Button variant="outline" size="sm" className="h-8 text-xs font-medium bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700" onClick={() => onRecommend(item)}>
-                              Recommend
-                            </Button>
-                          )}
-
-                          {!isHistory && canRecommend && hasRecommended && (
-                            <span className="px-2.5 py-1 bg-green-50 text-green-600 border border-green-200 rounded-md text-xs font-semibold">
-                              Recommended
-                            </span>
-                          )}
-                          
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className={cn("h-8 w-8 hover:bg-muted", item.managerRecommendation && "border-primary text-primary hover:bg-primary/10")} 
-                            onClick={() => onViewDetails(item)}
-                            title="View Details & Recommendations"
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                )})
-              )}
-            </tbody>
-          </table>
+        <div className="rounded-md overflow-hidden">
+          {loading ? (
+            <div className="p-8 text-center text-muted-foreground">Loading data...</div>
+          ) : data.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">No records found</div>
+          ) : (
+            <DataTable columns={columns} data={data} searchable={false} />
+          )}
         </div>
         {pagination && pagination.totalPages > 1 && (
           <div className="p-4 border-t flex justify-between items-center bg-muted/20">

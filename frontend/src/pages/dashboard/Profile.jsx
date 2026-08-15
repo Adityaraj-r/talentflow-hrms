@@ -129,7 +129,7 @@ const getPasswordStrength = (pw) => {
   if (/[^A-Za-z0-9]/.test(pw)) score++
   if (score <= 1) return { label: "Weak", color: "bg-red-500", width: "w-1/4" }
   if (score === 2) return { label: "Fair", color: "bg-yellow-500", width: "w-2/4" }
-  if (score === 3) return { label: "Good", color: "bg-blue-500", width: "w-3/4" }
+  if (score === 3) return { label: "Good", color: "bg-purple-500", width: "w-3/4" }
   return { label: "Strong", color: "bg-emerald-500", width: "w-full" }
 }
 
@@ -390,7 +390,7 @@ const Profile = () => {
                 </Badge>
 
                 {user.isEmailVerified && (
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20 px-3 py-1 text-xs">
+                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20 px-3 py-1 text-xs">
                     <ShieldCheck className="w-3.5 h-3.5 mr-1 shrink-0" /> Verified
                   </Badge>
                 )}
@@ -603,7 +603,7 @@ const Profile = () => {
                   </div>
                   <p className={`text-xs font-medium ${pwStrength.label === "Weak" ? "text-red-500" :
                       pwStrength.label === "Fair" ? "text-yellow-600" :
-                        pwStrength.label === "Good" ? "text-blue-600" : "text-emerald-600"
+                        pwStrength.label === "Good" ? "text-purple-600" : "text-emerald-600"
                     }`}>
                     {pwStrength.label} — {passwordData.new.length < 8 ? "minimum 8 characters required" : ""}
                   </p>

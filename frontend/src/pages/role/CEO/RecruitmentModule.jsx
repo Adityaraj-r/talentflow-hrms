@@ -219,7 +219,7 @@ const RecruitmentModule = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-blue-500" />
+                  <TrendingUp className="h-5 w-5 text-purple-500" />
                   Hiring Velocity Trend
                 </CardTitle>
                 <CardDescription>
@@ -313,7 +313,7 @@ const RecruitmentModule = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-indigo-500" />
+                  <Users className="h-5 w-5 text-purple-500" />
                   Executive Candidate Focus
                 </CardTitle>
                 <CardDescription>

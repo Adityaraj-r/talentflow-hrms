@@ -82,7 +82,7 @@ const InterviewTaskModal = ({ open, onOpenChange, task, intData }) => {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case "upcoming":
-        return "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30";
+        return "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30";
       case "in progress":
         return "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30";
       case "completed":
@@ -92,7 +92,7 @@ const InterviewTaskModal = ({ open, onOpenChange, task, intData }) => {
       case "rescheduled":
         return "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30";
       default:
-        return "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30";
+        return "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30";
     }
   };
 
@@ -138,7 +138,7 @@ const InterviewTaskModal = ({ open, onOpenChange, task, intData }) => {
         <DialogHeader className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1.5">
             <div className="flex items-start gap-1.5">
-              <div className="h-6 w-6 shrink-0 text-sm rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400 text-base font-bold border border-blue-200 dark:border-blue-800 shadow-sm">
+              <div className="h-6 w-6 shrink-0 text-sm rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center text-purple-600 dark:text-purple-400 text-base font-bold border border-purple-200 dark:border-purple-800 shadow-sm">
                 {candidate.name ? candidate.name.charAt(0).toUpperCase() : intData.candidateName?.charAt(0).toUpperCase()}
               </div>
               <div>
@@ -166,7 +166,7 @@ const InterviewTaskModal = ({ open, onOpenChange, task, intData }) => {
                    {candidateApp && (
                      <>
                         <span>&bull;</span>
-                        <span>Stage: <span className="font-medium text-blue-600 dark:text-blue-400">{candidateApp.status || "Interview"}</span></span>
+                        <span>Stage: <span className="font-medium text-purple-600 dark:text-purple-400">{candidateApp.status || "Interview"}</span></span>
                      </>
                    )}
                 </div>
@@ -213,7 +213,7 @@ const InterviewTaskModal = ({ open, onOpenChange, task, intData }) => {
                     <div>
                       <p className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Meeting Platform</p>
                       <p className="font-medium text-slate-900 dark:text-white flex items-center gap-1.5">
-                        <Video className="w-4 h-4 text-blue-500" /> {getMeetingPlatform(linkText)}
+                        <Video className="w-4 h-4 text-purple-500" /> {getMeetingPlatform(linkText)}
                       </p>
                     </div>
                     {linkText && linkText !== "N/A" ? (
@@ -222,7 +222,7 @@ const InterviewTaskModal = ({ open, onOpenChange, task, intData }) => {
                           {linkText}
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <Button onClick={() => window.open(linkText, "_blank")} size="sm" className="flex-1 gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
+                          <Button onClick={() => window.open(linkText, "_blank")} size="sm" className="flex-1 gap-1.5 bg-purple-600 hover:bg-purple-700 text-white shadow-sm">
                             <Video className="w-4 h-4" /> Join Meeting
                           </Button>
                           <Button onClick={() => copyToClipboard(linkText)} size="sm" variant="outline" className="gap-1.5">
@@ -288,7 +288,7 @@ const InterviewTaskModal = ({ open, onOpenChange, task, intData }) => {
                       {displayLinks && displayLinks.length > 0 && (
                         <div className="flex gap-1.5 pt-1 pl-11">
                           {displayLinks.map((l, i) => (
-                             <a key={i} href={l} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-600 dark:hover:text-blue-400">
+                             <a key={i} href={l} target="_blank" rel="noreferrer" className="text-purple-500 hover:text-purple-600 dark:hover:text-purple-400">
                                <Globe className="w-4 h-4" />
                              </a>
                           ))}
@@ -333,12 +333,12 @@ const InterviewTaskModal = ({ open, onOpenChange, task, intData }) => {
                 <FileText className="w-3.5 h-3.5 text-slate-500" />
                 Instructions
               </h3>
-              <div className="rounded-xl border border-blue-200 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-900/10 p-1.5 max-h-[48px] overflow-hidden text-ellipsis">
+              <div className="rounded-xl border border-purple-200 dark:border-purple-900/40 bg-purple-50/50 dark:bg-purple-900/10 p-1.5 max-h-[48px] overflow-hidden text-ellipsis">
                 {intData.instructions?.length > 0 ? (
                   <ul className="space-y-1.5">
                     {intData.instructions.map((inst, i) => (
                       <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-700 dark:text-slate-300">
-                        <span className="text-blue-500 mt-0.5">&bull;</span>
+                        <span className="text-purple-500 mt-0.5">&bull;</span>
                         <span className="leading-relaxed">{inst}</span>
                       </li>
                     ))}
@@ -373,12 +373,12 @@ const InterviewTaskModal = ({ open, onOpenChange, task, intData }) => {
                <div className="flex gap-1.5 overflow-x-auto pb-2">
                  <div className="flex items-center justify-between p-1.5 min-w-[180px] rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm">
                     <div className="flex items-center gap-1.5 pr-4">
-                      <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded">
+                      <div className="p-1.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded">
                         <FileText className="w-4 h-4" />
                       </div>
                       <span className="text-[11px] font-medium ">Job Description</span>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-blue-600">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-purple-600">
                       <Download className="w-4 h-4" />
                     </Button>
                  </div>

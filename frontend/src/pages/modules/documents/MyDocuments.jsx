@@ -14,8 +14,8 @@ const getDocumentIcon = (category) => {
     case 'Personal': return <User className="h-8 w-8 text-green-500" />
     case 'Education': return <GraduationCap className="h-8 w-8 text-purple-500" />
     case 'Employment': return <Briefcase className="h-8 w-8 text-orange-500" />
-    case 'Onboarding': return <ShieldCheck className="h-8 w-8 text-blue-500" />
-    case 'Payroll': return <FileDigit className="h-8 w-8 text-indigo-500" />
+    case 'Onboarding': return <ShieldCheck className="h-8 w-8 text-purple-500" />
+    case 'Payroll': return <FileDigit className="h-8 w-8 text-purple-500" />
     default: return <FileText className="h-8 w-8 text-gray-500" />
   }
 }

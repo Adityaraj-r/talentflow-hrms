@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Pagination } from "@/components/ui/pagination";
 import leaveService from "@/services/leaveService";
 import { useUser } from "@/contexts/UserContext";
 import {
@@ -12,14 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
 import {
   Select,
   SelectContent,
@@ -43,6 +36,8 @@ import {
   ShieldCheck,
   Search,
   Clock,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -114,14 +109,12 @@ const LeaveApprovals = () => {
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  
+
   const [statusFilter, setStatusFilter] = useState("Pending");
   const [searchTerm, setSearchTerm] = useState("");
 
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [selectedLeaveId, setSelectedLeaveId] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   const fetchLeaves = async () => {
     try {
@@ -188,7 +181,9 @@ const LeaveApprovals = () => {
   const filteredLeaves = leaves.filter((leave) => {
     if (statusFilter !== "All" && leave.status !== statusFilter) return false;
 
-    const name = `${leave.userId?.firstName || ""} ${leave.userId?.lastName || ""}`.toLowerCase();
+    const name = `${leave.userId?.firstName || ""} ${
+      leave.userId?.lastName || ""
+    }`.toLowerCase();
     const email = (leave.userId?.email || "").toLowerCase();
     const dept = (leave.userId?.department || "").toLowerCase();
     const empCode = (leave.userId?.employeeCode || "").toLowerCase();
@@ -202,14 +197,179 @@ const LeaveApprovals = () => {
     );
   });
 
-  const totalPages = Math.ceil(filteredLeaves.length / itemsPerPage);
   const pendingCount = leaves.filter((l) => l.status === "Pending").length;
+
+  const columns = [
+    {
+      id: "employee",
+      header: "Employee",
+      cell: ({ row }) => {
+        const leave = row.original;
+        return (
+          <div className="flex flex-col">
+            <span className="font-medium text-sm text-slate-900 dark:text-white">
+              {leave.userId?.firstName} {leave.userId?.lastName}
+            </span>
+            <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
+              {leave.userId?.employeeCode || "N/A"}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {leave.userId?.email}
+            </span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {leave.userId?.department || "No Department"}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "employeeId",
+      header: () => <span className="hidden md:inline">Employee ID</span>,
+      cell: ({ row }) => {
+        const leave = row.original;
+        return (
+          <span className="hidden md:inline font-mono text-sm text-muted-foreground">
+            {leave.userId?.employeeCode || "-"}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "leaveType",
+      header: "Leave Type",
+      cell: ({ row }) => (
+        <Badge
+          variant="outline"
+          className="bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 text-xs"
+        >
+          {row.getValue("leaveType")}
+        </Badge>
+      ),
+    },
+    {
+      id: "duration",
+      header: "Duration",
+      cell: ({ row }) => {
+        const leave = row.original;
+        return (
+          <span className="text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
+            {formatDate(leave.startDate)} — {formatDate(leave.endDate)}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "totalDays",
+      header: "Days",
+      cell: ({ row }) => (
+        <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">
+          {row.getValue("totalDays")}d
+        </span>
+      ),
+    },
+    {
+      accessorKey: "reason",
+      header: "Reason",
+      cell: ({ row }) => {
+        const leave = row.original;
+        return (
+          <div>
+            <p
+              className="text-sm text-slate-600 dark:text-slate-400 max-w-[160px] truncate"
+              title={leave.reason}
+            >
+              {leave.reason}
+            </p>
+            {leave.status === "Rejected" && leave.rejectionReason && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <X className="w-3 h-3 shrink-0" />
+                <span
+                  className="truncate max-w-[140px]"
+                  title={leave.rejectionReason}
+                >
+                  {leave.rejectionReason}
+                </span>
+              </p>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const leave = row.original;
+        return (
+          <div className="flex flex-col gap-1.5 items-start">
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-xs border",
+                leave.status === "Approved"
+                  ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800"
+                  : leave.status === "Rejected"
+                  ? "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
+                  : "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800"
+              )}
+            >
+              {leave.status}
+            </Badge>
+            {isHrOrAdmin &&
+              leave.status === "Pending" &&
+              isEscalated(leave.createdAt) && (
+                <Badge
+                  variant="outline"
+                  className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 text-[10px] flex items-center gap-1 px-1.5"
+                >
+                  <AlertTriangle className="w-3 h-3" />
+                  Escalated
+                </Badge>
+              )}
+          </div>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const leave = row.original;
+        return (
+          <div className="text-right">
+            {leave.status === "Pending" ? (
+              <div className="flex justify-end gap-2">
+                <ActionIcon
+                  icon={CheckCircle2}
+                  tooltip="Approve"
+                  onClick={() => handleApprove(leave._id)}
+                  className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                />
+                <ActionIcon
+                  icon={XCircle}
+                  tooltip="Reject"
+                  onClick={() => {
+                    setSelectedLeaveId(leave._id);
+                    setRejectModalOpen(true);
+                  }}
+                  className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                />
+              </div>
+            ) : (
+              <span className="text-xs text-muted-foreground">Reviewed</span>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px]">
             Leave Approvals
           </h1>
           <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
@@ -233,7 +393,7 @@ const LeaveApprovals = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
-                <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                <ShieldCheck className="w-4 h-4 text-purple-600" />
                 {isHrOrAdmin ? "Organisation Requests" : "Team Requests"}
               </CardTitle>
               <CardDescription className="mt-0.5">
@@ -272,168 +432,18 @@ const LeaveApprovals = () => {
           </div>
         </CardHeader>
 
-        <CardContent className="p-0">
-          <div className="relative w-full overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead className="hidden md:table-cell">Employee ID</TableHead>
-                  <TableHead>Leave Type</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Days</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                      Loading leave requests...
-                    </TableCell>
-                  </TableRow>
-                ) : filteredLeaves.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                      No leave requests found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredLeaves.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((leave) => (
-                    <TableRow
-                      key={leave._id}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                    >
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-sm text-slate-900 dark:text-white">
-                            {leave.userId?.firstName} {leave.userId?.lastName}
-                          </span>
-                          <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
-                            {leave.userId?.employeeCode || "N/A"}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {leave.userId?.email}
-                          </span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            {leave.userId?.department || "No Department"}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
-                        {leave.userId?.employeeCode || "-"}
-                      </TableCell>
-
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className="bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 text-xs"
-                        >
-                          {leave.leaveType}
-                        </Badge>
-                      </TableCell>
-
-                      <TableCell className="text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                        {formatDate(leave.startDate)} — {formatDate(leave.endDate)}
-                      </TableCell>
-
-                      <TableCell className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                        {leave.totalDays}d
-                      </TableCell>
-
-                      <TableCell>
-                        <p
-                          className="text-sm text-slate-600 dark:text-slate-400 max-w-[160px] truncate"
-                          title={leave.reason}
-                        >
-                          {leave.reason}
-                        </p>
-                        {leave.status === "Rejected" &&
-                          leave.rejectionReason && (
-                            <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                              <X className="w-3 h-3 shrink-0" />
-                              <span
-                                className="truncate max-w-[140px]"
-                                title={leave.rejectionReason}
-                              >
-                                {leave.rejectionReason}
-                              </span>
-                            </p>
-                          )}
-                      </TableCell>
-
-                      <TableCell>
-                        <div className="flex flex-col gap-1.5 items-start">
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-xs border",
-                              leave.status === "Approved"
-                                ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800"
-                                : leave.status === "Rejected"
-                                ? "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
-                                : "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800"
-                            )}
-                          >
-                            {leave.status}
-                          </Badge>
-                          {isHrOrAdmin &&
-                            leave.status === "Pending" &&
-                            isEscalated(leave.createdAt) && (
-                              <Badge
-                                variant="outline"
-                                className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 text-[10px] flex items-center gap-1 px-1.5"
-                              >
-                                <AlertTriangle className="w-3 h-3" />
-                                Escalated
-                              </Badge>
-                            )}
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="text-right">
-                        {leave.status === "Pending" ? (
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleApprove(leave._id)}
-                              disabled={actionLoading}
-                              className="h-8 bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400 gap-1"> <span title="Approve" className="flex items-center justify-center w-full h-full text-emerald-600 hover:text-emerald-700"><Check className="h-4 w-4" /><span className="sr-only">Approve</span></span></Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedLeaveId(leave._id);
-                                setRejectModalOpen(true);
-                              }}
-                              disabled={actionLoading}
-                              className="h-8 bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400 gap-1"> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            Reviewed
-                          </span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          {filteredLeaves.length > 0 && (
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={filteredLeaves.length}
-                itemsPerPage={itemsPerPage}
-                onPageChange={(page) => setCurrentPage(page)}
-              />
+        <CardContent className="p-4 pt-4">
+          {loading ? (
+            <div className="text-center py-10 text-muted-foreground">
+              Loading leave requests...
             </div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={filteredLeaves}
+              searchable={false}
+              defaultPageSize={10}
+            />
           )}
         </CardContent>
       </Card>

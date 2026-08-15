@@ -18,7 +18,7 @@ export default function ListView({ meetings, onMeetingClick, onEdit, onDelete })
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case "upcoming": return "bg-blue-100 text-blue-700 hover:bg-blue-200";
+      case "upcoming": return "bg-purple-100 text-purple-700 hover:bg-purple-200";
       case "ongoing": return "bg-yellow-100 text-yellow-700 hover:bg-yellow-200";
       case "completed": return "bg-emerald-100 text-emerald-700 hover:bg-emerald-200";
       case "cancelled": return "bg-red-100 text-red-700 hover:bg-red-200";

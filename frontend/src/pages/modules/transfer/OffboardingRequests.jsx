@@ -17,6 +17,8 @@ import apiClient from "@/services/apiClient"
 import { cn } from "@/lib/utils"
 import InitiateSeparationModal from "@/components/modals/InitiateSeparationModal" 
 import { Pagination } from "@/components/ui/pagination"
+import { DataTable } from "@/components/ui/data-table"
+import { ActionIcon } from "@/components/ui/action-icon"
 
 const OffboardingRequests = () => {
   const { user } = useAuth()
@@ -118,6 +120,116 @@ const OffboardingRequests = () => {
     setDetailsModalOpen(true)
   }
 
+  const columns = [
+    {
+      accessorKey: "employee",
+      header: "Employee",
+      cell: ({ row }) => (
+        <div>
+          <p className="font-semibold text-sm">{row.original.employeeName}</p>
+          <p className="text-xs text-muted-foreground">{row.original.employeeId}</p>
+        </div>
+      )
+    },
+    {
+      accessorKey: "department",
+      header: () => <div className="text-center">Department</div>,
+      cell: ({ row }) => (
+        <div className="text-center">
+          <p className="text-sm font-medium mx-auto">{row.original.department}</p>
+          <p className="text-xs text-muted-foreground truncate max-w-[150px] mx-auto">{row.original.designation}</p>
+        </div>
+      )
+    },
+    {
+      accessorKey: "type",
+      header: () => <div className="text-center">Type</div>,
+      cell: ({ row }) => {
+        const req = row.original;
+        return (
+          <div className="text-center">
+            <span className={cn(
+              "px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase border shadow-sm whitespace-nowrap",
+              req.type?.toLowerCase().includes("resignation") ? "bg-orange-500/10 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800" :
+              req.type?.toLowerCase().includes("termination") ? "bg-red-500/10 text-red-600 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800" :
+              req.type?.toLowerCase().includes("absconding") ? "bg-purple-500/10 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800" :
+              "bg-purple-500/10 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800"
+            )}>
+              {req.type}
+            </span>
+          </div>
+        )
+      }
+    },
+    {
+      accessorKey: "lwd",
+      header: "LWD (Proposed)",
+      cell: ({ row }) => {
+        const req = row.original;
+        return (
+          <span className="font-medium whitespace-nowrap text-sm">
+            {new Date(req.noticePeriod?.proposedExitDate || req.proposedExitDate || req.exitDate || req.createdAt).toLocaleDateString('en-GB')}
+          </span>
+        )
+      }
+    },
+    {
+      accessorKey: "status",
+      header: () => <div className="text-center">Status</div>,
+      cell: ({ row }) => {
+        const req = row.original;
+        return (
+          <div className="text-center">
+            <span className={cn(
+              "px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border whitespace-nowrap inline-flex items-center gap-1",
+              req.status === 'Withdrawal Pending' ? "bg-orange-500/10 text-orange-600 border-orange-200" :
+              req.status === "Exited" ? "bg-green-500/10 text-green-600 border-green-200" :
+              req.status.includes("High Priority") ? "bg-red-500/10 text-red-600 border-red-200" :
+              req.status.includes("Withdrawn") ? "bg-slate-500/10 text-slate-600 border-slate-200" :
+              req.status.includes("Rejected") ? "bg-red-500/10 text-red-600 border-red-200" :
+              req.status?.includes("Pending") ? "bg-purple-500/10 text-purple-600 border-purple-200" :
+              req.status?.includes("Exit Clearance") ? "bg-purple-500/10 text-purple-600 border-purple-200" :
+              "bg-yellow-500/10 text-yellow-600 border-yellow-200"
+            )}>
+              {req.status === 'Withdrawal Pending' ? 'Withdrawal Pending' : (
+                <>
+                  {req.status?.includes('Exit Clearance') ? <Clock className="w-3 h-3"/> : null}
+                  {req.status.replace(' Approval', '')}
+                </>
+              )}
+            </span>
+          </div>
+        )
+      }
+    },
+    {
+      accessorKey: "actions",
+      header: () => <div className="text-center">Actions</div>,
+      cell: ({ row }) => {
+        const req = row.original;
+        const currentUserId = user?.id || user?._id;
+        const canWithdraw = req.initiatedBy === currentUserId && req.status?.includes('Pending');
+        return (
+          <div className="flex items-center justify-center gap-2">
+            <ActionIcon icon={Eye} tooltip="View Details" onClick={() => openDetailsModal(req)} />
+            
+            {canWithdraw && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 text-[11px] text-red-600 border-red-200 hover:bg-red-50"
+                onClick={() => handleWithdraw(req._id)}
+                disabled={withdrawMutation.isLoading}
+              >
+                <Undo2 className="h-3.5 w-3.5 mr-1" /> Withdraw
+              </Button>
+            )}
+          </div>
+        )
+      }
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 overflow-hidden">
@@ -176,103 +288,20 @@ const OffboardingRequests = () => {
         </CardHeader>
         
         <CardContent className="p-0">
-          <div className="rounded-md overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30">
-                  <TableHead className="font-bold w-[25%]">Employee</TableHead>
-                  <TableHead className="font-bold text-center w-[15%]">Department</TableHead>
-                  <TableHead className="font-bold text-center w-[15%]">Type</TableHead>
-                  <TableHead className="font-bold w-[15%]">LWD (Proposed)</TableHead>
-                  <TableHead className="font-bold text-center w-[20%]">Status</TableHead>
-                  <TableHead className="font-bold text-center w-[10%]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow><TableCell colSpan={6} className="h-64 text-center"><div className="flex flex-col items-center justify-center text-muted-foreground space-y-2"><Loader2 className="h-8 w-8 animate-spin opacity-50" /><p className="text-sm font-medium">Loading pipeline...</p></div></TableCell></TableRow>
-                ) : requests.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="h-64 text-center"><div className="flex flex-col items-center justify-center text-muted-foreground space-y-2"><UserMinus className="h-10 w-10 opacity-20" /><p className="text-sm font-medium">Pipeline is empty. No active separations matching criteria.</p></div></TableCell></TableRow>
-                ) : (
-                  requests.map((req) => {
-                    const nextStatus = getNextStatus(req.status, userRole);
-                    const currentUserId = user?.id || user?._id;
-                    const canWithdraw = req.initiatedBy === currentUserId && req.status?.includes('Pending');
-
-                    return (
-                      <TableRow key={req._id} className="hover:bg-muted/10 transition-colors">
-                        <TableCell>
-                          <p className="font-semibold text-sm">{req.employeeName}</p>
-                          <p className="text-xs text-muted-foreground">{req.employeeId}</p>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <p className="text-sm font-medium mx-auto">{req.department}</p>
-                          <p className="text-xs text-muted-foreground truncate max-w-[150px] mx-auto">{req.designation}</p>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className={cn(
-                            "px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase border shadow-sm whitespace-nowrap",
-                            req.type?.toLowerCase().includes("resignation") ? "bg-orange-500/10 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800" :
-                            req.type?.toLowerCase().includes("termination") ? "bg-red-500/10 text-red-600 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800" :
-                            req.type?.toLowerCase().includes("absconding") ? "bg-purple-500/10 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800" :
-                            "bg-blue-500/10 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
-                          )}>
-                            {req.type}
-                          </span>
-                        </TableCell>
-                        <TableCell className="font-medium whitespace-nowrap text-sm">
-                          {new Date(req.noticePeriod?.proposedExitDate || req.proposedExitDate || req.exitDate || req.createdAt).toLocaleDateString('en-GB')}
-                        </TableCell>
-                        
-                        <TableCell className="text-center">
-                            <span className={cn(
-                              "px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border whitespace-nowrap inline-flex items-center gap-1",
-                              req.status === 'Withdrawal Pending' ? "bg-orange-500/10 text-orange-600 border-orange-200" :
-                              req.status === "Exited" ? "bg-green-500/10 text-green-600 border-green-200" :
-                              req.status.includes("High Priority") ? "bg-red-500/10 text-red-600 border-red-200" :
-                              req.status.includes("Withdrawn") ? "bg-slate-500/10 text-slate-600 border-slate-200" :
-                              req.status.includes("Rejected") ? "bg-red-500/10 text-red-600 border-red-200" :
-                              req.status?.includes("Pending") ? "bg-blue-500/10 text-blue-600 border-blue-200" :
-                              req.status?.includes("Exit Clearance") ? "bg-purple-500/10 text-purple-600 border-purple-200" :
-                              "bg-yellow-500/10 text-yellow-600 border-yellow-200"
-                            )}>
-                              {req.status === 'Withdrawal Pending' ? 'Withdrawal Pending' : (
-                                <>
-                                  {req.status?.includes('Exit Clearance') ? <Clock className="w-3 h-3"/> : null}
-                                  {req.status.replace(' Approval', '')}
-                                </>
-                              )}
-                            </span>
-                        </TableCell>
-                        
-                        <TableCell>
-                          <div className="flex items-center justify-center gap-2">
-                             <Button 
-                              variant="outline" size="sm" className="h-8 text-[11px] font-medium bg-white hover:bg-slate-50 border-slate-200"
-                              onClick={() => openDetailsModal(req)}
-                            >
-                              <Eye className="h-3.5 w-3.5 mr-1" /> View Details
-                            </Button>
-                            
-                            {canWithdraw && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="h-7 text-[11px] text-red-600 border-red-200 hover:bg-red-50"
-                                  onClick={() => handleWithdraw(req._id)}
-                                  disabled={withdrawMutation.isLoading}
-                                >
-                                  <Undo2 className="h-3.5 w-3.5 mr-1" /> Withdraw
-                                </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })
-                )}
-              </TableBody>
-            </Table>
+          <div className="rounded-md overflow-hidden">
+            {isLoading ? (
+              <div className="h-64 flex flex-col items-center justify-center text-muted-foreground space-y-2">
+                <Loader2 className="h-8 w-8 animate-spin opacity-50" />
+                <p className="text-sm font-medium">Loading pipeline...</p>
+              </div>
+            ) : requests.length === 0 ? (
+              <div className="h-64 flex flex-col items-center justify-center text-muted-foreground space-y-2">
+                <UserMinus className="h-10 w-10 opacity-20" />
+                <p className="text-sm font-medium">Pipeline is empty. No active separations matching criteria.</p>
+              </div>
+            ) : (
+              <DataTable columns={columns} data={requests} searchable={false} />
+            )}
           </div>
           {paginationInfo.totalPages > 1 && (
             <div className="flex items-center justify-between px-6 py-4 border-t bg-slate-50/50 dark:bg-slate-900/30">
@@ -531,10 +560,10 @@ const OffboardingRequests = () => {
 
                     {['HR_MANAGER', 'ADMIN', 'DIRECT_MANAGER'].includes(userRole) && selectedRequest.status === 'Exit Clearance' && (
                         <div className="flex gap-2">
-                            <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => clearanceMutation.mutate({ id: selectedRequest._id, payload: { clearanceType: 'it', status: 'Cleared' }})}>Clear IT</Button>
-                            <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => clearanceMutation.mutate({ id: selectedRequest._id, payload: { clearanceType: 'finance', status: 'Cleared' }})}>Clear Finance</Button>
-                            <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => clearanceMutation.mutate({ id: selectedRequest._id, payload: { clearanceType: 'admin', status: 'Cleared' }})}>Clear Admin</Button>
-                            <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => clearanceMutation.mutate({ id: selectedRequest._id, payload: { clearanceType: 'manager', status: 'Cleared' }})}>Clear Manager</Button>
+                            <Button size="sm" variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => clearanceMutation.mutate({ id: selectedRequest._id, payload: { clearanceType: 'it', status: 'Cleared' }})}>Clear IT</Button>
+                            <Button size="sm" variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => clearanceMutation.mutate({ id: selectedRequest._id, payload: { clearanceType: 'finance', status: 'Cleared' }})}>Clear Finance</Button>
+                            <Button size="sm" variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => clearanceMutation.mutate({ id: selectedRequest._id, payload: { clearanceType: 'admin', status: 'Cleared' }})}>Clear Admin</Button>
+                            <Button size="sm" variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => clearanceMutation.mutate({ id: selectedRequest._id, payload: { clearanceType: 'manager', status: 'Cleared' }})}>Clear Manager</Button>
                             <Button size="sm" variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => clearanceMutation.mutate({ id: selectedRequest._id, payload: { ktUpdates: { status: 'Completed', managerSignOff: true } }})}>Mark KT Done</Button>
                         </div>
                     )}

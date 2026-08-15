@@ -150,7 +150,7 @@ export default function CEOAppraisalDashboardSection() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Users className="h-5 w-5 text-blue-600" />
+              <Users className="h-5 w-5 text-purple-600" />
               Departments
             </CardTitle>
           </CardHeader>

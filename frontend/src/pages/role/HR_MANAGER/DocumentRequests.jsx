@@ -117,7 +117,7 @@ const DocumentRequests = () => {
         {list.map((type, idx) => (
           <span
             key={idx}
-            className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-blue-100 dark:border-blue-800/40"
+            className="bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-purple-100 dark:border-purple-800/40"
           >
             {type}
           </span>
@@ -195,7 +195,7 @@ const DocumentRequests = () => {
                                     variant="outline"
                                     size="sm"
                                     disabled={req.status !== "Approved" || getAttachments(req).length === 0}
-                                    className="h-8 px-2.5 text-xs font-semibold flex items-center gap-1.5 border-indigo-200 bg-indigo-50/55 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/40 dark:text-indigo-400 dark:hover:bg-indigo-900/40 text-indigo-700 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
+                                    className="h-8 px-2.5 text-xs font-semibold flex items-center gap-1.5 border-purple-200 bg-purple-50/55 hover:bg-purple-100 dark:bg-purple-950/20 dark:border-purple-900/40 dark:text-purple-400 dark:hover:bg-purple-900/40 text-purple-700 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-purple-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
                                     onClick={() => {
                                       if (req.status === "Approved" && getAttachments(req).length > 0) {
                                         setActiveReqAttachments(req);
@@ -244,7 +244,7 @@ const DocumentRequests = () => {
                                     variant="outline" 
                                     size="icon" 
                                     disabled={req.status === "Rejected"}
-                                    className="h-8 w-8 border-blue-200 dark:border-blue-800/40 bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="h-8 w-8 border-purple-200 dark:border-purple-800/40 bg-purple-50/50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-purple-600 dark:text-purple-400 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                                     onClick={() => {
                                       if (req.status !== "Rejected") handleOpenAddRemark(req);
                                     }}
@@ -313,7 +313,7 @@ const DocumentRequests = () => {
                 <div className="flex justify-between items-center border-b pb-1">
                   <h3 className="font-semibold text-sm text-slate-700 dark:text-slate-300">Remarks History</h3>
                   {selectedReq.status !== "Rejected" && (
-                    <Button variant="link" size="sm" className="h-auto p-0 text-xs font-semibold text-blue-600 hover:text-blue-700" onClick={() => handleOpenAddRemark(selectedReq)}>
+                    <Button variant="link" size="sm" className="h-auto p-0 text-xs font-semibold text-purple-600 hover:text-purple-700" onClick={() => handleOpenAddRemark(selectedReq)}>
                       + Add Supervisor Remark
                     </Button>
                   )}
@@ -344,7 +344,7 @@ const DocumentRequests = () => {
                       {getAttachments(selectedReq).map((doc, idx) => (
                         <div key={idx} className="flex items-center justify-between gap-4 p-3 border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50/55 dark:bg-slate-900/30 transition-colors hover:border-slate-300 dark:hover:border-slate-700">
                           <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="p-2.5 bg-indigo-500/10 text-indigo-505 dark:text-indigo-400 rounded-lg shrink-0">
+                            <div className="p-2.5 bg-purple-500/10 text-purple-505 dark:text-purple-400 rounded-lg shrink-0">
                               <FileText className="h-5 w-5" />
                             </div>
                             <div className="flex flex-col min-w-0 text-left justify-center">
@@ -362,7 +362,7 @@ const DocumentRequests = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                              className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
                               onClick={() => setPreviewDoc(doc)}> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
                             <Button
                               size="sm"
@@ -419,7 +419,7 @@ const DocumentRequests = () => {
                 <Button type="button" variant="outline" onClick={() => setRemarkModalOpen(false)} disabled={savingRemark}>
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white" disabled={savingRemark}>
+                <Button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white" disabled={savingRemark}>
                   {savingRemark && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Save Remark
                 </Button>

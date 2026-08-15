@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ActionIcon } from "@/components/ui/action-icon"
+import { DataTable } from "@/components/ui/data-table"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { FileText, Check, X, Search, Eye } from "lucide-react"
@@ -495,35 +497,41 @@ const RequisitionHistory = () => {
         <CardTitle>Requisition History</CardTitle>
       </CardHeader>
       <CardContent>
-        {history.map((req) => (
-          <div key={req._id} className="flex justify-between p-3 border-b">
-            <div>
-              <p className="font-medium">{req.position}</p>
-              <p className="text-sm text-muted-foreground">
-                {req.department}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span
-                className={`px-2 py-1 text-xs rounded ${
-                  req.status === "Approved"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-700"
-                }`}
-              >
-                {req.status}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setSelectedReq(req)
-                  setViewOpen(true)
-                }}
-                className="cursor-pointer"> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
-            </div>
-          </div>
-        ))}
+        {history.length > 0 ? (
+          <DataTable
+            columns={[
+              { accessorKey: "position", header: "Position", cell: ({ row }) => <span className="font-medium">{row.original.position}</span> },
+              { accessorKey: "department", header: "Department", cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.department}</span> },
+              {
+                accessorKey: "status",
+                header: "Status",
+                cell: ({ row }) => (
+                  <span className={`px-2 py-1 text-xs rounded ${row.original.status === "Approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                    {row.original.status}
+                  </span>
+                )
+              },
+              {
+                id: "actions",
+                header: "Actions",
+                cell: ({ row }) => (
+                  <ActionIcon
+                    icon={Eye}
+                    tooltip="View Details"
+                    onClick={() => {
+                      setSelectedReq(row.original)
+                      setViewOpen(true)
+                    }}
+                  />
+                )
+              }
+            ]}
+            data={history}
+            searchable={false}
+          />
+        ) : (
+          <p className="text-muted-foreground">No history found</p>
+        )}
       </CardContent>
 
       <Dialog

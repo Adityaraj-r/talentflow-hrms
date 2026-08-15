@@ -16,7 +16,7 @@ export default function MeetingDetailsModal({ open, onOpenChange, meeting, onEdi
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case "upcoming": return "bg-blue-100 text-blue-700";
+      case "upcoming": return "bg-purple-100 text-purple-700";
       case "ongoing": return "bg-yellow-100 text-yellow-700";
       case "completed": return "bg-emerald-100 text-emerald-700";
       case "cancelled": return "bg-red-100 text-red-700";

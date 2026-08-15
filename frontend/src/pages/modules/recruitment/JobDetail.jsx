@@ -25,6 +25,8 @@ import {
   FileCheck
 } from "lucide-react"
 import { RecruitmentStatusBadge } from "@/components/recruitment/RecruitmentUI"
+import { DataTable } from "@/components/ui/data-table"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const JobDetail = () => {
   const { id } = useParams()
@@ -265,35 +267,31 @@ const JobDetail = () => {
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="employmentType">Employment Type</Label>
-                  <select
-                    id="employmentType"
-                    name="employmentType"
-                    value={formData.employmentType}
-                    onChange={handleFormChange}
-                    className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none text-slate-800 dark:text-slate-200"
-                    required
-                  >
-                    <option value="Full-Time">Full-Time</option>
-                    <option value="Part-Time">Part-Time</option>
-                    <option value="Intern">Intern</option>
-                    <option value="Contract">Contract</option>
-                    <option value="Temporary">Temporary</option>
-                  </select>
+                  <Select required value={formData.employmentType} onValueChange={(val) => handleFormChange({ target: { name: 'employmentType', value: val } })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Employment Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Full-Time">Full-Time</SelectItem>
+                      <SelectItem value="Part-Time">Part-Time</SelectItem>
+                      <SelectItem value="Intern">Intern</SelectItem>
+                      <SelectItem value="Contract">Contract</SelectItem>
+                      <SelectItem value="Temporary">Temporary</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="workMode">Work Mode</Label>
-                  <select
-                    id="workMode"
-                    name="workMode"
-                    value={formData.workMode}
-                    onChange={handleFormChange}
-                    className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none text-slate-800 dark:text-slate-200"
-                    required
-                  >
-                    <option value="On-site">On-site</option>
-                    <option value="Remote">Remote</option>
-                    <option value="Hybrid">Hybrid</option>
-                  </select>
+                  <Select required value={formData.workMode} onValueChange={(val) => handleFormChange({ target: { name: 'workMode', value: val } })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Work Mode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="On-site">On-site</SelectItem>
+                      <SelectItem value="Remote">Remote</SelectItem>
+                      <SelectItem value="Hybrid">Hybrid</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="officeLocation">Office Location</Label>
@@ -369,7 +367,7 @@ const JobDetail = () => {
               <div className="space-y-6">
                 <div>
                   <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b pb-2 mb-3">
-                    <FileText className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                    <FileText className="h-5 w-5 text-primary" />
                     About the Role
                   </h2>
                   <p className="text-slate-600 dark:text-slate-300 text-sm whitespace-pre-line leading-relaxed">
@@ -380,7 +378,7 @@ const JobDetail = () => {
                 {job.keyResponsibilities && (
                   <div>
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b pb-2 mb-3">
-                      <FileCheck className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                      <FileCheck className="h-5 w-5 text-primary" />
                       Key Responsibilities
                     </h2>
                     <p className="text-slate-600 dark:text-slate-300 text-sm whitespace-pre-line leading-relaxed">
@@ -392,7 +390,7 @@ const JobDetail = () => {
                 {(job.requiredSkills || job.skills) && (
                   <div>
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b pb-2 mb-3">
-                      <Briefcase className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                      <Briefcase className="h-5 w-5 text-primary" />
                       Required Skills & Qualifications
                     </h2>
                     <p className="text-slate-600 dark:text-slate-300 text-sm whitespace-pre-line leading-relaxed">
@@ -404,7 +402,7 @@ const JobDetail = () => {
                 {job.benefitsPerks && (
                   <div>
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b pb-2 mb-3">
-                      <CheckCircle className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                      <CheckCircle className="h-5 w-5 text-primary" />
                       Benefits & Perks
                     </h2>
                     <p className="text-slate-600 dark:text-slate-300 text-sm whitespace-pre-line leading-relaxed">
@@ -420,28 +418,23 @@ const JobDetail = () => {
               <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-6">
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Hiring Roles Details</h2>
                 <div className="overflow-x-auto">
-                  <table className="min-w-full text-xs md:text-sm">
-                    <thead className="bg-slate-50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/5 font-bold text-slate-500 uppercase">
-                      <tr>
-                        <th className="px-4 py-2.5 text-left">Role Name</th>
-                        <th className="px-4 py-2.5 text-center">Openings</th>
-                        <th className="px-4 py-2.5 text-center">Filled</th>
-                        <th className="px-4 py-2.5 text-right">Target Range</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                      {job.hiringRoles.map((role, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.01]">
-                          <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{role.roleName}</td>
-                          <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-400">{role.openings}</td>
-                          <td className="px-4 py-3 text-center text-slate-600 dark:text-slate-400">{role.filled}</td>
-                          <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400 font-semibold">
-                            {role.minSalary && role.maxSalary ? `$${role.minSalary} - $${role.maxSalary}` : "N/A"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <DataTable
+                    columns={[
+                      { accessorKey: "roleName", header: "Role Name", cell: ({ row }) => <span className="font-semibold">{row.original.roleName}</span> },
+                      { accessorKey: "openings", header: "Openings" },
+                      { accessorKey: "filled", header: "Filled" },
+                      {
+                        id: "targetRange",
+                        header: () => <div className="text-right">Target Range</div>,
+                        cell: ({ row }) => {
+                          const r = row.original;
+                          return <div className="text-right font-semibold">{r.minSalary && r.maxSalary ? `$${r.minSalary} - $${r.maxSalary}` : "N/A"}</div>
+                        }
+                      }
+                    ]}
+                    data={job.hiringRoles}
+                    searchable={false}
+                  />
                 </div>
               </Card>
             )}

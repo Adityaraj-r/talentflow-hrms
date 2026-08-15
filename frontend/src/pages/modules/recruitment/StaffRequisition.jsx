@@ -621,7 +621,7 @@ const PendingRequisitions = ({ onChanged, externalFilter }) => {
     switch (status?.toLowerCase()) {
       case "approved": return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
       case "rejected": return "bg-red-500/10 text-red-600 dark:text-red-400"
-      case "published": return "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+      case "published": return "bg-purple-500/10 text-primary"
       case "draft": return "bg-slate-500/10 text-slate-600 dark:text-slate-400"
       default: return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
     }
@@ -1034,7 +1034,7 @@ const RequisitionHistory = ({ externalFilter }) => {
     switch (status?.toLowerCase()) {
       case "approved": return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
       case "rejected": return "bg-red-500/10 text-red-600 dark:text-red-400"
-      case "published": return "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+      case "published": return "bg-purple-500/10 text-primary"
       case "draft": return "bg-slate-500/10 text-slate-600 dark:text-slate-400"
       default: return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
     }

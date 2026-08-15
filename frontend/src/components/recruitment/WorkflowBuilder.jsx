@@ -230,7 +230,7 @@ export default function WorkflowBuilder({
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8 cursor-pointer text-slate-500 hover:text-blue-500" 
+                  className="h-8 w-8 cursor-pointer text-slate-500 hover:text-purple-500" 
                   onClick={() => setExpandedStageId(expandedStageId === idx ? null : idx)}
                 >
                   <Settings className="w-4 h-4" />

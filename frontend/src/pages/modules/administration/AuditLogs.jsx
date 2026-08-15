@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner"
 import adminService from "@/services/adminService"
 import { Pagination } from "@/components/ui/pagination"
+import { DataTable } from "@/components/ui/data-table"
+import { StatsCard } from "@/components/ui/stats-card"
 
 const PAGE_SIZE = 20
 
@@ -155,7 +157,7 @@ const AuditLogs = () => {
 
   const getModuleBadge = (module) => {
     const styles = {
-      Auth: "bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-500/30 dark:text-blue-400",
+      Auth: "bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-500/30 dark:text-purple-400",
       "User Management": "bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-500/30 dark:text-purple-400",
       Security: "bg-red-500/10 text-red-600 border-red-200 dark:border-red-500/30 dark:text-red-400",
       Default: "bg-gray-500/10 text-gray-600 border-gray-200 dark:border-gray-500/30 dark:text-gray-400"
@@ -191,30 +193,27 @@ const AuditLogs = () => {
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-3">
-          <StatsSummary
+          <StatsCard
             title="Total Events"
             value={logs.length}
-            icon={<Clock className="h-5 w-5 text-blue-500" />}
-            description="All logged system events"
+            icon={<Clock className="h-5 w-5" />}
             variant="blue"
             isActive={activeCard === "total"}
             onClick={() => handleCardClick("total")}
           />
-          <StatsSummary
+          <StatsCard
             title="Security Alerts"
             value={logs.filter(l => l.status === "Failed" || l.module === "Security").length}
-            icon={<ShieldAlert className="h-5 w-5 text-red-500" />}
-            description="Critical failures detected"
-            variant="red"
+            icon={<ShieldAlert className="h-5 w-5" />}
+            variant="rose"
             isActive={activeCard === "security"}
             onClick={() => handleCardClick("security")}
           />
-          <StatsSummary
+          <StatsCard
             title="System Health"
             value={logs.filter(l => l.status === "Success").length}
-            icon={<Info className="h-5 w-5 text-green-500" />}
-            description="Successful operations"
-            variant="green"
+            icon={<Info className="h-5 w-5" />}
+            variant="emerald"
             isActive={activeCard === "health"}
             onClick={() => handleCardClick("health")}
           />
@@ -274,149 +273,81 @@ const AuditLogs = () => {
           </div>
 
           {/* Table */}
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50 dark:bg-gray-800/50 hover:bg-transparent">
-                <TableHead className="font-semibold text-gray-700 dark:text-gray-300 w-[180px]">Timestamp</TableHead>
-                <TableHead className="font-semibold text-gray-700 dark:text-gray-300">User</TableHead>
-                <TableHead className="font-semibold text-gray-700 dark:text-gray-300">Action</TableHead>
-                <TableHead className="font-semibold text-gray-700 dark:text-gray-300">Module</TableHead>
-                <TableHead className="font-semibold text-gray-700 dark:text-gray-300">IP Address</TableHead>
-                <TableHead className="font-semibold text-gray-700 dark:text-gray-300 text-right">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="transition-opacity duration-200 ease-in-out" style={{ opacity: isSwitchingCard ? 0.4 : 1 }}>
-              {isLoading || isSwitchingCard ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-64 text-center">
-                    <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 gap-3">
-                      <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
-                      <span>{isSwitchingCard ? "Filtering records..." : "Accessing security records..."}</span>
+          <div className="transition-opacity duration-200 ease-in-out" style={{ opacity: isSwitchingCard ? 0.4 : 1 }}>
+            <DataTable 
+              columns={[
+                {
+                  accessorKey: "createdAt",
+                  header: "Timestamp",
+                  cell: ({ row }) => (
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                      {format(new Date(row.original.createdAt), "MMM dd, yyyy HH:mm:ss")}
+                    </span>
+                  )
+                },
+                {
+                  accessorKey: "userName",
+                  header: "User",
+                  cell: ({ row }) => (
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{row.original.userName}</span>
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">
+                        {row.original.user === "system" ? "System Process" : "Staff Member"}
+                      </span>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ) : paginatedLogs.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-64 text-center">
-                    <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 gap-3">
-                      <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                        <Search className="h-6 w-6 text-gray-400" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-gray-700 dark:text-gray-300">No matching audit logs found</span>
-                        <span className="text-sm">Try changing your filters or search criteria</span>
-                      </div>
+                  )
+                },
+                {
+                  accessorKey: "action",
+                  header: "Action",
+                  cell: ({ row }) => (
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{row.original.action}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]">{row.original.details}</span>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginatedLogs.map((log) => (
-                  <TableRow
-                    key={log._id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800"
-                  >
-                    <TableCell className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {format(new Date(log.createdAt), "MMM dd, yyyy HH:mm:ss")}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white">{log.userName}</span>
-                        <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">
-                          {log.user === "system" ? "System Process" : "Staff Member"}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">{log.action}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]">{log.details}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={cn("text-[10px] font-bold uppercase tracking-tight", getModuleBadge(log.module))}>
-                        {log.module}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs font-mono text-gray-500 dark:text-gray-400">
-                      {log.ipAddress}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end items-center gap-1.5">
-                        <span className={cn(
-                          "text-[11px] font-bold uppercase tracking-wider",
-                          log.status === "Success" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                        )}>
-                          {log.status}
-                        </span>
-                        {getStatusIcon(log.status)}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-
-          {/* Pagination Footer */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-800">
-            <Pagination
-              currentPage={page}
-              totalPages={totalPages}
-              totalItems={filteredLogs.length}
-              itemsPerPage={PAGE_SIZE}
-              onPageChange={(p) => setPage(p)}
+                  )
+                },
+                {
+                  accessorKey: "module",
+                  header: "Module",
+                  cell: ({ row }) => (
+                    <Badge variant="outline" className={cn("text-[10px] font-bold uppercase tracking-tight", getModuleBadge(row.original.module))}>
+                      {row.original.module}
+                    </Badge>
+                  )
+                },
+                {
+                  accessorKey: "ipAddress",
+                  header: "IP Address",
+                  cell: ({ row }) => (
+                    <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
+                      {row.original.ipAddress}
+                    </span>
+                  )
+                },
+                {
+                  accessorKey: "status",
+                  header: () => <div className="text-right">Status</div>,
+                  cell: ({ row }) => (
+                    <div className="flex justify-end items-center gap-1.5">
+                      <span className={cn(
+                        "text-[11px] font-bold uppercase tracking-wider",
+                        row.original.status === "Success" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                      )}>
+                        {row.original.status}
+                      </span>
+                      {getStatusIcon(row.original.status)}
+                    </div>
+                  )
+                }
+              ]}
+              data={filteredLogs}
+              searchable={false}
+              defaultPageSize={PAGE_SIZE}
             />
           </div>
         </div>
 
-      </div>
-    </div>
-  )
-}
-
-const StatsSummary = ({ title, value, icon, description, variant, isActive, onClick }) => {
-  const styles = {
-    blue: {
-      card: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30",
-      icon: "text-blue-600 dark:text-blue-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-background"
-    },
-    red: {
-      card: "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30",
-      icon: "text-red-600 dark:text-red-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-red-500 ring-offset-2 dark:ring-offset-background"
-    },
-    green: {
-      card: "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30",
-      icon: "text-green-600 dark:text-green-400",
-      label: "text-gray-600 dark:text-gray-400",
-      value: "text-gray-900 dark:text-white",
-      activeRing: "ring-2 ring-green-500 ring-offset-2 dark:ring-offset-background"
-    }
-  }
-  
-  const s = styles[variant]
-  return (
-    <div 
-      onClick={onClick}
-      className={cn(
-        "border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] p-6 transition-all duration-200 hover:scale-105 cursor-pointer", 
-        s.card,
-        isActive && s.activeRing,
-        !isActive && "opacity-80 hover:opacity-100"
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={cn("text-sm", s.label)}>{title}</p>
-          <p className={cn("text-3xl font-bold mt-2", s.value)}>{value}</p>
-          {description && <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{description}</p>}
-        </div>
-        <div className={cn("h-8 w-8 flex items-center justify-center", s.icon)}>{icon}</div>
       </div>
     </div>
   )

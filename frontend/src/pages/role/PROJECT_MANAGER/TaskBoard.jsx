@@ -43,10 +43,10 @@ const COLUMNS = [
   {
     id:        TASK_STATUS.IN_PROGRESS,
     title:     "In Progress",
-    accent:    "border-t-blue-500",
-    headerBg:  "bg-blue-50/60 dark:bg-blue-900/20",
-    countBg:   "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300",
-    dropBg:    "bg-blue-50/40 dark:bg-blue-900/30",
+    accent:    "border-t-purple-500",
+    headerBg:  "bg-purple-50/60 dark:bg-purple-900/20",
+    countBg:   "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300",
+    dropBg:    "bg-purple-50/40 dark:bg-purple-900/30",
   },
   {
     id:        TASK_STATUS.DONE,
@@ -61,12 +61,12 @@ const COLUMNS = [
 const PRIORITY_CONFIG = {
   HIGH:   { label: "High",   cls: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",           dot: "bg-red-500" },
   MEDIUM: { label: "Medium", cls: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800", dot: "bg-amber-500" },
-  LOW:    { label: "Low",    cls: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",       dot: "bg-blue-500" },
+  LOW:    { label: "Low",    cls: "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800",       dot: "bg-purple-500" },
 }
 
 const STATUS_CONFIG = {
   TO_DO:       { label: "To Do",       cls: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" },
-  IN_PROGRESS: { label: "In Progress", cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  IN_PROGRESS: { label: "In Progress", cls: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" },
   DONE:        { label: "Done",        cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" },
 }
 
@@ -575,7 +575,7 @@ const TaskBoard = () => {
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-10 h-10 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+        <div className="w-10 h-10 rounded-full border-2 border-purple-600 border-t-transparent animate-spin" />
         <p className="text-sm text-muted-foreground">Loading task board...</p>
       </div>
     </div>
@@ -600,7 +600,7 @@ const TaskBoard = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <BarChart2 className="w-5 h-5 text-blue-500" />
+            <BarChart2 className="w-5 h-5 text-purple-500" />
             <span className="text-sm text-muted-foreground font-medium">
               {tasks.length} task{tasks.length !== 1 ? "s" : ""} across your team
             </span>
@@ -665,7 +665,7 @@ const TaskBoard = () => {
           <div className="flex gap-5 mt-3">
             {[
               { label: "To Do",       value: tasks.filter(t => t.status === TASK_STATUS.TO_DO).length,       dot: "bg-slate-400" },
-              { label: "In Progress", value: tasks.filter(t => t.status === TASK_STATUS.IN_PROGRESS).length, dot: "bg-blue-500" },
+              { label: "In Progress", value: tasks.filter(t => t.status === TASK_STATUS.IN_PROGRESS).length, dot: "bg-purple-500" },
               { label: "Done",        value: stats.done,                                                       dot: "bg-emerald-500" },
             ].map(s => (
               <div key={s.label} className="flex items-center gap-1.5">

@@ -79,7 +79,7 @@ const EmployeeProfileView = () => {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-3 text-gray-500 dark:text-gray-400">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
           <p className="text-sm">Loading employee profile...</p>
         </div>
       </div>
@@ -132,7 +132,7 @@ const EmployeeProfileView = () => {
                 <p className="text-gray-500 dark:text-gray-400 text-sm">{employee.email}</p>
                 <div className="flex flex-wrap gap-2 pt-1">
                   {employee.employeeCode && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wider bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wider bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/30">
                       <Hash className="h-3 w-3" />
                       {employee.employeeCode}
                     </span>
@@ -145,14 +145,14 @@ const EmployeeProfileView = () => {
                     status === 'Active'
                       ? "bg-green-50 dark:bg-green-500/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/30"
                       : status?.startsWith('Pending')
-                      ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30"
+                      ? "bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-500/30"
                       : status === 'On Notice Period'
                       ? "bg-yellow-50 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-500/30"
                       : "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/30"
                   )}>
                     <span className={cn(
                       "h-1.5 w-1.5 rounded-full", 
-                      status === 'Active' ? "bg-green-500" : status?.startsWith('Pending') ? "bg-blue-500" : status === 'On Notice Period' ? "bg-yellow-500" : "bg-red-500"
+                      status === 'Active' ? "bg-green-500" : status?.startsWith('Pending') ? "bg-purple-500" : status === 'On Notice Period' ? "bg-yellow-500" : "bg-red-500"
                     )} />
                     {status}
                   </span>
@@ -218,7 +218,7 @@ const EmployeeProfileView = () => {
                   icon={Hash}
                   label="Employee ID"
                   value={employee.employeeCode || "Not assigned"}
-                  valueClassName={employee.employeeCode ? "text-blue-600 dark:text-blue-400 font-mono" : "text-gray-400 italic"}
+                  valueClassName={employee.employeeCode ? "text-purple-600 dark:text-purple-400 font-mono" : "text-gray-400 italic"}
                 />
                 <InfoRow icon={Building} label="Department" value={employee.department} />
                 <InfoRow icon={Shield} label="Access Role" value={employee.role?.replace(/_/g, " ")} />
@@ -228,7 +228,7 @@ const EmployeeProfileView = () => {
                   value={status}
                   valueClassName={
                     status === 'Active' ? "text-green-600 dark:text-green-400" :
-                    status?.startsWith('Pending') ? "text-blue-600 dark:text-blue-400" :
+                    status?.startsWith('Pending') ? "text-purple-600 dark:text-purple-400" :
                     status === 'On Notice Period' ? "text-yellow-600 dark:text-yellow-400" :
                     "text-red-600 dark:text-red-400"
                   }
@@ -349,7 +349,7 @@ const SalaryTab = ({ userId, employeeName }) => {
 
   if (loading) return (
     <div className="flex justify-center py-16">
-      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
     </div>
   )
 
@@ -396,7 +396,7 @@ const SalaryTab = ({ userId, employeeName }) => {
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+            className="w-full h-11 bg-purple-600 hover:bg-purple-700 text-white font-semibold"
           >
             {saving
               ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
@@ -408,7 +408,7 @@ const SalaryTab = ({ userId, employeeName }) => {
         <div className="lg:col-span-1">
           <div className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 sticky top-6">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-blue-600" />
+              <DollarSign className="h-4 w-4 text-purple-600" />
               <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
                 Annual Summary
               </h3>

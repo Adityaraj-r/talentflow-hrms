@@ -85,7 +85,7 @@ const TaskAnalytics = () => {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+          <div className="w-10 h-10 rounded-full border-2 border-purple-600 border-t-transparent animate-spin" />
           <p className="text-sm text-muted-foreground">Loading task analytics...</p>
         </div>
       </div>
@@ -112,7 +112,7 @@ const TaskAnalytics = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <BarChart2 className="w-5 h-5 text-blue-500" />
+            <BarChart2 className="w-5 h-5 text-purple-500" />
             <span className="text-sm text-muted-foreground font-medium">
               {isCountryManager ? "Region-scoped view" : "Organisation-wide view"}
             </span>
@@ -165,7 +165,7 @@ const TaskAnalytics = () => {
         <Card className="border-slate-200 dark:border-slate-800">
           <CardHeader className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-              <TrendingUp className="w-4 h-4 text-blue-500" />
+              <TrendingUp className="w-4 h-4 text-purple-500" />
               Completion Overview
             </CardTitle>
           </CardHeader>
@@ -192,7 +192,7 @@ const TaskAnalytics = () => {
             <div className="grid grid-cols-3 gap-3 pt-1">
               {[
                 { label: "To Do",       value: analytics?.toDo      ?? 0, dot: "bg-slate-400",   text: "text-slate-600 dark:text-slate-400" },
-                { label: "In Progress", value: analytics?.inProgress ?? 0, dot: "bg-blue-500",    text: "text-blue-600 dark:text-blue-400" },
+                { label: "In Progress", value: analytics?.inProgress ?? 0, dot: "bg-purple-500",    text: "text-purple-600 dark:text-purple-400" },
                 { label: "Done",        value: analytics?.completed  ?? 0, dot: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
               ].map(s => (
                 <div key={s.label} className="flex flex-col items-center gap-1 p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
@@ -208,7 +208,7 @@ const TaskAnalytics = () => {
         <Card className="border-slate-200 dark:border-slate-800">
           <CardHeader className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-              <BarChart2 className="w-4 h-4 text-blue-500" />
+              <BarChart2 className="w-4 h-4 text-purple-500" />
               Priority Distribution
             </CardTitle>
           </CardHeader>
@@ -237,7 +237,7 @@ const TaskAnalytics = () => {
                   label="Low Priority"
                   count={lowCount}
                   total={analytics?.total ?? 0}
-                  color="bg-blue-400"
+                  color="bg-purple-400"
                 />
 
                 {analytics?.overdue > 0 && (
@@ -263,10 +263,10 @@ const TaskAnalytics = () => {
       <Card className="border-slate-200 dark:border-slate-800">
         <CardHeader className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-            <TrendingUp className="w-4 h-4 text-blue-500" />
+            <TrendingUp className="w-4 h-4 text-purple-500" />
             Workforce Task Health
             {isCountryManager && (
-              <Badge variant="outline" className="ml-2 text-[10px] px-2 py-0.5 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
+              <Badge variant="outline" className="ml-2 text-[10px] px-2 py-0.5 bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800">
                 Region Scoped
               </Badge>
             )}
@@ -323,8 +323,8 @@ const TaskAnalytics = () => {
               </p>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800 rounded-xl p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide mb-1 text-blue-700 dark:text-blue-400">
+            <div className="bg-purple-50 border border-purple-200 dark:bg-purple-900/20 dark:border-purple-800 rounded-xl p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide mb-1 text-purple-700 dark:text-purple-400">
                 Active Workload
               </p>
               <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">

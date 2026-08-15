@@ -132,31 +132,33 @@ export function AnalyticsFilters({ filters, options, onChange, onReset }) {
     <div className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 p-4 shadow-xl shadow-black/10 backdrop-blur">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
-          <SlidersHorizontal className="h-4 w-4 text-cyan-600 dark:text-cyan-300" />
+          <SlidersHorizontal className="h-4 w-4 text-primary" />
           Global analytics filters
         </div>
         <Button variant="outline" size="sm" onClick={onReset} className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10">
           Reset
         </Button>
       </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-        <Input type="date" value={filters.startDate} onChange={(e) => setFilter("startDate", e.target.value)} className="border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 text-slate-900 dark:text-slate-100" />
-        <Input type="date" value={filters.endDate} onChange={(e) => setFilter("endDate", e.target.value)} className="border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 text-slate-900 dark:text-slate-100" />
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_auto_1fr_1fr]">
+        <Input type="date" value={filters.startDate} onChange={(e) => setFilter("startDate", e.target.value)} className="w-full border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 text-slate-900 dark:text-slate-100" />
+        <Input type="date" value={filters.endDate} onChange={(e) => setFilter("endDate", e.target.value)} className="w-full border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 text-slate-900 dark:text-slate-100" />
         {[
           ["recruiter", options.recruiters],
           ["department", options.departments],
           ["role", options.roles],
           ["source", options.sources],
         ].map(([key, values]) => (
-          <Select key={key} value={filters[key]} onValueChange={(value) => setFilter(key, value)}>
-            <SelectTrigger className={selectClass}>
-              <SelectValue placeholder={key} />
-            </SelectTrigger>
-            <SelectContent className="border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-              <SelectItem value="All">All {key}s</SelectItem>
-              {(values || []).map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <div key={key} className={key === "department" ? "min-w-[140px] xl:max-w-[200px]" : "w-full"}>
+            <Select value={filters[key]} onValueChange={(value) => setFilter(key, value)}>
+              <SelectTrigger className={selectClass}>
+                <SelectValue placeholder={key} />
+              </SelectTrigger>
+              <SelectContent className="border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+                <SelectItem value="All" className="[&>span.absolute]:hidden pr-2">All {key}s</SelectItem>
+                {(values || []).map((value) => <SelectItem key={value} value={value} className="[&>span.absolute]:hidden pr-2">{value}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
         ))}
       </div>
     </div>
@@ -477,7 +479,7 @@ export function DrillDownPanel({ item, onClose }) {
       <div className="mt-4 grid gap-3 sm:grid-cols-4">
         {Object.entries(item).filter(([, value]) => typeof value === "number").slice(0, 4).map(([key, value]) => (
           <div key={key} className="rounded-md border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-black/20 p-3">
-            <p className="text-xs capitalize text-slate-500 dark:text-slate-400">{key.replace(/([A-Z])/g, " $1")}</p>
+            <p className="text-xs capitalize text-slate-500 dark:border-slate-400">{key.replace(/([A-Z])/g, " $1")}</p>
             <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{value}</p>
           </div>
         ))}
@@ -488,17 +490,40 @@ export function DrillDownPanel({ item, onClose }) {
 
 export function ExportCenter({ onExport }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Button onClick={() => onExport("csv")} variant="outline" className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10">
-        <Download className="mr-2 h-4 w-4" /> CSV
-      </Button>
-      <Button onClick={() => onExport("excel")} variant="outline" className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10">
-        <FileSpreadsheet className="mr-2 h-4 w-4" /> Excel
-      </Button>
-      <Button onClick={() => onExport("pdf")} className="bg-cyan-600 dark:bg-cyan-300 text-slate-900 dark:text-white dark:text-slate-950 hover:bg-cyan-700 dark:hover:bg-cyan-200">
-        <FileText className="mr-2 h-4 w-4" /> PDF
-      </Button>
-    </div>
+    <TooltipProvider>
+      <div className="flex flex-wrap items-center gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button onClick={() => onExport("csv")} variant="outline" size="icon" className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10">
+              <Download className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Export CSV</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button onClick={() => onExport("excel")} variant="outline" size="icon" className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:bg-white/10">
+              <FileSpreadsheet className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Export Excel</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button onClick={() => onExport("pdf")} size="icon" className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <FileText className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Export PDF</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
   );
 }
 

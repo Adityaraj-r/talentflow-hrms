@@ -11,17 +11,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
 import {
   Timer,
-  Check,
+  CheckCircle2,
   Search,
   User,
   Calendar,
@@ -135,9 +129,128 @@ const OvertimeApprovals = () => {
     0
   );
 
+  const columns = [
+    {
+      accessorKey: "employee",
+      header: "Employee",
+      cell: ({ row }) => {
+        const record = row.original;
+        return (
+          <div className="flex flex-col">
+            <span className="font-medium text-sm text-slate-900 dark:text-white">
+              {record.userId?.firstName} {record.userId?.lastName}
+            </span>
+            <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
+              {record.userId?.employeeCode || "N/A"}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {record.userId?.email}
+            </span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {record.userId?.department || "No Department"}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "employeeCode",
+      header: () => <span className="hidden md:inline">Employee ID</span>,
+      cell: ({ row }) => {
+        const record = row.original;
+        return (
+          <span className="hidden md:inline font-mono text-sm text-muted-foreground">
+            {record.userId?.employeeCode || "-"}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "date",
+      header: "Date",
+      cell: ({ row }) => {
+        const record = row.original;
+        return (
+          <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
+            <Calendar className="w-3.5 h-3.5 shrink-0" />
+            {formatDate(record.date)}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "shiftEnd",
+      header: "Shift End",
+      cell: ({ row }) => {
+        const record = row.original;
+        return (
+          <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
+            <Clock className="w-3.5 h-3.5 shrink-0 text-purple-500" />
+            {record.userId?.currentShift?.endTime
+              ? record.userId.currentShift.endTime
+              : "No shift"}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "clockOut",
+      header: "Clocked Out",
+      cell: ({ row }) => {
+        const record = row.original;
+        return (
+          <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
+            <Clock className="w-3.5 h-3.5 shrink-0 text-red-400" />
+            {formatTime(record.clockOut)}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "totalHours",
+      header: "Total Hours",
+      cell: ({ row }) => {
+        const record = row.original;
+        return (
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            {record.totalHours ? `${record.totalHours}h` : "-"}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "otHours",
+      header: () => <span className="text-amber-600 dark:text-amber-400">OT Hours</span>,
+      cell: ({ row }) => {
+        const record = row.original;
+        return (
+          <Badge className="bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800 font-mono">
+            +{formatOTHours(record.overtimeHours)}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Action</div>,
+      cell: ({ row }) => {
+        const record = row.original;
+        return (
+          <div className="text-right flex justify-end">
+            <ActionIcon
+              icon={CheckCircle2}
+              tooltip="Approve OT"
+              onClick={() => handleApprove(record._id)}
+              disabled={approvingId === record._id}
+              className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+            />
+          </div>
+        );
+      },
+    },
+  ];
+
   const totalItems = filteredRecords.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-  const paginatedRecords = filteredRecords.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="space-y-6 max-w-full pb-10">
@@ -207,138 +320,28 @@ const OvertimeApprovals = () => {
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="p-0">
-          <div className="relative w-full overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead className="hidden md:table-cell">Employee ID</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Shift End</TableHead>
-                  <TableHead>Clocked Out</TableHead>
-                  <TableHead>Total Hours</TableHead>
-                  <TableHead className="text-amber-600 dark:text-amber-400">
-                    OT Hours
-                  </TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={8}
-                      className="text-center py-10 text-muted-foreground"
-                    >
-                      Loading overtime records...
-                    </TableCell>
-                  </TableRow>
-                ) : paginatedRecords.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="py-10">
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <AlertCircle className="w-8 h-8 text-slate-300 dark:text-slate-600" />
-                        <p className="text-sm">
-                          No pending overtime records found for this period.
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedRecords.map((record) => (
-                    <TableRow
-                      key={record._id}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                    >
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-sm text-slate-900 dark:text-white">
-                            {record.userId?.firstName} {record.userId?.lastName}
-                          </span>
-                          <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
-                            {record.userId?.employeeCode || "N/A"}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {record.userId?.email}
-                          </span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            {record.userId?.department || "No Department"}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
-                        {record.userId?.employeeCode || "-"}
-                      </TableCell>
-
-                      <TableCell>
-                        <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
-                          <Calendar className="w-3.5 h-3.5 shrink-0" />
-                          {formatDate(record.date)}
-                        </div>
-                      </TableCell>
-
-                      <TableCell>
-                        <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
-                          <Clock className="w-3.5 h-3.5 shrink-0 text-indigo-500" />
-                          {record.userId?.currentShift?.endTime
-                            ? record.userId.currentShift.endTime
-                            : "No shift"}
-                        </div>
-                      </TableCell>
-
-                      <TableCell>
-                        <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
-                          <Clock className="w-3.5 h-3.5 shrink-0 text-red-400" />
-                          {formatTime(record.clockOut)}
-                        </div>
-                      </TableCell>
-
-                      <TableCell>
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                          {record.totalHours
-                            ? `${record.totalHours}h`
-                            : "-"}
-                        </span>
-                      </TableCell>
-
-                      <TableCell>
-                        <Badge className="bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800 font-mono">
-                          +{formatOTHours(record.overtimeHours)}
-                        </Badge>
-                      </TableCell>
-
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          onClick={() => handleApprove(record._id)}
-                          disabled={approvingId === record._id}
-                          className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          {approvingId === record._id
-                            ? "Approving..."
-                            : "Approve OT"}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+        <CardContent className="p-4 pt-4">
+          {loading ? (
+            <div className="text-center py-10 text-muted-foreground">
+              Loading overtime records...
+            </div>
+          ) : filteredRecords.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground">
+              <AlertCircle className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+              <p className="text-sm">
+                No pending overtime records found for this period.
+              </p>
+            </div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={filteredRecords}
+              searchable={false}
+              defaultPageSize={10}
+            />
+          )}
         </CardContent>
       </Card>
-
-      {totalItems > 0 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-          onPageChange={(page) => setCurrentPage(page)}
-        />
-      )}
     </div>
   );
 };

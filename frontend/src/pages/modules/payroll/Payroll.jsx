@@ -1,10 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Calculator, Users, Loader2, Download, RefreshCw, CheckCircle, Zap, AlertCircle, UserX, ChevronDown, ChevronUp, ClipboardList, ShieldCheck, , X } from "lucide-react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { Calculator, Users, Loader2, Download, RefreshCw, CheckCircle, Zap, AlertCircle, UserX, ChevronDown, ChevronUp, ClipboardList, ShieldCheck, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination } from "@/components/ui/pagination"
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
+import { StatsCard } from "@/components/ui/stats-card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import * as payrollService from "@/services/payrollService";
 import apiClient from "@/services/apiClient";
@@ -74,9 +77,7 @@ const PayrollProcessing = () => {
   const [skipLockCheck, setSkipLockCheck] = useState(false)
   const [auditLogs, setAuditLogs] = useState([])
   const [auditLoading, setAuditLoading] = useState(false)
-  const [pagePending, setPagePending] = useState(1)
   const [pageRecords, setPageRecords] = useState(1)
-  const [pageAudit, setPageAudit] = useState(1)
   const [compliance, setCompliance] = useState(null)
   const [complianceLoading, setComplianceLoading] = useState(false)
   const [selectedPending, setSelectedPending] = useState(new Set())
@@ -465,6 +466,115 @@ const PayrollProcessing = () => {
       ? employees.filter(emp => !processedEmployeeIds.has(String(emp._id)))
       : employees
 
+  const pendingColumns = useMemo(() => {
+    const cols = [];
+    if (canProcessPayroll(userRole)) {
+      cols.push({
+        id: "select",
+        header: () => (
+          <input
+            type="checkbox"
+            checked={pending.length > 0 && selectedPending.size === pending.length}
+            onChange={toggleSelectAllPending}
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            checked={selectedPending.has(row.original._id)}
+            onChange={() => togglePendingSelection(row.original._id)}
+          />
+        ),
+      });
+    }
+
+    cols.push({
+      accessorKey: "employee",
+      header: "Employee",
+      cell: ({ row }) => {
+        const emp = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-sm font-bold text-orange-600">
+              {emp.firstName?.[0]?.toUpperCase() || "?"}
+            </div>
+            <div>
+              <p className="font-semibold text-sm">{emp.firstName} {emp.lastName}</p>
+              <p className="text-xs text-muted-foreground">{emp.email}</p>
+            </div>
+          </div>
+        );
+      }
+    });
+
+    cols.push({
+      accessorKey: "department",
+      header: () => <div className="w-full flex justify-center">Department</div>,
+      cell: ({ row }) => (
+        <div className="w-full flex justify-center">
+          <span className="text-sm">{row.original.department || "—"}</span>
+        </div>
+      )
+    });
+
+    cols.push({
+      accessorKey: "role",
+      header: () => <div className="w-full flex justify-center">Role</div>,
+      cell: ({ row }) => (
+        <div className="w-full flex justify-center">
+          <Badge variant="secondary" className="text-[10px] font-bold tracking-wider">
+            {row.original.role}
+          </Badge>
+        </div>
+      )
+    });
+
+    cols.push({
+      accessorKey: "employeeCode",
+      header: "Employee ID",
+      cell: ({ row }) => (
+        <span className="text-sm font-mono text-purple-600 dark:text-purple-400">
+          {row.original.employeeCode || "—"}
+        </span>
+      )
+    });
+
+    return cols;
+  }, [userRole, pending.length, selectedPending]);
+
+  const auditColumns = useMemo(() => [
+    {
+      accessorKey: "createdAt",
+      header: "When",
+      cell: ({ row }) => (
+        <span className="text-xs whitespace-nowrap">
+          {row.original.createdAt ? new Date(row.original.createdAt).toLocaleString() : "—"}
+        </span>
+      )
+    },
+    {
+      accessorKey: "action",
+      header: "Action",
+      cell: ({ row }) => (
+        <span className="text-xs font-mono">{row.original.action}</span>
+      )
+    },
+    {
+      accessorKey: "actorEmail",
+      header: "Actor",
+      cell: ({ row }) => (
+        <span className="text-xs">{row.original.actorEmail || row.original.actorUserId || "—"}</span>
+      )
+    },
+    {
+      accessorKey: "entityType",
+      header: "Entity",
+      cell: ({ row }) => (
+        <span className="text-xs">{row.original.entityType} / {String(row.original.entityId || "").slice(0, 12)}…</span>
+      )
+    }
+  ], []);
+
   return (
     <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -478,21 +588,14 @@ const PayrollProcessing = () => {
         </div>
         <div className="flex flex-wrap items-center gap-3">
 
-          <select
-            className="p-2 border rounded-md bg-white text-black dark:bg-slate-800 dark:text-white text-sm"
-            value={month}
-            onChange={e => setMonth(e.target.value)}
-          >
-            {MONTHS.map(m => (
-              <option
-                key={m}
-                value={m}
-                className="bg-white text-black dark:bg-slate-800 dark:text-white"
-              >
-                {m}
-              </option>
-            ))}
-          </select>
+          <Select value={month} onValueChange={setMonth}>
+            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {MONTHS.map(m => (
+                <SelectItem key={m} value={m}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           <input
             type="number"
@@ -501,42 +604,21 @@ const PayrollProcessing = () => {
             onChange={e => setYear(Number(e.target.value))}
           />
 
-          <select
-            className="p-2 border rounded-md bg-white text-black dark:bg-slate-800 dark:text-white text-sm"
-            value={runKind}
-            onChange={(e) => setRunKind(e.target.value)}
-          >
-            <option value="regular">Regular Payroll</option>
-            <option value="off_cycle">Off Cycle Payroll</option>
-          </select>
+          <Select value={runKind} onValueChange={setRunKind}>
+            <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="regular">Regular Payroll</SelectItem>
+              <SelectItem value="off_cycle">Off Cycle Payroll</SelectItem>
+            </SelectContent>
+          </Select>
 
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="rounded-xl border shadow-sm transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 hover:brightness-100 dark:hover:brightness-110 bg-gradient-to-br from-blue-100 via-blue-50 to-white hover:from-blue-200 hover:via-blue-100 hover:to-blue-50 dark:from-blue-950/60 dark:via-blue-900/20 dark:to-background dark:hover:from-blue-900/60 dark:hover:via-blue-800/20 border-blue-200 dark:border-blue-900 p-4 flex flex-col justify-center relative overflow-hidden group cursor-pointer">
-          <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500 transform translate-x-2 -translate-y-2 pointer-events-none">
-            <Users className="w-24 h-24 text-blue-600 dark:text-blue-400" />
-          </div>
-          <p className="text-xs font-bold uppercase tracking-widest text-blue-800 dark:text-blue-400 relative z-10">Total Records</p>
-          <p className="text-2xl font-extrabold text-blue-900 dark:text-blue-100 mt-1 relative z-10">{records.length}</p>
-        </div>
-        <div className="rounded-xl border shadow-sm transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 hover:brightness-100 dark:hover:brightness-110 bg-gradient-to-br from-orange-100 via-orange-50 to-white hover:from-orange-200 hover:via-orange-100 hover:to-orange-50 dark:from-orange-950/60 dark:via-orange-900/20 dark:to-background dark:hover:from-orange-900/60 dark:hover:via-orange-800/20 border-orange-200 dark:border-orange-900 p-4 flex flex-col justify-center relative overflow-hidden group cursor-pointer">
-          <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500 transform translate-x-2 -translate-y-2 pointer-events-none">
-            <AlertCircle className="w-24 h-24 text-orange-600 dark:text-orange-400" />
-          </div>
-          <p className="text-xs font-bold uppercase tracking-widest text-orange-800 dark:text-orange-400 relative z-10">Pending This Month</p>
-          <p className="text-2xl font-extrabold text-orange-900 dark:text-orange-100 mt-1 relative z-10">{pending.length}</p>
-        </div>
-        <div className="rounded-xl border shadow-sm transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 hover:brightness-100 dark:hover:brightness-110 bg-gradient-to-br from-green-100 via-green-50 to-white hover:from-green-200 hover:via-green-100 hover:to-green-50 dark:from-green-950/60 dark:via-green-900/20 dark:to-background dark:hover:from-green-900/60 dark:hover:via-green-800/20 border-green-200 dark:border-green-900 p-4 flex flex-col justify-center relative overflow-hidden group cursor-pointer">
-          <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500 transform translate-x-2 -translate-y-2 pointer-events-none">
-            <CheckCircle className="w-24 h-24 text-green-600 dark:text-green-400" />
-          </div>
-          <p className="text-xs font-bold uppercase tracking-widest text-green-800 dark:text-green-400 relative z-10">Paid This Month</p>
-          <p className="text-2xl font-extrabold text-green-900 dark:text-green-100 mt-1 relative z-10">
-            {records.filter(r => ["Paid", "Disbursed", "Locked"].includes(r.status)).reduce((sum, r) => sum + (r.employees?.length || 0), 0)}
-          </p>
-        </div>
+        <StatsCard title="Total Records" value={records.length} icon={Users} variant="purple" />
+        <StatsCard title="Pending This Month" value={pending.length} icon={AlertCircle} variant="amber" />
+        <StatsCard title="Paid This Month" value={records.filter(r => ["Paid", "Disbursed", "Locked"].includes(r.status)).reduce((sum, r) => sum + (r.employees?.length || 0), 0)} icon={CheckCircle} variant="emerald" />
       </div>
 
       <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
@@ -553,7 +635,7 @@ const PayrollProcessing = () => {
             className={cn(
               "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
               activeTab === tab.key
-                ? "border-blue-600 text-blue-600"
+                ? "border-purple-600 text-purple-600"
                 : "border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white"
             )}
           >
@@ -610,34 +692,16 @@ const PayrollProcessing = () => {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Select Employee</label>
-                    <select
-                      className="w-full p-2 border rounded-md bg-white text-black dark:bg-slate-800 dark:text-white"
-                      value={selectedEmp}
-                      onChange={e => setSelectedEmp(e.target.value)}
-                      disabled={loading}
-                    >
-                      {runKind === "off_cycle" && availableEmployees.length === 0 && (
-                        <p className="text-sm text-orange-600 mt-2">
-                          All employees already have payroll for {month} {year}.
-                        </p>
-                      )}
-                      <option
-                        value=""
-                        className="bg-white text-black dark:bg-slate-800 dark:text-white"
-                      >
-                        {loading ? "Loading..." : "-- Choose Employee --"}
-                      </option>
-
-                      {availableEmployees.map(emp => (
-                        <option
-                          key={emp._id}
-                          value={emp._id}
-                          className="bg-white text-black dark:bg-slate-800 dark:text-white"
-                        >
-                          {emp.firstName} {emp.lastName} — {emp.role}
-                        </option>
-                      ))}
-                    </select>
+                    <Select value={selectedEmp} onValueChange={setSelectedEmp} disabled={loading}>
+                      <SelectTrigger><SelectValue placeholder={loading ? "Loading..." : "-- Choose Employee --"} /></SelectTrigger>
+                      <SelectContent>
+                        {availableEmployees.map(emp => (
+                          <SelectItem key={emp._id} value={emp._id}>
+                            {emp.firstName} {emp.lastName} — {emp.role}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   {runKind === "off_cycle" && (
                     <div className="space-y-2">
@@ -664,7 +728,7 @@ const PayrollProcessing = () => {
                         <label className="text-sm font-medium text-red-500">LOP Days</label>
                         {!lopAuto && (
                           <button type="button" onClick={() => setLopAuto(true)}
-                            className="text-[11px] text-blue-600 hover:underline">
+                            className="text-[11px] text-purple-600 hover:underline">
                             Reset to auto
                           </button>
                         )}
@@ -684,7 +748,7 @@ const PayrollProcessing = () => {
                         value={bonus} onChange={e => setBonus(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-blue-600">Extra Overtime (₹)</label>
+                      <label className="text-sm font-medium text-purple-600">Extra Overtime (₹)</label>
                       <input type="number" min="0"
                         className="w-full p-2 border rounded-md bg-transparent"
                         value={overtime} onChange={e => setOvertime(e.target.value)} />
@@ -713,11 +777,11 @@ const PayrollProcessing = () => {
                   )}
 
                   {Number(serverPreview?.earnings?.overtimeAuto) > 0 && (
-                    <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-500/10 dark:border-blue-500/30 px-3 py-2 text-sm">
-                      <span className="font-medium text-blue-700 dark:text-blue-400">
+                    <div className="flex items-center gap-2 rounded-md border border-purple-200 bg-purple-50 dark:bg-purple-500/10 dark:border-purple-500/30 px-3 py-2 text-sm">
+                      <span className="font-medium text-purple-700 dark:text-purple-400">
                         Auto overtime (from approved attendance hours):
                       </span>
-                      <span className="font-bold text-blue-700 dark:text-blue-400">
+                      <span className="font-bold text-purple-700 dark:text-purple-400">
                         ₹ {Number(serverPreview.earnings.overtimeAuto).toLocaleString()}
                       </span>
                     </div>
@@ -730,7 +794,7 @@ const PayrollProcessing = () => {
                       !salaryData ||
                       (runKind === "off_cycle" && availableEmployees.length === 0)
                     }
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white h-11"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white h-11"
                   >
                     {processing
                       ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
@@ -803,7 +867,7 @@ const PayrollProcessing = () => {
                             )}
                           </div>
                           <PreviewRow label="Total deductions" value={serverPreview.totalDeductions} color="text-red-500" prefix="-" bold />
-                          <div className="mt-4 p-4 bg-blue-600 rounded-xl text-white text-center">
+                          <div className="mt-4 p-4 bg-purple-600 rounded-xl text-white text-center">
                             <p className="text-xs uppercase tracking-widest opacity-80">Net Payable</p>
                             <h2 className="text-3xl font-black mt-1">₹ {Number(serverPreview.netPay).toLocaleString()}</h2>
                           </div>
@@ -854,7 +918,7 @@ const PayrollProcessing = () => {
                     onClick={handleRunSelected}
                     disabled={bulkProcessing}
                     variant="outline"
-                    className="border-blue-500 text-blue-600"
+                    className="border-purple-500 text-purple-600"
                   >
                     {bulkProcessing
                       ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
@@ -883,78 +947,11 @@ const PayrollProcessing = () => {
                 <p className="text-sm mt-1">Nothing pending this month.</p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/30">
-                    {canProcessPayroll(userRole) && (
-                      <TableHead className="w-10">
-                        <input
-                          type="checkbox"
-                          checked={pending.length > 0 && selectedPending.size === pending.length}
-                          onChange={toggleSelectAllPending}
-                        />
-                      </TableHead>
-                    )}
-                    <TableHead className="font-bold">Employee</TableHead>
-                    <TableHead className="font-bold">
-                      <div className="w-full flex justify-center">Department</div>
-                    </TableHead>
-                    <TableHead className="font-bold">
-                      <div className="w-full flex justify-center">Role</div>
-                    </TableHead>
-                    <TableHead className="font-bold">Employee ID</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pending.slice((pagePending - 1) * 10, pagePending * 10).map(emp => (
-                    <TableRow key={emp._id} className="hover:bg-primary/5 transition-colors duration-200 cursor-pointer group">
-                      {canProcessPayroll(userRole) && (
-                        <TableCell>
-                          <input
-                            type="checkbox"
-                            checked={selectedPending.has(emp._id)}
-                            onChange={() => togglePendingSelection(emp._id)}
-                          />
-                        </TableCell>
-                      )}
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-sm font-bold text-orange-600">
-                            {emp.firstName?.[0]?.toUpperCase() || "?"}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm">{emp.firstName} {emp.lastName}</p>
-                            <p className="text-xs text-muted-foreground">{emp.email}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="align-middle">
-                        <div className="w-full flex justify-center">
-                          <span className="text-sm">{emp.department || "—"}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="align-middle">
-                        <div className="w-full flex justify-center">
-                          <Badge variant="secondary" className="text-[10px] font-bold tracking-wider">
-                            {emp.role}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm font-mono text-blue-600 dark:text-blue-400 align-middle">
-                        {emp.employeeCode || "—"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-            {pending.length > 0 && (
-              <Pagination
-                currentPage={pagePending}
-                totalPages={Math.ceil(pending.length / 10)}
-                totalItems={pending.length}
-                itemsPerPage={10}
-                onPageChange={setPagePending}
+              <DataTable
+                columns={pendingColumns}
+                data={pending}
+                searchable={false}
+                defaultPageSize={10}
               />
             )}
           </CardContent>
@@ -1019,7 +1016,7 @@ const PayrollProcessing = () => {
           <CardContent>
             {complianceLoading ? (
               <div className="flex justify-center py-10">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
               </div>
             ) : compliance?.totals ? (
               <div className="grid sm:grid-cols-2 gap-3 text-sm">
@@ -1052,45 +1049,14 @@ const PayrollProcessing = () => {
           <CardContent>
             {auditLoading ? (
               <div className="flex justify-center py-10">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>When</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Actor</TableHead>
-                    <TableHead>Entity</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {auditLogs.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-muted-foreground text-center py-8">
-                        No audit entries yet.
-                      </TableCell>
-                    </TableRow>
-                  ) : auditLogs.slice((pageAudit - 1) * 10, pageAudit * 10).map(row => (
-                    <TableRow key={row._id}>
-                      <TableCell className="text-xs whitespace-nowrap">
-                        {row.createdAt ? new Date(row.createdAt).toLocaleString() : "—"}
-                      </TableCell>
-                      <TableCell className="text-xs font-mono">{row.action}</TableCell>
-                      <TableCell className="text-xs">{row.actorEmail || row.actorUserId || "—"}</TableCell>
-                      <TableCell className="text-xs">{row.entityType} / {String(row.entityId || "").slice(0, 12)}…</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-            {auditLogs.length > 0 && (
-              <Pagination
-                currentPage={pageAudit}
-                totalPages={Math.ceil(auditLogs.length / 10)}
-                totalItems={auditLogs.length}
-                itemsPerPage={10}
-                onPageChange={setPageAudit}
+              <DataTable
+                columns={auditColumns}
+                data={auditLogs}
+                searchable={false}
+                defaultPageSize={10}
               />
             )}
           </CardContent>
@@ -1110,7 +1076,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
 
   const statusStyle = {
     Generated:
-      "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/40",
+      "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/40",
 
     Verified:
       "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40",
@@ -1119,7 +1085,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
       "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/40",
 
     CEO_Approved:
-      "bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/40",
+      "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/40",
 
     Disbursed:
       "bg-green-100 text-green-700 border-green-200 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/40",
@@ -1202,7 +1168,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
           <div className={cn(
             "flex items-center justify-center w-9 h-9 rounded-full transition-colors",
             expanded
-              ? "bg-blue-100 dark:bg-blue-500/20 text-blue-600"
+              ? "bg-purple-100 dark:bg-purple-500/20 text-purple-600"
               : "bg-muted text-muted-foreground"
           )}>
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -1215,7 +1181,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
                 <span className="ml-2 text-orange-600 font-medium">CEO gate</span>
               )}
               {record.financeApprovalRequired && (
-                <span className="ml-2 text-blue-600 font-medium">Finance gate</span>
+                <span className="ml-2 text-purple-600 font-medium">Finance gate</span>
               )}
             </p>
             {record.rejectionReason && (
@@ -1398,7 +1364,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
                 )}
               >
                 <div className="col-span-4 flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-600 flex-shrink-0">
+                  <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-500/20 flex items-center justify-center text-xs font-bold text-purple-600 flex-shrink-0">
                     {initial}
                   </div>
                   <div className="min-w-0">
@@ -1430,7 +1396,7 @@ const RecordCard = ({ record, employees, userRole, onStatusUpdate, onDownload, o
                 <div className="col-span-1 flex justify-end">
                   <Button
                     size="sm" variant="ghost"
-                    className="h-8 w-8 p-0 hover:bg-blue-50 dark:hover:bg-blue-500/10 hover:text-blue-600"
+                    className="h-8 w-8 p-0 hover:bg-purple-50 dark:hover:bg-purple-500/10 hover:text-purple-600"
                     onClick={() => onDownload(record._id, emp.employeeId)}
                     title={`Download payslip — ${name}`}
                   >
