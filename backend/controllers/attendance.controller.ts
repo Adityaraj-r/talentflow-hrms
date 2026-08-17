@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import Attendance from "../models/Attendance.model";
 import CorrectionRequest from "../models/CorrectionRequest.model";
 import User from "../models/User.model";
+import { notifyOvertimeApproved, notifyCorrectionRequestApproved, notifyCorrectionRequestRejected } from "../services/notification.service";
 
 const OFFICE_LAT = 19.8767;
 const OFFICE_LON = 75.3243;
@@ -922,7 +923,20 @@ export const reviewCorrectionRequest = async (req: Request, res: Response) => {
     }
 
     await correctionRequest.save();
-
+    if (action === "Approved") {
+      await notifyCorrectionRequestApproved(
+        correctionRequest.requestedBy,
+        correctionRequest._id.toString(),
+        correctionRequest.attendanceId.toString()
+      );
+    } else {
+      await notifyCorrectionRequestRejected(
+        correctionRequest.requestedBy,
+        correctionRequest._id.toString(),
+        correctionRequest.attendanceId.toString(),
+        rejectionReason
+      );
+    }
     if (action === "Approved") {
       const attendanceRecord = await Attendance.findById(
         correctionRequest.attendanceId
@@ -1098,7 +1112,12 @@ export const approveOvertime = async (req: Request, res: Response) => {
     record.isOtApproved = true;
     record.otApprovedBy = new mongoose.Types.ObjectId(managerId);
     await record.save();
-
+    await notifyOvertimeApproved(
+      record.userId,
+      record._id.toString(),
+      record.date,
+      record.overtimeHours
+    );
     res.json({ success: true, data: record });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });

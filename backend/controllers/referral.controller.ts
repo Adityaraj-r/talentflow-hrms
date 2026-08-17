@@ -8,6 +8,7 @@ import Application from "../models/application.model";
 import Employee from "../models/Employee.model";
 import User from "../models/User.model";
 import { sendReferralEmail } from "../utils/sendEmail";
+import { notifyReferralCreated, notifyReferralCancelled, notifyReferralExpired } from "../services/notification.service";
 
 const normalizeStr = (str?: string) => (str || "").trim().toLowerCase();
 
@@ -141,11 +142,17 @@ export const createReferral = async (req: AuthRequest, res: Response) => {
       invitationExpiry,
     });
 
-    const frontendBaseUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
-    const applyLink = `${frontendBaseUrl}/careers/apply/${jobId}?referralToken=${invitationToken}`;
-
     const referrerName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "A colleague";
 
+    await notifyReferralCreated(
+      referral._id.toString(),
+      job.jobTitle,
+      candidateName.trim(),
+      referrerName
+    );
+
+    const frontendBaseUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+    const applyLink = `${frontendBaseUrl}/careers/apply/${jobId}?referralToken=${invitationToken}`;
     let emailResult: any = null;
     try {
       emailResult = await sendReferralEmail(normEmail, {
@@ -276,7 +283,12 @@ export const cancelReferral = async (req: AuthRequest, res: Response) => {
 
     referral.status = "Cancelled";
     await referral.save();
-
+    await notifyReferralCancelled(
+      referral._id.toString(),
+      referral.referredByEmployeeId,
+      referral.candidateName,
+      (referral.jobId as any)?.jobTitle || "the position"  // jobTitle not populated on `referral` here — see note below
+    );
     res.json({ success: true, message: "Referral invitation cancelled", data: referral });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
@@ -309,6 +321,12 @@ export const verifyReferralToken = async (req: AuthRequest, res: Response) => {
     if (new Date() > new Date(referral.invitationExpiry)) {
       referral.status = "Expired";
       await referral.save();
+      await notifyReferralExpired(
+        referral._id.toString(),
+        referral.referredByEmployeeId,
+        referral.candidateName,
+        (referral.jobId as any)?.jobTitle || "the position"
+      );
       return res.status(400).json({ success: false, error: "This referral invitation link has expired" });
     }
 

@@ -11,6 +11,7 @@ import { getHrSenderEmail, sendInterviewScheduleEmail } from "../utils/sendEmail
 import { sendApplicationStatusEmail } from "../utils/sendEmail";
 import { calculateResumeFit } from "../utils/resumeFit"
 import { WorkflowEngine } from '../services/workflowEngine';
+import { notifyReferralApplied } from "../services/notification.service";
 
 const selectedStatuses = ["selected", "hired"];
 
@@ -187,6 +188,13 @@ export const applyJob = async (req: Request, res: Response) => {
       referralRecord.status = "Applied";
       referralRecord.applicationId = application._id;
       await referralRecord.save();
+      await notifyReferralApplied(
+        referralRecord._id.toString(),
+        application._id.toString(),
+        referralRecord.referredByEmployeeId,
+        name,
+        (job as any)?.jobTitle || "the position"
+      );
     }
 
     // Initialize workflow state if job has workflow configured

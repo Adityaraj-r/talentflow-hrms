@@ -5,6 +5,23 @@ export enum NotificationType {
   APPRAISAL_CYCLE_ACTIVE = 'appraisal_cycle_active',
   APPRAISAL_RESULT_PUBLISHED = 'appraisal_result_published',
   TEAM_APPRAISALS_COMPLETE = 'team_appraisals_complete',
+  // Performance Review workflow
+  PERFORMANCE_REVIEW_ASSIGNED = 'performance_review_assigned',
+  SELF_ASSESSMENT_SUBMITTED = 'self_assessment_submitted',
+  MANAGER_REVIEW_SUBMITTED = 'manager_review_submitted',
+  HR_REVIEW_SUBMITTED = 'hr_review_submitted',
+  CEO_REVIEW_SUBMITTED = 'ceo_review_submitted',
+  CALIBRATION_COMPLETED = 'calibration_completed',
+  REVIEW_FINAL_APPROVED = 'review_final_approved',
+  FEEDBACK_RELEASED = 'feedback_released',
+  // Bonus
+  BONUS_PROCESSED = 'bonus_processed',
+  // PIP
+  PIP_CREATED = 'pip_created',
+  PIP_MILESTONE_COMPLETED = 'pip_milestone_completed',
+  PIP_COMPLETED = 'pip_completed',
+  PIP_FAILED = 'pip_failed',
+  PIP_CANCELLED = 'pip_cancelled',
   RESIGNATION_WITHDRAWN = 'resignation_withdrawn',
   PAYROLL_REJECTED = 'payroll_rejected',
   PAYROLL_PENDING_CEO_APPROVAL = 'payroll_pending_ceo_approval',
@@ -33,6 +50,14 @@ export enum NotificationType {
   TRANSFER_MANAGER_RECOMMENDATION = "transfer_manager_recommendation",
   TRANSFER_APPROVED = "transfer_approved",
   TRANSFER_REJECTED = "transfer_rejected",
+  GOALS_CONFIRMED = 'goals_confirmed',
+  REFERRAL_CREATED = 'referral_created',
+  REFERRAL_APPLIED = 'referral_applied',
+  REFERRAL_CANCELLED = 'referral_cancelled',
+  REFERRAL_EXPIRED = 'referral_expired',
+  OVERTIME_APPROVED = 'overtime_approved',
+  CORRECTION_REQUEST_APPROVED = 'correction_request_approved',
+  CORRECTION_REQUEST_REJECTED = 'correction_request_rejected',
 }
 
 export interface INotification extends Document {

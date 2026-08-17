@@ -167,6 +167,10 @@ const AppraisalHistory = () => {
                           variant="ghost"
                           size="sm"
                           disabled={!canSubmit}
+                          onClick={() => {
+                            setSelectedReview(review)
+                            setIsModalOpen(true)
+                          }}
                         >
                           {review.status === "goals_locked"
                             ? "Waiting"

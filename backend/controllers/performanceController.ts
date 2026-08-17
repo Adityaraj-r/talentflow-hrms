@@ -24,7 +24,18 @@ import {
   resolvePmsScope,
   canReadPerformanceOrg,
 } from '../services/pmsScope.service';
-import { evaluateAndNotifyManagersTeamComplete } from '../services/notification.service';
+import {
+  evaluateAndNotifyManagersTeamComplete,
+  notifyPerformanceReviewAssigned,
+  notifySelfAssessmentSubmitted,
+  notifyManagerReviewSubmitted,
+  notifyHRReviewSubmitted,
+  notifyCEOReviewSubmitted,
+  notifyCalibrationCompleted,
+  notifyReviewFinalApproved,
+  notifyFeedbackReleased,
+  notifyGoalsConfirmed
+} from '../services/notification.service';
 import { logger } from '../utils/logger';
 
 /** Fire-and-forget PMS notification hook — must not affect review HTTP responses */
@@ -406,6 +417,11 @@ export class PerformanceController {
         $inc: { totalReviews: 1 },
         $addToSet: { assignedEmployees: employeeId },
       });
+      await notifyPerformanceReviewAssigned(
+        employeeId,
+        review._id.toString(),
+        cycleId.toString()
+      );
       const populatedReview = await PerformanceReviewModel.findById(review.id)
         .populate('employeeId', POP_USER_PUBLIC)
         .populate('reviewerId', POP_REVIEWER_PUBLIC)
@@ -439,6 +455,11 @@ export class PerformanceController {
       const before = review.toObject();
       review.status = WorkflowStage.GOALS_LOCKED;
       await review.save();
+      await notifyGoalsConfirmed(
+        review.employeeId,
+        review._id.toString(),
+        review.cycleId.toString()
+      );
       scheduleTeamCompleteNotification(review.cycleId as mongoose.Types.ObjectId);
       await auditPms(req, 'CONFIRM_GOALS', `Goals locked for review ${review.id}`, before, review.toObject());
       const populatedReview = await PerformanceReviewModel.findById(review._id)
@@ -694,65 +715,12 @@ export class PerformanceController {
   }
 
   /** Manager / reviewer submits competency review after self-assessment */
+/** Manager / reviewer submits competency review after self-assessment.
+   *  Legacy :id-param route — delegates to submitManagerReview so both
+   *  endpoints share one implementation (and one notification hook). */
   static async submitReview(req: AuthRequest, res: Response) {
-    try {
-      const { id } = req.params;
-      const body = req.body as Record<string, unknown>;
-      const competencies = body.competencies as { rating?: number }[] | undefined;
-      const strengths = (body.strengths as string) || '';
-      const areasFromBody = (body.areasForImprovement as string) || (body.improvements as string) || '';
-      const managerComments = (body.managerComments as string) || '';
-
-      const review = await PerformanceReviewModel.findById(id);
-      if (!review) return res.status(404).json({ success: false, error: 'Review not found' });
-      const st = canonicalStatus(review.status);
-      if (isTerminalImmutable(st))
-        return res.status(403).json({ success: false, error: 'Review is locked after final approval.' });
-      assertManagerReviewOrder(st);
-
-      const emp = await loadUserLean(review.employeeId.toString());
-      await assertCanViewReview({
-        viewer: viewerFromReq(req),
-        reviewEmployeeId: review.employeeId,
-        reviewerId: review.reviewerId,
-        employeeDepartment: (emp?.department as string) || null,
-      });
-
-      if (review.reviewerId.toString() !== req.user!.id)
-        return res.status(403).json({ success: false, error: 'Only the assigned reviewer may submit this review.' });
-
-      const finalComp = competencies || review.competencies;
-      const overallRating = computeOverallFromCompetencies(finalComp as { rating?: number }[]);
-      if (overallRating < 0 || overallRating > 5)
-        return res.status(400).json({ success: false, error: 'Overall rating must be between 0 and 5' });
-
-      const before = review.toObject();
-      review.competencies = finalComp as typeof review.competencies;
-      review.overallRating = overallRating;
-      review.strengths = strengths;
-      review.areasForImprovement = areasFromBody;
-      review.managerComments = managerComments;
-      review.status = WorkflowStage.MANAGER_REVIEW_DONE;
-      review.submittedAt = new Date();
-      await review.save();
-      scheduleTeamCompleteNotification(review.cycleId as mongoose.Types.ObjectId);
-
-      await PerformanceCycleModel.findByIdAndUpdate(review.cycleId, {
-        $inc: { completedReviews: 1 },
-      });
-
-      await auditPms(req, 'SUBMIT_MANAGER_REVIEW', `Manager review ${id}`, before, review.toObject());
-
-      const populatedReview = await PerformanceReviewModel.findById(id)
-        .populate('employeeId', POP_USER_PUBLIC)
-        .populate('reviewerId', POP_REVIEWER_PUBLIC)
-        .populate('cycleId', POP_CYCLE_SHORT);
-
-      res.json({ success: true, message: 'Review submitted successfully', data: populatedReview });
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Error';
-      res.status(400).json({ success: false, error: msg });
-    }
+    req.body = { ...req.body, reviewId: req.params.id };
+    return PerformanceController.submitManagerReview(req, res);
   }
 
   /** Legacy HR approve — maps to final step only when applicable; prefer finalApprove flow */
@@ -764,52 +732,100 @@ export class PerformanceController {
     try {
       const { cycleId, selfRating, selfComments } = req.body;
       const employeeId = req.user?.id;
-      if (!cycleId || selfRating == null)
-        return res.status(400).json({ success: false, error: 'cycleId and selfRating are required' });
-      if (selfRating < 1 || selfRating > 5)
-        return res.status(400).json({ success: false, error: 'selfRating must be between 1 and 5' });
 
-      const review = await PerformanceReviewModel.findOne({ cycleId, employeeId });
-      if (!review) return res.status(404).json({ success: false, error: 'No review assigned for this employee in this cycle' });
+      if (!cycleId || selfRating == null)
+        return res.status(400).json({
+          success: false,
+          error: 'cycleId and selfRating are required'
+        });
+
+      if (selfRating < 1 || selfRating > 5)
+        return res.status(400).json({
+          success: false,
+          error: 'selfRating must be between 1 and 5'
+        });
+
+      const review = await PerformanceReviewModel.findOne({
+        cycleId,
+        employeeId
+      });
+
+      if (!review)
+        return res.status(404).json({
+          success: false,
+          error: 'No review assigned for this employee in this cycle'
+        });
 
       const st = canonicalStatus(review.status);
 
-      assertReadyForSelfAssessment(
-        review.status,
-        review.employeeId,
-        review.cycleId
-      );
-
-      review.selfRating = selfRating;
-      review.selfComments = selfComments;
-      review.status = WorkflowStage.SELF_ASSESSMENT_DONE;
-      if (isTerminalImmutable(st))
-        return res.status(403).json({ success: false, error: 'Review is immutable after approval.' });
+      if (isTerminalImmutable(st)) {
+        return res.status(403).json({
+          success: false,
+          error: 'Review is immutable after approval.'
+        });
+      }
 
       const ready = await assertReadyForSelfAssessment(
         review.status,
         review.employeeId as mongoose.Types.ObjectId,
         review.cycleId as mongoose.Types.ObjectId
       );
-      if (!ready.ok) return res.status(400).json({ success: false, error: ready.message });
+
+      if (!ready.ok) {
+        return res.status(400).json({
+          success: false,
+          error: ready.message
+        });
+      }
 
       const before = review.toObject();
+
       review.selfRating = selfRating;
       review.selfComments = selfComments || '';
       review.status = WorkflowStage.SELF_ASSESSMENT_DONE;
+
       await review.save();
-      scheduleTeamCompleteNotification(review.cycleId as mongoose.Types.ObjectId);
-      await auditPms(req, 'SELF_ASSESSMENT', `Self assessment cycle ${cycleId}`, before, review.toObject());
+
+      if (review.reviewerId) {
+        await notifySelfAssessmentSubmitted(
+          review.reviewerId,
+          review.employeeId,
+          review._id.toString(),
+          review.cycleId.toString()
+        );
+      }
+
+      scheduleTeamCompleteNotification(
+        review.cycleId as mongoose.Types.ObjectId
+      );
+
+      await auditPms(
+        req,
+        'SELF_ASSESSMENT',
+        `Self assessment cycle ${cycleId}`,
+        before,
+        review.toObject()
+      );
 
       const populatedReview = await PerformanceReviewModel.findById(review._id)
         .populate('employeeId', POP_USER_PUBLIC)
         .populate('reviewerId', POP_REVIEWER_PUBLIC)
         .populate('cycleId', POP_CYCLE_SHORT);
 
-      res.json({ success: true, message: 'Self assessment submitted successfully', data: populatedReview });
+      res.json({
+        success: true,
+        message: 'Self assessment submitted successfully',
+        data: populatedReview
+      });
+
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Error';
-      res.status(500).json({ success: false, error: 'Failed to submit self assessment', details: msg });
+
+      res.status(500).json({
+        success: false,
+        error: 'Failed to submit self assessment',
+        details: msg
+      });
     }
   }
 
@@ -856,7 +872,16 @@ export class PerformanceController {
       review.status = WorkflowStage.MANAGER_REVIEW_DONE;
       review.submittedAt = new Date();
       await review.save();
-      scheduleTeamCompleteNotification(review.cycleId as mongoose.Types.ObjectId);
+
+      await notifyManagerReviewSubmitted(
+        review._id.toString(),
+        review.employeeId,
+        review.cycleId.toString()
+      );
+
+      scheduleTeamCompleteNotification(
+        review.cycleId as mongoose.Types.ObjectId
+      );
 
       await PerformanceCycleModel.findByIdAndUpdate(review.cycleId, {
         $inc: { completedReviews: 1 },
@@ -890,8 +915,20 @@ export class PerformanceController {
       const before = review.toObject();
       review.adminFeedback = adminFeedback || '';
       review.status = WorkflowStage.HR_REVIEWED;
+
       await review.save();
-      scheduleTeamCompleteNotification(review.cycleId as mongoose.Types.ObjectId);
+
+      if (review.requiresCeoReview) {
+        await notifyHRReviewSubmitted(
+          review._id.toString(),
+          review.employeeId,
+          review.cycleId.toString()
+        );
+      }
+
+      scheduleTeamCompleteNotification(
+        review.cycleId as mongoose.Types.ObjectId
+      );
       await auditPms(req, 'HR_REVIEW', `HR review ${id}`, before, review.toObject());
 
       const populatedReview = await PerformanceReviewModel.findById(id)
@@ -923,8 +960,18 @@ export class PerformanceController {
       review.ceoReviewedAt = new Date();
       review.ceoReviewerId = new mongoose.Types.ObjectId(req.user!.id);
       review.status = WorkflowStage.CEO_REVIEWED;
+
       await review.save();
-      scheduleTeamCompleteNotification(review.cycleId as mongoose.Types.ObjectId);
+
+      await notifyCEOReviewSubmitted(
+        review._id.toString(),
+        review.employeeId,
+        review.cycleId.toString()
+      );
+
+      scheduleTeamCompleteNotification(
+        review.cycleId as mongoose.Types.ObjectId
+      );
       await auditPms(req, 'CEO_REVIEW', `CEO review ${id}`, before, review.toObject());
 
       const populatedReview = await PerformanceReviewModel.findById(id)
@@ -961,8 +1008,18 @@ export class PerformanceController {
       review.calibratedAt = new Date();
       review.calibratedBy = new mongoose.Types.ObjectId(req.user!.id);
       review.status = WorkflowStage.CALIBRATED;
+
       await review.save();
-      scheduleTeamCompleteNotification(review.cycleId as mongoose.Types.ObjectId);
+
+      await notifyCalibrationCompleted(
+        review._id.toString(),
+        review.employeeId,
+        review.cycleId.toString()
+      );
+
+      scheduleTeamCompleteNotification(
+        review.cycleId as mongoose.Types.ObjectId
+      );
       await auditPms(req, 'CALIBRATION', `Calibration ${id}`, before, review.toObject());
 
       const populatedReview = await PerformanceReviewModel.findById(id)
@@ -993,8 +1050,18 @@ export class PerformanceController {
       review.approvedBy = new mongoose.Types.ObjectId(req.user!.id);
       review.approvedAt = new Date();
       review.immutableLockedAt = new Date();
+
       await review.save();
-      scheduleTeamCompleteNotification(review.cycleId as mongoose.Types.ObjectId);
+
+      await notifyReviewFinalApproved(
+        review.employeeId,
+        review._id.toString(),
+        review.cycleId.toString()
+      );
+
+      scheduleTeamCompleteNotification(
+        review.cycleId as mongoose.Types.ObjectId
+      );
 
       await PerformanceCycleModel.findByIdAndUpdate(review.cycleId, {
         avgScore: review.overallRating,
@@ -1026,8 +1093,18 @@ export class PerformanceController {
       const before = review.toObject();
       review.status = WorkflowStage.FEEDBACK_RELEASED;
       review.feedbackReleasedAt = new Date();
+
       await review.save();
-      scheduleTeamCompleteNotification(review.cycleId as mongoose.Types.ObjectId);
+
+      await notifyFeedbackReleased(
+        review.employeeId,
+        review._id.toString(),
+        review.cycleId.toString()
+      );
+
+      scheduleTeamCompleteNotification(
+        review.cycleId as mongoose.Types.ObjectId
+      );
       await auditPms(req, 'RELEASE_FEEDBACK', `Feedback released ${id}`, before, review.toObject());
 
       const populatedReview = await PerformanceReviewModel.findById(id)

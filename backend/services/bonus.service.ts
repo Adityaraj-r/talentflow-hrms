@@ -9,6 +9,7 @@ import { AppraisalCycleModel, AppraisalCycleStatus } from '../models/AppraisalCy
 import { PerformanceReviewModel } from '../models/PerformanceReview';
 import SalaryStructure, { ISalaryStructure } from '../models/salaryStructure.model';
 import { WorkflowStage, canonicalStatus } from './pmsWorkflow.service';
+import * as notificationService from './notification.service';
 
 export interface BonusRunResult {
   bonusRunId: string;
@@ -139,6 +140,13 @@ export async function runBonusForCycle(
           },
         },
       }
+    );
+    await notificationService.notifyBonusProcessed(
+      empId,
+      cycle._id.toString(),
+      perfId.toString(),
+      percent,
+      bonusAmount
     );
 
     processed++;

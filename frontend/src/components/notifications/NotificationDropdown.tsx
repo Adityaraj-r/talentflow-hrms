@@ -12,44 +12,84 @@
     CheckCircle2,
     Users,
     ClipboardList,
+    UserPlus,
   } from "lucide-react";
   import { useAuth } from "@/contexts/AuthContext";
   import { cn } from "@/lib/utils";
 
   function iconForType(type: NotificationType) {
-    switch (type) {
-      case "appraisal_cycle_active":
-        return BellRing;
-      case "appraisal_result_published":
-        return CheckCircle2;
-      case "team_appraisals_complete":
-        return Users;
-      case "payroll_pending_ceo_approval":
-        return ClipboardList;
-      case "payroll_pending_finance_approval":
-        return ClipboardList; 
-      case "task_assigned":
-      case "task_in_progress":
-      case "task_completed":
-        return ClipboardList;
-      case "leave_requested":
-      case "leave_approved":
-      case "leave_rejected":
-        return ClipboardList;
-      case "disciplinary_case_created":
-      case "disciplinary_review_requested":
-      case "disciplinary_case_in_progress":
-      case "disciplinary_case_completed":
-        return ClipboardList;
-      case "transfer_requested":
-      case "transfer_manager_recommendation":
-      case "transfer_approved":
-      case "transfer_rejected":
-        return ClipboardList;
-      default:
-        return ClipboardList;
-    }
+  switch (type) {
+    case "appraisal_cycle_active":
+      return BellRing;
+
+    case "appraisal_result_published":
+      return CheckCircle2;
+
+    case "team_appraisals_complete":
+      return Users;
+
+    case "performance_review_assigned":
+    case "self_assessment_submitted":
+    case "manager_review_submitted":
+    case "hr_review_submitted":
+    case "ceo_review_submitted":
+    case "calibration_completed":
+    case "review_final_approved":
+    case "feedback_released":
+      return ClipboardList;
+
+    case "bonus_processed":
+      return CheckCircle2;
+
+    case "pip_created":
+    case "pip_milestone_completed":
+    case "pip_completed":
+    case "pip_failed":
+    case "pip_cancelled":
+      return ClipboardList;
+
+    // Keep all your existing cases below this point
+    case "payroll_pending_ceo_approval":
+    case "payroll_pending_finance_approval":
+      return ClipboardList;
+
+    case "task_assigned":
+    case "task_in_progress":
+    case "task_completed":
+      return ClipboardList;
+
+    case "leave_requested":
+    case "leave_approved":
+    case "leave_rejected":
+      return ClipboardList;
+
+    case "disciplinary_case_created":
+    case "disciplinary_review_requested":
+    case "disciplinary_case_in_progress":
+    case "disciplinary_case_completed":
+      return ClipboardList;
+
+    case "transfer_requested":
+    case "transfer_manager_recommendation":
+    case "transfer_approved":
+    case "transfer_rejected":
+      return ClipboardList;
+    case "goals_confirmed":
+      return ClipboardList;
+
+    case "referral_created":
+    case "referral_applied":
+    case "referral_cancelled":
+    case "referral_expired":
+      return UserPlus;
+    case "overtime_approved":
+    case "correction_request_approved":
+    case "correction_request_rejected":
+      return ClipboardList;
+    default:
+      return ClipboardList;
   }
+}
 
   function routeForNotification(
     type: NotificationType,
@@ -77,6 +117,27 @@
       }
       case "team_appraisals_complete":
         return "/role/direct_manager/appraisal";
+      case "performance_review_assigned":
+        return "/role/employee/appraisal";
+
+      case "self_assessment_submitted":
+      case "manager_review_submitted":
+      case "hr_review_submitted":
+      case "ceo_review_submitted":
+      case "calibration_completed":
+      case "review_final_approved":
+      case "feedback_released":
+        return "/pms";
+
+      case "bonus_processed":
+        return "/employee/appraisal-result";
+
+      case "pip_created":
+      case "pip_milestone_completed":
+      case "pip_completed":
+      case "pip_failed":
+      case "pip_cancelled":
+        return "/pms/pips";
       case "payroll_pending_ceo_approval":
         return "/ceo/payroll";
       case "payroll_pending_finance_approval":
@@ -110,6 +171,30 @@
       case "transfer_approved":
       case "transfer_rejected":
         return "/transfer";
+      case "referral_created": {
+        // No dedicated HR referrals-review page exists yet — send HR to job openings for now.
+        if (roleUpper === "HR_MANAGER" || roleUpper === "HR_OFFICER") {
+          return "/dashboard/job-openings";
+        }
+        return "/employee/referrals";
+      }
+
+      case "referral_applied": {
+        // The referred candidate now has a real Application record — HR can find them there.
+        if (roleUpper === "HR_MANAGER" || roleUpper === "HR_OFFICER") {
+          return "/dashboard/applications";
+        }
+        return "/employee/referrals";
+      }
+
+      case "referral_cancelled":
+      case "referral_expired":
+        // Employee-only notifications, no HR variant sent for these.
+        return "/employee/referrals";
+      case "overtime_approved":
+      case "correction_request_approved":
+      case "correction_request_rejected":
+        return "/attendance/my-leaves";
       default:
         return "/dashboard";
     }

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import User from '../models/User.model';
+import Employee from '../models/Employee.model';
 import {
   NotificationModel,
   NotificationType,
@@ -718,3 +719,541 @@ export async function notifyTransferRejected(
     isDeleted: false,
   });
 } 
+export async function notifyPerformanceReviewAssigned(
+  employeeId: mongoose.Types.ObjectId | string,
+  reviewId: string,
+  performanceCycleId: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employeeId)),
+    type: NotificationType.PERFORMANCE_REVIEW_ASSIGNED,
+    title: 'Performance review assigned',
+    body: 'A performance review has been assigned to you. Please complete your self-assessment.',
+    metadata: {
+      reviewId,
+      performanceCycleId,
+    },
+    isDeleted: false,
+  });
+}
+export async function notifySelfAssessmentSubmitted(
+  managerId: mongoose.Types.ObjectId | string,
+  employeeId: mongoose.Types.ObjectId | string,
+  reviewId: string,
+  performanceCycleId: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(managerId)),
+    type: NotificationType.SELF_ASSESSMENT_SUBMITTED,
+    title: 'Self-assessment submitted',
+    body: 'An employee has completed their self-assessment and the review is ready for your manager review.',
+    metadata: {
+      reviewId,
+      employeeId: String(employeeId),
+      performanceCycleId,
+    },
+    isDeleted: false,
+  });
+}
+export async function notifyManagerReviewSubmitted(
+  reviewId: string,
+  employeeId: mongoose.Types.ObjectId | string,
+  performanceCycleId: string
+): Promise<void> {
+  const hrUsers = await User.find({
+    role: { $in: ['HR_MANAGER', 'HR_OFFICER'] },
+    isDeleted: { $ne: true },
+    isActive: { $ne: false },
+  })
+    .select('_id')
+    .lean();
+
+  if (!hrUsers.length) return;
+
+  await NotificationModel.insertMany(
+    hrUsers.map((u) => ({
+      userId: u._id,
+      type: NotificationType.MANAGER_REVIEW_SUBMITTED,
+      title: 'Manager review submitted',
+      body: 'A manager review has been submitted and is ready for HR review.',
+      metadata: {
+        reviewId,
+        employeeId: String(employeeId),
+        performanceCycleId,
+      },
+      isDeleted: false,
+    }))
+  );
+}
+export async function notifyHRReviewSubmitted(
+  reviewId: string,
+  employeeId: mongoose.Types.ObjectId | string,
+  performanceCycleId: string
+): Promise<void> {
+  const ceos = await User.find({
+    role: 'CEO',
+    isDeleted: { $ne: true },
+    isActive: { $ne: false },
+  })
+    .select('_id')
+    .lean();
+
+  if (!ceos.length) return;
+
+  await NotificationModel.insertMany(
+    ceos.map((u) => ({
+      userId: u._id,
+      type: NotificationType.HR_REVIEW_SUBMITTED,
+      title: 'HR review completed',
+      body: 'An appraisal has completed HR review and is ready for CEO review.',
+      metadata: {
+        reviewId,
+        employeeId: String(employeeId),
+        performanceCycleId,
+      },
+      isDeleted: false,
+    }))
+  );
+}
+export async function notifyCEOReviewSubmitted(
+  reviewId: string,
+  employeeId: mongoose.Types.ObjectId | string,
+  performanceCycleId: string
+): Promise<void> {
+  const hrUsers = await User.find({
+    role: { $in: ['HR_MANAGER', 'HR_OFFICER'] },
+    isDeleted: { $ne: true },
+    isActive: { $ne: false },
+  })
+    .select('_id')
+    .lean();
+
+  if (!hrUsers.length) return;
+
+  await NotificationModel.insertMany(
+    hrUsers.map((u) => ({
+      userId: u._id,
+      type: NotificationType.CEO_REVIEW_SUBMITTED,
+      title: 'CEO review completed',
+      body: 'CEO review has been completed and the appraisal is ready for calibration.',
+      metadata: {
+        reviewId,
+        employeeId: String(employeeId),
+        performanceCycleId,
+      },
+      isDeleted: false,
+    }))
+  );
+}
+export async function notifyCalibrationCompleted(
+  reviewId: string,
+  employeeId: mongoose.Types.ObjectId | string,
+  performanceCycleId: string
+): Promise<void> {
+  const hrUsers = await User.find({
+    role: { $in: ['HR_MANAGER', 'HR_OFFICER'] },
+    isDeleted: { $ne: true },
+    isActive: { $ne: false },
+  })
+    .select('_id')
+    .lean();
+
+  if (!hrUsers.length) return;
+
+  await NotificationModel.insertMany(
+    hrUsers.map((u) => ({
+      userId: u._id,
+      type: NotificationType.CALIBRATION_COMPLETED,
+      title: 'Performance calibration completed',
+      body: 'Performance calibration has been completed and the review is ready for final approval.',
+      metadata: {
+        reviewId,
+        employeeId: String(employeeId),
+        performanceCycleId,
+      },
+      isDeleted: false,
+    }))
+  );
+}
+export async function notifyReviewFinalApproved(
+  employeeId: mongoose.Types.ObjectId | string,
+  reviewId: string,
+  performanceCycleId: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employeeId)),
+    type: NotificationType.REVIEW_FINAL_APPROVED,
+    title: 'Performance review approved',
+    body: 'Your performance review has received final approval.',
+    metadata: {
+      reviewId,
+      performanceCycleId,
+    },
+    isDeleted: false,
+  });
+}
+export async function notifyFeedbackReleased(
+  employeeId: mongoose.Types.ObjectId | string,
+  reviewId: string,
+  performanceCycleId: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employeeId)),
+    type: NotificationType.FEEDBACK_RELEASED,
+    title: 'Performance feedback is available',
+    body: 'Your performance feedback has been released. Open Performance to view your results.',
+    metadata: {
+      reviewId,
+      performanceCycleId,
+    },
+    isDeleted: false,
+  });
+}
+export async function notifyBonusProcessed(
+  employeeId: mongoose.Types.ObjectId | string,
+  appraisalCycleId: string,
+  performanceCycleId: string,
+  bonusPercent: number,
+  bonusAmount: number
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employeeId)),
+    type: NotificationType.BONUS_PROCESSED,
+    title: 'Appraisal bonus processed',
+    body: `Your appraisal bonus has been processed at ${bonusPercent}% for a total of ₹${bonusAmount.toLocaleString('en-IN')}.`,
+    metadata: {
+      appraisalCycleId,
+      performanceCycleId,
+      bonusPercent,
+      bonusAmount,
+    },
+    isDeleted: false,
+  });
+}
+export async function notifyPIPCreated(
+  employeeId: mongoose.Types.ObjectId | string,
+  pipId: string,
+  reason: string,
+  startDate: Date,
+  endDate: Date
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employeeId)),
+    type: NotificationType.PIP_CREATED,
+    title: 'Performance Improvement Plan created',
+    body: `A Performance Improvement Plan has been created for you. Reason: ${reason}`,
+    metadata: {
+      pipId,
+      startDate,
+      endDate,
+    },
+    isDeleted: false,
+  });
+}
+export async function notifyPIPCompleted(
+  employeeId: mongoose.Types.ObjectId | string,
+  pipId: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employeeId)),
+    type: NotificationType.PIP_COMPLETED,
+    title: 'Performance Improvement Plan completed',
+    body: 'Your Performance Improvement Plan has been completed.',
+    metadata: {
+      pipId,
+    },
+    isDeleted: false,
+  });
+}
+export async function notifyPIPFailed(
+  employeeId: mongoose.Types.ObjectId | string,
+  pipId: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employeeId)),
+    type: NotificationType.PIP_FAILED,
+    title: 'Performance Improvement Plan failed',
+    body: 'Your Performance Improvement Plan has been marked as failed. Please contact HR for further details.',
+    metadata: {
+      pipId,
+    },
+    isDeleted: false,
+  });
+}
+export async function notifyPIPCancelled(
+  employeeId: mongoose.Types.ObjectId | string,
+  pipId: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employeeId)),
+    type: NotificationType.PIP_CANCELLED,
+    title: 'Performance Improvement Plan cancelled',
+    body: 'Your Performance Improvement Plan has been cancelled.',
+    metadata: {
+      pipId,
+    },
+    isDeleted: false,
+  });
+}
+export async function notifyPIPMilestoneCompleted(
+  recipientUserId: mongoose.Types.ObjectId | string,
+  pipId: string,
+  milestoneTitle: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(recipientUserId)),
+    type: NotificationType.PIP_MILESTONE_COMPLETED,
+    title: 'PIP milestone completed',
+    body: `The PIP milestone "${milestoneTitle}" has been completed.`,
+    metadata: {
+      pipId,
+      milestoneTitle,
+    },
+    isDeleted: false,
+  });
+}
+export async function notifyResignationWithdrawn(
+  recipientUserId: mongoose.Types.ObjectId | string,
+  resignationId: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(recipientUserId)),
+    type: NotificationType.RESIGNATION_WITHDRAWN,
+    title: 'Resignation withdrawn',
+    body: 'Your resignation request has been withdrawn successfully.',
+    metadata: {
+      resignationId,
+    },
+    isDeleted: false,
+  });
+}
+export async function notifyGoalsConfirmed(
+  employeeId: mongoose.Types.ObjectId | string,
+  reviewId: string,
+  performanceCycleId: string
+): Promise<void> {
+  // Notify the employee — self-assessment is now open
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employeeId)),
+    type: NotificationType.GOALS_CONFIRMED,
+    title: 'Goals confirmed — self-assessment open',
+    body: 'Your goals for this cycle have been locked. You can now complete your self-assessment.',
+    metadata: {
+      reviewId,
+      performanceCycleId,
+    },
+    isDeleted: false,
+  });
+
+  // Notify HR — goals locked and cycle progressing
+  const hrUsers = await User.find({
+    role: { $in: ['HR_MANAGER', 'HR_OFFICER'] },
+    isDeleted: { $ne: true },
+    isActive: { $ne: false },
+  })
+    .select('_id')
+    .lean();
+
+  if (!hrUsers.length) return;
+
+  await NotificationModel.insertMany(
+    hrUsers.map((u) => ({
+      userId: u._id,
+      type: NotificationType.GOALS_CONFIRMED,
+      title: 'Goals confirmed for employee',
+      body: 'A department manager has confirmed and locked an employee\'s goals for this cycle.',
+      metadata: {
+        reviewId,
+        employeeId: String(employeeId),
+        performanceCycleId,
+      },
+      isDeleted: false,
+    }))
+  );
+}
+/** Fires when an employee submits a referral (before the candidate has applied). */
+export async function notifyReferralCreated(
+  referralId: string,
+  jobTitle: string,
+  candidateName: string,
+  referrerName: string
+): Promise<void> {
+  const recruiters = await User.find({
+    role: { $in: ['HR_MANAGER', 'HR_OFFICER'] },
+    isDeleted: { $ne: true },
+    isActive: { $ne: false },
+  })
+    .select('_id')
+    .lean();
+
+  if (!recruiters.length) return;
+
+  await NotificationModel.insertMany(
+    recruiters.map((u) => ({
+      userId: u._id,
+      type: NotificationType.REFERRAL_CREATED,
+      title: 'New employee referral',
+      body: `${referrerName} referred ${candidateName} for ${jobTitle}.`,
+      metadata: {
+        referralId,
+        jobTitle,
+        candidateName,
+        referrerName,
+      },
+      isDeleted: false,
+    }))
+  );
+}
+
+/** Fires when a referred candidate actually submits their application. */
+export async function notifyReferralApplied(
+  referralId: string,
+  applicationId: string,
+  referredByEmployeeId: mongoose.Types.ObjectId | string,
+  candidateName: string,
+  jobTitle: string
+): Promise<void> {
+  const referrerEmployee = await Employee.findById(referredByEmployeeId).select('userId').lean();
+
+  if (referrerEmployee?.userId) {
+    await NotificationModel.create({
+      userId: new mongoose.Types.ObjectId(String(referrerEmployee.userId)),
+      type: NotificationType.REFERRAL_APPLIED,
+      title: 'Your referral applied',
+      body: `${candidateName} has submitted their application for ${jobTitle}.`,
+      metadata: {
+        referralId,
+        applicationId,
+        candidateName,
+        jobTitle,
+      },
+      isDeleted: false,
+    });
+  }
+
+  // Notify HR/recruiters (unchanged)
+  const recruiters = await User.find({
+    role: { $in: ['HR_MANAGER', 'HR_OFFICER'] },
+    isDeleted: { $ne: true },
+    isActive: { $ne: false },
+  })
+    .select('_id')
+    .lean();
+
+  if (!recruiters.length) return;
+
+  await NotificationModel.insertMany(
+    recruiters.map((u) => ({
+      userId: u._id,
+      type: NotificationType.REFERRAL_APPLIED,
+      title: 'Referred candidate applied',
+      body: `${candidateName}, referred for ${jobTitle}, has submitted their application.`,
+      metadata: { referralId, applicationId, candidateName, jobTitle },
+      isDeleted: false,
+    }))
+  );
+}
+/** Fires when the referring employee cancels their own pending referral. */
+export async function notifyReferralCancelled(
+  referralId: string,
+  referredByEmployeeId: mongoose.Types.ObjectId | string,
+  candidateName: string,
+  jobTitle: string
+): Promise<void> {
+  const recruiters = await User.find({
+    role: { $in: ['HR_MANAGER', 'HR_OFFICER'] },
+    isDeleted: { $ne: true },
+    isActive: { $ne: false },
+  })
+    .select('_id')
+    .lean();
+
+  if (!recruiters.length) return;
+
+  await NotificationModel.insertMany(
+    recruiters.map((u) => ({
+      userId: u._id,
+      type: NotificationType.REFERRAL_CANCELLED,
+      title: 'Referral cancelled',
+      body: `A referral for ${candidateName} (${jobTitle}) was cancelled by the referring employee.`,
+      metadata: { referralId, candidateName, jobTitle },
+      isDeleted: false,
+    }))
+  );
+}
+
+/** Fires when a referral invitation link expires unused. */
+export async function notifyReferralExpired(
+  referralId: string,
+  referredByEmployeeId: mongoose.Types.ObjectId | string,
+  candidateName: string,
+  jobTitle: string
+): Promise<void> {
+  const referrerEmployee = await Employee.findById(referredByEmployeeId).select('userId').lean();
+  if (!referrerEmployee?.userId) return;
+
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(referrerEmployee.userId)),
+    type: NotificationType.REFERRAL_EXPIRED,
+    title: 'Referral invitation expired',
+    body: `Your referral invitation for ${candidateName} (${jobTitle}) has expired without an application.`,
+    metadata: { referralId, candidateName, jobTitle },
+    isDeleted: false,
+  });
+}
+export async function notifyOvertimeApproved(
+  employeeId: mongoose.Types.ObjectId | string,
+  attendanceId: string,
+  date: string,
+  overtimeHours: number
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employeeId)),
+    type: NotificationType.OVERTIME_APPROVED,
+    title: 'Overtime approved',
+    body: `Your ${overtimeHours} overtime hour(s) for ${date} have been approved.`,
+    metadata: {
+      attendanceId,
+      date,
+      overtimeHours,
+    },
+    isDeleted: false,
+  });
+}
+export async function notifyCorrectionRequestApproved(
+  employeeId: mongoose.Types.ObjectId | string,
+  correctionRequestId: string,
+  attendanceId: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employeeId)),
+    type: NotificationType.CORRECTION_REQUEST_APPROVED,
+    title: 'Attendance correction approved',
+    body: 'Your attendance correction request has been approved and applied.',
+    metadata: {
+      correctionRequestId,
+      attendanceId,
+    },
+    isDeleted: false,
+  });
+}
+
+export async function notifyCorrectionRequestRejected(
+  employeeId: mongoose.Types.ObjectId | string,
+  correctionRequestId: string,
+  attendanceId: string,
+  rejectionReason: string
+): Promise<void> {
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employeeId)),
+    type: NotificationType.CORRECTION_REQUEST_REJECTED,
+    title: 'Attendance correction rejected',
+    body: `Your attendance correction request was rejected. Reason: ${rejectionReason}`,
+    metadata: {
+      correctionRequestId,
+      attendanceId,
+      rejectionReason,
+    },
+    isDeleted: false,
+  });
+}
