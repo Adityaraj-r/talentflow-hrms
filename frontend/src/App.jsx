@@ -659,6 +659,11 @@ function App() {
                 <DashboardLayout><ReferralAnalyticsDashboard /></DashboardLayout>
               </ProtectedRoute>
             } />
+            <Route path="/employee-referral/analytics" element={
+              <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER ADMIN", "CEO", "FINANCE_MANAGER"]}>
+                <DashboardLayout><ReferralAnalyticsDashboard /></DashboardLayout>
+              </ProtectedRoute>
+            } />
             <Route path="/recruitment/referrals/analytics" element={
               <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER ADMIN", "CEO", "FINANCE_MANAGER"]}>
                 <DashboardLayout><ReferralAnalyticsDashboard /></DashboardLayout>
