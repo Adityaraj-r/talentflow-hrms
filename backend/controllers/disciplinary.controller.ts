@@ -333,7 +333,7 @@ export const downloadAttachment = async (req: Request, res: Response) => {
   try {
     const { filename } = req.params;
 
-    const filePath = path.join(__dirname, "../uploads", filename);
+    const filePath = path.join(__dirname, "../uploads", String(filename));
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({

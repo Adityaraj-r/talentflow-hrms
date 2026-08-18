@@ -31,7 +31,9 @@ const Careers = () => {
   const fetchJobs = async () => {
     try {
       setLoading(true)
-      const res = await axios.get(`${API_BASE}/job-openings/published`)
+      const res = await axios.get(`${API_BASE}/job-openings/published`, {
+        headers: { "ngrok-skip-browser-warning": "true" }
+      })
       setJobs(res.data)
     } catch(error) {
       console.log(error)
@@ -42,7 +44,9 @@ const Careers = () => {
 
   const fetchCompanyInfo = async () => {
     try {
-      const { data } = await axios.get(`${API_BASE}/settings/company-info`)
+      const { data } = await axios.get(`${API_BASE}/settings/company-info`, {
+        headers: { "ngrok-skip-browser-warning": "true" }
+      })
       if (data.success) {
         setCompanyInfo({
           name: data.companyName || "Company HRMS",

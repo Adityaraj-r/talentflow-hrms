@@ -117,6 +117,7 @@ const Sidebar = ({
       documentRequests: path.includes("document-requests") || path.includes("my-documents") || path.includes("employee-documents"),
       disciplinaryActions: path.includes("disciplinary-actions"),
       appraisal: path.includes("/appraisal") || path.includes("/role/hr_manager/review"),
+      employeeReferral: path.startsWith("/employee/referrals") || path.startsWith("/referrals/") || path.startsWith("/payroll/referrals"),
     }))
   }, [location.pathname, isCollapsed])
 
@@ -287,6 +288,7 @@ const Sidebar = ({
           <SubLink to="/payroll" label="Payroll Processing" />
           <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
           <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
+          <SubLink to="/payroll/referrals" label="Referral Rewards & Stats" icon={Award} />
         </SidebarNestedGroup>
         <SubLink to="/payroll/salary-slip" label="Salary Slips" icon={FileText} />
       </SidebarGroup>
@@ -308,6 +310,7 @@ const Sidebar = ({
           <SubLink to="/payroll" label="Payroll Processing" />
           <SubLink to="/tickets" label="Tickets & Advances" icon={Plane} />
           <SubLink to="/indemnity" label="Indemnity Calculation" icon={Calculator} />
+          <SubLink to="/payroll/referrals" label="Referral Rewards & Stats" icon={Award} />
         </SidebarNestedGroup>
       </SidebarGroup>
     ) : null
@@ -352,7 +355,6 @@ const Sidebar = ({
               <SubLink to="/dashboard/applications" label="Applications" />
               <SubLink to="/dashboard/recruitment-pipeline" label="Recruitment Pipeline" />
               <SubLink to="/dashboard/offer-management" label="Offer Management" />
-              <SubLink to="/recruitment/offers" label="Offer Operations" icon={FileSignature} />
               <SubLink to="/recruitment/analytics" label="Recruitment Analytics" icon={BarChart2} />
             </SidebarGroup>
           )}
@@ -371,7 +373,11 @@ const Sidebar = ({
           </SidebarGroup>
 
           <SidebarLink to="/dashboard/pm/tasks" icon={FileCheck} label="Task Board" />
-          <SidebarLink to="/employee/referrals" icon={UserPlus} label="Employee Referral" />
+          <SidebarGroup id="employeeReferral" icon={UserPlus} label="Employee Referral">
+            <SubLink to="/employee/referrals" label="Refer Candidates" icon={UserPlus} />
+            <SubLink to="/referrals/analytics" label="Referral Analytics" icon={TrendingUp} />
+            <SubLink to="/payroll/referrals" label="Referral Rewards" icon={Award} />
+          </SidebarGroup>
 
           <FullPayrollSidebarGroup label="Payroll & Compliance" />
 
@@ -471,7 +477,11 @@ const Sidebar = ({
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           <SidebarLink to="/meetings" icon={Video} label="Meetings" />
-          <SidebarLink to="/employee/referrals" icon={UserPlus} label="Employee Referral" />
+          <SidebarGroup id="employeeReferral" icon={UserPlus} label="Employee Referral">
+            <SubLink to="/employee/referrals" label="Refer Candidates" icon={UserPlus} />
+            <SubLink to="/referrals/analytics" label="Referral Analytics" icon={TrendingUp} />
+            <SubLink to="/payroll/referrals" label="Referral Rewards" icon={Award} />
+          </SidebarGroup>
 
           {canSee("employees") && (
             <SidebarLink to="/employee-center/employee-transfer" icon={RefreshCw} label="Employee Transfer" />
@@ -529,7 +539,11 @@ const Sidebar = ({
 
           <SidebarLink to="/dashboard/employee/tasks" icon={FileCheck} label="My Tasks" />
           <SidebarLink to="/meetings" icon={Video} label="Meetings" />
-          <SidebarLink to="/employee/referrals" icon={UserPlus} label="Employee Referral" />
+          <SidebarGroup id="employeeReferral" icon={UserPlus} label="Employee Referral">
+            <SubLink to="/employee/referrals" label="Refer Candidates" icon={UserPlus} />
+            <SubLink to="/referrals/analytics" label="Referral Analytics" icon={TrendingUp} />
+            <SubLink to="/payroll/referrals" label="Referral Rewards" icon={Award} />
+          </SidebarGroup>
 
           <HRPayrollSidebarGroup />
 

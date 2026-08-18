@@ -1,16 +1,18 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthRequest } from '../middleware/auth.middleware';
 import Meeting from '../models/meeting.model';
 import User from '../models/User.model';
 
-export const createMeeting = async (req: Request, res: Response): Promise<void> => {
+export const createMeeting = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.id || (req.user as any)?._id;
     const meetingData = {
       ...req.body,
-      created_by: req.user._id // Assuming auth middleware sets req.user
+      created_by: userId
     };
 
     if (!meetingData.organizer_id) {
-      meetingData.organizer_id = req.user._id;
+      meetingData.organizer_id = userId;
     }
 
     const meeting = new Meeting(meetingData);
@@ -27,10 +29,11 @@ export const createMeeting = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-export const getMeetings = async (req: Request, res: Response): Promise<void> => {
+export const getMeetings = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const userRole = req.user.role?.name?.toLowerCase() || '';
-    const userId = req.user._id;
+    const rawRole = req.user?.role;
+    const userRole = (typeof rawRole === 'string' ? rawRole : (rawRole as any)?.name || '').toLowerCase();
+    const userId = req.user?.id || (req.user as any)?._id;
     
     let query = {};
     
@@ -56,12 +59,12 @@ export const getMeetings = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-export const updateMeeting = async (req: Request, res: Response): Promise<void> => {
+export const updateMeeting = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     
     // Add permission check if needed here, but relying on route middleware usually
-    const meeting = await Meeting.findByIdAndUpdate(id, req.body, { new: true })
+    const meeting = await Meeting.findByIdAndUpdate(id, req.body || {}, { new: true })
       .populate('organizer_id', 'firstName lastName email profilePicture')
       .populate('participants', 'firstName lastName email profilePicture');
       
@@ -77,7 +80,7 @@ export const updateMeeting = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-export const deleteMeeting = async (req: Request, res: Response): Promise<void> => {
+export const deleteMeeting = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     

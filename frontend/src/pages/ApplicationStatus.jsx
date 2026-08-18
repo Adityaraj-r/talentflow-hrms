@@ -205,12 +205,12 @@ const ApplicationStatus = () => {
                 {app.status === "Hired" && (
                   <div className="mt-6 p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-200 text-sm space-y-3">
                     <p className="font-bold text-lg text-emerald-400 flex items-center gap-2">🎉 Background Verification Passed!</p>
-                    <p>Congratulations! Your background checks are fully verified. You have been successfully transitioned to the Document Collection and pre-onboarding stage.</p>
+                    <p>Your application has been selected. Our HR team will contact you regarding the next steps and onboarding documents.</p>
                     <a 
-                      href={`/employee-center/onboarding?email=${encodeURIComponent(app.email)}&firstName=${encodeURIComponent(app.name.split(' ')[0])}&lastName=${encodeURIComponent(app.name.split(' ').slice(1).join(' '))}`}
+                      href="/careers"
                       className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md transition"
                     >
-                      Complete Document Collection & Onboarding Profile
+                      Return to Careers Portal
                     </a>
                   </div>
                 )}
