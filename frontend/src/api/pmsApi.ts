@@ -78,8 +78,19 @@
   | "transfer_requested"
   | "transfer_manager_recommendation"
   | "transfer_approved"
-  | "transfer_rejected";
-
+  | "transfer_rejected"
+  | "document_request_created"
+  | "document_request_approved"
+  | "document_request_rejected"
+  | "document_request_remark_added"
+  | "referral_submitted"
+  | "referral_status_updated"
+  | "referral_candidate_hired"
+  | "referral_reward_created"
+  | "referral_probation_passed"
+  | "referral_reward_approved"
+  | "referral_reward_paid"
+  | "referral_expiring_soon";
   export interface NotificationItem {
     _id: string;
     userId: string;

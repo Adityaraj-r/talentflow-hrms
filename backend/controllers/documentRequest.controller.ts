@@ -5,6 +5,12 @@ import Employee from '../models/Employee.model';
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
 import path from 'path';
+import {
+  notifyDocumentRequestCreated,
+  notifyDocumentRequestApproved,
+  notifyDocumentRequestRejected,
+  notifyDocumentRequestRemarkAdded,
+} from "../services/notification.service";
 
 // @desc    Create a new document request
 // @route   POST /api/document-requests/create
@@ -34,6 +40,7 @@ export const createRequest = async (req: AuthRequest, res: Response): Promise<vo
     });
 
     await newRequest.save();
+    await notifyDocumentRequestCreated(req.user, newRequest);
     res.status(201).json({ success: true, data: newRequest });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
@@ -195,6 +202,7 @@ export const approveRequest = async (req: AuthRequest, res: Response): Promise<v
     ];
 
     await documentRequest.save();
+    await notifyDocumentRequestApproved(documentRequest);
     res.status(200).json({ success: true, data: documentRequest });
   } catch (error: any) {
     const files = req.files as Express.Multer.File[];
@@ -255,6 +263,7 @@ export const rejectRequest = async (req: AuthRequest, res: Response): Promise<vo
     documentRequest.status = 'Rejected';
 
     await documentRequest.save();
+    await notifyDocumentRequestRejected(documentRequest);
     res.status(200).json({ success: true, data: documentRequest });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
@@ -304,6 +313,7 @@ export const addSupervisorRemark = async (req: AuthRequest, res: Response): Prom
     });
 
     await documentRequest.save();
+    await notifyDocumentRequestRemarkAdded(documentRequest);
     res.status(200).json({ success: true, data: documentRequest });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

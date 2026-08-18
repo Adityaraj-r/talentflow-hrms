@@ -10,7 +10,7 @@ import User from "../models/User.model";
 import AuditLog from "../models/AuditLog";
 import ReferralPolicy from "../models/ReferralPolicy.model";
 import { sendReferralEmail } from "../utils/sendEmail";
-import { notifyReferralCreated, notifyReferralCancelled, notifyReferralExpired } from "../services/notification.service";
+import { notifyReferralCreated, notifyReferralCancelled, notifyReferralExpired, notifyReferralConflictResolved, notifyReferralInvitationResent } from "../services/notification.service";
 import { getOrCreateReferralPolicy } from "../services/referral.service";
 
 const normalizeStr = (str?: string) => (str || "").trim().toLowerCase();
@@ -575,7 +575,11 @@ export const resolveReferralConflict = async (req: AuthRequest, res: Response) =
       details: `Resolved referral conflict for ${referral.candidateEmail}. Chosen referrer: ${chosenReferrerId}.`,
       status: "Success",
     });
-
+    await notifyReferralConflictResolved(
+      chosenReferrerId,
+      referral._id.toString(),
+      referral.candidateName
+    );
     res.json({ success: true, message: "Referral conflict resolved successfully", data: referral });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
@@ -636,7 +640,11 @@ export const resendInvitation = async (req: AuthRequest, res: Response) => {
     });
 
     await referral.save();
-
+    await notifyReferralInvitationResent(
+      referral.referredByEmployeeId,
+      referral._id.toString(),
+      referral.candidateName
+    );
     const frontendBaseUrl = (process.env.FRONTEND_URL || process.env.NGROK_URL || "http://localhost:5173").trim().replace(/\/$/, "");
     const applyLink = `${frontendBaseUrl}/referral/apply/${newToken}`;
 

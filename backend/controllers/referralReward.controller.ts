@@ -6,6 +6,7 @@ import Application from "../models/application.model";
 import AuditLog from "../models/AuditLog";
 import User from "../models/User.model";
 import { NotificationModel, NotificationType } from "../models/Notification";
+import { notifyReferralRewardFinanceApproved } from "../services/notification.service";
 
 export const getRewardQueue = async (req: AuthRequest, res: Response) => {
   try {
@@ -62,6 +63,19 @@ export const approveRewardHR = async (req: AuthRequest, res: Response) => {
       module: "Referral",
       details: `Approved HR stage for Referral Reward ${reward._id} (Bonus: ${reward.currency} ${reward.bonusAmount}).`,
       status: "Success",
+    });
+    await notifyReferralRewardFinanceApproved(
+      reward.employeeId,
+      reward._id.toString(),
+      reward.candidateName,
+      reward.bonusAmount,
+      reward.currency
+    );
+
+    res.json({
+      success: true,
+      message: "Referral bonus approved by Finance and linked to Payroll",
+      data: reward,
     });
 
     const user = await User.findById(userId);

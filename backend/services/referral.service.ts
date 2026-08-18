@@ -180,7 +180,11 @@ export const handleAutoRewardCreationOnHire = async (applicationDoc: any) => {
     });
 
     // Notify HR Users
-    const hrUsers = await User.find({ role: { $in: ["HR", "Admin", "HR Manager"] } }).select("_id");
+    const hrUsers = await User.find({
+      role: { $in: ["HR_MANAGER", "HR_OFFICER"] },
+      isDeleted: { $ne: true },
+      isActive: { $ne: false },
+    }).select("_id");
     for (const hr of hrUsers) {
       await NotificationModel.create({
         userId: hr._id,
@@ -244,7 +248,11 @@ export const processProbationCompletions = async () => {
         });
 
         // Notify HR Managers
-        const hrUsers = await User.find({ role: { $in: ["HR", "Admin", "HR Manager"] } }).select("_id");
+        const hrUsers = await User.find({
+          role: { $in: ["HR_MANAGER", "HR_OFFICER"] },
+          isDeleted: { $ne: true },
+          isActive: { $ne: false },
+        }).select("_id");
         for (const hr of hrUsers) {
           await NotificationModel.create({
             userId: hr._id,

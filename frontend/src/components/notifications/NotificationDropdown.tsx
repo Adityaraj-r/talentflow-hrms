@@ -86,6 +86,20 @@
     case "correction_request_approved":
     case "correction_request_rejected":
       return ClipboardList;
+    case "document_request_created":
+    case "document_request_approved":
+    case "document_request_rejected":
+    case "document_request_remark_added":
+      return ClipboardList;
+    case "referral_submitted":
+    case "referral_status_updated":
+    case "referral_candidate_hired":
+    case "referral_reward_created":
+    case "referral_probation_passed":
+    case "referral_reward_approved":
+    case "referral_reward_paid":
+    case "referral_expiring_soon":
+      return UserPlus;
     default:
       return ClipboardList;
   }
@@ -195,6 +209,36 @@
       case "correction_request_approved":
       case "correction_request_rejected":
         return "/attendance/my-leaves";
+      case "document_request_created":
+        if (roleUpper === "HR_MANAGER") {
+          return "/role/hr_manager/document-requests";
+        }
+
+        if (roleUpper === "HR_OFFICER") {
+          return "/role/hr_officer/document-requests";
+        }
+
+        return "/role/employee/document-requests";
+
+      case "document_request_approved":
+      case "document_request_rejected":
+      case "document_request_remark_added":
+        return "/role/employee/document-requests";
+      case "referral_reward_approved":
+      case "referral_reward_created":
+      case "referral_reward_paid":
+      case "referral_probation_passed":
+      case "referral_candidate_hired": {
+        if (roleUpper === "HR_MANAGER" || roleUpper === "HR_OFFICER" || roleUpper === "FINANCE_MANAGER") {
+          return "/payroll/referrals";
+        }
+        return "/employee/referrals";
+      }
+
+      case "referral_submitted":
+      case "referral_status_updated":
+      case "referral_expiring_soon":
+        return "/employee/referrals";
       default:
         return "/dashboard";
     }

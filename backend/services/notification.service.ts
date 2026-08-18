@@ -1257,3 +1257,221 @@ export async function notifyCorrectionRequestRejected(
     isDeleted: false,
   });
 }
+export const notifyDocumentRequestCreated = async (
+  employee: any,
+  documentRequest: any
+): Promise<void> => {
+  try {
+    const hrUsers = await User.find({
+      role: { $in: ["HR_MANAGER", "HR_OFFICER"] },
+      isDeleted: { $ne: true },
+      isActive: { $ne: false },
+    })
+      .select("_id")
+      .lean();
+
+    if (!hrUsers.length) return;
+
+    const employeeName =
+      employee?.name ||
+      `${employee?.firstName || ""} ${employee?.lastName || ""}`.trim() ||
+      "An employee";
+
+    const documentType =
+      documentRequest?.documentType ||
+      documentRequest?.documentName ||
+      "document";
+
+    await Promise.all(
+      hrUsers.map((hrUser) =>
+        NotificationModel.create({
+          userId: hrUser._id,
+          type: NotificationType.DOCUMENT_REQUEST_CREATED,
+          title: "New Document Request",
+          body: `${employeeName} has requested a ${documentType}.`,
+          metadata: {
+            documentRequestId: documentRequest._id.toString(),
+          },
+          isDeleted: false,
+        })
+      )
+    );
+  } catch (error) {
+    console.error("Failed to create document request notification:", error);
+  }
+};
+
+
+export const notifyDocumentRequestApproved = async (
+  documentRequest: any
+): Promise<void> => {
+  try {
+    // employeeId in DocumentRequest is currently employeeCode,
+    // so resolve it to the actual User ID first.
+    const employee = await Employee.findOne({
+      employeeCode: documentRequest?.employeeId,
+    })
+      .select("userId firstName lastName")
+      .lean();
+
+    if (!employee?.userId) return;
+
+    const documentType =
+      documentRequest?.documentType ||
+      documentRequest?.documentName ||
+      "document";
+
+    await NotificationModel.create({
+      userId: employee.userId,
+      type: NotificationType.DOCUMENT_REQUEST_APPROVED,
+      title: "Document Request Approved",
+      body: `Your ${documentType} request has been approved.`,
+      metadata: {
+        documentRequestId: documentRequest._id.toString(),
+      },
+      isDeleted: false,
+    });
+  } catch (error) {
+    console.error("Failed to create document approval notification:", error);
+  }
+};
+
+
+export const notifyDocumentRequestRejected = async (
+  documentRequest: any
+): Promise<void> => {
+  try {
+    // employeeId is employeeCode in DocumentRequest
+    const employee = await Employee.findOne({
+      employeeCode: documentRequest?.employeeId,
+    })
+      .select("userId firstName lastName")
+      .lean();
+
+    if (!employee?.userId) return;
+
+    const documentType =
+      documentRequest?.documentType ||
+      documentRequest?.documentName ||
+      "document";
+
+    await NotificationModel.create({
+      userId: employee.userId,
+      type: NotificationType.DOCUMENT_REQUEST_REJECTED,
+      title: "Document Request Rejected",
+      body: `Your ${documentType} request has been rejected.`,
+      metadata: {
+        documentRequestId: documentRequest._id.toString(),
+      },
+      isDeleted: false,
+    });
+  } catch (error) {
+    console.error("Failed to create document rejection notification:", error);
+  }
+};
+
+
+export const notifyDocumentRequestRemarkAdded = async (
+  documentRequest: any
+): Promise<void> => {
+  try {
+    // employeeId is employeeCode in DocumentRequest
+    const employee = await Employee.findOne({
+      employeeCode: documentRequest?.employeeId,
+    })  
+      .select("userId")
+      .lean();
+
+    if (!employee?.userId) return;
+
+    await NotificationModel.create({
+      userId: employee.userId,
+      type: NotificationType.DOCUMENT_REQUEST_REMARK_ADDED,
+      title: "Document Request Updated",
+      body: "HR has added a remark to your document request.",
+      metadata: {
+        documentRequestId: documentRequest._id.toString(),
+      },
+      isDeleted: false,
+    });
+  } catch (error) {
+    console.error("Failed to create document remark notification:", error);
+  }
+};
+export async function notifyReferralRewardFinanceApproved(
+  employeeId: mongoose.Types.ObjectId | string,
+  rewardId: string,
+  candidateName: string,
+  bonusAmount: number,
+  currency: string
+): Promise<void> {
+  // Notify the referring employee — resolve Employee._id -> User._id
+  const referrerEmployee = await Employee.findById(employeeId).select('userId').lean();
+  if (referrerEmployee?.userId) {
+    await NotificationModel.create({
+      userId: new mongoose.Types.ObjectId(String(referrerEmployee.userId)),
+      type: NotificationType.REFERRAL_REWARD_APPROVED,
+      title: 'Referral bonus approved by Finance',
+      body: `Your referral bonus of ${currency} ${bonusAmount} for ${candidateName} has been approved by Finance and is queued for payroll.`,
+      metadata: { rewardId, candidateName, bonusAmount, currency },
+      isDeleted: false,
+    });
+  }
+
+  // Notify HR
+  const hrUsers = await User.find({
+    role: { $in: ['HR_MANAGER', 'HR_OFFICER'] },
+    isDeleted: { $ne: true },
+    isActive: { $ne: false },
+  })
+    .select('_id')
+    .lean();
+
+  if (!hrUsers.length) return;
+
+  await NotificationModel.insertMany(
+    hrUsers.map((u) => ({
+      userId: u._id,
+      type: NotificationType.REFERRAL_REWARD_APPROVED,
+      title: 'Referral bonus Finance-approved',
+      body: `The referral bonus for ${candidateName} has cleared Finance approval and is linked to payroll.`,
+      metadata: { rewardId, candidateName, bonusAmount, currency },
+      isDeleted: false,
+    }))
+  );
+}
+export async function notifyReferralConflictResolved(
+  employeeId: mongoose.Types.ObjectId | string,
+  referralId: string,
+  candidateName: string
+): Promise<void> {
+  const employee = await Employee.findById(employeeId).select('userId').lean();
+  if (!employee?.userId) return;
+
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employee.userId)),
+    type: NotificationType.REFERRAL_STATUS_UPDATED,
+    title: 'Referral conflict resolved',
+    body: `Your referral for ${candidateName} has been confirmed as the valid claim by HR.`,
+    metadata: { referralId, candidateName },
+    isDeleted: false,
+  });
+}
+
+export async function notifyReferralInvitationResent(
+  employeeId: mongoose.Types.ObjectId | string,
+  referralId: string,
+  candidateName: string
+): Promise<void> {
+  const employee = await Employee.findById(employeeId).select('userId').lean();
+  if (!employee?.userId) return;
+
+  await NotificationModel.create({
+    userId: new mongoose.Types.ObjectId(String(employee.userId)),
+    type: NotificationType.REFERRAL_STATUS_UPDATED,
+    title: 'Referral invitation resent',
+    body: `The invitation for your referral ${candidateName} has been refreshed with a new link.`,
+    metadata: { referralId, candidateName },
+    isDeleted: false,
+  });
+}
