@@ -9,15 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import * as payrollService from "@/services/payrollService";
 import apiClient from "@/services/apiClient";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ChevronsUpDown, Check as CheckIcon } from "lucide-react";
-import { Eye } from "lucide-react";
+import { ChevronsUpDown, Check as CheckIcon, Eye, XCircle, CheckCircle2, Pencil } from "lucide-react";
 
 
 const normStaffRole = (user) => {
@@ -42,14 +42,12 @@ const STATUS_COLORS = {
   Pending:  "bg-yellow-100 text-yellow-700 border-yellow-200",
   Approved: "bg-green-100 text-green-700 border-green-200",
   Rejected: "bg-red-100 text-red-700 border-red-200",
-  Paid:     "bg-blue-100 text-blue-700 border-blue-200",
+  Paid:     "bg-purple-100 text-purple-700 border-purple-200",
 };
 
 /** Small reusable icon button with a hover tooltip. */
 const ViewButton = ({ onClick, label = "View details" }) => (
-  <Button size="icon" variant="ghost" onClick={onClick} title={label}>
-    <Eye className="h-4 w-4" />
-  </Button>
+  <ActionIcon icon={Eye} tooltip={label} onClick={onClick} />
 );
 
 
@@ -255,11 +253,8 @@ const IndemnityCalculator = () => {
                               setEmployeePickerOpen(false);
                               setEmployeeSearch("");
                             }}
-                            className="flex w-full items-center px-3 py-2 text-sm text-left hover:bg-muted"
+                            className={`flex w-full items-center px-3 py-2 text-sm text-left hover:bg-muted ${form.employeeId === e._id ? "bg-primary/10 text-primary" : ""}`}
                           >
-                            <CheckIcon
-                              className={`mr-2 h-4 w-4 ${form.employeeId === e._id ? "opacity-100" : "opacity-0"}`}
-                            />
                             {e.firstName} {e.lastName}
                           </button>
                         ))}
@@ -331,7 +326,7 @@ const IndemnityCalculator = () => {
             <Button
               onClick={handleSubmit}
               disabled={submitting || !result}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               {submitting
                 ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</>
@@ -355,7 +350,7 @@ const IndemnityCalculator = () => {
                 {/* Final amount — the focal point, shown first */}
                 <div className="p-5 bg-white dark:bg-black rounded-lg border text-center shadow-sm">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Gratuity Amount</p>
-                  <h2 className="text-4xl font-bold text-blue-600 mt-1">
+                  <h2 className="text-4xl font-bold text-purple-600 mt-1">
                     ₹ {result.calculatedAmount.toLocaleString("en-IN")}
                   </h2>
                   {result.breakdown.cappedAtCeiling && (
@@ -437,7 +432,7 @@ const IndemnityDetailDialog = ({ record, onClose }) => {
             <div><span className="text-muted-foreground">Years of Service</span><p className="font-medium">{record.roundedYearsOfService ?? record.yearsOfService} yrs</p></div>
             <div><span className="text-muted-foreground">Basic Monthly Salary</span><p className="font-medium">₹ {Number(record.basicSalary).toLocaleString("en-IN")}</p></div>
             <div><span className="text-muted-foreground">Dearness Allowance</span><p className="font-medium">₹ {Number(record.da || 0).toLocaleString("en-IN")}</p></div>
-            <div><span className="text-muted-foreground">Gratuity Amount</span><p className="font-bold text-blue-600">₹ {Number(record.calculatedAmount).toLocaleString("en-IN")}</p></div>
+            <div><span className="text-muted-foreground">Gratuity Amount</span><p className="font-bold text-purple-600">₹ {Number(record.calculatedAmount).toLocaleString("en-IN")}</p></div>
           </div>
           {record.notes && (
             <div><span className="text-muted-foreground">Notes</span><p className="font-medium">{record.notes}</p></div>
@@ -558,13 +553,118 @@ const PendingIndemnities = () => {
 
   if (loading) return (
     <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900"><CardContent className="flex justify-center py-12">
-      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
     </CardContent></Card>
   );
 
   const totalItems = records.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
   const paginatedRecords = records.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const columns = [
+    {
+      accessorKey: "employee",
+      header: "Employee",
+      cell: ({ row }) => {
+        const r = row.original;
+        return (
+          <div className="font-medium min-w-[160px]">
+            {r.employeeName}
+            {r.rejectedAtStage && r.status !== "Rejected" && (
+              <p className="text-xs text-red-500 font-normal mt-1 leading-snug">
+                Rejected by {STAGE_LABELS[r.rejectedAtStage]?.replace("Awaiting ", "") || r.rejectedAtStage}
+                {r.rejectionReason ? `: ${r.rejectionReason}` : " — no reason given"}
+              </p>
+            )}
+          </div>
+        );
+      }
+    },
+    {
+      accessorKey: "employeeCode",
+      header: "Employee ID",
+      cell: ({ row }) => row.original.employeeCode || "—"
+    },
+    {
+      accessorKey: "years",
+      header: "Years",
+      cell: ({ row }) => `${row.original.roundedYearsOfService ?? row.original.yearsOfService} yrs`
+    },
+    {
+      accessorKey: "amount",
+      header: "Gratuity Amount",
+      cell: ({ row }) => <span className="font-bold text-purple-600">₹ {Number(row.original.calculatedAmount).toLocaleString("en-IN")}</span>
+    },
+    {
+      accessorKey: "reason",
+      header: "Reason",
+      cell: ({ row }) => <span className="capitalize">{row.original.reason}</span>
+    },
+    {
+      accessorKey: "stage",
+      header: "Stage",
+      cell: ({ row }) => (
+        <div className="min-w-[140px]">
+          <Badge variant="outline" className="whitespace-nowrap">{STAGE_LABELS[row.original.workflowStage] || row.original.workflowStage}</Badge>
+        </div>
+      )
+    },
+    {
+      accessorKey: "date",
+      header: "Requested",
+      cell: ({ row }) => <span className="text-sm text-muted-foreground">{new Date(row.original.createdAt).toLocaleDateString()}</span>
+    },
+    {
+      id: "view",
+      header: "View",
+      cell: ({ row }) => <ViewButton onClick={() => setViewingRecord(row.original)} />
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        const r = row.original;
+        const myTurn = canActOnStage(r.workflowStage);
+        if (!myTurn) {
+          return <span className="text-xs text-muted-foreground">Not your turn</span>;
+        }
+        if (r.workflowStage === "REJECTED_RESUBMIT") {
+          return (
+            <ActionIcon icon={Pencil} tooltip="Edit & Resubmit" onClick={() => startEditing(r)} />
+          );
+        }
+        if (rejectingId === r._id) {
+          return (
+            <div className="flex flex-col gap-2 min-w-[200px]">
+              <Textarea
+                placeholder="Reason (optional)"
+                rows={2}
+                value={rejectReason}
+                onChange={e => setRejectReason(e.target.value)}
+              />
+              <div className="flex gap-1">
+                <Button size="sm" variant="destructive" onClick={() => handleReject(r)}>Confirm reject</Button>
+                <Button size="sm" variant="outline" onClick={() => { setRejectingId(null); setRejectReason(""); }}>Cancel</Button>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div className="flex gap-2">
+            <ActionIcon
+              icon={CheckCircle2}
+              tooltip={r.workflowStage === "APPROVED" ? "Mark Paid" : "Approve"}
+              onClick={() => handleApprove(r)}
+              className="text-green-600"
+            />
+            {r.workflowStage !== "APPROVED" && (
+              <ActionIcon icon={XCircle} tooltip="Reject" onClick={() => setRejectingId(r._id)} className="text-rose-600 hover:text-rose-700" />
+            )}
+          </div>
+        );
+      }
+    }
+  ];
 
   return (
     <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
@@ -573,110 +673,8 @@ const PendingIndemnities = () => {
         <CardDescription>{records.length} request(s) in the approval pipeline</CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Employee</TableHead>
-              <TableHead className="hidden md:table-cell">Employee ID</TableHead>
-              <TableHead>Years</TableHead>
-              <TableHead>Gratuity Amount</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead>Stage</TableHead>
-              <TableHead>Requested</TableHead>
-              <TableHead>View</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {records.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  No pending indemnity requests.
-                </TableCell>
-              </TableRow>
-            ) : paginatedRecords.map(r => {
-              const myTurn = canActOnStage(r.workflowStage);
-              return (
-                <TableRow key={r._id}>
-                  <TableCell className="font-medium min-w-[160px]">
-                    {r.employeeName}
-                    {r.rejectedAtStage && r.status !== "Rejected" && (
-                      <p className="text-xs text-red-500 font-normal mt-1 leading-snug">
-                        Rejected by {STAGE_LABELS[r.rejectedAtStage]?.replace("Awaiting ", "") || r.rejectedAtStage}
-                        {r.rejectionReason ? `: ${r.rejectionReason}` : " — no reason given"}
-                      </p>
-                    )}
-                  </TableCell>
-                  <TableCell>{r.roundedYearsOfService ?? r.yearsOfService} yrs</TableCell>
-                  <TableCell className="font-bold text-blue-600">
-                    ₹ {Number(r.calculatedAmount).toLocaleString("en-IN")}
-                  </TableCell>
-                  <TableCell className="capitalize">{r.reason}</TableCell>
-                  <TableCell className="min-w-[140px]">
-                    <Badge variant="outline" className="whitespace-nowrap">{STAGE_LABELS[r.workflowStage] || r.workflowStage}</Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {new Date(r.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <ViewButton onClick={() => setViewingRecord(r)} />
-                  </TableCell>
-                  <TableCell>
-                    {!myTurn ? (
-                      <span className="text-xs text-muted-foreground">Not your turn</span>
-                    ) : r.workflowStage === "REJECTED_RESUBMIT" ? (
-                      <Button size="sm" variant="outline" onClick={() => startEditing(r)}>
-                        Edit & Resubmit
-                      </Button>
-                    ) : rejectingId === r._id ? (
-                      <div className="flex flex-col gap-2 min-w-[200px]">
-                        <Textarea
-                          placeholder="Reason (optional)"
-                          rows={2}
-                          value={rejectReason}
-                          onChange={e => setRejectReason(e.target.value)}
-                        />
-                        <div className="flex gap-1">
-                          <Button size="sm" variant="destructive" onClick={() => handleReject(r)}>Confirm reject</Button>
-                          <Button size="sm" variant="outline" onClick={() => { setRejectingId(null); setRejectReason(""); }}>Cancel</Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline"
-                          className="text-green-600 border-green-200 hover:bg-green-50"
-                          onClick={() => handleApprove(r)}>
-                          <Check className="h-4 w-4 mr-1" />
-                          {r.workflowStage === "APPROVED" ? "Mark Paid" : "Approve"}
-                        </Button>
-                        {r.workflowStage !== "APPROVED" && (
-                          <Button size="sm" variant="outline"
-                            className="text-red-600 border-red-200 hover:bg-red-50"
-                            onClick={() => setRejectingId(r._id)}>
-                            <X className="h-4 w-4 mr-1" />
-                            Reject
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <DataTable columns={columns} data={paginatedRecords} />
       </CardContent>
-      {totalItems > 0 && (
-        <div className="p-4 border-t">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-          />
-        </div>
-      )}
 
       <Dialog open={!!editingId} onOpenChange={(open) => { if (!open) setEditingId(null); }}>
         <DialogContent className="max-w-md">
@@ -761,9 +759,60 @@ const IndemnityHistory = () => {
 
   if (loading) return (
     <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900"><CardContent className="flex justify-center py-12">
-      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
     </CardContent></Card>
   );
+
+  const columns = [
+    {
+      accessorKey: "employee",
+      header: "Employee",
+      cell: ({ row }) => (
+        <div className="font-medium min-w-[160px]">
+          {row.original.employeeName}
+        </div>
+      )
+    },
+    {
+      accessorKey: "employeeId",
+      header: "Employee ID",
+      cell: ({ row }) => row.original.employeeCode || "—"
+    },
+    {
+      accessorKey: "years",
+      header: "Years",
+      cell: ({ row }) => `${row.original.roundedYearsOfService ?? row.original.yearsOfService} yrs`
+    },
+    {
+      accessorKey: "amount",
+      header: "EOSB Amount",
+      cell: ({ row }) => <span className="font-bold text-purple-600">₹ {Number(row.original.calculatedAmount).toLocaleString("en-IN")}</span>
+    },
+    {
+      accessorKey: "reason",
+      header: "Reason",
+      cell: ({ row }) => <span className="capitalize">{row.original.reason}</span>
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge variant="outline" className={STATUS_COLORS[row.original.status] || ""}>
+          {row.original.status}
+        </Badge>
+      )
+    },
+    {
+      accessorKey: "date",
+      header: "Date",
+      cell: ({ row }) => <span className="text-sm text-muted-foreground">{new Date(row.original.createdAt).toLocaleDateString()}</span>
+    },
+    {
+      id: "view",
+      header: "View",
+      cell: ({ row }) => <ViewButton onClick={() => setViewingRecord(row.original)} />
+    }
+  ];
 
   return (
     <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
@@ -779,73 +828,9 @@ const IndemnityHistory = () => {
         </div>
       </CardHeader>
       <CardContent className="overflow-x-auto">
-        <Table className="min-w-[900px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Employee</TableHead>
-              <TableHead className="hidden md:table-cell">Employee ID</TableHead>
-              <TableHead>Years</TableHead>
-              <TableHead>EOSB Amount</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>View</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                  No records found.
-                </TableCell>
-              </TableRow>
-            ) : paginatedFiltered.map(r => (
-              <TableRow key={r._id}>
-                <TableCell className="align-middle">
-                  <div className="flex flex-col">
-                    <span className="font-medium">{r.employeeName}</span>
-                    <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
-                      {r.employeeCode || "N/A"}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground align-middle">
-                  {r.employeeCode || "-"}
-                </TableCell>
-                <TableCell className="align-middle">{r.yearsOfService} yrs</TableCell>
-                <TableCell className="font-bold text-blue-600 align-middle">
-                  ₹ {Number(r.calculatedAmount).toLocaleString()}
-                </TableCell>
-                <TableCell className="capitalize align-middle">{r.reason}</TableCell>
-                <TableCell className="align-middle">
-                  <Badge variant="outline" className={STATUS_COLORS[r.status] || ""}>
-                    {r.status === "Pending" && STAGE_LABELS[r.workflowStage]
-                      ? STAGE_LABELS[r.workflowStage]
-                      : r.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground align-middle whitespace-nowrap">
-                  {new Date(r.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell className="align-middle">
-                  <ViewButton onClick={() => setViewingRecord(r)} />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <DataTable columns={columns} data={filtered} />
       </CardContent>
-      {totalItems > 0 && (
-        <div className="p-4 border-t">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-          />
-        </div>
-      )}
+
       <IndemnityDetailDialog record={viewingRecord} onClose={() => setViewingRecord(null)} />
     </Card>
   );

@@ -5,19 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Clock,
-  Plus,
-  Trash2,
-  Shield,
-  Briefcase,
-  AlertCircle,
-  Users,
-  Timer,
-  Pencil,
-  X,
-  Check,
-} from "lucide-react";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Clock, Plus, Trash2, Shield, Briefcase, AlertCircle, Users, Timer, Pencil, X, Check, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 import { useConfirm } from "@/contexts/ConfirmContext";
 
@@ -43,43 +34,44 @@ const TimeSelect = ({ value, name, onChange }) => {
   };
 
   return (
-    <div className="flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 overflow-hidden transition-colors shadow-sm">
+    <div className="flex h-10 w-full items-center rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 overflow-hidden transition-colors shadow-sm">
       <Clock className="h-4 w-4 mr-2 text-muted-foreground shrink-0" />
       <div className="flex flex-1 items-center justify-between gap-1">
-        <select
-          value={h12}
-          onChange={(e) => updateTime(e.target.value, m || "00", ampm)}
-          className="bg-transparent hover:bg-muted focus:bg-muted focus:outline-none appearance-none cursor-pointer text-center w-10 py-1 rounded-sm transition-colors font-medium"
-        >
-          <option value="" disabled>HH</option>
-          {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map((h) => (
-            <option key={h} value={h}>{h}</option>
-          ))}
-        </select>
+        <Select value={h12} onValueChange={(val) => updateTime(val, m || "00", ampm)}>
+          <SelectTrigger className="w-[60px] h-8 border-none shadow-none focus:ring-0 p-1 text-center font-medium bg-transparent">
+            <SelectValue placeholder="HH" />
+          </SelectTrigger>
+          <SelectContent>
+            {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map((h) => (
+              <SelectItem key={h} value={h}>{h}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <span className="font-bold text-muted-foreground mb-0.5">:</span>
 
-        <select
-          value={m}
-          onChange={(e) => updateTime(h12 || "09", e.target.value, ampm)}
-          className="bg-transparent hover:bg-muted focus:bg-muted focus:outline-none appearance-none cursor-pointer text-center w-10 py-1 rounded-sm transition-colors font-medium"
-        >
-          <option value="" disabled>MM</option>
-          {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map((min) => (
-            <option key={min} value={min}>{min}</option>
-          ))}
-        </select>
+        <Select value={m} onValueChange={(val) => updateTime(h12 || "09", val, ampm)}>
+          <SelectTrigger className="w-[60px] h-8 border-none shadow-none focus:ring-0 p-1 text-center font-medium bg-transparent">
+            <SelectValue placeholder="MM" />
+          </SelectTrigger>
+          <SelectContent>
+            {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map((min) => (
+              <SelectItem key={min} value={min}>{min}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <div className="h-4 w-px bg-border mx-1"></div>
 
-        <select
-          value={ampm}
-          onChange={(e) => updateTime(h12 || "09", m || "00", e.target.value)}
-          className="bg-transparent hover:bg-muted focus:bg-muted focus:outline-none appearance-none cursor-pointer text-center w-12 py-1 font-bold text-indigo-600 dark:text-indigo-400 rounded-sm transition-colors"
-        >
-          <option value="AM">AM</option>
-          <option value="PM">PM</option>
-        </select>
+        <Select value={ampm} onValueChange={(val) => updateTime(h12 || "09", m || "00", val)}>
+          <SelectTrigger className="w-[60px] h-8 border-none shadow-none focus:ring-0 p-1 text-center font-bold text-purple-600 dark:text-purple-400 bg-transparent">
+            <SelectValue placeholder="AM/PM" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="AM">AM</SelectItem>
+            <SelectItem value="PM">PM</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
@@ -222,6 +214,79 @@ const ShiftManagement = () => {
     return `${h} Hours`;
   };
 
+  const columns = [
+    {
+      accessorKey: "name",
+      header: "Shift Name",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-slate-900 dark:text-white">
+            {row.original.name}
+          </span>
+          {row.original.isActive && (
+            <Badge className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 text-[10px] px-2 py-0">
+              Active
+            </Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "time",
+      header: "Time",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">
+          {formatTime12Hour(row.original.startTime)} - {formatTime12Hour(row.original.endTime)}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "duration",
+      header: "Duration",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Timer className="h-4 w-4 text-purple-500" />
+          <span>{getDuration(row.original.startTime, row.original.endTime)}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "grace",
+      header: "Buffer",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Shield className="h-4 w-4 text-orange-500" />
+          <span>
+            <b className="text-foreground">{row.original.graceMinutes}m</b>
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const shift = row.original;
+        return (
+          <div className="flex justify-end gap-2">
+            <ActionIcon
+              icon={Pencil}
+              tooltip="Edit"
+              onClick={() => handleEditStart(shift)}
+              className="text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+            />
+            <ActionIcon
+              icon={Trash2}
+              tooltip="Delete"
+              onClick={() => handleDelete(shift._id)}
+              className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+            />
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -233,7 +298,7 @@ const ShiftManagement = () => {
         </div>
         <Button
           onClick={() => setIsAssignModalOpen(true)}
-          className="bg-slate-800 hover:bg-slate-900 dark:bg-white dark:hover:bg-slate-200 dark:text-slate-900 text-white shadow-sm"
+          className="shadow-sm"
         >
           <Users className="w-4 h-4 mr-2" /> Assign Shifts
         </Button>
@@ -244,7 +309,7 @@ const ShiftManagement = () => {
           <Card className="sticky top-6 border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Plus className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                <Plus className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 Add New Shift
               </CardTitle>
               <CardDescription>Create a new time slot for rostering.</CardDescription>
@@ -295,7 +360,7 @@ const ShiftManagement = () => {
                   <p className="text-xs text-muted-foreground">Grace period before marking 'Late'.</p>
                 </div>
 
-                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white mt-2">
+                <Button type="submit" className="w-full mt-2">
                   Create Shift
                 </Button>
               </form>
@@ -304,171 +369,102 @@ const ShiftManagement = () => {
         </div>
 
         <div className="lg:col-span-2 space-y-6">
-          <div className="grid md:grid-cols-2 gap-4">
-            {loading ? (
-              [1, 2].map((i) => (
-                <Card key={i} className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
-                  <CardHeader className="space-y-2">
-                    <Skeleton className="h-4 w-1/2" />
-                    <Skeleton className="h-3 w-1/3" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-20 w-full" />
-                  </CardContent>
-                </Card>
-              ))
-            ) : shifts.length === 0 ? (
-              <div className="col-span-2 p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-lg text-center text-muted-foreground">
-                No shifts found. Create one to get started.
-              </div>
-            ) : (
-              shifts.map((shift) =>
-                editingId === shift._id ? (
-                  <Card
-                    key={shift._id}
-                    className="border-indigo-300 dark:border-indigo-700 shadow-sm bg-indigo-50/30 dark:bg-indigo-900/10"
-                  >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-semibold text-indigo-700 dark:text-indigo-400 flex items-center gap-2">
-                        <Pencil className="h-4 w-4" /> Editing Shift
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">Shift Name</label>
-                        <input
-                          type="text"
-                          name="name"
-                          value={editData.name}
-                          onChange={handleEditChange}
-                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">Start Time</label>
-                        <TimeSelect
-                          name="startTime"
-                          value={editData.startTime}
-                          onChange={handleEditChange}
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">End Time</label>
-                        <TimeSelect
-                          name="endTime"
-                          value={editData.endTime}
-                          onChange={handleEditChange}
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground flex items-center justify-between">
-                          Grace Period (minutes)
-                          <span className="text-indigo-600 dark:text-indigo-400 font-semibold">
-                            {editData.graceMinutes}m
-                          </span>
-                        </label>
-                        <input
-                          type="range"
-                          name="graceMinutes"
-                          min="0"
-                          max="60"
-                          step="5"
-                          value={editData.graceMinutes}
-                          onChange={handleEditChange}
-                          className="w-full accent-indigo-600"
-                        />
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>0m</span>
-                          <span>30m</span>
-                          <span>60m</span>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 pt-1">
-                        <Button
-                          size="sm"
-                          onClick={() => handleEditSave(shift._id)}
-                          disabled={editLoading}
-                          className="flex-1 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white h-8 text-xs"
-                        >
-                          <Check className="h-3.5 w-3.5 mr-1" />
-                          {editLoading ? "Saving..." : "Save"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleEditCancel}
-                          disabled={editLoading}
-                          className="flex-1 h-8 text-xs"
-                        >
-                          <X className="h-3.5 w-3.5 mr-1" /> Cancel
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Card
-                    key={shift._id}
-                    className="border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group relative overflow-hidden rounded-[16px] bg-white dark:bg-slate-900"
-                  >
-                    <CardHeader className="flex flex-row items-start justify-between pb-2">
-                      <div>
-                        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                          {shift.name}
-                          {shift.isActive && (
-                            <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 text-[10px] px-2 py-0">
-                              Active
-                            </Badge>
-                          )}
-                        </CardTitle>
-                        <CardDescription className="mt-1 font-mono text-xs">
-                          {formatTime12Hour(shift.startTime)} - {formatTime12Hour(shift.endTime)}
-                        </CardDescription>
-                      </div>
-                      <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-full text-indigo-600 dark:text-indigo-400">
-                        <Clock className="h-5 w-5" />
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 gap-3 mt-2">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary/50 p-2 rounded-md">
-                          <Shield className="h-4 w-4 text-orange-500" />
-                          <span>
-                            Buffer: <b className="text-foreground">{shift.graceMinutes}m</b>
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary/50 p-2 rounded-md">
-                          <Timer className="h-4 w-4 text-indigo-500" />
-                          <span>{getDuration(shift.startTime, shift.endTime)}</span>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditStart(shift)}
-                          className="text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 h-8"
-                        >
-                          <Pencil className="h-4 w-4 mr-2" /> Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(shift._id)}
-                          className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-8"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" /> Delete
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              )
+          <div className="w-full">
+            {editingId && (
+              <Card className="mb-4 border-purple-300 dark:border-purple-700 shadow-sm bg-purple-50/30 dark:bg-purple-900/10">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-semibold text-purple-700 dark:text-purple-400 flex items-center gap-2">
+                    <Pencil className="h-4 w-4" /> Editing Shift
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Shift Name</label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={editData.name}
+                        onChange={handleEditChange}
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground flex items-center justify-between">
+                        Grace Period (minutes)
+                        <span className="text-purple-600 dark:text-purple-400 font-semibold">
+                          {editData.graceMinutes}m
+                        </span>
+                      </label>
+                      <input
+                        type="range"
+                        name="graceMinutes"
+                        min="0"
+                        max="60"
+                        step="5"
+                        value={editData.graceMinutes}
+                        onChange={handleEditChange}
+                        className="w-full accent-purple-600"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Start Time</label>
+                      <TimeSelect
+                        name="startTime"
+                        value={editData.startTime}
+                        onChange={handleEditChange}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">End Time</label>
+                      <TimeSelect
+                        name="endTime"
+                        value={editData.endTime}
+                        onChange={handleEditChange}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-1 justify-end">
+                    <Button
+                      size="sm"
+                      onClick={() => handleEditSave(editingId)}
+                      disabled={editLoading}
+                      className="h-8 text-xs"
+                    >
+                      <Check className="h-3.5 w-3.5 mr-1" />
+                      {editLoading ? "Saving..." : "Save"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleEditCancel}
+                      disabled={editLoading}
+                      className="h-8 text-xs"
+                    >
+                      <X className="h-3.5 w-3.5 mr-1" /> Cancel
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             )}
+            <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
+              <CardContent className="p-0">
+                {loading ? (
+                  <div className="p-8 text-center text-muted-foreground">Loading shifts...</div>
+                ) : shifts.length === 0 ? (
+                  <div className="p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-lg text-center text-muted-foreground m-4">
+                    No shifts found. Create one to get started.
+                  </div>
+                ) : (
+                  <DataTable
+                    columns={columns}
+                    data={shifts}
+                    searchable={false}
+                    defaultPageSize={10}
+                  />
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

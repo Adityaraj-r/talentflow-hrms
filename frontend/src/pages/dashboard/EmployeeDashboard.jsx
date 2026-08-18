@@ -52,9 +52,9 @@ const EmployeeDashboard = ({ stats = {}, isLoading = false }) => {
       type: 'holiday',
       title: 'Upcoming Holiday',
       desc: 'Independence Day on 15-08-2026. Office closed.',
-      icon: <Calendar className="w-4 h-4 text-blue-600" />,
-      bg: 'bg-blue-50 border-blue-100',
-      iconBg: 'bg-blue-100'
+      icon: <Calendar className="w-4 h-4 text-purple-600" />,
+      bg: 'bg-purple-50 border-purple-100',
+      iconBg: 'bg-purple-100'
     },
     {
       id: 2,
@@ -251,7 +251,7 @@ const EmployeeDashboard = ({ stats = {}, isLoading = false }) => {
                 <div className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 px-3 py-1.5 rounded-full text-xs font-semibold">
                   50% Attendance Rate
                 </div>
-                <div className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-3 py-1.5 rounded-full text-xs font-semibold">
+                <div className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 px-3 py-1.5 rounded-full text-xs font-semibold">
                   02/04 Days Present
                 </div>
                 <div className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 px-3 py-1.5 rounded-full text-xs font-semibold">

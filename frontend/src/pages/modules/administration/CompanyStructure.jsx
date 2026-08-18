@@ -9,9 +9,12 @@ import {
   Users,
   ArrowLeft,
   Briefcase,
+  Eye,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ActionIcon } from "@/components/ui/action-icon";
+import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { useConfirm } from "@/contexts/ConfirmContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -271,70 +274,87 @@ const CompanyStructure = () => {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((dept) => (
-            <Card
-              key={dept._id}
-              className="group cursor-pointer border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 overflow-hidden hover:border-primary transition-all border-l-4 border-l-transparent hover:border-l-primary"
-              onClick={() => handleManageDepartment(dept._id)}
-            >
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Building2 className="h-6 w-6 text-primary" />
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden">
+          <DataTable
+            columns={[
+              {
+                accessorKey: "name",
+                header: "Department Name",
+                cell: ({ row }) => (
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Building2 className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="font-semibold text-sm">{row.original.name}</span>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenModal(dept);
-                      }}
-                    >
-                      <Pencil className="h-4 w-4 text-blue-600" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={(e) => handleDelete(dept._id, e)}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-600" />
-                    </Button>
-                  </div>
-                </div>
-
-                <h3 className="font-semibold text-lg">{dept.name}</h3>
-                <p className="text-sm text-muted-foreground mb-4 h-10 line-clamp-2">
-                  {dept.description || "No description."}
-                </p>
-
-                <div className="flex items-center gap-3 pt-4 border-t">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">
-                      {getInitials(getUserName(dept.manager))}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 overflow-hidden">
-                    <p className="text-xs font-medium truncate">
-                      {dept.manager ? getUserName(dept.manager) : "No Manager"}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground truncate">
-                      {(dept.manager && dept.manager.email) || "Assign one"}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-
-          {!filtered.length && (
-            <div className="text-sm text-muted-foreground py-10">
-              No departments found. Try changing your search.
-            </div>
-          )}
+                )
+              },
+              {
+                accessorKey: "description",
+                header: "Description",
+                cell: ({ row }) => (
+                  <span className="text-sm text-muted-foreground line-clamp-1 max-w-[300px]">
+                    {row.original.description || "No description."}
+                  </span>
+                )
+              },
+              {
+                accessorKey: "manager",
+                header: "Manager",
+                cell: ({ row }) => {
+                  const dept = row.original;
+                  return (
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-purple-100 text-purple-700 text-xs">
+                          {getInitials(getUserName(dept.manager))}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col overflow-hidden">
+                        <span className="text-xs font-medium truncate">
+                          {dept.manager ? getUserName(dept.manager) : "No Manager"}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground truncate">
+                          {(dept.manager && dept.manager.email) || "Assign one"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+              },
+              {
+                id: "actions",
+                header: () => <div className="text-right">Actions</div>,
+                cell: ({ row }) => {
+                  const dept = row.original;
+                  return (
+                    <div className="flex justify-end gap-1">
+                      <ActionIcon 
+                        icon={Eye} 
+                        tooltip="Manage Department"
+                        onClick={() => handleManageDepartment(dept._id)} 
+                      />
+                      <ActionIcon 
+                        icon={Pencil} 
+                        tooltip="Edit Department"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenModal(dept);
+                        }} 
+                      />
+                      <ActionIcon 
+                        icon={Trash2} 
+                        tooltip="Delete Department"
+                        onClick={(e) => handleDelete(dept._id, e)} 
+                      />
+                    </div>
+                  );
+                }
+              }
+            ]}
+            data={filtered}
+            searchable={false}
+          />
         </div>
 
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -519,34 +539,48 @@ const CompanyStructure = () => {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {deptEmployees.map((emp) => (
-                    <div
-                      key={emp._id || emp.id}
-                      className="p-3 border rounded-lg flex justify-between items-center hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarFallback>
-                            {getInitials(getUserName(emp))}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-sm">
-                            {getUserName(emp)}
-                          </p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{emp.designation || "No Designation"}</span>
-                            <span>•</span>
-                            <span>{emp.email}</span>
+                <div className="rounded-md border">
+                  <DataTable
+                    columns={[
+                      {
+                        accessorKey: "employee",
+                        header: "Employee",
+                        cell: ({ row }) => {
+                          const emp = row.original;
+                          return (
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-9 w-9">
+                                <AvatarFallback>
+                                  {getInitials(getUserName(emp))}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {getUserName(emp)}
+                                </p>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <span>{emp.designation || "No Designation"}</span>
+                                  <span>•</span>
+                                  <span>{emp.email}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                      },
+                      {
+                        accessorKey: "role",
+                        header: "Role",
+                        cell: ({ row }) => (
+                          <div className="text-xs font-medium px-2 py-1 bg-secondary rounded text-secondary-foreground inline-block">
+                            {getRoleName(row.original) || "EMPLOYEE"}
                           </div>
-                        </div>
-                      </div>
-                      <div className="text-xs font-medium px-2 py-1 bg-secondary rounded text-secondary-foreground">
-                        {getRoleName(emp) || "EMPLOYEE"}
-                      </div>
-                    </div>
-                  ))}
+                        )
+                      }
+                    ]}
+                    data={deptEmployees}
+                    searchable={false}
+                  />
                 </div>
               )}
             </CardContent>

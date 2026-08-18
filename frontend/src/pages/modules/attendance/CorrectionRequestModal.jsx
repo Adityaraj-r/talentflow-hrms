@@ -130,7 +130,7 @@ const CorrectionRequestModal = ({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-indigo-600" />
+            <Clock className="w-5 h-5 text-purple-600" />
             Request Attendance Correction
           </DialogTitle>
         </DialogHeader>
@@ -167,7 +167,7 @@ const CorrectionRequestModal = ({
         )}
 
         {!record.isLocked && !isLimitReached && (
-          <div className="flex items-center gap-2 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-blue-800 rounded-lg text-sm text-indigo-700 dark:text-indigo-400">
+          <div className="flex items-center gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg text-sm text-purple-700 dark:text-purple-400">
             <Info className="w-4 h-4 shrink-0" />
             <span>
               You have{" "}
@@ -256,7 +256,7 @@ const CorrectionRequestModal = ({
             <Button
               type="submit"
               disabled={loading || record.isLocked || isLimitReached}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               {loading ? "Submitting..." : "Submit Request"}
             </Button>

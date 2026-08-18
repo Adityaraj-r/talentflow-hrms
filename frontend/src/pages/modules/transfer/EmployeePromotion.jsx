@@ -7,13 +7,14 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Award, Check, X, Search, Clock, Loader2, TrendingUp, ShieldCheck, Edit, RefreshCw, CheckCircle, Eye } from "lucide-react"
+import { Award, Check, X, Search, Clock, Loader2, TrendingUp, ShieldCheck, Edit, RefreshCw, CheckCircle, Eye, Pencil, CheckCircle2, XCircle } from "lucide-react"
 import { toast } from "sonner"
 import apiClient from "@/services/apiClient"
 import { cn } from "@/lib/utils"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Pagination } from "@/components/ui/pagination"
-
+import { DataTable } from "@/components/ui/data-table"
+import { ActionIcon } from "@/components/ui/action-icon"
 const EmployeePromotion = () => {
   const { user } = useAuth()
   const userRole = user?.role?.toUpperCase() || ""
@@ -99,13 +100,145 @@ const ApprovalBoard = ({ userRole }) => {
     })
   }
 
+  const columns = [
+    {
+      accessorKey: "employee",
+      header: "Employee",
+      cell: ({ row }) => (
+        <div className="font-medium">
+          {row.original.employeeName}
+          <span className="block text-xs text-muted-foreground font-normal">{row.original.employeeId}</span>
+        </div>
+      )
+    },
+    {
+      accessorKey: "currentRole",
+      header: "Current Role & Salary",
+      cell: ({ row }) => (
+        <div>
+          <span className="block text-muted-foreground">{row.original.currentDesignation}</span>
+          <span className="text-xs font-medium text-slate-500">₹ {row.original.currentSalary?.toLocaleString('en-IN') || 0}</span>
+        </div>
+      )
+    },
+    {
+      accessorKey: "proposedRole",
+      header: "Proposed Role & Salary",
+      cell: ({ row }) => (
+        <div>
+          <span className="block font-semibold text-primary">{row.original.newDesignation}</span>
+          <span className="text-xs font-bold text-green-600">₹ {row.original.newSalary?.toLocaleString('en-IN') || 0}</span>
+        </div>
+      )
+    },
+    {
+      accessorKey: "timeline",
+      header: "Timeline",
+      cell: ({ row }) => {
+        const item = row.original;
+        return (
+          <div className="flex flex-col gap-1 text-xs">
+            <span className="text-muted-foreground" title="Requested Date">
+              Req: {new Date(item.createdAt).toLocaleDateString('en-GB')}
+            </span>
+            <span className="font-medium text-purple-600 dark:text-purple-400" title="Target Effective Date">
+              Starts: {new Date(item.effectiveDate).toLocaleDateString('en-GB')}
+            </span>
+            
+            {(item.status === "Approved" || item.status === "Rejected") && item.actionedAt && (
+              <span className={cn(
+                "font-bold", 
+                item.status === "Approved" ? "text-green-600" : "text-red-600"
+              )}>
+                {item.status === "Approved" ? "Appr:" : "Rej:"} {new Date(item.actionedAt).toLocaleDateString('en-GB')}
+              </span>
+            )}
+          </div>
+        );
+      }
+    },
+    {
+      accessorKey: "businessCase",
+      header: () => <div className="text-center min-w-[150px]">Business Case</div>,
+      cell: ({ row }) => (
+        <div 
+          className="max-w-[180px] truncate text-xs text-muted-foreground cursor-help mx-auto text-center"
+          title={row.original.justification}
+        >
+          {row.original.justification}
+        </div>
+      )
+    },
+    {
+      accessorKey: "status",
+      header: () => <div className="text-center">Status</div>,
+      cell: ({ row }) => {
+        const item = row.original;
+        return (
+          <div className="text-center">
+            <span className={cn(
+              "px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wider uppercase border whitespace-nowrap",
+              item.status === "Approved" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800" :
+              item.status === "Rejected" ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800" :
+              item.status === "Pending HR Review" ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800" :
+              item.status === "Pending Country Manager" ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800" :
+              item.status === "Pending CEO" ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800" :
+              item.status === "Re-verify" ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800" :
+              "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+            )}>
+              {item.status}
+            </span>
+          </div>
+        );
+      }
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-center">Actions</div>,
+      cell: ({ row }) => {
+        const item = row.original;
+        return (
+          <div className="flex justify-center gap-2">
+            <ActionIcon icon={Eye} tooltip="View Details" onClick={() => handleViewDetails(item)} />
+            
+            {userRole === "HR_MANAGER" && item.status === "Pending HR Review" && (
+              <ActionIcon 
+                icon={CheckCircle2} 
+                tooltip="Verify Compliance" 
+                onClick={() => handleAction(item._id, 'Pending Country Manager')}
+                className="text-purple-600 border-purple-200 hover:bg-purple-100"
+              />
+            )}
+
+            {userRole === "COUNTRY_MANAGER" && (item.status === "Pending Country Manager" || item.status === "Re-verify") && (
+              <ActionIcon 
+                icon={Pencil} 
+                tooltip="Edit & Verify" 
+                onClick={() => setVerifyData(item)}
+                className="text-purple-600 border-purple-200 hover:bg-purple-100"
+              />
+            )}
+          
+            {userRole === "CEO" && item.status === "Pending CEO" && (
+              <>
+                <ActionIcon icon={CheckCircle2} tooltip="Approve" onClick={() => handleAction(item._id, 'Approved')} className="text-green-600 border-green-200 hover:bg-green-100" />
+                <ActionIcon icon={RefreshCw} tooltip="Send back to Country Manager" onClick={() => handleAction(item._id, 'Re-verify')} className="text-orange-600 border-orange-200 hover:bg-orange-100" />
+                <ActionIcon icon={XCircle} tooltip="Reject" onClick={() => handleAction(item._id, 'Rejected')} className="text-red-600 border-red-200 hover:bg-red-100" />
+              </>
+            )}
+          </div>
+        );
+      }
+    }
+  ];
+
   return (
     <div className="space-y-4">
       {/* COUNTRY MANAGER EDIT MODAL*/}
       {verifyData && (
-        <Card className="border border-blue-200 dark:border-blue-900/30 shadow-sm rounded-[16px] bg-blue-50/50 dark:bg-blue-900/10 mb-6 animate-in slide-in-from-top-4 overflow-hidden">
+        <Card className="border border-purple-200 dark:border-purple-900/30 shadow-sm rounded-[16px] bg-purple-50/50 dark:bg-purple-900/10 mb-6 animate-in slide-in-from-top-4 overflow-hidden">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg text-blue-700 dark:text-blue-400 flex items-center gap-2">
+            <CardTitle className="text-lg text-purple-700 dark:text-purple-400 flex items-center gap-2">
               <Edit className="h-5 w-5" /> Verify & Adjust Promotion for {verifyData.employeeName}
             </CardTitle>
           </CardHeader>
@@ -155,134 +288,14 @@ const ApprovalBoard = ({ userRole }) => {
           </div>
         </CardHeader>
         <CardContent className="p-0 pt-2">
-          <div className="rounded-md overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 border-b">
-                <tr className="text-left font-medium">
-                  <th className="p-4">Employee</th>
-                  <th className="p-4">Current Role & Salary</th>
-                  <th className="p-4">Proposed Role & Salary</th>
-                  <th className="p-4">Timeline</th>
-                  <th className="p-4 min-w-[150px] text-center">Business Case</th>
-                  <th className="p-4 text-center">Status</th>
-                  <th className="p-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {isLoading ? (
-                  <tr><td colSpan="7" className="p-8 text-center text-muted-foreground">Loading pipeline...</td></tr>
-                ) : promotions.length === 0 ? (
-                  <tr><td colSpan="7" className="p-8 text-center text-muted-foreground">No active promotion requests.</td></tr>
-                ) : (
-                  promotions.map((item) => (
-                    <tr key={item._id} className="hover:bg-muted/20 transition-colors">
-                      <td className="p-4 font-medium">
-                        {item.employeeName}
-                        <span className="block text-xs text-muted-foreground font-normal">{item.employeeId}</span>
-                      </td>
-                      
-                      <td className="p-4">
-                        <span className="block text-muted-foreground">{item.currentDesignation}</span>
-                        <span className="text-xs font-medium text-slate-500">₹ {item.currentSalary?.toLocaleString('en-IN') || 0}</span>
-                      </td>
-                      
-                      <td className="p-4">
-                        <span className="block font-semibold text-primary">{item.newDesignation}</span>
-                        <span className="text-xs font-bold text-green-600">₹ {item.newSalary?.toLocaleString('en-IN') || 0}</span>
-                      </td>
-                      
-                      <td className="p-4 text-xs">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-muted-foreground" title="Requested Date">
-                            Req: {new Date(item.createdAt).toLocaleDateString('en-GB')}
-                          </span>
-                          <span className="font-medium text-blue-600 dark:text-blue-400" title="Target Effective Date">
-                            Starts: {new Date(item.effectiveDate).toLocaleDateString('en-GB')}
-                          </span>
-                          
-                          {(item.status === "Approved" || item.status === "Rejected") && item.actionedAt && (
-                            <span className={cn(
-                              "font-bold", 
-                              item.status === "Approved" ? "text-green-600" : "text-red-600"
-                            )}>
-                              {item.status === "Approved" ? "Appr:" : "Rej:"} {new Date(item.actionedAt).toLocaleDateString('en-GB')}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      <td className="p-4">
-                        <div 
-                          className="max-w-[180px] truncate text-xs text-muted-foreground cursor-help mx-auto text-center"
-                          title={item.justification}
-                        >
-                          {item.justification}
-                        </div>
-                      </td>
-
-                      <td className="p-4 text-center">
-                        <span className={cn(
-                          "px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wider uppercase border whitespace-nowrap", // ADDED whitespace-nowrap
-                          item.status === "Approved" ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800" :
-                          item.status === "Rejected" ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800" :
-                          item.status === "Pending HR Review" ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800" :
-                          item.status === "Pending Country Manager" ? "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800" :
-                          item.status === "Pending CEO" ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800" :
-                          item.status === "Re-verify" ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800" :
-                          "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
-                        )}>
-                          {item.status}
-                        </span>
-                      </td>
-                      
-                      <td className="p-4">
-                        <div className="flex justify-center gap-2">
-                          <Button size="icon" variant="outline" className="h-8 w-8 text-slate-600 border-slate-200 hover:bg-slate-100 dark:text-slate-400 dark:border-slate-800 dark:hover:bg-slate-900 transition-colors" onClick={() => handleViewDetails(item)} title="View Details">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          
-                          {userRole === "HR_MANAGER" && item.status === "Pending HR Review" && (
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="h-8 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/50 dark:hover:text-blue-300 transition-colors" 
-                              onClick={() => handleAction(item._id, 'Pending Country Manager')}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-1" /> Verify Compliance
-                            </Button>
-                          )}
-
-                          {userRole === "COUNTRY_MANAGER" && (item.status === "Pending Country Manager" || item.status === "Re-verify") && (
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-100 hover:text-indigo-700 dark:text-indigo-400 dark:border-indigo-800 dark:hover:bg-indigo-900/50 dark:hover:text-indigo-300 transition-colors" 
-                              onClick={() => setVerifyData(item)}
-                            >
-                              <Edit className="h-4 w-4 mr-1" /> Edit & Verify
-                            </Button>
-                          )}
-                        
-                          {userRole === "CEO" && item.status === "Pending CEO" && (
-                            <>
-                              <Button size="icon" variant="outline" className="h-8 w-8 text-green-600 border-green-200 hover:bg-green-100 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900/50 transition-colors" onClick={() => handleAction(item._id, 'Approved')} title="Approve">
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button size="icon" variant="outline" className="h-8 w-8 text-orange-600 border-orange-200 hover:bg-orange-100 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-900/50 transition-colors" onClick={() => handleAction(item._id, 'Re-verify')} title="Send back to Country Manager">
-                                <RefreshCw className="h-4 w-4" />
-                              </Button>
-                              <Button size="icon" variant="outline" className="h-8 w-8 text-red-600 border-red-200 hover:bg-red-100 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/50 transition-colors" onClick={() => handleAction(item._id, 'Rejected')} title="Reject">
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div className="rounded-md overflow-hidden">
+            {isLoading ? (
+              <div className="p-8 text-center text-muted-foreground">Loading pipeline...</div>
+            ) : promotions.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground">No active promotion requests.</div>
+            ) : (
+              <DataTable columns={columns} data={promotions} searchable={false} />
+            )}
           </div>
           {paginationInfo.totalPages > 1 && (
             <div className="flex items-center justify-between px-6 py-4 border-t bg-slate-50/50 dark:bg-slate-900/30">
@@ -468,7 +481,7 @@ const NominationForm = ({ user }) => {
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground">Current Basic Annual Salary</label>
-                  <Input disabled value={`₹ ${selectedEmp.salary?.basic || "0"}`} className="bg-transparent font-medium text-blue-600 dark:text-blue-400" />
+                  <Input disabled value={`₹ ${selectedEmp.salary?.basic || "0"}`} className="bg-transparent font-medium text-purple-600 dark:text-purple-400" />
                 </div>
               </div>
 

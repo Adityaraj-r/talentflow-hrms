@@ -14,6 +14,9 @@ import { useAuth } from "@/contexts/AuthContext"
 import { cn } from "@/lib/utils"
 import { StatsCard } from "@/components/ui/stats-card"
 import { Pagination } from "@/components/ui/pagination"
+import { DataTable } from "@/components/ui/data-table"
+import { ActionIcon } from "@/components/ui/action-icon"
+import { Eye } from "lucide-react"
 
 const AllEmployees = () => {
   const navigate = useNavigate()
@@ -158,7 +161,7 @@ const AllEmployees = () => {
           title="Active Employees" 
           value={stats.active} 
           icon={<UserCheck className="h-8 w-8" />} 
-          variant="green" 
+          variant="emerald" 
           isActive={activeCard === 'active'}
           onClick={() => setActiveCard(activeCard === 'active' ? 'total' : 'active')}
         />
@@ -166,7 +169,7 @@ const AllEmployees = () => {
           title="On Notice Period" 
           value={stats.onNotice} 
           icon={<ShieldAlert className="h-8 w-8" />} 
-          variant="yellow" 
+          variant="amber" 
           isActive={activeCard === 'onNotice'}
           onClick={() => setActiveCard(activeCard === 'onNotice' ? 'total' : 'onNotice')}
         />
@@ -174,7 +177,7 @@ const AllEmployees = () => {
           title="Exited Employees" 
           value={stats.inactive} 
           icon={<UserMinus className="h-8 w-8" />} 
-          variant="red" 
+          variant="rose" 
           isActive={activeCard === 'exited'}
           onClick={() => setActiveCard(activeCard === 'exited' ? 'total' : 'exited')}
         />
@@ -238,97 +241,106 @@ const AllEmployees = () => {
         </div>
 
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30">
-                <TableHead className="font-bold w-[25%]">Employee</TableHead>
-                <TableHead className="font-bold w-[15%]">Employee ID</TableHead>
-                <TableHead className="font-bold w-[15%]">Department</TableHead>
-                <TableHead className="font-bold w-[15%]">Access Role</TableHead>
-                <TableHead className="font-bold w-[10%]">Gender</TableHead>
-                <TableHead className="font-bold w-[20%]">Account Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><div className="flex items-center gap-3"><div className="h-8 w-8 rounded-full bg-muted animate-pulse" /><div className="space-y-2"><div className="h-4 w-32 bg-muted animate-pulse rounded" /><div className="h-3 w-24 bg-muted animate-pulse rounded" /></div></div></TableCell>
-                    <TableCell><div className="h-5 w-20 bg-muted animate-pulse rounded-full" /></TableCell>
-                    <TableCell><div className="h-4 w-24 bg-muted animate-pulse rounded" /></TableCell>
-                    <TableCell><div className="h-5 w-20 bg-muted animate-pulse rounded-full" /></TableCell>
-                    <TableCell><div className="h-4 w-16 bg-muted animate-pulse rounded" /></TableCell>
-                    <TableCell><div className="h-5 w-20 bg-muted animate-pulse rounded-full" /></TableCell>
-                  </TableRow>
-                ))
-              ) : employees.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-64 text-center">
-                    <div className="flex flex-col items-center justify-center text-muted-foreground space-y-2">
-                      <Users className="h-10 w-10 opacity-20" />
-                      <p className="text-sm font-medium">No employees found in this category.</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                employees.map(emp => (
-                  <TableRow
-                    key={emp.id}
-                    className="hover:bg-muted/10 transition-colors cursor-pointer group"
-                    onClick={() => navigate(`/employee-center/employee/${emp.id}`)}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {emp.profilePicture ? (
-                          <img src={emp.profilePicture} alt={emp.name} className="h-8 w-8 rounded-full object-cover border border-muted" />
-                        ) : (
-                          <div className="h-8 w-8 rounded-full bg-muted/80 flex items-center justify-center text-xs font-bold text-muted-foreground border border-muted/50">
-                            {emp.avatar}
-                          </div>
-                        )}
-                        <div className="flex flex-col">
-                          <span className="font-bold text-[13px] text-foreground">{emp.name}</span>
-                          <span className="text-[11px] text-muted-foreground font-medium">{emp.email}</span>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {emp.employeeCode === 'Not Assigned' ? (
-                        <Badge variant="destructive" className="bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-200 text-[10px] px-2 py-0.5">Not Assigned</Badge>
+          <DataTable
+            columns={[
+              {
+                accessorKey: "employee",
+                header: "Employee",
+                cell: ({ row }) => {
+                  const emp = row.original;
+                  return (
+                    <div className="flex items-center gap-3">
+                      {emp.profilePicture ? (
+                        <img src={emp.profilePicture} alt={emp.name} className="h-8 w-8 rounded-full object-cover border border-muted" />
                       ) : (
-                        <Badge variant="outline" className="bg-muted/30 text-muted-foreground font-mono text-[11px] px-2 py-0.5">{emp.employeeCode}</Badge>
+                        <div className="h-8 w-8 rounded-full bg-muted/80 flex items-center justify-center text-xs font-bold text-muted-foreground border border-muted/50">
+                          {emp.avatar}
+                        </div>
                       )}
-                    </TableCell>
-                    <TableCell><span className="text-sm">{emp.department}</span></TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="text-[10px] font-bold tracking-wider px-2 py-0.5">
-                        {emp.role || 'EMPLOYEE'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell><span className="text-sm font-medium">{emp.gender}</span></TableCell>
-                    <TableCell>
-                      <div className={cn(
-                        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
-                        emp.status === 'Active'
-                          ? "bg-green-500/10 text-green-600 border-green-200"
-                          : emp.status?.startsWith('Pending')
-                          ? "bg-blue-500/10 text-blue-600 border-blue-200"
-                          : emp.status === 'On Notice Period'
-                          ? "bg-yellow-500/10 text-yellow-600 border-yellow-200"
-                          : "bg-red-500/10 text-red-600 border-red-200"
-                      )}>
-                        <span className={cn(
-                          "h-1.5 w-1.5 rounded-full", 
-                          emp.status === 'Active' ? "bg-green-600" : emp.status?.startsWith('Pending') ? "bg-blue-600" : emp.status === 'On Notice Period' ? "bg-yellow-600" : "bg-red-600"
-                        )} />
-                        {emp.status}
+                      <div className="flex flex-col">
+                        <span className="font-bold text-[13px] text-foreground">{emp.name}</span>
+                        <span className="text-[11px] text-muted-foreground font-medium">{emp.email}</span>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                    </div>
+                  );
+                }
+              },
+              {
+                accessorKey: "employeeCode",
+                header: "Employee ID",
+                cell: ({ row }) => {
+                  const emp = row.original;
+                  return emp.employeeCode === 'Not Assigned' ? (
+                    <Badge variant="destructive" className="bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-200 text-[10px] px-2 py-0.5">Not Assigned</Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-muted/30 text-muted-foreground font-mono text-[11px] px-2 py-0.5">{emp.employeeCode}</Badge>
+                  );
+                }
+              },
+              {
+                accessorKey: "department",
+                header: "Department",
+                cell: ({ row }) => <span className="text-sm">{row.original.department}</span>
+              },
+              {
+                accessorKey: "role",
+                header: "Access Role",
+                cell: ({ row }) => (
+                  <Badge variant="secondary" className="text-[10px] font-bold tracking-wider px-2 py-0.5">
+                    {row.original.role || 'EMPLOYEE'}
+                  </Badge>
+                )
+              },
+              {
+                accessorKey: "gender",
+                header: "Gender",
+                cell: ({ row }) => <span className="text-sm font-medium">{row.original.gender}</span>
+              },
+              {
+                accessorKey: "status",
+                header: "Account Status",
+                cell: ({ row }) => {
+                  const emp = row.original;
+                  return (
+                    <div className={cn(
+                      "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
+                      emp.status === 'Active'
+                        ? "bg-green-500/10 text-green-600 border-green-200"
+                        : emp.status?.startsWith('Pending')
+                        ? "bg-purple-500/10 text-purple-600 border-purple-200"
+                        : emp.status === 'On Notice Period'
+                        ? "bg-yellow-500/10 text-yellow-600 border-yellow-200"
+                        : "bg-red-500/10 text-red-600 border-red-200"
+                    )}>
+                      <span className={cn(
+                        "h-1.5 w-1.5 rounded-full", 
+                        emp.status === 'Active' ? "bg-green-600" : emp.status?.startsWith('Pending') ? "bg-purple-600" : emp.status === 'On Notice Period' ? "bg-yellow-600" : "bg-red-600"
+                      )} />
+                      {emp.status}
+                    </div>
+                  );
+                }
+              },
+              {
+                id: "actions",
+                header: () => <div className="text-right w-[140px] ml-auto">Actions</div>,
+                cell: ({ row }) => {
+                  const emp = row.original;
+                  return (
+                    <div className="flex justify-end gap-2">
+                      <ActionIcon 
+                        icon={Eye} 
+                        tooltip="View Details" 
+                        onClick={() => navigate(`/employee-center/employee/${emp.id}`)} 
+                      />
+                    </div>
+                  );
+                }
+              }
+            ]}
+            data={employees}
+            searchable={false}
+          />
           
           {pagination.totalItems > 0 && (
             <Pagination

@@ -6,11 +6,12 @@ import * as XLSX from "xlsx";
 import { Activity, Brain, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import recruitmentAnalyticsService from "@/services/recruitmentAnalyticsService";
+import { DataTable } from "@/components/ui/data-table";
+import { StatsCard } from "@/components/ui/stats-card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  AnalyticsKpiCard,
   AnalyticsFilters,
   AnalyticsLoading,
-  AnalyticsTable,
   DepartmentDemandChart,
   DrillDownPanel,
   ExportCenter,
@@ -164,19 +165,24 @@ const RecruitmentAnalytics = () => {
     <div id="report-container" className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-700 dark:text-cyan-200">
-            <Brain className="h-3.5 w-3.5" />
-            Recruitment Business Intelligence
-          </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Recruitment Analytics & Intelligence</h1>
           <p className="mt-2 max-w-3xl text-sm text-slate-500 dark:text-slate-400">
             Executive hiring intelligence across funnel health, recruiter productivity, source quality, hiring velocity, and staffing demand.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button onClick={fetchAnalytics} variant="outline" className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-white/10">
-            <RefreshCw className="mr-2 h-4 w-4" /> Refresh
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button onClick={fetchAnalytics} variant="outline" size="icon" className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-white/10">
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Refresh</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <ExportCenter onExport={handleExport} />
         </div>
       </div>
@@ -201,11 +207,13 @@ const RecruitmentAnalytics = () => {
       ) : (
         <>
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {(analytics?.overview || []).map((metric) => (
-              <AnalyticsKpiCard
+            {(analytics?.overview || []).map((metric, idx) => (
+              <StatsCard
                 key={metric.key}
-                metric={metric}
-                active={activeMetric === metric.key}
+                title={metric.label}
+                value={metric.value}
+                variant={idx % 4 === 0 ? "purple" : idx % 4 === 1 ? "blue" : idx % 4 === 2 ? "emerald" : "amber"}
+                isActive={activeMetric === metric.key}
                 onClick={() => {
                   setActiveMetric(metric.key);
                   setSelectedDrilldown({ label: metric.label, value: Number(metric.value) || 0, trend: Number(metric.trend) || 0 });
@@ -233,14 +241,26 @@ const RecruitmentAnalytics = () => {
 
           <section className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/70 p-5 shadow-xl shadow-black/10">
             <div className="mb-5 flex items-center gap-2">
-              <Activity className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
+              <Activity className="h-5 w-5 text-primary dark:text-cyan-300" />
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Analytics Tables</h2>
             </div>
             <div className="grid gap-6">
-              <AnalyticsTable title="Recruiter Performance Table" rows={analytics?.tables?.recruiters || []} columns={tableColumns.recruiters} />
-              <AnalyticsTable title="Source Performance Table" rows={analytics?.tables?.sources || []} columns={tableColumns.sources} />
-              <AnalyticsTable title="Hiring Funnel Breakdown" rows={(analytics?.tables?.funnel || []).map((row) => ({ ...row, bottleneck: row.bottleneck ? "Yes" : "No" }))} columns={tableColumns.funnel} />
-              <AnalyticsTable title="Department Hiring Table" rows={analytics?.tables?.departments || []} columns={tableColumns.departments} />
+              <div className="space-y-2">
+                <h3 className="font-semibold">Recruiter Performance Table</h3>
+                <DataTable data={analytics?.tables?.recruiters || []} columns={tableColumns.recruiters.map(c => ({ accessorKey: c.key, header: c.label }))} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="font-semibold">Source Performance Table</h3>
+                <DataTable data={analytics?.tables?.sources || []} columns={tableColumns.sources.map(c => ({ accessorKey: c.key, header: c.label }))} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="font-semibold">Hiring Funnel Breakdown</h3>
+                <DataTable data={(analytics?.tables?.funnel || []).map((row) => ({ ...row, bottleneck: row.bottleneck ? "Yes" : "No" }))} columns={tableColumns.funnel.map(c => ({ accessorKey: c.key, header: c.label }))} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="font-semibold">Department Hiring Table</h3>
+                <DataTable data={analytics?.tables?.departments || []} columns={tableColumns.departments.map(c => ({ accessorKey: c.key, header: c.label }))} />
+              </div>
             </div>
           </section>
         </>

@@ -4,6 +4,7 @@ import { useUser } from "@/contexts/UserContext"
 import { toast } from "sonner"
 import { Download, RotateCcw, SlidersHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ActionIcon } from "@/components/ui/action-icon"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 import { RecruitmentPageHeader } from "@/components/recruitment/RecruitmentUI"
@@ -333,20 +334,11 @@ const RecruitmentPipeline = () => {
       <RecruitmentPageHeader
         title="Recruitment Pipeline"
         actions={
-          <>
-            <Button type="button" variant="outline" onClick={() => setFilters(defaultFilters)}>
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Reset
-            </Button>
-            <Button type="button" variant="outline" onClick={fetchApplications}>
-              <SlidersHorizontal className="mr-2 h-4 w-4" />
-              Refresh
-            </Button>
-            <Button type="button" onClick={handleExportView}>
-              <Download className="mr-2 h-4 w-4" />
-              Export View
-            </Button>
-          </>
+          <div className="flex items-center gap-2">
+            <ActionIcon icon={RotateCcw} tooltip="Reset Filters" onClick={() => setFilters(defaultFilters)} variant="outline" />
+            <ActionIcon icon={SlidersHorizontal} tooltip="Refresh Pipeline" onClick={fetchApplications} variant="outline" />
+            <ActionIcon icon={Download} tooltip="Export View" onClick={handleExportView} variant="default" iconClassName="h-4 w-4 text-white" />
+          </div>
         }
       />
 

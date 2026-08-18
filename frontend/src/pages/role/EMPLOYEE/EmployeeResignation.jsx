@@ -120,9 +120,9 @@ const EmployeeResignation = () => {
       </div>
 
       {existingRequest ? (
-        <Card className="border-blue-200 bg-blue-50/30 dark:bg-blue-900/10 dark:border-blue-800 shadow-sm">
+        <Card className="border-purple-200 bg-purple-50/30 dark:bg-purple-900/10 dark:border-purple-800 shadow-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+            <CardTitle className="flex items-center gap-2 text-purple-700 dark:text-purple-400">
               <CheckCircle2 className="h-5 w-5" /> Separation Request Active
             </CardTitle>
             <CardDescription>You have already submitted a resignation request. You cannot submit another one.</CardDescription>

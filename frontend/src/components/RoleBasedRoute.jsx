@@ -46,7 +46,7 @@ const RoleBasedRoute = ({ children, allowedRoles, requiredPermission }) => {
     return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-950">
         <div className="text-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
+          <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto" />
           <p className="text-lg font-semibold text-gray-900 dark:text-white">Verifying access...</p>
           <p className="text-sm text-gray-500">Checking your permissions</p>
         </div>

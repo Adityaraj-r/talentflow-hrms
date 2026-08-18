@@ -59,7 +59,7 @@ export default function ExecutiveInsights({
       icon: TrendingUp,
       title: "Workforce Growth",
       description: `Current headcount: ${headcount}. Growth trend stable.`,
-      color: "text-indigo-500",
+      color: "text-purple-500",
     },
     {
       icon: AlertTriangle,
@@ -79,7 +79,7 @@ export default function ExecutiveInsights({
       icon: Users,
       title: "Hiring Activity",
       description: `${openPositions} open positions across departments.`,
-      color: "text-blue-500",
+      color: "text-purple-500",
     },
   ];
 
@@ -109,7 +109,7 @@ export default function ExecutiveInsights({
               </p>
               <div className="flex items-center gap-2 mt-1">
                 <Progress value={confidenceScore} className="h-2" />
-                <span className="text-sm font-semibold text-indigo-600">
+                <span className="text-sm font-semibold text-purple-600">
                   {confidenceScore}%
                 </span>
               </div>

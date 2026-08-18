@@ -246,7 +246,7 @@ const getNextStatus = (task) => {
   const getStatusStyle = (status) => {
     switch (status) {
       case TASK_STATUS.DONE:        return "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800/50"
-      case TASK_STATUS.IN_PROGRESS: return "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800/50"
+      case TASK_STATUS.IN_PROGRESS: return "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800/50"
       case TASK_STATUS.TO_DO:       return "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
       default:                       return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
     }
@@ -256,7 +256,7 @@ const getNextStatus = (task) => {
     switch (priority?.toUpperCase()) {
       case "HIGH":   return "text-red-600 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800/50"
       case "MEDIUM": return "text-yellow-700 bg-yellow-50 border-yellow-200 dark:text-yellow-400 dark:bg-yellow-900/30 dark:border-yellow-800/50"
-      case "LOW":    return "text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-900/30 dark:border-blue-800/50"
+      case "LOW":    return "text-purple-600 bg-purple-50 border-purple-200 dark:text-purple-400 dark:bg-purple-900/30 dark:border-purple-800/50"
       default:        return "text-slate-600 bg-slate-50 border-slate-200 dark:text-slate-400 dark:bg-slate-900/30 dark:border-slate-800/50"
     }
   }
@@ -322,7 +322,7 @@ const getNextStatus = (task) => {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+          <div className="w-10 h-10 rounded-full border-2 border-purple-600 border-t-transparent animate-spin" />
           <p className="text-sm text-muted-foreground">Loading your tasks...</p>
         </div>
       </div>
@@ -546,70 +546,77 @@ const getNextStatus = (task) => {
                                 String(task.priority).slice(1).toLowerCase()
                                 : "Low"}
                             </span>
-                          </td>
+                          </div>
+                        </td>
 
-                          {/* STATUS */}
-                          <td className="px-5 py-4 align-middle">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
+                        <td className="px-5 py-4 align-middle">
+                          <span className="text-sm text-slate-600 dark:text-slate-300 font-semibold">
+                            {intData?.interviewerName || getAssignerName(task.assignedBy) || "Unknown"}
+                          </span>
+                        </td>
 
-                                const nextStatus = getNextStatus(task)
+                        <td className="px-5 py-4 align-middle">
+                          <span className={cn(
+                            "text-[10px] uppercase font-bold px-3 py-1 rounded-full",
+                            String(task.priority || "Low").toUpperCase() === "HIGH" ? "bg-red-50 text-red-500 dark:bg-red-900/20" :
+                            String(task.priority || "Low").toUpperCase() === "MEDIUM" ? "bg-amber-50 text-amber-500 dark:bg-amber-900/20" :
+                            "bg-purple-50 text-purple-500 dark:bg-purple-900/20"
+                          )}>
+                            {task.priority ? String(task.priority).charAt(0).toUpperCase() + String(task.priority).slice(1).toLowerCase() : "Low"}
+                          </span>
+                        </td>
 
-                                if (!nextStatus) {
-                                  toast.info("This task has no available status transition.")
-                                  return
-                                }
-
-                                openStatusDialog(task, nextStatus)
-                              }}
-                              className={cn(
-                                "flex items-center gap-1.5 px-3 py-1 rounded-full",
-                                "text-[11px] font-bold border border-transparent",
-                                "hover:border-slate-200 dark:hover:border-slate-700",
-                                "transition-colors",
-                                task.status === TASK_STATUS.DONE
-                                  ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                  : task.status === TASK_STATUS.IN_PROGRESS
-                                    ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                                    : "bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                              )}
-                            >
-                              <span
+                        <td className="px-5 py-4 align-middle">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                onClick={(e) => e.stopPropagation()}
                                 className={cn(
-                                  "w-1.5 h-1.5 rounded-full",
-                                  task.status === TASK_STATUS.DONE
-                                    ? "bg-green-500"
-                                    : task.status === TASK_STATUS.IN_PROGRESS
-                                      ? "bg-amber-500"
-                                      : "bg-slate-400"
+                                  "flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors",
+                                  task.status === TASK_STATUS.DONE ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                                  task.status === TASK_STATUS.IN_PROGRESS ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+                                  "bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
                                 )}
-                              />
+                              >
+                                <span className={cn(
+                                  "w-1.5 h-1.5 rounded-full",
+                                  task.status === TASK_STATUS.DONE ? "bg-green-500" :
+                                  task.status === TASK_STATUS.IN_PROGRESS ? "bg-amber-500" :
+                                  "bg-slate-400"
+                                )} />
+                                {STATUS_LABELS[task.status] ?? task.status}
+                                <ChevronDown className="w-3 h-3 ml-0.5 opacity-50" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                                <DropdownMenuItem 
+                                  key={val} 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (val !== task.status) {
+                                      openStatusDialog(task, val);
+                                    }
+                                  }}
+                                >
+                                  {label}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
 
-                              {STATUS_LABELS[task.status] ?? task.status}
+                        <td className="px-5 py-4 align-middle whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                          {task.createdAt ? formatDate(task.createdAt) : "06-08-2026"}
+                        </td>
 
-                              <ChevronDown className="w-3 h-3 ml-0.5 opacity-50" />
-                            </button>
-                          </td>
-
-                          {/* ASSIGNED */}
-                          <td className="px-5 py-4 align-middle whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                            {task.createdAt
-                              ? formatDate(task.createdAt)
-                              : "06-08-2026"}
-                          </td>
-
-                          {/* DUE */}
-                          <td className="px-5 py-4 align-middle whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                            {intData?.interviewDate
-                              ? formatDate(intData.interviewDate)
-                              : formatDate(task.dueDate)}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
+                        <td className="px-5 py-4 align-middle whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                          {intData?.interviewDate ? formatDate(intData.interviewDate) : formatDate(task.dueDate)}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
               </table>
             </div>
           )}
@@ -675,7 +682,7 @@ const getNextStatus = (task) => {
               <div>
                 <strong className="block text-muted-foreground mb-1">Meeting Link</strong>
                 {detailsDialog.intData.mode === 'Online' && detailsDialog.intData.meetingLink !== 'N/A' ? (
-                  <a href={detailsDialog.intData.meetingLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate block">
+                  <a href={detailsDialog.intData.meetingLink} target="_blank" rel="noopener noreferrer" className="text-purple-500 hover:underline truncate block">
                     {detailsDialog.intData.meetingLink}
                   </a>
                 ) : (

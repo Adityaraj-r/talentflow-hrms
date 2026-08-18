@@ -18,7 +18,7 @@ const passwordRules = [
 ]
 
 const strengthLabels = ["Very Weak", "Weak", "Medium", "Strong", "Very Strong"]
-const strengthColors = ["bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-blue-500", "bg-green-600"]
+const strengthColors = ["bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-purple-500", "bg-green-600"]
 
 const generateStrongPassword = (length = 16) => {
   const groups = [

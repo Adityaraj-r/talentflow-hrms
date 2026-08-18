@@ -164,7 +164,7 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
           <div className="p-6 space-y-5 overflow-y-auto flex-1">
             {loadingData ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                <Loader2 className="h-6 w-6 animate-spin text-purple-500" />
                 <span className="ml-2 text-sm text-gray-500">Loading employees and managers...</span>
               </div>
             ) : (
@@ -176,7 +176,7 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
                   <select
                     value={form.employeeId}
                     onChange={(e) => setForm((prev) => ({ ...prev, employeeId: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                     required
                   >
                     <option value="">-- Select an employee --</option>
@@ -199,7 +199,7 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
                   <select
                     value={form.reviewerId}
                     onChange={(e) => setForm((prev) => ({ ...prev, reviewerId: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                     required
                   >
                     <option value="">-- Select a manager/reviewer --</option>
@@ -240,12 +240,12 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
                       onChange={(e) => setNewCompetency(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCompetency(); } }}
                       placeholder="Add custom competency..."
-                      className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                     <button
                       type="button"
                       onClick={addCompetency}
-                      className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                     >
                       <Plus className="h-4 w-4" />
                     </button>
@@ -270,7 +270,7 @@ const AssignReviewModal = ({ isOpen, onClose, cycleId, cycleName, onSuccess }) =
             <button
               type="submit"
               disabled={submitting || loadingData}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>

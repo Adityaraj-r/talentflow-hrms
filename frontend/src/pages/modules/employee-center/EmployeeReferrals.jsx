@@ -21,6 +21,7 @@ import {
   ChevronDown,
   Sparkles,
   Info,
+  Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,9 +30,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { RecruitmentKpiCard, RecruitmentEmptyState } from "@/components/recruitment/RecruitmentUI";
-import ReferralProgressTracker from "@/components/recruitment/ReferralProgressTracker";
+import { RecruitmentEmptyState } from "@/components/recruitment/RecruitmentUI";
 import { Pagination } from "@/components/ui/pagination";
+import { StatsCard } from "@/components/ui/stats-card";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { RecruitmentKpiCard, RecruitmentEmptyState } from "@/components/recruitment/RecruitmentUI";
+import ReferralProgressDrawer from "@/components/recruitment/ReferralProgressDrawer";
 
 export default function EmployeeReferrals() {
   const [activeTab, setActiveTab] = useState("open-jobs");
@@ -47,10 +54,10 @@ export default function EmployeeReferrals() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState("all");
 
-  // Modals
+  // Modals & Drawer State
   const [selectedJobForDetail, setSelectedJobForDetail] = useState(null);
   const [selectedJobForReferral, setSelectedJobForReferral] = useState(null);
-  const [selectedReferralForTracker, setSelectedReferralForTracker] = useState(null);
+  const [selectedReferralForDrawer, setSelectedReferralForDrawer] = useState(null);
   const [isSubmittingReferral, setIsSubmittingReferral] = useState(false);
 
   // Referral Form State
@@ -182,15 +189,15 @@ export default function EmployeeReferrals() {
   }, [activeTab]);
 
   return (
-    <div className="space-y-6 max-w-full pb-10">
+    <div className="space-y-6 max-w-full pt-2 pb-10">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] flex items-center gap-3 text-2xl">
-            <UserPlus className="h-8 w-8 text-cyan-600 dark:text-cyan-400" />
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+            <UserPlus className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
             Employee Referral
           </h1>
-          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Refer talented candidates for open positions and track your referral status.
           </p>
         </div>
@@ -198,52 +205,53 @@ export default function EmployeeReferrals() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <RecruitmentKpiCard
+        <StatsCard
           title="Open Positions"
           value={totalOpen}
-          icon={Briefcase}
-          helper="Available for referral"
-          accent="sky"
-          active={activeTab === "open-jobs"}
+          icon={<Briefcase className="h-8 w-8" />}
+          variant="blue"
+          isActive={activeTab === "open-jobs"}
           onClick={() => setActiveTab("open-jobs")}
         />
-        <RecruitmentKpiCard
+        <StatsCard
           title="My Referrals"
           value={myTotalRef}
-          icon={Users}
-          helper="Total referred candidates"
-          accent="violet"
-          active={activeTab === "my-referrals"}
+          icon={<Users className="h-8 w-8" />}
+          variant="purple"
+          isActive={activeTab === "my-referrals"}
           onClick={() => setActiveTab("my-referrals")}
         />
-        <RecruitmentKpiCard
+        <StatsCard
           title="Pending Invitations"
           value={myPending}
-          icon={Clock}
+          icon={<Clock className="h-8 w-8" />}
+          variant="amber"
           helper="Awaiting candidate application"
           accent="amber"
+          onClick={() => setActiveTab("my-referrals")}
         />
-        <RecruitmentKpiCard
+        <StatsCard
           title="Successful Hires"
           value={myHired}
           icon={CheckCircle2}
           helper="Candidates hired via referral"
           accent="emerald"
+          onClick={() => setActiveTab("my-referrals")}
         />
       </div>
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full flex justify-start gap-6 bg-transparent border-b border-slate-200 dark:border-white/10 rounded-none h-auto p-0 mb-6">
+        <TabsList className="w-full flex justify-start gap-6 bg-transparent border-b border-slate-200 dark:border-slate-800 rounded-none h-auto p-0 mb-6">
           <TabsTrigger
             value="open-jobs"
-            className="cursor-pointer bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 rounded-none px-2 py-3 text-sm font-semibold text-slate-600 dark:text-slate-400 data-[state=active]:text-cyan-600 dark:data-[state=active]:text-cyan-400 transition-all"
+            className="cursor-pointer bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 dark:data-[state=active]:border-indigo-400 rounded-none px-2 py-3 text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 transition-all"
           >
             Open Positions ({openJobs.length})
           </TabsTrigger>
           <TabsTrigger
             value="my-referrals"
-            className="cursor-pointer bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-cyan-500 rounded-none px-2 py-3 text-sm font-semibold text-slate-600 dark:text-slate-400 data-[state=active]:text-cyan-600 dark:data-[state=active]:text-cyan-400 transition-all"
+            className="cursor-pointer bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-indigo-600 dark:data-[state=active]:border-indigo-400 rounded-none px-2 py-3 text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 transition-all"
           >
             My Referrals ({myReferrals.length})
           </TabsTrigger>
@@ -252,37 +260,38 @@ export default function EmployeeReferrals() {
         {/* Tab 1: Open Positions */}
         <TabsContent value="open-jobs" className="space-y-6">
           {/* Filters Bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
               <Input
                 placeholder="Search job title, department, or location..."
-                className="pl-9 h-10 border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900 text-xs md:text-sm font-medium"
+                className="pl-9 h-10 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850 text-xs md:text-sm font-medium"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
 
             <div className="flex items-center gap-3">
-              <select
-                value={selectedDept}
-                onChange={(e) => setSelectedDept(e.target.value)}
-                className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900 px-3 text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
-              >
-                <option value="all">All Departments</option>
-                {departmentsList.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
-                  </option>
-                ))}
-              </select>
+              <Select value={selectedDept} onValueChange={setSelectedDept}>
+                <SelectTrigger className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900 px-3 text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-primary w-[180px]">
+                  <SelectValue placeholder="All Departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departmentsList.map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           {/* Job Cards Grid */}
           {loadingJobs ? (
             <div className="flex justify-center items-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+              <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
             </div>
           ) : filteredJobs.length === 0 ? (
             <RecruitmentEmptyState
@@ -294,11 +303,11 @@ export default function EmployeeReferrals() {
               {filteredJobs.map((job) => (
                 <Card
                   key={job._id}
-                  className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 transition-all flex flex-col justify-between hover:shadow-md"
+                  className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 transition-all flex flex-col justify-between hover:shadow-md cursor-pointer"
                 >
                   <CardHeader className="p-5 pb-3">
                     <div className="flex justify-between items-start gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/20">
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/40">
                         {job.department || "General"}
                       </span>
                       <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
@@ -315,7 +324,7 @@ export default function EmployeeReferrals() {
                     </CardDescription>
                   </CardHeader>
 
-                  <CardContent className="px-5 py-3 space-y-2 text-xs text-slate-600 dark:text-slate-400 border-t border-b border-slate-100 dark:border-white/5 my-2">
+                  <CardContent className="px-5 py-3 space-y-2 text-xs text-slate-600 dark:text-slate-400 border-t border-b border-slate-100 dark:border-slate-800 my-2">
                     <div className="flex justify-between items-center">
                       <span className="font-medium text-slate-500">Experience:</span>
                       <span className="font-semibold text-slate-800 dark:text-slate-200">
@@ -342,14 +351,14 @@ export default function EmployeeReferrals() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 text-xs font-semibold"
+                      className="flex-1 text-xs font-semibold cursor-pointer"
                       onClick={() => setSelectedJobForDetail(job)}
                     >
                       <Eye className="mr-1.5 h-3.5 w-3.5" /> Details
                     </Button>
                     <Button
                       size="sm"
-                      className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-semibold cursor-pointer"
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer"
                       onClick={() => setSelectedJobForReferral(job)}
                     >
                       <Send className="mr-1.5 h-3.5 w-3.5" /> Refer Candidate
@@ -364,18 +373,18 @@ export default function EmployeeReferrals() {
         {/* Tab 2: My Referrals */}
         <TabsContent value="my-referrals">
           <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
-            <CardHeader className="p-5 border-b border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900/50">
+            <CardHeader className="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
               <CardTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">
                 My Referred Candidates
               </CardTitle>
               <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
-                Track the application progress of candidates you have referred.
+                Track candidate application progress, invitation statuses, and hiring stages.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               {loadingReferrals ? (
                 <div className="flex justify-center items-center py-16">
-                  <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+                  <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
                 </div>
               ) : myReferrals.length === 0 ? (
                 <div className="p-8">
@@ -385,98 +394,116 @@ export default function EmployeeReferrals() {
                   />
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs md:text-sm">
-                    <thead className="bg-slate-100/70 dark:bg-slate-900/80 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-white/10">
-                      <tr>
-                        <th className="p-4">Candidate</th>
-                        <th className="p-4">Position</th>
-                        <th className="p-4">Referral Date</th>
-                        <th className="p-4">Invitation Status</th>
-                        <th className="p-4">Application Progress</th>
-                        <th className="p-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-slate-700 dark:text-slate-300 font-medium">
-                      {paginatedMyReferrals.map((ref) => (
-                        <tr key={ref._id} className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors">
-                          <td className="p-4">
+                <DataTable
+                  columns={[
+                    {
+                      accessorKey: "candidate",
+                      header: "Candidate",
+                      cell: ({ row }) => {
+                        const ref = row.original;
+                        return (
+                          <div>
                             <div className="font-semibold text-slate-900 dark:text-slate-100">
                               {ref.candidateName}
                             </div>
                             <div className="text-xs text-slate-500 dark:text-slate-400">
                               {ref.candidateEmail}
                             </div>
-                          </td>
-                          <td className="p-4">
+                          </div>
+                        );
+                      }
+                    },
+                    {
+                      accessorKey: "position",
+                      header: "Position",
+                      cell: ({ row }) => {
+                        const ref = row.original;
+                        return (
+                          <div>
                             <div className="font-semibold text-slate-900 dark:text-slate-100">
                               {ref.jobTitle}
                             </div>
                             <div className="text-xs text-slate-500 dark:text-slate-400">
                               {ref.department}
                             </div>
-                          </td>
-                          <td className="p-4 text-slate-500 dark:text-slate-400">
-                            {new Date(ref.referralDate).toLocaleDateString()}
-                          </td>
-                          <td className="p-4">
-                            <span
-                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                                ref.status === "Invited"
-                                  ? "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20"
-                                  : ref.status === "Applied"
-                                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20"
-                                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
-                              }`}
-                            >
-                              {ref.status}
-                            </span>
-                          </td>
-                          <td className="p-4">
-                            <span
-                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                                ref.progress === "Hired"
-                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
-                                  : ref.progress === "Selected"
-                                  ? "bg-cyan-100 text-cyan-800 dark:bg-cyan-500/20 dark:text-cyan-300"
-                                  : ref.progress === "Not Selected"
-                                  ? "bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300"
-                                  : "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
-                              }`}
-                            >
-                              {ref.progress}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-cyan-600 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 text-xs font-semibold cursor-pointer"
-                              onClick={() => setSelectedReferralForTracker(ref)}
-                            >
-                              <Eye className="h-3.5 w-3.5 mr-1" /> Track Progress
-                            </Button>
+                          </div>
+                        );
+                      }
+                    },
+                    {
+                      accessorKey: "referralDate",
+                      header: "Referral Date",
+                      cell: ({ row }) => <span className="text-slate-500 dark:text-slate-400">{new Date(row.original.referralDate).toLocaleDateString()}</span>
+                    },
+                    {
+                      accessorKey: "status",
+                      header: "Invitation Status",
+                      cell: ({ row }) => {
+                        const ref = row.original;
+                        return (
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                              ref.status === "Invited"
+                                ? "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20"
+                                : ref.status === "Applied"
+                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20"
+                                : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                            }`}
+                          >
+                            {ref.status}
+                          </span>
+                        );
+                      }
+                    },
+                    {
+                      accessorKey: "progress",
+                      header: "Application Progress",
+                      cell: ({ row }) => {
+                        const ref = row.original;
+                        return (
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                              ref.progress === "Hired"
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                : ref.progress === "Selected"
+                                ? "bg-primary/20 text-primary dark:bg-primary/100/20 dark:text-primary"
+                                : ref.progress === "Not Selected"
+                                ? "bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300"
+                                : "bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-300"
+                            }`}
+                          >
+                            {ref.progress}
+                          </span>
+                        );
+                      }
+                    },
+                    {
+                      id: "actions",
+                      header: () => <div className="text-right">Actions</div>,
+                      cell: ({ row }) => {
+                        const ref = row.original;
+                        return (
+                          <div className="flex justify-end">
                             {ref.status === "Invited" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-xs font-semibold cursor-pointer"
+                              <ActionIcon
+                                icon={Trash2}
+                                tooltip="Cancel Referral"
                                 onClick={() => handleCancelReferral(ref._id)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5 mr-1" /> Cancel
-                              </Button>
+                              />
                             )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                          </div>
+                        );
+                      }
+                    }
+                  ]}
+                  data={paginatedMyReferrals}
+                  searchable={false}
+                />
               )}
             </CardContent>
             
             {myTotalRef > 0 && (
-              <div className="p-4 border-t border-slate-200 dark:border-white/10">
+              <div className="p-4 border-t border-slate-200 dark:border-slate-800">
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalMyReferralsPages}
@@ -496,7 +523,7 @@ export default function EmployeeReferrals() {
           <DialogContent className="max-w-2xl bg-white dark:bg-slate-950">
             <DialogHeader>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary dark:bg-primary/100/10 dark:text-primary">
                   {selectedJobForDetail.department}
                 </span>
                 <span className="text-xs text-slate-500">{selectedJobForDetail.employmentType}</span>
@@ -512,168 +539,133 @@ export default function EmployeeReferrals() {
             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 text-xs md:text-sm text-slate-700 dark:text-slate-300">
               {selectedJobForDetail.aboutRole && (
                 <div>
-                  <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-1">About the Role</h4>
-                  <p className="whitespace-pre-line text-slate-600 dark:text-slate-400">{selectedJobForDetail.aboutRole}</p>
+                  <span className="text-slate-500 font-medium">Min Experience:</span>
+                  <p className="font-semibold text-slate-900 dark:text-slate-100 mt-0.5">
+                    {selectedJobForDetail.minExperience ? `${selectedJobForDetail.minExperience}+ years` : "Open"}
+                  </p>
                 </div>
-              )}
-              {selectedJobForDetail.keyResponsibilities && (
                 <div>
-                  <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-1">Key Responsibilities</h4>
-                  <p className="whitespace-pre-line text-slate-600 dark:text-slate-400">{selectedJobForDetail.keyResponsibilities}</p>
+                  <span className="text-slate-500 font-medium">Positions Open:</span>
+                  <p className="font-semibold text-slate-900 dark:text-slate-100 mt-0.5">
+                    {selectedJobForDetail.positions || 1}
+                  </p>
+                </div>
+              </div>
+
+              {selectedJobForDetail.description && (
+                <div>
+                  <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-1">Job Description</h4>
+                  <p className="text-slate-600 dark:text-slate-300 whitespace-pre-line leading-relaxed">
+                    {selectedJobForDetail.description}
+                  </p>
                 </div>
               )}
-              {(() => {
-                const skillsData = selectedJobForDetail.requiredSkills || selectedJobForDetail.skills || selectedJobForDetail.qualifications;
-                const skillsList = Array.isArray(skillsData)
-                  ? skillsData.filter(Boolean)
-                  : typeof skillsData === "string" && skillsData.trim()
-                  ? skillsData.split(",").map((s) => s.trim()).filter(Boolean)
-                  : [];
+            </div>
+          )}
 
-                if (skillsList.length === 0) return null;
+          <DialogFooter className="border-t border-slate-100 dark:border-slate-800 pt-3">
+            <Button variant="outline" size="sm" className="text-xs cursor-pointer" onClick={() => setSelectedJobForDetail(null)}>
+              Close
+            </Button>
+            <Button
+              size="sm"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs cursor-pointer"
+              onClick={() => {
+                const job = selectedJobForDetail;
+                setSelectedJobForDetail(null);
+                setSelectedJobForReferral(job);
+              }}
+            >
+              <Send className="mr-1.5 h-3.5 w-3.5" /> Refer Candidate Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-                return (
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-1">Required Skills</h4>
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      {skillsList.map((skill, idx) => (
-                        <span key={idx} className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-medium">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
+      {/* Referral Submission Modal */}
+      <Dialog open={!!selectedJobForReferral} onOpenChange={() => setSelectedJobForReferral(null)}>
+        <DialogContent className="max-w-md p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl">
+          <DialogHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
+            <DialogTitle className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Send className="h-5 w-5 text-indigo-600" />
+              Refer Candidate for {selectedJobForReferral?.jobTitle}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Enter the candidate's details. An invitation email will be sent automatically.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleReferralSubmit} className="space-y-3.5 pt-2">
+            <div>
+              <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Candidate Name <span className="text-rose-500">*</span>
+              </Label>
+              <Input
+                placeholder="e.g. Rahul Sharma"
+                className="mt-1 h-9 text-xs"
+                value={referralForm.candidateName}
+                onChange={(e) => setReferralForm({ ...referralForm, candidateName: e.target.value })}
+                required
+              />
             </div>
 
-            <DialogFooter className="flex justify-between items-center pt-4 border-t">
-              <Button variant="outline" onClick={() => setSelectedJobForDetail(null)}>
-                Close
-              </Button>
-              <Button
-                className="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold cursor-pointer"
-                onClick={() => {
-                  const j = selectedJobForDetail;
-                  setSelectedJobForDetail(null);
-                  setSelectedJobForReferral(j);
-                }}
-              >
-                <Send className="mr-2 h-4 w-4" /> Refer Candidate
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+            <div>
+              <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Candidate Email <span className="text-rose-500">*</span>
+              </Label>
+              <Input
+                type="email"
+                placeholder="rahul@example.com"
+                className="mt-1 h-9 text-xs"
+                value={referralForm.candidateEmail}
+                onChange={(e) => setReferralForm({ ...referralForm, candidateEmail: e.target.value })}
+                required
+              />
+            </div>
 
-      {/* Modal 2: Refer Candidate Form */}
-      {selectedJobForReferral && (
-        <Dialog open={!!selectedJobForReferral} onOpenChange={() => setSelectedJobForReferral(null)}>
-          <DialogContent className="max-w-md bg-white dark:bg-slate-950">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-bold flex items-center gap-2">
-                <UserPlus className="h-5 w-5 text-cyan-600" /> Refer Candidate
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                Position: <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedJobForReferral.jobTitle}</span> ({selectedJobForReferral.department})
-              </DialogDescription>
-            </DialogHeader>
+            <div>
+              <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Candidate Phone <span className="text-rose-500">*</span>
+              </Label>
+              <Input
+                type="tel"
+                placeholder="+91 98765 43210"
+                className="mt-1 h-9 text-xs"
+                value={referralForm.candidatePhone}
+                onChange={(e) => setReferralForm({ ...referralForm, candidatePhone: e.target.value })}
+                required
+              />
+            </div>
 
-            <form onSubmit={handleReferralSubmit} className="space-y-4 text-xs md:text-sm">
-              <div className="space-y-1.5">
-                <Label htmlFor="candidateName">Candidate Name <span className="text-rose-500">*</span></Label>
-                <Input
-                  id="candidateName"
-                  placeholder="e.g. Rahul Sharma"
-                  value={referralForm.candidateName}
-                  onChange={(e) => setReferralForm({ ...referralForm, candidateName: e.target.value })}
-                  required
-                />
-              </div>
+            <div>
+              <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Relationship</Label>
+              <Input
+                placeholder="e.g. Former Colleague, Friend, College Alumni"
+                className="mt-1 h-9 text-xs"
+                value={referralForm.relationship}
+                onChange={(e) => setReferralForm({ ...referralForm, relationship: e.target.value })}
+              />
+            </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="candidateEmail">Candidate Email <span className="text-rose-500">*</span></Label>
-                <Input
-                  id="candidateEmail"
-                  type="email"
-                  placeholder="candidate@example.com"
-                  value={referralForm.candidateEmail}
-                  onChange={(e) => setReferralForm({ ...referralForm, candidateEmail: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="candidatePhone">Candidate Phone <span className="text-rose-500">*</span></Label>
-                <Input
-                  id="candidatePhone"
-                  type="tel"
-                  placeholder="+91 9876543210"
-                  value={referralForm.candidatePhone}
-                  onChange={(e) => setReferralForm({ ...referralForm, candidatePhone: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="relationship">How do you know this candidate?</Label>
-                <Input
-                  id="relationship"
-                  placeholder="e.g. Ex-Colleague at XYZ, University Alumnus"
-                  value={referralForm.relationship}
-                  onChange={(e) => setReferralForm({ ...referralForm, relationship: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="referralNote">Referral Note / Recommendation</Label>
-                <Textarea
-                  id="referralNote"
-                  placeholder="Why is this candidate a good fit for this role?"
-                  rows={3}
-                  value={referralForm.referralNote}
-                  onChange={(e) => setReferralForm({ ...referralForm, referralNote: e.target.value })}
-                />
-              </div>
+            <div>
+              <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Referral Note</Label>
+              <Textarea
+                placeholder="Why do you recommend this candidate? Highlight key skills..."
+                className="mt-1 text-xs min-h-[70px]"
+                value={referralForm.referralNote}
+                onChange={(e) => setReferralForm({ ...referralForm, referralNote: e.target.value })}
+              />
+            </div>
 
               <DialogFooter className="pt-3">
                 <Button variant="outline" type="button" onClick={() => setSelectedJobForReferral(null)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSubmittingReferral} className="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold cursor-pointer">
+                <Button type="submit" disabled={isSubmittingReferral} className="bg-primary hover:bg-primary/90 text-white font-semibold cursor-pointer">
                   {isSubmittingReferral ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />} Send Referral Link
                 </Button>
               </DialogFooter>
             </form>
-          </DialogContent>
-        </Dialog>
-      )}
-      {/* Modal 3: Referral Progress Tracker Modal */}
-      {selectedReferralForTracker && (
-        <Dialog open={!!selectedReferralForTracker} onOpenChange={() => setSelectedReferralForTracker(null)}>
-          <DialogContent className="max-w-3xl bg-white dark:bg-slate-950 p-6">
-            <DialogHeader className="pb-2 border-b">
-              <DialogTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-cyan-600" /> Live Referral Progress Tracker
-              </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                Track recruitment stage updates for your referred candidate.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="py-2">
-              <ReferralProgressTracker
-                referral={selectedReferralForTracker}
-                application={selectedReferralForTracker.applicationId || {}}
-                reward={selectedReferralForTracker.rewardId}
-              />
-            </div>
-
-            <DialogFooter className="border-t pt-3">
-              <Button variant="outline" size="sm" onClick={() => setSelectedReferralForTracker(null)}>
-                Close
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}

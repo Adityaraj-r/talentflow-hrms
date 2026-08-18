@@ -11,8 +11,8 @@ export const StatsCard = ({
 }) => {
   const styles = {
     blue: {
-      iconBg: "bg-blue-50 dark:bg-blue-900/30",
-      icon: "text-blue-600 dark:text-blue-400",
+      iconBg: "bg-purple-50 dark:bg-purple-900/30",
+      icon: "text-purple-600 dark:text-purple-400",
     },
     amber: {
       iconBg: "bg-amber-50 dark:bg-amber-900/30",
@@ -31,8 +31,8 @@ export const StatsCard = ({
       icon: "text-purple-600 dark:text-purple-400",
     },
     indigo: {
-      iconBg: "bg-indigo-50 dark:bg-indigo-900/30",
-      icon: "text-indigo-600 dark:text-indigo-400",
+      iconBg: "bg-purple-50 dark:bg-purple-900/30",
+      icon: "text-purple-600 dark:text-purple-400",
     },
     slate: {
       iconBg: "bg-slate-50 dark:bg-slate-800",

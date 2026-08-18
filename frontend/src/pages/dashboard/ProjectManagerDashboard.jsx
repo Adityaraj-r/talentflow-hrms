@@ -26,7 +26,7 @@ const ProjectManagerDashboard = () => {
   };
 
   const stats = [
-    { title: "Total Projects", value: "24", icon: <ClipboardList className="h-5 w-5" />, color: "text-blue-600", bg: "bg-blue-50 border-blue-100" },
+    { title: "Total Projects", value: "24", icon: <ClipboardList className="h-5 w-5" />, color: "text-purple-600", bg: "bg-purple-50 border-purple-100" },
     { title: "Team Members", value: "156", icon: <Users className="h-5 w-5" />, color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-100" },
     { title: "Pending Tasks", value: "42", icon: <Clock className="h-5 w-5" />, color: "text-amber-600", bg: "bg-amber-50 border-amber-100" },
     { title: "Critical Issues", value: "3", icon: <AlertTriangle className="h-5 w-5" />, color: "text-rose-600", bg: "bg-rose-50 border-rose-100" }
@@ -34,7 +34,7 @@ const ProjectManagerDashboard = () => {
 
   const recentProjects = [
     { name: "Pipeline Expansion - Phase 2", progress: 75, status: "On Track", team: 12, color: "bg-emerald-500" },
-    { name: "Refinery Safety Audit", progress: 45, status: "In Progress", team: 8, color: "bg-blue-500" },
+    { name: "Refinery Safety Audit", progress: 45, status: "In Progress", team: 8, color: "bg-purple-500" },
     { name: "Equipment Modernization", progress: 90, status: "Near Complete", team: 15, color: "bg-purple-500" },
   ];
 
@@ -208,17 +208,17 @@ const ProjectManagerDashboard = () => {
                     </div>
                 </div>
 
-                <div className="p-4 rounded-[16px] border border-blue-100 bg-blue-50 cursor-pointer hover:shadow-sm transition-all group">
+                <div className="p-4 rounded-[16px] border border-purple-100 bg-purple-50 cursor-pointer hover:shadow-sm transition-all group">
                     <div className="flex gap-3">
                         <div className="shrink-0 mt-0.5">
-                            <TrendingUp className="w-5 h-5 text-blue-600" />
+                            <TrendingUp className="w-5 h-5 text-purple-600" />
                         </div>
                         <div>
                             <h4 className="text-[13px] font-bold text-slate-900">Milestone Due</h4>
                             <p className="text-[13px] text-slate-500 mt-1 leading-relaxed">
                                 Phase 2 delivery is scheduled for this Friday.
                             </p>
-                            <span className="text-blue-600 text-xs font-semibold flex items-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-purple-600 text-xs font-semibold flex items-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 View Milestone <ArrowUpRight className="w-3 h-3 ml-1" />
                             </span>
                         </div>

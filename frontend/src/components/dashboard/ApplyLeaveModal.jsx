@@ -59,7 +59,7 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess }) => {
               name="leaveType"
               value={formData.leaveType}
               onChange={handleChange}
-              className="w-full p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500"
+              className="w-full p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-purple-500"
             >
               <option value="Annual">Annual Leave</option>
               <option value="Sick">Sick Leave</option>
@@ -110,7 +110,7 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess }) => {
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={loading}>
+            <Button type="submit" className="bg-purple-600 hover:bg-purple-700" disabled={loading}>
               {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Applying...</> : "Submit Request"}
             </Button>
           </div>

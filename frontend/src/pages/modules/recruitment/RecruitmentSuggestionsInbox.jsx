@@ -13,6 +13,7 @@ import {
 } from "@/services/recruitmentSuggestionService"
 import { Navigate } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
+import { DataTable } from "@/components/ui/data-table"
 export default function RecruitmentSuggestionsInbox() {
   const { user } = useUser()
   const rawRole = typeof user?.role === "string" ? user.role : user?.role?.name
@@ -93,63 +94,74 @@ export default function RecruitmentSuggestionsInbox() {
           <CardTitle>Inbox</CardTitle>
           <CardDescription>Open items first; newest at top.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No suggestions.</p>
+            <div className="p-6 text-sm text-muted-foreground">Loading…</div>
           ) : (
-            <ul className="space-y-4">
-              {items.map((s) => (
-                <li key={s._id} className="rounded-lg border p-4 space-y-2">
-                  <div className="flex flex-wrap gap-2 items-center justify-between">
-                    <span className="font-semibold">{s.subject}</span>
-                    <Badge variant={s.status === "open" ? "default" : "secondary"}>{s.status}</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {s.contextType}
-                    {s.contextRef ? ` · ${s.contextRef}` : ""}
-                  </p>
-                  <p className="text-sm whitespace-pre-wrap">{s.message}</p>
-                  <p className="text-xs text-muted-foreground">
-                    From:{" "}
-                    {s.createdBy?.firstName
-                      ? `${s.createdBy.firstName} ${s.createdBy.lastName || ""} (${s.createdBy.email})`
-                      : "Admin"}
-                    {" · "}
-                    {s.createdAt && new Date(s.createdAt).toLocaleString()}
-                  </p>
-                  {canAck && s.status === "open" && (
-                    <div className="space-y-2 pt-2 border-t">
-                      <Label htmlFor={`note-${s._id}`}>HR note (optional)</Label>
-                      <Textarea
-                        id={`note-${s._id}`}
-                        rows={2}
-                        value={notes[s._id] || ""}
-                        onChange={(e) =>
-                          setNotes((prev) => ({ ...prev, [s._id]: e.target.value }))
-                        }
-                        placeholder="Internal note or reply summary"
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" type="button" onClick={() => onAck(s._id)}>
-                          Acknowledge
-                        </Button>
-                        <Button size="sm" type="button" variant="outline" onClick={() => onClose(s._id)}>
-                          Close
-                        </Button>
+            <div className="p-4">
+              <DataTable 
+                data={items}
+                columns={[
+                  {
+                    accessorKey: "subject",
+                    header: "Subject",
+                    cell: ({ row }) => <span className="font-semibold">{row.original.subject}</span>
+                  },
+                  {
+                    accessorKey: "status",
+                    header: "Status",
+                    cell: ({ row }) => <Badge variant={row.original.status === "open" ? "default" : "secondary"}>{row.original.status}</Badge>
+                  },
+                  {
+                    accessorKey: "contextType",
+                    header: "Context",
+                    cell: ({ row }) => (
+                      <span className="text-xs text-muted-foreground">
+                        {row.original.contextType}
+                        {row.original.contextRef ? ` · ${row.original.contextRef}` : ""}
+                      </span>
+                    )
+                  },
+                  {
+                    accessorKey: "message",
+                    header: "Message",
+                    cell: ({ row }) => (
+                      <div className="max-w-[300px]">
+                        <p className="text-sm whitespace-pre-wrap">{row.original.message}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          From: {row.original.createdBy?.firstName ? `${row.original.createdBy.firstName} ${row.original.createdBy.lastName || ""}` : "Admin"}
+                        </p>
                       </div>
-                    </div>
-                  )}
-                  {s.hrNote && (
-                    <p className="text-xs border-t pt-2">
-                      <span className="font-medium">Note: </span>
-                      {s.hrNote}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
+                    )
+                  },
+                  {
+                    id: "actions",
+                    header: "Actions",
+                    cell: ({ row }) => {
+                      const s = row.original;
+                      if (!canAck || s.status !== "open") {
+                        return s.hrNote ? <span className="text-xs font-medium">Note: {s.hrNote}</span> : null;
+                      }
+                      return (
+                        <div className="space-y-2 min-w-[200px]">
+                          <Textarea
+                            rows={1}
+                            value={notes[s._id] || ""}
+                            onChange={(e) => setNotes((prev) => ({ ...prev, [s._id]: e.target.value }))}
+                            placeholder="Internal note"
+                            className="h-8 min-h-[32px] text-xs"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" className="h-7 text-xs" onClick={() => onAck(s._id)}>Ack</Button>
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onClose(s._id)}>Close</Button>
+                          </div>
+                        </div>
+                      );
+                    }
+                  }
+                ]}
+              />
+            </div>
           )}
         </CardContent>
       </Card>

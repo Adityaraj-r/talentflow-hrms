@@ -13,12 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Pagination } from "@/components/ui/pagination";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
 
 const POLICY_TYPES = ['PF_RATE', 'ESI_RATE', 'PT_SLAB', 'TAX_SLAB'];
 
 const POLICY_TYPE_META = {
-  PF_RATE:   { label: 'Provident Fund', icon: Percent,  color: 'text-blue-600 bg-blue-50 dark:bg-blue-950' },
+  PF_RATE:   { label: 'Provident Fund', icon: Percent,  color: 'text-purple-600 bg-purple-50 dark:bg-purple-950' },
   ESI_RATE:  { label: 'ESI',            icon: Percent,  color: 'text-purple-600 bg-purple-50 dark:bg-purple-950' },
   PT_SLAB:   { label: 'Professional Tax', icon: MapPin, color: 'text-amber-600 bg-amber-50 dark:bg-amber-950' },
   TAX_SLAB:  { label: 'Income Tax',     icon: Receipt,  color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950' },
@@ -467,115 +468,114 @@ const PayrollPolicyManagement = () => {
                                 No policies yet. Create one to get started.
                             </p>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm min-w-[880px]">
-                                    <thead className="sticky top-0 bg-gray-50 dark:bg-gray-900 z-10">
-                                        <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
-                                            <th className="py-3 px-4 text-centre">Version</th>
-                                            <th className="py-3 px-4 text-centre">Policy</th>
-                                            <th className="py-3 px-4 text-centre">Effective Period</th>
-                                            <th className="py-3 px-4 text-centre">Status</th>
-                                            <th className="py-3 px-4 text-centre">Note</th>
-                                            <th className="py-3 px-4 text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {policies.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((p) => {
+                            <DataTable
+                                columns={[
+                                    {
+                                        accessorKey: "policyType",
+                                        header: "Policy",
+                                        cell: ({ row }) => {
+                                            const p = row.original;
                                             const meta = POLICY_TYPE_META[p.policyType] || {};
                                             const TypeIcon = meta.icon || Landmark;
                                             return (
-                                                <tr
-                                                    key={p._id}
-                                                    className={`border-b hover:bg-accent/40 transition-colors ${p.isActive ? 'border-l-2 border-l-emerald-500' : ''}`}
-                                                >
-                                                    <td className="py-3 px-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <span className={`flex h-9 w-9 items-center justify-center rounded-lg shrink-0 ${meta.color || 'bg-gray-100 text-gray-500'}`}>
-                                                                <TypeIcon className="h-4 w-4" />
-                                                            </span>
-                                                            <div>
-                                                                <p className="font-medium leading-tight">{meta.label || p.policyType}</p>
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    {p.policyType}{p.state ? ` · ${p.state}` : ''}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-3 px-4">
-                                                        <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 font-mono text-xs">
-                                                            v{p.version}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">
-                                                        {new Date(p.effectiveFrom).toLocaleDateString()}
-                                                        <span className="text-muted-foreground mx-1">→</span>
-                                                        {p.effectiveTo ? new Date(p.effectiveTo).toLocaleDateString() : (
-                                                            <span className="text-muted-foreground">Ongoing</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="py-3 px-4">
-                                                        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${p.isActive
-                                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
-                                                                : 'bg-gray-100 text-gray-500 dark:bg-gray-800'
-                                                            }`}
-                                                        >
-                                                            <span className={`h-1.5 w-1.5 rounded-full ${p.isActive ? 'bg-emerald-500' : 'bg-gray-400'}`} />
-                                                            {p.isActive ? 'Active' : 'Inactive'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-3 px-4 text-muted-foreground max-w-[220px] truncate" title={p.changeNote || ''}>
-                                                        {p.changeNote || '—'}
-                                                    </td>
-                                                    <td className="py-3 px-4">
-                                                        <div className="flex justify-end gap-1">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => handleViewPolicy(p)}
-                                                                className="h-8 w-8 cursor-pointer"
-                                                                title="View details"
-                                                            >
-                                                                <Eye className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => handleEdit(p)}
-                                                                className="h-8 w-8 cursor-pointer"
-                                                                title="Edit"
-                                                            >
-                                                                <Pencil className="h-4 w-4" />
-                                                            </Button>
-                                                            {p.isActive && (
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() => handleDeactivate(p._id)}
-                                                                    className="h-8 w-8 cursor-pointer text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                                                                    title="Deactivate"
-                                                                >
-                                                                    <Ban className="h-4 w-4" />
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                </tr>
+                                                <div className="flex items-center gap-3">
+                                                    <span className={`flex h-9 w-9 items-center justify-center rounded-lg shrink-0 ${meta.color || 'bg-gray-100 text-gray-500'}`}>
+                                                        <TypeIcon className="h-4 w-4" />
+                                                    </span>
+                                                    <div>
+                                                        <p className="font-medium leading-tight">{meta.label || p.policyType}</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {p.policyType}{p.state ? ` · ${p.state}` : ''}
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                        {policies.length > 0 && (
-                            <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-                                <Pagination
-                                    currentPage={currentPage}
-                                    totalPages={Math.ceil(policies.length / itemsPerPage) || 1}
-                                    totalItems={policies.length}
-                                    itemsPerPage={itemsPerPage}
-                                    onPageChange={(page) => setCurrentPage(page)}
-                                />
-                            </div>
+                                        }
+                                    },
+                                    {
+                                        accessorKey: "version",
+                                        header: "Version",
+                                        cell: ({ row }) => (
+                                            <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 font-mono text-xs">
+                                                v{row.original.version}
+                                            </span>
+                                        )
+                                    },
+                                    {
+                                        accessorKey: "effectiveFrom",
+                                        header: "Effective Period",
+                                        cell: ({ row }) => {
+                                            const p = row.original;
+                                            return (
+                                                <div className="font-mono text-xs whitespace-nowrap">
+                                                    {new Date(p.effectiveFrom).toLocaleDateString()}
+                                                    <span className="text-muted-foreground mx-1">→</span>
+                                                    {p.effectiveTo ? new Date(p.effectiveTo).toLocaleDateString() : (
+                                                        <span className="text-muted-foreground">Ongoing</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+                                    },
+                                    {
+                                        accessorKey: "isActive",
+                                        header: "Status",
+                                        cell: ({ row }) => {
+                                            const p = row.original;
+                                            return (
+                                                <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${p.isActive
+                                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
+                                                        : 'bg-gray-100 text-gray-500 dark:bg-gray-800'
+                                                    }`}
+                                                >
+                                                    <span className={`h-1.5 w-1.5 rounded-full ${p.isActive ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                                                    {p.isActive ? 'Active' : 'Inactive'}
+                                                </span>
+                                            );
+                                        }
+                                    },
+                                    {
+                                        accessorKey: "changeNote",
+                                        header: "Note",
+                                        cell: ({ row }) => (
+                                            <div className="text-muted-foreground max-w-[220px] truncate" title={row.original.changeNote || ''}>
+                                                {row.original.changeNote || '—'}
+                                            </div>
+                                        )
+                                    },
+                                    {
+                                        id: "actions",
+                                        header: () => <div className="text-right">Actions</div>,
+                                        cell: ({ row }) => {
+                                            const p = row.original;
+                                            return (
+                                                <div className="flex justify-end gap-1">
+                                                    <ActionIcon
+                                                        icon={Eye}
+                                                        tooltip="View details"
+                                                        onClick={() => handleViewPolicy(p)}
+                                                    />
+                                                    <ActionIcon
+                                                        icon={Pencil}
+                                                        tooltip="Edit"
+                                                        onClick={() => handleEdit(p)}
+                                                    />
+                                                    {p.isActive && (
+                                                        <ActionIcon
+                                                            icon={Ban}
+                                                            tooltip="Deactivate"
+                                                            onClick={() => handleDeactivate(p._id)}
+                                                        />
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+                                    }
+                                ]}
+                                data={policies}
+                                searchable={false}
+                                defaultPageSize={itemsPerPage}
+                            />
                         )}
                     </CardContent>
                 </Card>

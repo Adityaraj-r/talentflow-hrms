@@ -4,6 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useUser } from "@/contexts/UserContext";
 import holidayService from "@/services/holidayService";
 import { toast } from "sonner";
@@ -103,6 +112,69 @@ const HolidayManagement = () => {
     const getMonth = (dateStr) => new Date(dateStr).toLocaleString('default', { month: 'short' });
     const getDay = (dateStr) => new Date(dateStr).getDate();
 
+    const columns = [
+        {
+            accessorKey: "dateDisplay",
+            header: "Date",
+            cell: ({ row }) => {
+                const holiday = row.original;
+                return (
+                    <div className="flex items-center gap-4">
+                        <div className="flex flex-col items-center justify-center w-14 h-14 bg-primary/10 rounded-lg text-primary border border-primary/20">
+                            <span className="text-[10px] font-bold uppercase tracking-wider">{getMonth(holiday.date)}</span>
+                            <span className="text-xl font-bold leading-none">{getDay(holiday.date)}</span>
+                        </div>
+                        <div>
+                            <span className="text-xs text-muted-foreground">{formatDate(holiday.date)}</span>
+                        </div>
+                    </div>
+                );
+            }
+        },
+        {
+            accessorKey: "name",
+            header: "Holiday Name",
+            cell: ({ row }) => (
+                <h4 className="font-semibold text-slate-900 dark:text-white text-base">{row.original.name}</h4>
+            )
+        },
+        {
+            accessorKey: "type",
+            header: "Type",
+            cell: ({ row }) => (
+                <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-normal bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700">
+                    {row.original.type}
+                </Badge>
+            )
+        }
+    ];
+
+    if (isAdmin) {
+        columns.push({
+            id: "actions",
+            header: () => <div className="text-right">Actions</div>,
+            cell: ({ row }) => {
+                const holiday = row.original;
+                return (
+                    <div className="text-right flex justify-end gap-2">
+                        <ActionIcon
+                            icon={Pencil}
+                            tooltip="Edit"
+                            onClick={() => handleEdit(holiday)}
+                            className="text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                        />
+                        <ActionIcon
+                            icon={Trash2}
+                            tooltip="Delete"
+                            onClick={() => handleDelete(holiday._id)}
+                            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        />
+                    </div>
+                );
+            }
+        });
+    }
+
     return (
         <div className="space-y-6 max-w-full pb-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -118,7 +190,7 @@ const HolidayManagement = () => {
                         <Card className="sticky top-6 border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Plus className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                                    <Plus className="w-5 h-5 text-primary" />
                                     {editingId ? "Edit Holiday" : "Add Holiday"}
                                 </CardTitle>
                                 <CardDescription>
@@ -154,20 +226,23 @@ const HolidayManagement = () => {
 
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">Type</label>
-                                        <select
-                                            name="type"
-                                            className="w-full p-2 border rounded-lg bg-transparent text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                        <Select
                                             value={formData.type}
-                                            onChange={handleChange}
+                                            onValueChange={(val) => setFormData({ ...formData, type: val })}
                                         >
-                                            <option className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white" value="National">National</option>
-                                            <option className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white" value="Regional">Regional</option>
-                                            <option className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white" value="Company">Company</option>
-                                        </select>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Select type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="National">National</SelectItem>
+                                                <SelectItem value="Regional">Regional</SelectItem>
+                                                <SelectItem value="Company">Company</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
 
                                     <div className="flex gap-2 mt-2">
-                                        <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white">
+                                        <Button type="submit" className="flex-1">
                                             {editingId ? "Update Calendar" : "Add to Calendar"}
                                         </Button>
                                         {editingId && (
@@ -194,55 +269,13 @@ const HolidayManagement = () => {
                                         <Skeleton key={i} className="h-20 w-full rounded-lg" />
                                     ))}
                                 </div>
-                            ) : holidays.length === 0 ? (
-                                <p className="text-muted-foreground text-center py-8">No holidays found. Add one to populate the calendar.</p>
                             ) : (
-                                <div className="space-y-3">
-                                    {holidays.map((holiday) => (
-                                        <div
-                                            key={holiday._id}
-                                            className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className="flex flex-col items-center justify-center w-14 h-14 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-700 dark:text-indigo-400 border border-blue-100 dark:border-blue-800">
-                                                    <span className="text-[10px] font-bold uppercase tracking-wider">{getMonth(holiday.date)}</span>
-                                                    <span className="text-xl font-bold leading-none">{getDay(holiday.date)}</span>
-                                                </div>
-
-                                                <div>
-                                                    <h4 className="font-semibold text-slate-900 dark:text-white text-base">{holiday.name}</h4>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className="text-xs text-muted-foreground">{formatDate(holiday.date)}</span>
-                                                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-normal bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700">
-                                                            {holiday.type}
-                                                        </Badge>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {isAdmin && (
-                                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => handleEdit(holiday)}
-                                                        className="text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                                                    >
-                                                        <Pencil className="w-4 h-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => handleDelete(holiday._id)}
-                                                        className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </Button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
+                                <DataTable
+                                    columns={columns}
+                                    data={holidays}
+                                    searchable={false}
+                                    defaultPageSize={10}
+                                />
                             )}
                         </CardContent>
                     </Card>

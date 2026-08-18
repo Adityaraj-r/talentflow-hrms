@@ -621,7 +621,7 @@ const PendingRequisitions = ({ onChanged, externalFilter }) => {
     switch (status?.toLowerCase()) {
       case "approved": return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
       case "rejected": return "bg-red-500/10 text-red-600 dark:text-red-400"
-      case "published": return "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+      case "published": return "bg-purple-500/10 text-primary"
       case "draft": return "bg-slate-500/10 text-slate-600 dark:text-slate-400"
       default: return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
     }
@@ -843,9 +843,7 @@ const PendingRequisitions = ({ onChanged, externalFilter }) => {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-3 border-t border-border/50">
-                  <Button variant="outline" size="sm" className="h-8 px-3 rounded-lg flex-1" onClick={() => { setSelectedReq(req); setIsDetailsOpen(true); }}>
-                    <Eye className="h-4 w-4 mr-2" /> View
-                  </Button>
+                  <Button variant="outline" size="sm" className="h-8 px-3 rounded-lg flex-1" onClick={() => { setSelectedReq(req); setIsDetailsOpen(true); }}> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
                   {canApprove && (
                     <>
                       <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-lg text-emerald-600 border-emerald-600/20 bg-emerald-500/5 hover:bg-emerald-500/10" onClick={() => { setActionStatus('Approved'); setSelectedReq(req); setIsDetailsOpen(true); }}>
@@ -1036,7 +1034,7 @@ const RequisitionHistory = ({ externalFilter }) => {
     switch (status?.toLowerCase()) {
       case "approved": return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
       case "rejected": return "bg-red-500/10 text-red-600 dark:text-red-400"
-      case "published": return "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+      case "published": return "bg-purple-500/10 text-primary"
       case "draft": return "bg-slate-500/10 text-slate-600 dark:text-slate-400"
       default: return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
     }

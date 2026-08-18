@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Search, Loader2, Eye, CheckCircle2, XCircle, Clock, Download } from "lucide-react";
+import { FileText, Search, Loader2, Eye, CheckCircle2, XCircle, Clock, Download, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "@/services/apiClient";
 import { UploadedDocumentsModal, DocumentPreviewDialog, getAttachments, getFileUrl, forceCloudinaryDownload, getFileName, formatFileSize, downloadFile } from "@/components/ui/DocumentViewer";
@@ -190,7 +190,7 @@ const DocumentRequests = () => {
         {list.map((type, idx) => (
           <span
             key={idx}
-            className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-blue-100 dark:border-blue-800/40"
+            className="bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-purple-100 dark:border-purple-800/40"
           >
             {type}
           </span>
@@ -277,27 +277,18 @@ const DocumentRequests = () => {
                               <Button 
                                 variant="outline" 
                                 size="sm" 
-                                className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                onClick={() => handleOpenViewDetails(req)}
-                              >
-                                View
-                              </Button>
+                                className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                onClick={() => handleOpenViewDetails(req)}> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
                               <Button 
                                 variant="outline" 
                                 size="sm" 
                                 className="h-8 px-3 text-xs font-semibold bg-green-50 hover:bg-green-100 border-green-200 text-green-700 dark:bg-green-950/20 dark:border-green-900/40 dark:text-green-400 dark:hover:bg-green-900/40 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                onClick={() => handleOpenApprove(req)}
-                              >
-                                Approve
-                              </Button>
+                                onClick={() => handleOpenApprove(req)}> <span title="Approve" className="flex items-center justify-center w-full h-full text-emerald-600 hover:text-emerald-700"><Check className="h-4 w-4" /><span className="sr-only">Approve</span></span></Button>
                               <Button 
                                 variant="outline" 
                                 size="sm" 
                                 className="h-8 px-3 text-xs font-semibold bg-red-50 hover:bg-red-100 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/40 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-red-500 focus:outline-none"
-                                onClick={() => handleOpenReject(req)}
-                              >
-                                Reject
-                              </Button>
+                                onClick={() => handleOpenReject(req)}> <span title="Reject" className="flex items-center justify-center w-full h-full text-rose-600 hover:text-rose-700"><X className="h-4 w-4" /><span className="sr-only">Reject</span></span></Button>
                             </div>
                           </td>
                         </tr>
@@ -367,7 +358,7 @@ const DocumentRequests = () => {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      className="h-8 px-2.5 text-xs font-semibold flex items-center gap-1.5 border-indigo-200 bg-indigo-50/55 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/40 dark:text-indigo-400 dark:hover:bg-indigo-900/40 text-indigo-700 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                      className="h-8 px-2.5 text-xs font-semibold flex items-center gap-1.5 border-purple-200 bg-purple-50/55 hover:bg-purple-100 dark:bg-purple-950/20 dark:border-purple-900/40 dark:text-purple-400 dark:hover:bg-purple-900/40 text-purple-700 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-purple-500 focus:outline-none"
                                       onClick={() => {
                                         setActiveReqAttachments(req);
                                         setAttachmentsModalOpen(true);
@@ -388,7 +379,7 @@ const DocumentRequests = () => {
                               <Button 
                                 variant="outline" 
                                 size="sm" 
-                                className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm hover:shadow-md focus:ring-2 focus:ring-purple-500 focus:outline-none"
                                 onClick={() => handleOpenViewDetails(req)}
                               >
                                 View Details
@@ -474,7 +465,7 @@ const DocumentRequests = () => {
                       {getAttachments(selectedReq).map((doc, idx) => (
                         <div key={idx} className="flex items-center justify-between gap-4 p-3 border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50/55 dark:bg-slate-900/30 transition-colors hover:border-slate-300 dark:hover:border-slate-700">
                           <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="p-2.5 bg-indigo-500/10 text-indigo-505 dark:text-indigo-400 rounded-lg shrink-0">
+                            <div className="p-2.5 bg-purple-500/10 text-purple-505 dark:text-purple-400 rounded-lg shrink-0">
                               <FileText className="h-5 w-5" />
                             </div>
                             <div className="flex flex-col min-w-0 text-left justify-center">
@@ -492,18 +483,12 @@ const DocumentRequests = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                              onClick={() => setPreviewDoc(doc)}
-                            >
-                              <Eye className="h-3.5 w-3.5 mr-1" /> View
-                            </Button>
+                              className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                              onClick={() => setPreviewDoc(doc)}> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
                             <Button
                               size="sm"
                               className="h-8 px-3 text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-150 shadow-sm focus:ring-2 focus:ring-green-500 focus:outline-none flex items-center gap-1"
-                              onClick={() => downloadFile(doc)}
-                            >
-                              <Download className="h-3.5 w-3.5 mr-1" /> Download
-                            </Button>
+                              onClick={() => downloadFile(doc)}> <span title="Download" className="flex items-center justify-center w-full h-full "><Download className="h-4 w-4" /><span className="sr-only">Download</span></span></Button>
                           </div>
                         </div>
                       ))}
@@ -561,7 +546,7 @@ const DocumentRequests = () => {
                     multiple
                     ref={fileInputRef}
                     onChange={handleFileChange}
-                    className={uploadFiles.length > 0 ? "sr-only" : "h-12 w-full cursor-pointer rounded-lg border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-colors file:mr-4 file:h-8 file:rounded-md file:border-0 file:bg-slate-100 file:px-4 file:text-sm file:font-semibold file:text-slate-700 hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:file:bg-slate-800 dark:file:text-slate-200 dark:hover:bg-slate-900"}
+                    className={uploadFiles.length > 0 ? "sr-only" : "h-12 w-full cursor-pointer rounded-lg border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-colors file:mr-4 file:h-8 file:rounded-md file:border-0 file:bg-slate-100 file:px-4 file:text-sm file:font-semibold file:text-slate-700 hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-purple-500 dark:border-slate-700 dark:bg-slate-950 dark:file:bg-slate-800 dark:file:text-slate-200 dark:hover:bg-slate-900"}
                     required={uploadFiles.length === 0}
                   />
                 </div>
@@ -592,7 +577,7 @@ const DocumentRequests = () => {
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="h-10 w-full rounded-lg text-xs font-semibold transition-all hover:bg-slate-50 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-500 dark:hover:bg-slate-900"
+                      className="h-10 w-full rounded-lg text-xs font-semibold transition-all hover:bg-slate-50 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-purple-500 dark:hover:bg-slate-900"
                       onClick={() => fileInputRef.current?.click()}
                     >
                       + Add More Files
@@ -609,7 +594,7 @@ const DocumentRequests = () => {
                   value={hrRemark}
                   onChange={(e) => setHrRemark(e.target.value)}
                   rows={5}
-                  className="min-h-[140px] w-full resize-y rounded-lg border-slate-300 p-4 text-sm shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-slate-700"
+                  className="min-h-[140px] w-full resize-y rounded-lg border-slate-300 p-4 text-sm shadow-sm focus-visible:ring-2 focus-visible:ring-purple-500 dark:border-slate-700"
                 />
               </section>
 
@@ -619,7 +604,7 @@ const DocumentRequests = () => {
                   variant="outline"
                   onClick={() => setApproveModalOpen(false)}
                   disabled={actioning}
-                  className="h-11 min-w-[120px] rounded-lg font-semibold transition-all hover:bg-slate-50 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-500 dark:hover:bg-slate-900"
+                  className="h-11 min-w-[120px] rounded-lg font-semibold transition-all hover:bg-slate-50 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-purple-500 dark:hover:bg-slate-900"
                 >
                   Cancel
                 </Button>

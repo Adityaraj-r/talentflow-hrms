@@ -14,6 +14,9 @@ import PerformanceAnalytics from "@/pages/modules/performance/PerformanceAnalyti
 import { performanceApi } from "@/services/performanceApi";
 import { useUser } from "@/contexts/UserContext";
 import { useConfirm } from "@/contexts/ConfirmContext";
+import { StatsCard } from "@/components/ui/stats-card";
+import { ActionIcon } from "@/components/ui/action-icon";
+import { DataTable } from "@/components/ui/data-table";
 
 function pickApiError(error) {
   if (error && typeof error === "object" && error.error != null)
@@ -41,7 +44,6 @@ const AdminPerformance = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("cycles");
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
   const [performanceData, setPerformanceData] = useState({
     totalCycles: 0,
     activeCycles: 0,
@@ -241,10 +243,64 @@ const AdminPerformance = () => {
     navigate(`/role/hr_manager/appraisal/view/${cycle._id}`, { state: { cycle } });
   };
 
+  const columns = React.useMemo(() => [
+    {
+      accessorKey: "name",
+      header: "Cycle Name",
+      cell: ({ row }) => <span className="font-semibold text-sm text-foreground">{row.original.name}</span>
+    },
+    {
+      id: "period",
+      header: () => <div className="text-center">Period</div>,
+      cell: ({ row }) => <div className="text-sm text-muted-foreground text-center align-middle">{new Date(row.original.startDate).toLocaleDateString()} - {new Date(row.original.endDate).toLocaleDateString()}</div>
+    },
+    {
+      accessorKey: "status",
+      header: () => <div className="text-center">Status</div>,
+      cell: ({ row }) => (
+        <div className="text-center align-middle">
+          <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase ${
+            row.original.status === 'active' 
+              ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400 border border-green-200 dark:border-green-500/30' 
+              : row.original.status === 'completed'
+              ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400 border border-purple-200 dark:border-purple-500/30'
+              : 'bg-muted text-muted-foreground border border-border/50'
+          }`}>
+            {row.original.status}
+          </span>
+        </div>
+      )
+    },
+    {
+      accessorKey: "totalReviews",
+      header: () => <div className="text-center">Reviews</div>,
+      cell: ({ row }) => <div className="text-sm text-muted-foreground text-center align-middle">{row.original.totalReviews}</div>
+    },
+    {
+      accessorKey: "avgScore",
+      header: () => <div className="text-center">Avg Score</div>,
+      cell: ({ row }) => <div className="text-sm text-foreground font-medium text-center align-middle">{row.original.avgScore ? `${row.original.avgScore}/5` : '—'}</div>
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right w-[100px] ml-auto">Actions</div>,
+      cell: ({ row }) => {
+        const cycle = row.original;
+        return (
+          <div className="flex items-center justify-end gap-2 w-[100px] ml-auto">
+            <ActionIcon icon={Eye} tooltip="View" onClick={() => handleViewCycle(cycle)} />
+            {canPmsWrite && <ActionIcon icon={Pencil} tooltip="Edit" onClick={() => handleEditClick(cycle)} />}
+            {canPmsCycleStruct && <ActionIcon icon={Trash2} tooltip="Delete" onClick={() => handleDeleteCycle(cycle._id, cycle.name)} />}
+          </div>
+        );
+      }
+    }
+  ], [canPmsWrite, canPmsCycleStruct]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-950">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
         <span className="ml-2 text-lg text-gray-900 dark:text-white">Loading performance data...</span>
       </div>
     );
@@ -274,59 +330,10 @@ const AdminPerformance = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-         <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-xl p-6 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
-            <div className="p-2.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg w-fit">
-   <Calendar className="w-5 h-5" />
-</div>
-            <div className="flex flex-col gap-4 relative z-10">
-             
-              <div>
-                <p className="text-muted-foreground text-sm font-medium">Total Cycles</p>
-                <p className="text-3xl font-bold text-foreground mt-1">{performanceData.totalCycles}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-xl p-6 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
-           <div className="p-2.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg w-fit">
-   <TrendingUp className="w-5 h-5" />
-</div>
-            <div className="flex flex-col gap-4 relative z-10">
-             
-              <div>
-                <p className="text-muted-foreground text-sm font-medium">Active Cycles</p>
-                <p className="text-3xl font-bold text-foreground mt-1">{performanceData.activeCycles}</p>
-              </div>
-            </div>
-          </div>
-
-       <div className="bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700 rounded-xl p-6 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
-   
-            <div className="flex flex-col gap-4 relative z-10">
-              <div className="p-2.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg w-fit">
-                <FileText className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm font-medium">Total Reviews</p>
-                <p className="text-3xl font-bold text-foreground mt-1">{performanceData.totalReviews}</p>
-              </div>
-            </div>
-          </div>
-
-         <div className="bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-xl p-6 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
-   
-            <div className="flex flex-col gap-4 relative z-10">
-              <div className="p-2.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg w-fit">
-                <Award className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm font-medium">Avg Score</p>
-                <p className="text-3xl font-bold text-foreground mt-1">
-                  {performanceData.avgScore > 0 ? performanceData.avgScore.toFixed(1) : "—"}
-                </p>
-              </div>
-            </div>
-          </div>
+          <StatsCard title="Total Cycles" value={performanceData.totalCycles} icon={Calendar} variant="purple" />
+          <StatsCard title="Active Cycles" value={performanceData.activeCycles} icon={TrendingUp} variant="emerald" />
+          <StatsCard title="Total Reviews" value={performanceData.totalReviews} icon={FileText} variant="purple" />
+          <StatsCard title="Avg Score" value={performanceData.avgScore > 0 ? performanceData.avgScore.toFixed(1) : "—"} icon={Award} variant="amber" />
         </div>
 
         <div className="flex flex-wrap gap-2 mb-6 border-b border-border/50 pb-px">
@@ -354,107 +361,8 @@ const AdminPerformance = () => {
               <h2 className="text-lg font-bold text-foreground">Appraisal Cycles</h2>
               <p className="text-muted-foreground text-sm mt-1">Manage performance review periods</p>
             </div>
-            <div className="overflow-auto custom-scrollbar flex-1 relative">
-              <table className="w-full text-left border-separate border-spacing-0">
-                <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur-md">
-                  <tr>
-                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-left">
-  Cycle Name
-</th>
-
-<th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">
-  Period
-</th>
-
-<th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">
-  Status
-</th>
-
-<th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">
-  Reviews
-</th>
-
-<th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">
-  Avg Score
-</th>
-
-<th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">
-  Actions
-</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {performanceData.cycles.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground bg-background">
-                        No performance cycles found. Create your first cycle to get started.
-                      </td>
-                    </tr>
-                  ) : (
-                    performanceData.cycles.slice((currentPage - 1) * 10, currentPage * 10).map((cycle) => (
-                      <tr key={cycle._id} className="group hover:bg-blue-600/5 dark:hover:bg-blue-500/10 transition-colors bg-background">
-                        <td className="px-6 py-4 border-b border-border/50 align-middle">
-                          <span className="font-semibold text-sm text-foreground">{cycle.name}</span>
-                        </td>
-                        <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground text-center align-middle">
-                          {new Date(cycle.startDate).toLocaleDateString()} - {new Date(cycle.endDate).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 border-b border-border/50 text-center align-middle">
-                          <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase ${
-                            cycle.status === 'active' 
-                              ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400 border border-green-200 dark:border-green-500/30' 
-                              : cycle.status === 'completed'
-                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30'
-                              : 'bg-muted text-muted-foreground border border-border/50'
-                          }`}>
-                            {cycle.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground text-center align-middle">{cycle.totalReviews}</td>
-                        <td className="px-6 py-4 border-b border-border/50 text-sm text-foreground font-medium text-center align-middle">{cycle.avgScore ? `${cycle.avgScore}/5` : '—'}</td>
-                        <td className="px-6 py-4 border-b border-border/50 text-right align-middle whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-2">
-                           <button
-                             title="View"
-                             className="p-2 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900 transition"
-                             onClick={() => handleViewCycle(cycle)}
-                             >
-                             <Eye className="w-4 h-4 text-blue-600" />
-                            </button>
-                            {canPmsWrite && (
-                           <button
-                              title="Edit"
-                              className="p-2 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900 transition"
-                              onClick={() => handleEditClick(cycle)}
-                            >
-                              <Pencil className="w-4 h-4 text-amber-600" />
-                            </button>
-                            )}
-                            {canPmsCycleStruct && (
-                            <button
-                              title="Delete"
-                              className="p-2 rounded-md hover:bg-red-100 dark:hover:bg-red-900 transition"
-                              onClick={() => handleDeleteCycle(cycle._id, cycle.name)}
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600" />
-                            </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-              {performanceData.cycles.length > 0 && (
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={Math.ceil(performanceData.cycles.length / 10)}
-                  totalItems={performanceData.cycles.length}
-                  itemsPerPage={10}
-                  onPageChange={setCurrentPage}
-                />
-              )}
+            <div className="flex-1 relative p-4">
+              <DataTable columns={columns} data={performanceData.cycles} defaultPageSize={10} searchable={false} />
             </div>
           </div>
         ) : activeTab === "analytics" ? (
@@ -486,7 +394,7 @@ const AdminPerformance = () => {
                     placeholder="e.g., Q1 2026 Review" 
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`w-full bg-white dark:bg-gray-800 border ${formErrors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} rounded-lg px-4 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    className={`w-full bg-white dark:bg-gray-800 border ${formErrors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} rounded-lg px-4 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500`}
                     disabled={submitting}
                   />
                   {formErrors.name && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{formErrors.name}</p>}
@@ -502,7 +410,7 @@ const AdminPerformance = () => {
                       type="date" 
                       value={formData.startDate}
                       onChange={handleInputChange}
-                      className={`w-full bg-white dark:bg-gray-800 border ${formErrors.startDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      className={`w-full bg-white dark:bg-gray-800 border ${formErrors.startDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
                       disabled={submitting}
                     />
                     {formErrors.startDate && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{formErrors.startDate}</p>}
@@ -516,7 +424,7 @@ const AdminPerformance = () => {
                       type="date" 
                       value={formData.endDate}
                       onChange={handleInputChange}
-                      className={`w-full bg-white dark:bg-gray-800 border ${formErrors.endDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      className={`w-full bg-white dark:bg-gray-800 border ${formErrors.endDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
                       disabled={submitting}
                     />
                     {formErrors.endDate && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{formErrors.endDate}</p>}
@@ -531,7 +439,7 @@ const AdminPerformance = () => {
                     rows={3}
                     value={formData.description}
                     onChange={handleInputChange}
-                    className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     disabled={submitting}
                   />
                 </div>
@@ -586,7 +494,7 @@ const AdminPerformance = () => {
                     placeholder="e.g., Q1 2026 Review" 
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`w-full bg-white dark:bg-gray-800 border ${formErrors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} rounded-lg px-4 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    className={`w-full bg-white dark:bg-gray-800 border ${formErrors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} rounded-lg px-4 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500`}
                     disabled={submitting}
                   />
                   {formErrors.name && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{formErrors.name}</p>}
@@ -602,7 +510,7 @@ const AdminPerformance = () => {
                       type="date" 
                       value={formData.startDate}
                       onChange={handleInputChange}
-                      className={`w-full bg-white dark:bg-gray-800 border ${formErrors.startDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      className={`w-full bg-white dark:bg-gray-800 border ${formErrors.startDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
                       disabled={submitting}
                     />
                     {formErrors.startDate && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{formErrors.startDate}</p>}
@@ -616,7 +524,7 @@ const AdminPerformance = () => {
                       type="date" 
                       value={formData.endDate}
                       onChange={handleInputChange}
-                      className={`w-full bg-white dark:bg-gray-800 border ${formErrors.endDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      className={`w-full bg-white dark:bg-gray-800 border ${formErrors.endDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
                       disabled={submitting}
                     />
                     {formErrors.endDate && <p className="text-red-500 dark:text-red-400 text-sm mt-1">{formErrors.endDate}</p>}
@@ -625,16 +533,20 @@ const AdminPerformance = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-                  <select
+                  <Select
                     value={formData.status}
-                    onChange={(e) => handleStatusChange(e.target.value)}
+                    onValueChange={handleStatusChange}
                     disabled={submitting}
-                    className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="active">Active</option>
-                    <option value="completed">Completed</option>
-                    <option value="draft">Draft</option>
-                  </select>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <div>
@@ -645,7 +557,7 @@ const AdminPerformance = () => {
                     rows={3}
                     value={formData.description}
                     onChange={handleInputChange}
-                    className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     disabled={submitting}
                   />
                 </div>

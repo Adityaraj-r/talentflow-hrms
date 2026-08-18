@@ -83,15 +83,10 @@ export function SearchableRoleSelect({ value, onChange, options, placeholder = "
                 }}
                 className={cn(
                   "relative flex cursor-pointer select-none items-center rounded-md px-2 py-2 mb-0.5 text-sm font-medium outline-none transition-colors hover:bg-primary/10 hover:text-primary",
-                  value === opt.value ? "bg-blue-600/15 dark:bg-blue-500/20 text-primary" : "text-muted-foreground"
+                  value === opt.value ? "bg-purple-600/15 dark:bg-purple-500/20 text-primary" : "text-muted-foreground"
                 )}
               >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4 shrink-0",
-                    value === opt.value ? "opacity-100" : "opacity-0"
-                  )}
-                />
+
                 <span className="truncate">{formatChildren(opt.label)}</span>
               </div>
             ))

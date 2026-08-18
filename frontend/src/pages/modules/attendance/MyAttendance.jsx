@@ -5,7 +5,9 @@ import attendanceService from "@/services/attendanceService";
 import holidayService from "@/services/holidayService";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, List as ListIcon, MapPin, Clock, LogIn, LogOut, CheckCircle2, FilePen } from "lucide-react";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, List as ListIcon, MapPin, Clock, LogIn, LogOut, CheckCircle2, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,7 +48,7 @@ const statusConfig = {
   Late: { color: "bg-yellow-500", light: "bg-yellow-50 text-yellow-700 border-yellow-200" },
   Absent: { color: "bg-red-500", light: "bg-red-50 text-red-700 border-red-200" },
   "Half Day": { color: "bg-orange-500", light: "bg-orange-50 text-orange-700 border-orange-200" },
-  Holiday: { color: "bg-indigo-500", light: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+  Holiday: { color: "bg-purple-500", light: "bg-purple-50 text-purple-700 border-purple-200" },
   Leave: { color: "bg-purple-500", light: "bg-purple-50 text-purple-700 border-purple-200" }
 };
 
@@ -194,7 +196,10 @@ const MyAttendance = () => {
     for (let i = 1; i <= daysInMonth; i++) {
       const date = new Date(cy, cm, i);
       const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-      const dateStr = date.toISOString().split("T")[0];
+      const year = date.getFullYear();
+      const monthStr = String(date.getMonth() + 1).padStart(2, '0');
+      const dayStr = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${monthStr}-${dayStr}`;
       const record = monthRecords.find(r => r.date === dateStr || (r.clockIn && r.clockIn.startsWith(dateStr)));
       const holiday = holidays.find(h => h.date === dateStr);
       
@@ -229,10 +234,106 @@ const MyAttendance = () => {
   const shiftTime = user?.currentShift ? `${user.currentShift.startTime} - ${user.currentShift.endTime}` : "09:00 AM - 06:00 PM";
   const todayDateStr = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
 
+  const columns = [
+    {
+      accessorKey: "date",
+      header: "Date",
+      cell: ({ row }) => {
+        const day = row.original;
+        return (
+          <span className="whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
+            {new Date(day.date || day.clockIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const day = row.original;
+        const sc = statusConfig[day.status] || statusConfig["Present"];
+        return (
+          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", sc.light)}>
+            {day.status}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "clockIn",
+      header: "Check-in",
+      cell: ({ row }) => (
+        <span className="whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
+          {row.original.clockIn ? formatTime(row.original.clockIn) : "—"}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "clockOut",
+      header: "Check-out",
+      cell: ({ row }) => (
+        <span className="whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
+          {row.original.clockOut ? formatTime(row.original.clockOut) : "—"}
+        </span>
+      ),
+    },
+    {
+      id: "totalHours",
+      header: "Total Hours",
+      cell: ({ row }) => {
+        const day = row.original;
+        return (
+          <span className="whitespace-nowrap text-sm font-medium text-slate-700 dark:text-slate-200">
+            {calculateTotalHours(day.clockIn, day.clockOut, day.totalBreakMinutes)}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "totalBreakMinutes",
+      header: "Break",
+      cell: ({ row }) => (
+        <span className="whitespace-nowrap text-sm text-slate-500">
+          {formatBreakTime(row.original.totalBreakMinutes)}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "overtimeHours",
+      header: "Overtime",
+      cell: ({ row }) => (
+        <span className="whitespace-nowrap text-sm font-medium text-amber-600">
+          {formatOTHours(row.original.overtimeHours) || "—"}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const day = row.original;
+        return (
+          <div className="text-right flex justify-end">
+            <ActionIcon
+              icon={Pencil}
+              tooltip="Edit"
+              onClick={() => {
+                setSelectedRecord(day);
+                setCorrectionModalOpen(true);
+              }}
+              className="text-slate-400 hover:text-primary"
+            />
+          </div>
+        );
+      },
+    },
+  ];
+
   const totalPages = Math.ceil(monthRecords.length / itemsPerPage);
 
   const getDayStatusColor = (day) => {
-    if (day.holiday) return "bg-indigo-500";
+    if (day.holiday) return "bg-purple-500";
     if (day.record) {
       if (day.record.status === "Present" || day.record.status === "Late") return "bg-emerald-500";
       if (day.record.status === "Half Day") return "bg-yellow-500";
@@ -454,15 +555,28 @@ const MyAttendance = () => {
 
                 if (d.isToday) {
                   // Override border to make it stand out as today, typically purple/indigo
-                  cellClass = cellClass.replace(/border-[a-z]+-\d+/, "") + " border-indigo-400 dark:border-indigo-500 border-[1.5px]";
+                  cellClass = cellClass.replace(/border-[a-z]+-\d+/, "") + " border-purple-400 dark:border-purple-500 border-[1.5px]";
                 }
 
                 return (
-                  <div key={d.key} className={cn("min-h-[100px] border rounded-[12px] p-2.5 flex flex-col transition-colors", cellClass)}>
+                  <div 
+                    key={d.key} 
+                    onClick={() => {
+                      if (d.record) {
+                        setSelectedRecord(d.record);
+                        setCorrectionModalOpen(true);
+                      }
+                    }}
+                    className={cn(
+                      "min-h-[100px] border rounded-[12px] p-2.5 flex flex-col transition-colors", 
+                      cellClass,
+                      d.record ? "cursor-pointer hover:opacity-80 active:scale-[0.98]" : ""
+                    )}
+                  >
                     <div className="flex justify-between items-start mb-1.5">
                       <span className="text-[14px] font-bold text-slate-800 dark:text-slate-200">{d.dayNumber}</span>
                       {d.isToday && (
-                        <Badge variant="secondary" className="bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 hover:bg-indigo-100 text-[10px] px-2 py-0.5 rounded-md border-0 uppercase font-semibold">
+                        <Badge variant="secondary" className="bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 hover:bg-purple-100 text-[10px] px-2 py-0.5 rounded-md border-0 uppercase font-semibold">
                           TODAY
                         </Badge>
                       )}
@@ -488,88 +602,19 @@ const MyAttendance = () => {
 
         {/* 7. List View */}
         {viewMode === "list" && (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left">
-              <thead>
-                <tr className="border-b border-slate-100 dark:border-slate-800">
-                  {["Date", "Status", "Check-in", "Check-out", "Total Hours", "Break", "Overtime", ""].map((h) => (
-                    <th key={h} className={cn("px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider bg-slate-50/50 dark:bg-slate-800/30", h === "" ? "text-right" : "text-left")}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                {monthRecords.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-500">
-                      No attendance records found for this month.
-                    </td>
-                  </tr>
-                ) : (
-                  monthRecords.sort((a,b) => new Date(b.date) - new Date(a.date)).slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((day, i) => {
-                    const sc = statusConfig[day.status] || statusConfig["Present"];
-                    return (
-                      <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
-                          {new Date(day.date || day.clockIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", sc.light)}>
-                            {day.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
-                          {day.clockIn ? formatTime(day.clockIn) : "—"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
-                          {day.clockOut ? formatTime(day.clockOut) : "—"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-slate-700 dark:text-slate-200">
-                          {calculateTotalHours(day.clockIn, day.clockOut, day.totalBreakMinutes)}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500">
-                          {formatBreakTime(day.totalBreakMinutes)}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-amber-600">
-                          {formatOTHours(day.overtimeHours) || "—"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setSelectedRecord(day);
-                              setCorrectionModalOpen(true);
-                            }}
-                            className="h-8 w-8 text-slate-400 hover:text-primary"
-                          >
-                            <FilePen className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {viewMode === "list" && monthRecords.length > 0 && (
-          <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={monthRecords.length}
-              itemsPerPage={itemsPerPage}
-              onPageChange={(page) => setCurrentPage(page)}
+          <div className="overflow-x-auto w-full">
+            <DataTable
+              columns={columns}
+              data={monthRecords.sort((a,b) => new Date(b.date) - new Date(a.date))}
+              searchable={false}
+              defaultPageSize={10}
             />
           </div>
         )}
 
         <CorrectionRequestModal
           open={correctionModalOpen}
-          onOpenChange={setCorrectionModalOpen}
+          onClose={() => setCorrectionModalOpen(false)}
           record={selectedRecord}
           onSuccess={fetchData}
         />

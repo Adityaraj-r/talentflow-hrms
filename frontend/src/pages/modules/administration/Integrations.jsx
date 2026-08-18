@@ -9,6 +9,9 @@ import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import adminService from "@/services/adminService"
+import { DataTable } from "@/components/ui/data-table"
+import { ActionIcon } from "@/components/ui/action-icon"
+import { Settings } from "lucide-react"
 
 const Integrations = () => {
   const [loading, setLoading] = useState(null)
@@ -29,8 +32,8 @@ const Integrations = () => {
       name: "Google Workspace",
       description: "Sync employee emails, calendars, and SSO login with Google.",
       icon: Mail,
-      color: "text-blue-500",
-      bg: "bg-blue-100",
+      color: "text-purple-500",
+      bg: "bg-purple-100",
       status: "Disconnected",
       connectedUser: null,
       lastSync: null
@@ -40,8 +43,8 @@ const Integrations = () => {
       name: "Google Meet",
       description: "Auto-generate meeting links for interviews and team syncs.",
       icon: Video,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
+      color: "text-purple-600",
+      bg: "bg-purple-50",
       status: "Connected",
       connectedUser: "Enterprise Account",
       lastSync: "Yesterday, 4:00 PM"
@@ -135,61 +138,81 @@ const Integrations = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {integrations.map((item) => (
-          <Card key={item.id} className="flex flex-col transition-all border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] bg-white dark:bg-slate-900 hover:shadow-md overflow-hidden">
-            <CardHeader className="pb-4">
-              <div className="flex justify-between items-start">
-                <div className={cn("p-3 rounded-xl", item.bg)}>
-                  <item.icon className={cn("h-8 w-8", item.color)} />
-                </div>
-                <Switch 
-                  checked={item.status === "Connected"} 
-                  onCheckedChange={() => handleToggle(item.id)}
-                  disabled={loading === item.id}
-                />
-              </div>
-              <CardTitle className="mt-4 text-lg">{item.name}</CardTitle>
-              <CardDescription className="h-10 line-clamp-2 mt-2 text-xs">
-                {item.description}
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="pb-4 flex-1">
-               {item.status === "Connected" ? (
-                 <div className="flex items-center gap-2 text-[11px] text-green-600 bg-green-500/5 p-2 rounded-md border border-green-200">
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span className="font-black uppercase tracking-widest">Active</span>
-                    <span className="text-green-600/60 ml-auto font-medium">
-                        {item.lastSync}
-                    </span>
-                 </div>
-               ) : (
-                 <div className="flex items-center gap-2 text-[11px] text-muted-foreground bg-muted/50 p-2 rounded-md border border-muted">
-                    <Power className="h-4 w-4" />
-                    <span className="font-black uppercase tracking-widest">Disconnected</span>
-                 </div>
-               )}
-            </CardContent>
-
-            <CardFooter className="pt-0 border-t bg-muted/20 p-4">
-                <div className="w-full flex justify-between items-center text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-                    <span className="truncate max-w-[150px]">
-                        {item.status === "Connected" ? `Linked: ${item.connectedUser}` : "Not linked"}
-                    </span>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-6 px-2 hover:bg-background shadow-none"
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden">
+        <DataTable
+          columns={[
+            {
+              accessorKey: "integration",
+              header: "Integration",
+              cell: ({ row }) => {
+                const item = row.original;
+                return (
+                  <div className="flex items-center gap-4">
+                    <div className={cn("p-3 rounded-xl", item.bg)}>
+                      <item.icon className={cn("h-6 w-6", item.color)} />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-sm">{item.name}</div>
+                      <div className="text-xs text-muted-foreground">{item.description}</div>
+                    </div>
+                  </div>
+                );
+              }
+            },
+            {
+              accessorKey: "statusInfo",
+              header: "Status",
+              cell: ({ row }) => {
+                const item = row.original;
+                return item.status === "Connected" ? (
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                      <CheckCircle2 className="h-4 w-4" /> Connected
+                    </div>
+                    {item.lastSync && <span className="text-[10px] text-muted-foreground">Last sync: {item.lastSync}</span>}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                    <Power className="h-4 w-4" /> Disconnected
+                  </div>
+                );
+              }
+            },
+            {
+              accessorKey: "connectedUser",
+              header: "Linked Account",
+              cell: ({ row }) => (
+                <span className="text-xs font-medium">
+                  {row.original.status === "Connected" ? row.original.connectedUser : "—"}
+                </span>
+              )
+            },
+            {
+              id: "actions",
+              header: () => <div className="text-right">Actions</div>,
+              cell: ({ row }) => {
+                const item = row.original;
+                return (
+                  <div className="flex justify-end items-center gap-3">
+                    <Switch 
+                      checked={item.status === "Connected"} 
+                      onCheckedChange={() => handleToggle(item.id)}
+                      disabled={loading === item.id}
+                    />
+                    <ActionIcon
+                      icon={Settings}
+                      tooltip="Configure"
                       onClick={() => handleConfigure(item.id)}
                       disabled={loading === item.id}
-                    >
-                      {loading === item.id ? "..." : "Configure"}
-                    </Button>
-                </div>
-            </CardFooter>
-          </Card>
-        ))}
+                    />
+                  </div>
+                );
+              }
+            }
+          ]}
+          data={integrations}
+          searchable={false}
+        />
       </div>
     </div>
   )

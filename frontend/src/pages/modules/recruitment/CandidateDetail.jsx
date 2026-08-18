@@ -33,6 +33,14 @@ import {
 } from "lucide-react"
 import { RecruitmentStatusBadge } from "@/components/recruitment/RecruitmentUI"
 import { PriorityDot } from "@/components/ui/PriorityDot"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { DataTable } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import ReferralProgressTracker from "@/components/recruitment/ReferralProgressTracker"
 
@@ -306,25 +314,25 @@ const CandidateDetail = () => {
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-2xl">{app.name}</h1>
             <RecruitmentStatusBadge status={app.status} />
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{app.jobId?.jobTitle || "Unassigned Position"} • Match score: <span className="font-bold text-cyan-600 dark:text-cyan-400">{app.aiFitScore || app.matchScore || 0}% Match</span></p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{app.jobId?.jobTitle || "Unassigned Position"} • Match score: <span className="font-bold text-primary">{app.aiFitScore || app.matchScore || 0}% Match</span></p>
         </div>
 
         {/* Change Stage dropdown action */}
         {canWrite && (
           <div className="flex flex-wrap items-center gap-2">
             <Label className="text-xs font-semibold text-slate-500">Update Hiring Stage:</Label>
-            <select
-              value={app.status}
-              disabled={stageLoading}
-              onChange={(e) => handleUpdateStatus(e.target.value)}
-              className="rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-cyan-500"
-            >
-              <option value="Applied">Applied</option>
-              <option value="Shortlisted">Shortlisted</option>
-              <option value="Interview">Interview Scheduling</option>
-              <option value="Selected">Selected</option>
-              <option value="Rejected">Rejected</option>
-            </select>
+            <Select value={app.status} disabled={stageLoading} onValueChange={(val) => handleUpdateStatus(val)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Applied">Applied</SelectItem>
+                <SelectItem value="Shortlisted">Shortlisted</SelectItem>
+                <SelectItem value="Interview">Interview Scheduling</SelectItem>
+                <SelectItem value="Selected">Selected</SelectItem>
+                <SelectItem value="Rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>
@@ -333,11 +341,11 @@ const CandidateDetail = () => {
             <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+              <CheckCircle className="h-5 w-5 text-primary" />
               Workflow Progress Tracker
             </h2>
             <div className="text-sm font-semibold">
-              Current Score: <span className="text-cyan-600 dark:text-cyan-400">{workflowStatus.score || 0}%</span>
+              Current Score: <span className="text-primary">{workflowStatus.score || 0}%</span>
             </div>
           </div>
           <div className="flex items-center justify-between gap-2 overflow-x-auto pb-2">
@@ -388,7 +396,7 @@ const CandidateDetail = () => {
           {/* Main Candidate Card */}
           <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-6">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b pb-2 mb-4">
-              <User className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+              <User className="h-5 w-5 text-primary" />
               Candidate Profile Info
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 text-sm">
@@ -510,7 +518,7 @@ const CandidateDetail = () => {
                   href={app.linkedin}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline cursor-pointer"
                 >
                   <LinkIcon className="h-3 w-3" /> LinkedIn Profile
                 </a>
@@ -520,7 +528,7 @@ const CandidateDetail = () => {
                   href={app.portfolio}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline cursor-pointer"
                 >
                   <LinkIcon className="h-3 w-3" /> Personal Portfolio
                 </a>
@@ -533,7 +541,7 @@ const CandidateDetail = () => {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="space-y-1">
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                  <FileText className="h-5 w-5 text-primary" />
                   Resume Document
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -566,26 +574,23 @@ const CandidateDetail = () => {
           {/* Evaluation & Feedback Logs */}
           <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-6">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b pb-2 mb-4">
-              <MessageSquare className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+              <MessageSquare className="h-5 w-5 text-primary" />
               Interview Evaluation Logs
             </h2>
             <div className="space-y-3.5">
               {Array.isArray(app.interviewEvaluations) && app.interviewEvaluations.length > 0 ? (
-                app.interviewEvaluations.map((log, index) => (
-                  <div key={index} className="border-l-2 border-cyan-500 pl-4 space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-slate-900 dark:text-white">{log.interviewerName || "Interviewer"} ({log.round})</span>
-                      <span className="text-slate-400">{log.evaluatedAt ? new Date(log.evaluatedAt).toLocaleDateString() : ""}</span>
-                    </div>
-                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                      {log.feedback}
-                    </p>
-                    <div className="flex items-center justify-between mt-1">
-                      <div className="text-[11px] font-bold text-cyan-600 dark:text-cyan-400">Score Rating: {log.rating} / 5</div>
-                      <div className="text-[11px] font-bold text-slate-500">Rec: {log.recommendation}</div>
-                    </div>
-                  </div>
-                ))
+                <DataTable
+                  columns={[
+                    { accessorKey: "round", header: "Round" },
+                    { accessorKey: "interviewerName", header: "Interviewer", cell: ({ row }) => row.original.interviewerName || "Interviewer" },
+                    { accessorKey: "evaluatedAt", header: "Date", cell: ({ row }) => row.original.evaluatedAt ? new Date(row.original.evaluatedAt).toLocaleDateString() : "" },
+                    { accessorKey: "feedback", header: "Feedback", cell: ({ row }) => <span className="truncate max-w-[200px] block" title={row.original.feedback}>{row.original.feedback}</span> },
+                    { accessorKey: "rating", header: "Score", cell: ({ row }) => `${row.original.rating} / 5` },
+                    { accessorKey: "recommendation", header: "Rec." }
+                  ]}
+                  data={app.interviewEvaluations}
+                  searchable={false}
+                />
               ) : (
                 <div className="p-6 text-center text-slate-400 text-sm border-2 border-dashed rounded-lg">No evaluation notes or feedbacks recorded yet. Use the sidebar to add feedback.</div>
               )}
@@ -601,7 +606,7 @@ const CandidateDetail = () => {
             <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-5">
               <div className="flex items-center justify-between mb-4 border-b pb-2">
                 <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                  <FileText className="h-4.5 w-4.5 text-cyan-600 dark:text-cyan-400" />
+                  <FileText className="h-4.5 w-4.5 text-primary" />
                   Offer Package & Details
                 </h2>
                 {offer && (
@@ -746,15 +751,16 @@ const CandidateDetail = () => {
                   {['identity', 'education', 'employment', 'criminal'].map((category) => (
                     <div key={category} className="space-y-1">
                       <Label className="text-[10px] font-bold capitalize">{category} Check</Label>
-                      <select
-                        value={bgvChecks[category]}
-                        onChange={(e) => setBgvChecks(prev => ({ ...prev, [category]: e.target.value }))}
-                        className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none"
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Passed">Passed</option>
-                        <option value="Failed">Failed</option>
-                      </select>
+                      <Select value={bgvChecks[category]} onValueChange={(val) => setBgvChecks(prev => ({ ...prev, [category]: val }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Pending">Pending</SelectItem>
+                          <SelectItem value="Passed">Passed</SelectItem>
+                          <SelectItem value="Failed">Failed</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   ))}
                 </div>
@@ -782,7 +788,7 @@ const CandidateDetail = () => {
           {canWrite && (
             <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-5">
               <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Calendar className="h-4.5 w-4.5 text-cyan-600" />
+                <Calendar className="h-4.5 w-4.5 text-primary" />
                 Schedule Interview
               </h2>
 
@@ -799,14 +805,15 @@ const CandidateDetail = () => {
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[10px] font-bold">Mode</Label>
-                    <select
-                      value={interviewForm.mode}
-                      onChange={(e) => setInterviewForm(prev => ({ ...prev, mode: e.target.value }))}
-                      className="w-full h-9 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none"
-                    >
-                      <option value="Online">Online</option>
-                      <option value="Offline">Offline</option>
-                    </select>
+                    <Select value={interviewForm.mode} onValueChange={(val) => setInterviewForm(prev => ({ ...prev, mode: val }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Mode" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Online">Online</SelectItem>
+                        <SelectItem value="Offline">Offline</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -900,7 +907,7 @@ const CandidateDetail = () => {
           {canWrite && (
             <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 p-5">
               <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Send className="h-4.5 w-4.5 text-cyan-600" />
+                <Send className="h-4.5 w-4.5 text-primary" />
                 Add Evaluation Feedback
               </h2>
 
@@ -908,31 +915,33 @@ const CandidateDetail = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <Label className="text-[10px] font-bold">Round</Label>
-                    <select
-                      value={feedbackFormData.round}
-                      onChange={(e) => setFeedbackFormData(prev => ({ ...prev, round: e.target.value }))}
-                      className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none"
-                    >
-                      <option value="HR Screening">HR Screening</option>
-                      <option value="Technical">Technical</option>
-                      <option value="Managerial">Managerial</option>
-                      <option value="Final Stage">Final Stage</option>
-                    </select>
+                    <Select value={feedbackFormData.round} onValueChange={(val) => setFeedbackFormData(prev => ({ ...prev, round: val }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Round" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="HR Screening">HR Screening</SelectItem>
+                        <SelectItem value="Technical">Technical</SelectItem>
+                        <SelectItem value="Managerial">Managerial</SelectItem>
+                        <SelectItem value="Final Stage">Final Stage</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-1">
                     <Label className="text-[10px] font-bold">Rating Score (1 - 5)</Label>
-                    <select
-                      value={feedbackFormData.rating}
-                      onChange={(e) => setFeedbackFormData(prev => ({ ...prev, rating: Number(e.target.value) }))}
-                      className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none"
-                    >
-                      <option value="5">5 - Exceptional</option>
-                      <option value="4">4 - Strong Candidate</option>
-                      <option value="3">3 - Qualified</option>
-                      <option value="2">2 - Borderline</option>
-                      <option value="1">1 - Not Qualified</option>
-                    </select>
+                    <Select value={feedbackFormData.rating.toString()} onValueChange={(val) => setFeedbackFormData(prev => ({ ...prev, rating: Number(val) }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Rating" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5 - Exceptional</SelectItem>
+                        <SelectItem value="4">4 - Strong Candidate</SelectItem>
+                        <SelectItem value="3">3 - Qualified</SelectItem>
+                        <SelectItem value="2">2 - Borderline</SelectItem>
+                        <SelectItem value="1">1 - Not Qualified</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -949,15 +958,16 @@ const CandidateDetail = () => {
 
                 <div className="space-y-1">
                   <Label className="text-[10px] font-bold">Recommendation</Label>
-                  <select
-                    value={feedbackFormData.recommendation}
-                    onChange={(e) => setFeedbackFormData(prev => ({ ...prev, recommendation: e.target.value }))}
-                    className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none"
-                  >
-                    <option value="Recommended">Recommended</option>
-                    <option value="Not Recommended">Not Recommended</option>
-                    <option value="Borderline">Borderline</option>
-                  </select>
+                  <Select value={feedbackFormData.recommendation} onValueChange={(val) => setFeedbackFormData(prev => ({ ...prev, recommendation: val }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Recommendation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Recommended">Recommended</SelectItem>
+                      <SelectItem value="Not Recommended">Not Recommended</SelectItem>
+                      <SelectItem value="Borderline">Borderline</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <Button type="submit" disabled={feedbackLoading} className="w-full text-xs font-bold cursor-pointer">
