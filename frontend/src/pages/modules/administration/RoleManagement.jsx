@@ -7,6 +7,8 @@ import { clearPermissionCache } from "@/services/permissionService";
 import { useUser } from "@/contexts/UserContext";
 import { useConfirm } from "@/contexts/ConfirmContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
 
 const RoleManagement = () => {
   const { confirm } = useConfirm();
@@ -199,73 +201,69 @@ const RoleManagement = () => {
       </div>
 
       <div className="flex-1 border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900 flex flex-col">
-        <div className="flex-1 overflow-auto custom-scrollbar relative">
-          <table className="w-full text-left border-separate border-spacing-0">
-            <thead className="sticky top-0 z-30 shadow-sm">
-              <tr>
-                <th className="sticky left-0 z-40 bg-muted/50 backdrop-blur-md border-b border-r border-border/50 px-6 py-5 font-semibold text-sm min-w-[250px] max-w-[250px] shadow-[4px_0_12px_-2px_rgba(0,0,0,0.03)] dark:shadow-[4px_0_12px_-2px_rgba(0,0,0,0.2)]">
-                  Module / Feature
-                </th>
-                {roles.map((role) => (
-                  <th key={role._id} className="border-b border-l border-border/50 px-4 py-5 min-w-[220px] text-center bg-muted/50 backdrop-blur-md">
-                    <div className="flex flex-col items-center gap-2">
-                       <span 
-                         title={formatRoleName(role.name)}
-                         className="text-[14px] font-semibold text-foreground max-w-[200px] truncate block tracking-tight"
-                       >
-                          {formatRoleName(role.name)}
-                       </span>
-                       {!role.isSystemRole ? (
-                          <div className="flex gap-1">
-                            {canRolesWrite && (
-                              <button 
-                                onClick={() => handleEditRole(role)}
-                                className="text-muted-foreground/60 hover:text-blue-600 p-1 rounded-md hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-colors"
-                              >
-                                 <Pencil className="h-4 w-4" />
-                              </button>
-                            )}
-                            {canRolesDelete && (
-                              <button 
-                                onClick={() => confirmDeleteRole(role)}
-                                className="text-muted-foreground/60 hover:text-red-600 p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors"
-                              >
-                                 <Trash2 className="h-4 w-4" />
-                              </button>
-                            )}
-                          </div>
-                       ) : <Lock className="h-3.5 w-3.5 text-muted-foreground/40" />}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody>
-              {modules.map((module) => (
-                <tr key={module.id} className="group hover:bg-blue-600/5 dark:hover:bg-blue-500/10 transition-colors duration-200">
-                  <td className="sticky left-0 z-10 bg-background border-b border-r border-border/50 px-6 py-5 shadow-[4px_0_12px_-2px_rgba(0,0,0,0.03)] dark:shadow-[4px_0_12px_-2px_rgba(0,0,0,0.2)] transition-colors duration-200">
+        <DataTable
+          columns={[
+            {
+              accessorKey: "module",
+              header: "Module / Feature",
+              cell: ({ row }) => {
+                const module = row.original;
+                return (
+                  <div>
                     <div className="font-semibold text-sm text-foreground">{module.name}</div>
                     <div className="text-[12px] text-muted-foreground font-normal mt-1 leading-relaxed">{module.description}</div>
-                  </td>
-                  {roles.map((role, rIndex) => {
-                    const perms = role.permissions?.[module.id] || { read: false, write: false, delete: false };
-                    const isSuperAdmin = role.name === 'Super Admin';
-                    return (
-                        <td key={role._id} className="border-b border-l border-border/50 px-4 py-5 text-center align-middle whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-2">
-                             <PermissionToggle active={perms.read} onClick={() => !isSuperAdmin && canRolesWrite && togglePermission(rIndex, module.id, 'read')} label="View" variant="blue" disabled={isSuperAdmin || !canRolesWrite} />
-                             <PermissionToggle active={perms.write} onClick={() => !isSuperAdmin && canRolesWrite && togglePermission(rIndex, module.id, 'write')} label="Edit" variant="amber" disabled={isSuperAdmin || !canRolesWrite} />
-                             <PermissionToggle active={perms.delete} onClick={() => !isSuperAdmin && canRolesWrite && togglePermission(rIndex, module.id, 'delete')} label="Delete" variant="red" disabled={isSuperAdmin || !canRolesWrite} />
-                          </div>
-                        </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                );
+              }
+            },
+            ...roles.map((role, rIndex) => ({
+              id: role._id,
+              header: () => (
+                <div className="flex flex-col items-center gap-2">
+                   <span 
+                     title={formatRoleName(role.name)}
+                     className="text-[14px] font-semibold text-foreground max-w-[200px] truncate block tracking-tight"
+                   >
+                      {formatRoleName(role.name)}
+                   </span>
+                   {!role.isSystemRole ? (
+                      <div className="flex gap-1 justify-center">
+                        {canRolesWrite && (
+                          <ActionIcon 
+                            icon={Pencil} 
+                            tooltip="Edit Role"
+                            onClick={() => handleEditRole(role)}
+                          />
+                        )}
+                        {canRolesDelete && (
+                          <ActionIcon 
+                            icon={Trash2} 
+                            tooltip="Delete Role"
+                            onClick={() => confirmDeleteRole(role)}
+                          />
+                        )}
+                      </div>
+                   ) : <Lock className="h-3.5 w-3.5 text-muted-foreground/40" />}
+                </div>
+              ),
+              cell: ({ row }) => {
+                const module = row.original;
+                const perms = role.permissions?.[module.id] || { read: false, write: false, delete: false };
+                const isSuperAdmin = role.name === 'Super Admin';
+                return (
+                  <div className="flex items-center justify-center gap-2">
+                     <PermissionToggle active={perms.read} onClick={() => !isSuperAdmin && canRolesWrite && togglePermission(rIndex, module.id, 'read')} label="View" variant="blue" disabled={isSuperAdmin || !canRolesWrite} />
+                     <PermissionToggle active={perms.write} onClick={() => !isSuperAdmin && canRolesWrite && togglePermission(rIndex, module.id, 'write')} label="Edit" variant="amber" disabled={isSuperAdmin || !canRolesWrite} />
+                     <PermissionToggle active={perms.delete} onClick={() => !isSuperAdmin && canRolesWrite && togglePermission(rIndex, module.id, 'delete')} label="Delete" variant="red" disabled={isSuperAdmin || !canRolesWrite} />
+                  </div>
+                );
+              }
+            }))
+          ]}
+          data={modules}
+          searchable={false}
+          defaultPageSize={100}
+        />
       </div>
 
       {/* Add/Edit Role Modal */}
@@ -349,7 +347,7 @@ const RoleManagement = () => {
 
 const PermissionToggle = ({ active, onClick, label, variant, disabled }) => {
     const activeColors = {
-        blue: "bg-transparent text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-500/30 dark:hover:bg-blue-500/10",
+        blue: "bg-transparent text-purple-600 border-purple-200 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-500/30 dark:hover:bg-purple-500/10",
         amber: "bg-transparent text-amber-600 border-amber-200 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-500/30 dark:hover:bg-amber-500/10",
         red: "bg-transparent text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-500/30 dark:hover:bg-red-500/10",
     };

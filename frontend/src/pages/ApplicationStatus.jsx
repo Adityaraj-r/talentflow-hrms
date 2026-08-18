@@ -53,9 +53,9 @@ const ApplicationStatus = () => {
   const statusColor = (status) => {
     switch (status) {
       case "Applied":
-        return "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300"
+        return "bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300"
       case "Under Review":
-        return "bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300"
+        return "bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300"
       case "HR Screening":
         return "bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300"
       case "Assessment":
@@ -146,7 +146,7 @@ const ApplicationStatus = () => {
             <button
               type="button"
               onClick={checkStatus}
-              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium transition"
+              className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-medium transition"
             >
               <Search size={18} />
               {loading ? "Checking..." : "Check Status"}
@@ -167,7 +167,7 @@ const ApplicationStatus = () => {
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
-                    <Briefcase className="text-blue-500" />
+                    <Briefcase className="text-purple-500" />
                     <div>
                       <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                         {app.jobId?.jobTitle ?? "Job application"}
@@ -191,7 +191,7 @@ const ApplicationStatus = () => {
                       <div key={step} className="flex-1 min-w-[80px] flex flex-col items-center">
                         <div
                           className={`w-4 h-4 rounded-full ${
-                            active ? "bg-blue-600" : "bg-gray-300 dark:bg-slate-700"
+                            active ? "bg-purple-600" : "bg-gray-300 dark:bg-slate-700"
                           }`}
                         />
                         <span className="text-[10px] md:text-xs mt-2 text-gray-500 dark:text-slate-400 text-center font-medium">

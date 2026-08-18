@@ -861,7 +861,7 @@ const Sidebar = ({
           isCollapsed ? "justify-center" : "justify-between"
         )}>
           <div className="flex items-center gap-2 overflow-hidden">
-            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-lg shadow-sm shrink-0">
+            <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-2 rounded-lg shadow-sm shrink-0">
               <Building2 className="h-6 w-6 text-white" />
             </div>
             <span className={cn(

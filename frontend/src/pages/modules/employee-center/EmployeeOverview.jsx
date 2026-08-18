@@ -15,6 +15,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Pagination } from "@/components/ui/pagination";
+import { StatsCard } from "@/components/ui/stats-card";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
 
 const EmployeeOverview = () => {
   const [employeeData, setEmployeeData] = useState([]);
@@ -97,7 +100,7 @@ const EmployeeOverview = () => {
   const getStatusBadge = (status) => {
     const styles = {
       outstanding: "bg-green-100 text-green-800 border-green-300",
-      exceeds: "bg-blue-100 text-blue-800 border-blue-300",
+      exceeds: "bg-purple-100 text-purple-800 border-purple-300",
       meets: "bg-yellow-100 text-yellow-800 border-yellow-300",
       below: "bg-red-100 text-red-800 border-red-300"
     };
@@ -130,51 +133,24 @@ const EmployeeOverview = () => {
   return (
     <div className="space-y-6 max-w-full pb-10">
       <div className="grid gap-5 md:grid-cols-3">
-        <Card className="group relative border border-green-200/80 dark:border-green-500/30 bg-green-50/50 dark:bg-green-500/10 shadow-sm hover:shadow-lg hover:shadow-green-500/5 hover:-translate-y-1 hover:border-green-300 dark:hover:border-green-400/50 transition-all duration-300 ease-out overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-300 group-hover:scale-110">
-            <Award className="w-16 h-16 text-green-600 dark:text-green-400" />
-          </div>
-          <CardContent className="p-6 relative z-10 flex flex-col gap-4">
-            <div className="p-2.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg w-fit transition-transform duration-300 group-hover:scale-110">
-              <Award className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{topPerformers}</div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mt-1">Top Performers</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Rating &gt;= 4.5</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="group relative border border-blue-200/80 dark:border-blue-500/30 bg-blue-50/50 dark:bg-blue-500/10 shadow-sm hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-1 hover:border-blue-300 dark:hover:border-blue-400/50 transition-all duration-300 ease-out overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-300 group-hover:scale-110">
-            <Users className="w-16 h-16 text-blue-600 dark:text-blue-400" />
-          </div>
-          <CardContent className="p-6 relative z-10 flex flex-col gap-4">
-            <div className="p-2.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg w-fit transition-transform duration-300 group-hover:scale-110">
-              <Users className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{employeeData.length}</div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mt-1">Total Employees</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Across all departments</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="group relative border border-red-200/80 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/10 shadow-sm hover:shadow-lg hover:shadow-red-500/5 hover:-translate-y-1 hover:border-red-300 dark:hover:border-red-400/50 transition-all duration-300 ease-out overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-300 group-hover:scale-110">
-            <TrendingDown className="w-16 h-16 text-red-600 dark:text-red-400" />
-          </div>
-          <CardContent className="p-6 relative z-10 flex flex-col gap-4">
-            <div className="p-2.5 bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg w-fit transition-transform duration-300 group-hover:scale-110">
-              <TrendingDown className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{needsImprovement}</div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mt-1">Needs Improvement</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Rating &lt; 3.0</p>
-            </div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Top Performers"
+          value={topPerformers}
+          icon={<Award className="h-8 w-8" />}
+          variant="emerald"
+        />
+        <StatsCard
+          title="Total Employees"
+          value={employeeData.length}
+          icon={<Users className="h-8 w-8" />}
+          variant="purple"
+        />
+        <StatsCard
+          title="Needs Improvement"
+          value={needsImprovement}
+          icon={<TrendingDown className="h-8 w-8" />}
+          variant="rose"
+        />
       </div>
 
       <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden flex flex-col bg-white dark:bg-slate-900">
@@ -243,70 +219,86 @@ const EmployeeOverview = () => {
           </div>
 
           <div className="overflow-auto custom-scrollbar relative max-h-[600px]">
-            <table className="w-full text-left border-separate border-spacing-0">
-              <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur-md">
-                <tr>
-                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Employee</th>
-                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Department</th>
-                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Position</th>
-                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Avg Rating</th>
-                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Trend</th>
-                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Reviews</th>
-                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Status</th>
-                  <th className="px-6 py-4 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedEmployees.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-muted-foreground bg-background">
-                      No employees found matching the filters.
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedEmployees.map((employee) => (
-                    <tr key={employee.id} className="group hover:bg-blue-600/5 dark:hover:bg-blue-500/10 transition-colors bg-background">
-                      <td className="px-6 py-4 border-b border-border/50 align-middle">
+            <DataTable
+              columns={[
+                {
+                  accessorKey: "employee",
+                  header: "Employee",
+                  cell: ({ row }) => {
+                    const employee = row.original;
+                    return (
+                      <div>
                         <div className="font-semibold text-sm text-foreground">{employee.name}</div>
                         <div className="text-xs text-muted-foreground mt-0.5">{employee.email}</div>
-                      </td>
-                      <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground  text-center align-middle">{employee.department}</td>
-                      <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground  text-center align-middle">{employee.position}</td>
-                      <td className="px-6 py-4 border-b border-border/50 align-middle text-center">
-                        <span className="text-lg font-bold text-orange-600 dark:text-orange-500">
-                          {(employee.avgRating || 0).toFixed(1)}<span className="text-xs font-medium text-muted-foreground">/5</span>
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 border-b border-border/50 align-middle text-center">
-                        <div className="flex justify-center">{getTrendIcon(employee.trend)}</div>
-                      </td>
-                      <td className="px-6 py-4 border-b border-border/50 text-sm text-muted-foreground align-middle text-center">{employee.totalReviews}</td>
-                      <td className="px-6 py-4 border-b border-border/50 align-middle text-center">
-                        <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase border ${getStatusBadge(employee.status)}`}>
-                          {employee.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 border-b border-border/50 text-center align-middle whitespace-nowrap">
-    <div className="flex justify-center">
-        <Button
-            title="View Details"
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 rounded-lg hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/30"
-            onClick={() => {
-                setSelectedEmployee(employee);
-                setIsDetailsOpen(true);
-            }}
-        >
-            <Eye className="h-4 w-4" />
-        </Button>
-    </div>
-</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                      </div>
+                    );
+                  }
+                },
+                {
+                  accessorKey: "department",
+                  header: "Department",
+                  cell: ({ row }) => <div className="text-sm text-muted-foreground text-center">{row.original.department}</div>
+                },
+                {
+                  accessorKey: "position",
+                  header: "Position",
+                  cell: ({ row }) => <div className="text-sm text-muted-foreground text-center">{row.original.position}</div>
+                },
+                {
+                  accessorKey: "avgRating",
+                  header: "Avg Rating",
+                  cell: ({ row }) => (
+                    <div className="text-center">
+                      <span className="text-lg font-bold text-orange-600 dark:text-orange-500">
+                        {(row.original.avgRating || 0).toFixed(1)}<span className="text-xs font-medium text-muted-foreground">/5</span>
+                      </span>
+                    </div>
+                  )
+                },
+                {
+                  accessorKey: "trend",
+                  header: "Trend",
+                  cell: ({ row }) => <div className="flex justify-center">{getTrendIcon(row.original.trend)}</div>
+                },
+                {
+                  accessorKey: "totalReviews",
+                  header: "Reviews",
+                  cell: ({ row }) => <div className="text-sm text-muted-foreground text-center">{row.original.totalReviews}</div>
+                },
+                {
+                  accessorKey: "status",
+                  header: "Status",
+                  cell: ({ row }) => (
+                    <div className="text-center">
+                      <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase border ${getStatusBadge(row.original.status)}`}>
+                        {row.original.status}
+                      </span>
+                    </div>
+                  )
+                },
+                {
+                  id: "actions",
+                  header: () => <div className="text-right">Actions</div>,
+                  cell: ({ row }) => {
+                    const employee = row.original;
+                    return (
+                      <div className="flex justify-end">
+                        <ActionIcon
+                          icon={Eye}
+                          tooltip="View Details"
+                          onClick={() => {
+                            setSelectedEmployee(employee);
+                            setIsDetailsOpen(true);
+                          }}
+                        />
+                      </div>
+                    );
+                  }
+                }
+              ]}
+              data={paginatedEmployees}
+              searchable={false}
+            />
           </div>
           {totalItems > 0 && (
             <div className="p-4 border-t border-border/50">

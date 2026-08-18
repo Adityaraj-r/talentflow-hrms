@@ -30,9 +30,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { RecruitmentEmptyState } from "@/components/recruitment/RecruitmentUI";
+import { Pagination } from "@/components/ui/pagination";
+import { StatsCard } from "@/components/ui/stats-card";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { RecruitmentKpiCard, RecruitmentEmptyState } from "@/components/recruitment/RecruitmentUI";
-import { Pagination } from "@/components/ui/pagination";
 import ReferralProgressDrawer from "@/components/recruitment/ReferralProgressDrawer";
 
 export default function EmployeeReferrals() {
@@ -200,33 +205,32 @@ export default function EmployeeReferrals() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <RecruitmentKpiCard
+        <StatsCard
           title="Open Positions"
           value={totalOpen}
-          icon={Briefcase}
-          helper="Available for referral"
-          accent="sky"
-          active={activeTab === "open-jobs"}
+          icon={<Briefcase className="h-8 w-8" />}
+          variant="blue"
+          isActive={activeTab === "open-jobs"}
           onClick={() => setActiveTab("open-jobs")}
         />
-        <RecruitmentKpiCard
+        <StatsCard
           title="My Referrals"
           value={myTotalRef}
-          icon={Users}
-          helper="Total referred candidates"
-          accent="violet"
-          active={activeTab === "my-referrals"}
+          icon={<Users className="h-8 w-8" />}
+          variant="purple"
+          isActive={activeTab === "my-referrals"}
           onClick={() => setActiveTab("my-referrals")}
         />
-        <RecruitmentKpiCard
+        <StatsCard
           title="Pending Invitations"
           value={myPending}
-          icon={Clock}
+          icon={<Clock className="h-8 w-8" />}
+          variant="amber"
           helper="Awaiting candidate application"
           accent="amber"
           onClick={() => setActiveTab("my-referrals")}
         />
-        <RecruitmentKpiCard
+        <StatsCard
           title="Successful Hires"
           value={myHired}
           icon={CheckCircle2}
@@ -268,18 +272,19 @@ export default function EmployeeReferrals() {
             </div>
 
             <div className="flex items-center gap-3">
-              <select
-                value={selectedDept}
-                onChange={(e) => setSelectedDept(e.target.value)}
-                className="h-10 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850 px-3 text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
-              >
-                <option value="all">All Departments</option>
-                {departmentsList.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
-                  </option>
-                ))}
-              </select>
+              <Select value={selectedDept} onValueChange={setSelectedDept}>
+                <SelectTrigger className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900 px-3 text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-primary w-[180px]">
+                  <SelectValue placeholder="All Departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departmentsList.map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -389,93 +394,111 @@ export default function EmployeeReferrals() {
                   />
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs md:text-sm">
-                    <thead className="bg-slate-100/70 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-800">
-                      <tr>
-                        <th className="p-4">Candidate</th>
-                        <th className="p-4">Position</th>
-                        <th className="p-4">Referral Date</th>
-                        <th className="p-4">Invitation Status</th>
-                        <th className="p-4">Application Progress</th>
-                        <th className="p-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300 font-medium">
-                      {paginatedMyReferrals.map((ref) => (
-                        <tr key={ref._id} className="hover:bg-slate-50/60 dark:hover:bg-slate-850 transition-colors">
-                          <td className="p-4">
+                <DataTable
+                  columns={[
+                    {
+                      accessorKey: "candidate",
+                      header: "Candidate",
+                      cell: ({ row }) => {
+                        const ref = row.original;
+                        return (
+                          <div>
                             <div className="font-semibold text-slate-900 dark:text-slate-100">
                               {ref.candidateName}
                             </div>
                             <div className="text-xs text-slate-500 dark:text-slate-400">
                               {ref.candidateEmail}
                             </div>
-                          </td>
-                          <td className="p-4">
+                          </div>
+                        );
+                      }
+                    },
+                    {
+                      accessorKey: "position",
+                      header: "Position",
+                      cell: ({ row }) => {
+                        const ref = row.original;
+                        return (
+                          <div>
                             <div className="font-semibold text-slate-900 dark:text-slate-100">
                               {ref.jobTitle}
                             </div>
                             <div className="text-xs text-slate-500 dark:text-slate-400">
                               {ref.department}
                             </div>
-                          </td>
-                          <td className="p-4 text-slate-500 dark:text-slate-400">
-                            {new Date(ref.referralDate).toLocaleDateString()}
-                          </td>
-                          <td className="p-4">
-                            <span
-                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                                ref.status === "Invited"
-                                  ? "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20"
-                                  : ref.status === "Applied"
-                                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20"
-                                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
-                              }`}
-                            >
-                              {ref.status}
-                            </span>
-                          </td>
-                          <td className="p-4">
-                            <span
-                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                                ref.progress === "Hired"
-                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
-                                  : ref.progress === "Selected"
-                                  ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300"
-                                  : ref.progress === "Not Selected"
-                                  ? "bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300"
-                                  : "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
-                              }`}
-                            >
-                              {ref.progress}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-indigo-600 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-xs font-semibold cursor-pointer"
-                              onClick={() => setSelectedReferralForDrawer(ref)}
-                            >
-                              <Eye className="h-3.5 w-3.5 mr-1" /> Track Progress
-                            </Button>
+                          </div>
+                        );
+                      }
+                    },
+                    {
+                      accessorKey: "referralDate",
+                      header: "Referral Date",
+                      cell: ({ row }) => <span className="text-slate-500 dark:text-slate-400">{new Date(row.original.referralDate).toLocaleDateString()}</span>
+                    },
+                    {
+                      accessorKey: "status",
+                      header: "Invitation Status",
+                      cell: ({ row }) => {
+                        const ref = row.original;
+                        return (
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                              ref.status === "Invited"
+                                ? "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20"
+                                : ref.status === "Applied"
+                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20"
+                                : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                            }`}
+                          >
+                            {ref.status}
+                          </span>
+                        );
+                      }
+                    },
+                    {
+                      accessorKey: "progress",
+                      header: "Application Progress",
+                      cell: ({ row }) => {
+                        const ref = row.original;
+                        return (
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                              ref.progress === "Hired"
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                : ref.progress === "Selected"
+                                ? "bg-primary/20 text-primary dark:bg-primary/100/20 dark:text-primary"
+                                : ref.progress === "Not Selected"
+                                ? "bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300"
+                                : "bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-300"
+                            }`}
+                          >
+                            {ref.progress}
+                          </span>
+                        );
+                      }
+                    },
+                    {
+                      id: "actions",
+                      header: () => <div className="text-right">Actions</div>,
+                      cell: ({ row }) => {
+                        const ref = row.original;
+                        return (
+                          <div className="flex justify-end">
                             {ref.status === "Invited" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-xs font-semibold cursor-pointer"
+                              <ActionIcon
+                                icon={Trash2}
+                                tooltip="Cancel Referral"
                                 onClick={() => handleCancelReferral(ref._id)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5 mr-1" /> Cancel
-                              </Button>
+                              />
                             )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                          </div>
+                        );
+                      }
+                    }
+                  ]}
+                  data={paginatedMyReferrals}
+                  searchable={false}
+                />
               )}
             </CardContent>
             
@@ -494,28 +517,27 @@ export default function EmployeeReferrals() {
         </TabsContent>
       </Tabs>
 
-      {/* Detail Modal */}
-      <Dialog open={!!selectedJobForDetail} onOpenChange={() => setSelectedJobForDetail(null)}>
-        <DialogContent className="max-w-xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl">
-          <DialogHeader className="border-b border-slate-100 dark:border-slate-800 pb-3">
-            <div className="flex justify-between items-center">
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/20">
-                {selectedJobForDetail?.department}
-              </span>
-              <span className="text-xs text-slate-500">{selectedJobForDetail?.employmentType}</span>
-            </div>
-            <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white mt-2">
-              {selectedJobForDetail?.jobTitle}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-              <MapPin className="h-3.5 w-3.5" />
-              {selectedJobForDetail?.officeLocation} {selectedJobForDetail?.workMode ? `• ${selectedJobForDetail.workMode}` : ""}
-            </DialogDescription>
-          </DialogHeader>
+      {/* Modal 1: Job Details */}
+      {selectedJobForDetail && (
+        <Dialog open={!!selectedJobForDetail} onOpenChange={() => setSelectedJobForDetail(null)}>
+          <DialogContent className="max-w-2xl bg-white dark:bg-slate-950">
+            <DialogHeader>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary dark:bg-primary/100/10 dark:text-primary">
+                  {selectedJobForDetail.department}
+                </span>
+                <span className="text-xs text-slate-500">{selectedJobForDetail.employmentType}</span>
+              </div>
+              <DialogTitle className="text-xl font-bold mt-2">
+                {selectedJobForDetail.jobTitle}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500 flex items-center gap-2">
+                <MapPin className="h-3.5 w-3.5" /> {selectedJobForDetail.officeLocation} • {selectedJobForDetail.positions || 1} Openings
+              </DialogDescription>
+            </DialogHeader>
 
-          {selectedJobForDetail && (
-            <div className="space-y-4 pt-2 text-xs">
-              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-100 dark:border-slate-800">
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 text-xs md:text-sm text-slate-700 dark:text-slate-300">
+              {selectedJobForDetail.aboutRole && (
                 <div>
                   <span className="text-slate-500 font-medium">Min Experience:</span>
                   <p className="font-semibold text-slate-900 dark:text-slate-100 mt-0.5">
@@ -635,34 +657,18 @@ export default function EmployeeReferrals() {
               />
             </div>
 
-            <DialogFooter className="border-t border-slate-100 dark:border-slate-800 pt-3 mt-4">
-              <Button type="button" variant="outline" size="sm" className="text-xs cursor-pointer" onClick={() => setSelectedJobForReferral(null)}>
-                Cancel
-              </Button>
-              <Button type="submit" size="sm" disabled={isSubmittingReferral} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs cursor-pointer">
-                {isSubmittingReferral ? (
-                  <>
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Submitting...
-                  </>
-                ) : (
-                  <>
-                    <Send className="mr-1.5 h-3.5 w-3.5" /> Submit Referral
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* ─────────────────────────────────────────────────────────────
-          RIGHT-SIDE REFERRAL PROGRESS DRAWER
-         ───────────────────────────────────────────────────────────── */}
-      <ReferralProgressDrawer
-        open={!!selectedReferralForDrawer}
-        onClose={() => setSelectedReferralForDrawer(null)}
-        referral={selectedReferralForDrawer}
-      />
+              <DialogFooter className="pt-3">
+                <Button variant="outline" type="button" onClick={() => setSelectedJobForReferral(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmittingReferral} className="bg-primary hover:bg-primary/90 text-white font-semibold cursor-pointer">
+                  {isSubmittingReferral ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />} Send Referral Link
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

@@ -1,4 +1,6 @@
 import { PriorityDot } from "@/components/ui/PriorityDot";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import * as Motion from "framer-motion";
 import { toast } from "sonner";
@@ -7,10 +9,16 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { Link, useLocation } from "react-router-dom";
 import { ArrowLeft, BriefcaseBusiness, RefreshCw, Send, CheckCircle2, XCircle, BadgeCheck, Pencil, Search, ChevronDown, Clock3, AlertTriangle, CircleDollarSign, Eye, UserCheck, FileText, Download, UserPlus, Archive, ShieldCheck, ExternalLink } from "lucide-react";
-import { Pagination } from "@/components/ui/pagination";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { RecruitmentKpiCard } from "@/components/recruitment/RecruitmentUI";
+import { DataTable } from "@/components/ui/data-table";
+import { StatsCard } from "@/components/ui/stats-card";
+import { ActionIcon } from "@/components/ui/action-icon";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import offerOperationsService from "@/services/offerOperationsService";
 import apiClient from "@/services/apiClient";
 import { useUser } from "@/contexts/UserContext";
@@ -69,37 +77,11 @@ const OfferOperations = () => {
   const [filterStatus, setFilterStatus] = useState("All Statuses");
   const [filterPriority, setFilterPriority] = useState("All Priorities");
   const [filterDept, setFilterDept] = useState("All Departments");
-  const [page, setPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
-
-  const offers = useMemo(() => (data?.offers || []).map(enrichOffer), [data]);
-  const filteredOffers = useMemo(() => {
-    return offers.filter(offer => {
-       if (search && !offer.candidateName?.toLowerCase().includes(search.toLowerCase())) return false;
-       if (filterStatus !== "All Statuses" && offer.status !== filterStatus) return false;
-       if (filterDept !== "All Departments" && offer.department !== filterDept) return false;
-       const priority = offer.priority || (Number(offer.salary) >= 250000 ? "High" : Number(offer.salary) < 120000 ? "Low" : "Medium");
-       if (filterPriority !== "All Priorities" && priority !== filterPriority) return false;
-       return true;
-    });
-  }, [offers, search, filterStatus, filterPriority, filterDept]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [search, filterStatus, filterPriority, filterDept]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredOffers.length / ITEMS_PER_PAGE));
-  const paginatedOffers = useMemo(() => {
-    const start = (page - 1) * ITEMS_PER_PAGE;
-    return filteredOffers.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredOffers, page]);
-  
   const handleResetFilters = () => {
     setSearch("");
     setFilterStatus("All Statuses");
     setFilterPriority("All Priorities");
     setFilterDept("All Departments");
-    setPage(1);
   };
 
 
@@ -123,6 +105,31 @@ const OfferOperations = () => {
     loadDashboard();
   }, [loadDashboard]);
 
+
+  const offers = useMemo(() => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.offers)) return data.offers;
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.activeOffers)) return data.activeOffers;
+    return [];
+  }, [data]);
+
+  const filteredOffers = useMemo(() => {
+    return offers.filter((o) => {
+      const q = search.toLowerCase();
+      const matchesSearch = !search || String(o.candidateName || "").toLowerCase().includes(q) || String(o.offerId || "").toLowerCase().includes(q);
+      const matchesStatus = filterStatus === "All Statuses" ? true : o.status === filterStatus;
+      
+      const salaryNum = Number(o.salary) || 0;
+      const derivedPriority = o.priority || (salaryNum >= 250000 ? "High" : salaryNum < 120000 ? "Low" : "Medium");
+      const matchesPriority = filterPriority === "All Priorities" ? true : derivedPriority === filterPriority;
+      
+      const matchesDept = filterDept === "All Departments" ? true : o.department === filterDept;
+      
+      return matchesSearch && matchesStatus && matchesPriority && matchesDept;
+    });
+  }, [offers, search, filterStatus, filterPriority, filterDept]);
 
   const selectedOffer = useMemo(() => offers.find((offer) => offer._id === selectedOfferId) || offers[0], [offers, selectedOfferId]);
 
@@ -281,6 +288,57 @@ const OfferOperations = () => {
     return groups;
   }, [recentActivities]);
 
+  const columns = useMemo(() => [
+    {
+      accessorKey: "candidateName",
+      header: "Candidate",
+      cell: ({ row }) => <span className="font-medium text-foreground">{row.original.candidateName}</span>,
+    },
+    {
+      accessorKey: "offerId",
+      header: "Offer ID",
+      cell: ({ row }) => <span className="text-muted-foreground">{row.original.offerId}</span>,
+    },
+    {
+      accessorKey: "status",
+      header: "Offer Status",
+      cell: ({ row }) => <OfferStatusBadge status={row.original.status} />,
+    },
+    {
+      accessorKey: "approvalStage",
+      header: "Current Stage",
+      cell: ({ row }) => <span className="text-muted-foreground">{row.original.approvalStage || "Draft"}</span>,
+    },
+    {
+      id: "priority",
+      header: "Priority",
+      cell: ({ row }) => {
+        const priority = row.original.priority || (Number(row.original.salary) >= 250000 ? "High" : Number(row.original.salary) < 120000 ? "Low" : "Medium");
+        return <div className="flex justify-center"><PriorityDot priority={priority} /></div>;
+      }
+    },
+    {
+      id: "updatedAt",
+      header: "Last Updated",
+      cell: ({ row }) => <span className="text-muted-foreground">{new Date(row.original.updatedAt || row.original.createdAt).toLocaleDateString()}</span>,
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const offer = row.original;
+        return (
+          <div className="flex items-center justify-end gap-1">
+            <ActionIcon icon={Eye} tooltip="View Details" onClick={(e) => { e.stopPropagation(); handleAction("preview", offer); }} />
+            <ActionIcon icon={Pencil} tooltip="Edit Offer" disabled={!canWrite} />
+            <ActionIcon icon={Send} tooltip="Send Offer" disabled={!(canWrite && canSendOffer(offer))} onClick={(e) => { e.stopPropagation(); handleAction("send", offer); }} />
+            <ActionIcon icon={XCircle} tooltip="Cancel Offer" disabled={!canApproveOffers} onClick={(e) => { e.stopPropagation(); handleAction("reject", offer); }} />
+          </div>
+        );
+      },
+    },
+  ], [canWrite, canApproveOffers, handleAction, selectedOffer]);
+
   return (
     <div className="min-h-screen bg-background text-foreground p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
@@ -308,10 +366,10 @@ const OfferOperations = () => {
         <>
           {!showApprovalsOnly && !showTemplatesOnly && (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-              <RecruitmentKpiCard title="HR Approval" value={pendingHr} icon={AlertTriangle} accent="amber" />
-              <RecruitmentKpiCard title="Manager Approval" value={pendingMgr} icon={Clock3} accent="blue" />
-              <RecruitmentKpiCard title="Expiring Soon" value={expiringSoon} icon={AlertTriangle} accent="rose" />
-              <RecruitmentKpiCard title="Response Due" value={responsePending} icon={CheckCircle2} accent="violet" />
+              <StatsCard title="HR Approval" value={pendingHr} icon={AlertTriangle} variant="amber" />
+              <StatsCard title="Manager Approval" value={pendingMgr} icon={Clock3} variant="blue" />
+              <StatsCard title="Expiring Soon" value={expiringSoon} icon={AlertTriangle} variant="rose" />
+              <StatsCard title="Response Due" value={responsePending} icon={CheckCircle2} variant="purple" />
             </div>
           )}
 
@@ -337,76 +395,7 @@ const OfferOperations = () => {
 
               {/* TABLE */}
               <div className="rounded-lg border border-border bg-card/80 shadow-sm overflow-hidden flex flex-col mb-6">
-                <table className="w-full text-sm table-fixed">
-                  <thead className="bg-muted/95 text-xs uppercase tracking-wide text-muted-foreground">
-                    <tr>
-                      <th className="w-[18%] px-4 py-3 text-left font-semibold truncate">Candidate</th>
-                      <th className="w-[12%] px-4 py-3 text-left font-semibold truncate">Offer ID</th>
-                      <th className="w-[15%] px-4 py-3 text-left font-semibold truncate">Offer Status</th>
-                      <th className="w-[15%] px-4 py-3 text-left font-semibold truncate">Current Stage</th>
-                      <th className="w-[10%] px-4 py-3 text-center font-semibold truncate">Priority</th>
-                      <th className="w-[15%] px-4 py-3 text-left font-semibold truncate">Last Updated</th>
-                      <th className="w-[15%] px-4 py-3 text-right font-semibold truncate">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {paginatedOffers.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-sm">
-                          No offers match the selected filters.
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedOffers.map((offer) => {
-                        const priority = offer.priority || (Number(offer.salary) >= 250000 ? "High" : Number(offer.salary) < 120000 ? "Low" : "Medium");
-                        const isSelected = selectedOffer?._id === offer._id;
-                        return (
-                          <tr key={offer._id || offer.offerId} onClick={() => setSelectedOfferId(offer._id)} className={cn("transition-colors cursor-pointer", isSelected ? "bg-muted/50" : "hover:bg-muted/30 odd:bg-white/[0.02]")}>
-                            <td className="px-4 py-3 truncate font-medium text-foreground">{offer.candidateName}</td>
-                            <td className="px-4 py-3 text-muted-foreground truncate">{offer.offerId}</td>
-                            <td className="px-4 py-3 truncate"><OfferStatusBadge status={offer.status} /></td>
-                            <td className="px-4 py-3 text-muted-foreground truncate">{offer.approvalStage || "Draft"}</td>
-                            <td className="px-4 py-3 text-center truncate">
-                                <PriorityDot priority={priority} />
-                              </td>
-                            <td className="px-4 py-3 text-muted-foreground truncate">{new Date(offer.updatedAt || offer.createdAt).toLocaleDateString()}</td>
-                            <td className="px-4 py-3 text-right truncate">
-                              <div className="flex items-center justify-end gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleAction("preview", offer); }} title="View">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 shrink-0 cursor-pointer" title="Edit">
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                {canWrite && canSendOffer(offer) && (
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500 hover:text-green-600 hover:bg-green-500/10 shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleAction("send", offer); }} title="Send Offer">
-                                    <Send className="h-4 w-4" />
-                                  </Button>
-                                )}
-                                {canApproveOffers && (
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10 shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleAction("reject", offer); }} title="Cancel">
-                                    <XCircle className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-
-                {/* PAGINATION FOOTER */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-border bg-card/50 text-xs text-muted-foreground">
-                  <Pagination 
-                    currentPage={page} 
-                    totalPages={totalPages} 
-                    totalItems={filteredOffers.length} 
-                    itemsPerPage={ITEMS_PER_PAGE}
-                    onPageChange={(p) => setPage(p)} 
-                  />
-                </div>
+                <DataTable columns={columns} data={filteredOffers} />
               </div>
             </>
           )}
@@ -416,14 +405,14 @@ const OfferOperations = () => {
           ) : showApprovalsOnly ? (
             <OfferApprovalTimeline offer={selectedOffer} onAction={handleAction} canWrite={canApproveOffers} />
           ) : (
-            <>
+            <div className="flex flex-col gap-6">
               {/* Recent Offer Activities & Operational Summary */}
               <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
                 {/* Recent Offer Activities */}
                 <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <div className="mb-4 flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
-                      <Clock3 className="h-5 w-5 text-cyan-500 dark:text-cyan-400 mt-1 shrink-0" strokeWidth={2} />
+                      <Clock3 className="h-5 w-5 text-primary mt-1 shrink-0" strokeWidth={2} />
                       <div>
                         <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Recent Activity</h2>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Latest offer events only.</p>
@@ -443,7 +432,7 @@ const OfferOperations = () => {
                         if (items.length === 0) return null;
                         return (
                           <div key={groupName} className="space-y-3">
-                            <h3 className="text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">{groupName}</h3>
+                            <h3 className="text-[10px] font-bold uppercase tracking-wider text-primary">{groupName}</h3>
                             <div className="space-y-2">
                               {items.map((act, index) => {
                                 const lowerAction = act.action.toLowerCase();
@@ -488,7 +477,7 @@ const OfferOperations = () => {
                 {/* Selected Candidate Overview */}
                 <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <div className="mb-4 flex items-start gap-3">
-                    <UserCheck className="h-5 w-5 text-cyan-500 dark:text-cyan-400 mt-1 shrink-0" strokeWidth={2} />
+                    <UserCheck className="h-5 w-5 text-primary mt-1 shrink-0" strokeWidth={2} />
                     <div>
                       <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Selected Candidate Overview</h2>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Review the active candidate and offer information before proceeding with offer actions.</p>
@@ -504,7 +493,7 @@ const OfferOperations = () => {
                         <div className="space-y-4 mt-4">
                           {/* Candidate Identity (Primary Focus) */}
                           <div className="space-y-3.5">
-                            <div className="h-10 w-10 rounded-full bg-cyan-500/10 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 font-bold text-xs border border-cyan-500/20 grid place-items-center shrink-0">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 text-primary font-bold text-xs border border-primary/20 grid place-items-center shrink-0">
                               {initials}
                             </div>
                             <div className="space-y-1">
@@ -536,7 +525,7 @@ const OfferOperations = () => {
                                   return (
                                     <Link
                                       to={`/employee-center/employee/${empProfileId || empCode}`}
-                                      className="inline-flex items-center gap-1 font-bold text-cyan-600 dark:text-cyan-400 hover:underline"
+                                      className="inline-flex items-center gap-1 font-bold text-primary hover:underline"
                                       title="View Employee Profile in Employee Center"
                                     >
                                       {empCode || "View Profile"}
@@ -573,38 +562,40 @@ const OfferOperations = () => {
                   )}
                 </section>
               </div>
-              <OfferLifecycleTracker offer={selectedOffer} />
-              <div className="grid gap-6 2xl:grid-cols-[1.05fr_0.95fr]">
-                <OfferApprovalTimeline offer={selectedOffer} onAction={handleAction} canWrite={canApproveOffers} />
-                <CompensationBreakdownCard offer={selectedOffer} />
-              </div>
-              <div className="grid gap-6 2xl:grid-cols-[0.95fr_1.05fr]">
-                <NegotiationTimeline offer={selectedOffer} onAction={handleAction} canWrite={canApproveOffers} />
-                <NotificationCenter notifications={data?.notifications || []} />
-              </div>
-              <div className="grid gap-6 2xl:grid-cols-[1fr_1fr]">
-                <HiringActivityFeed activity={data?.activity || []} />
-                <CandidateComparisonPanel offers={offers} />
-              </div>
-              <OfferInsightsPanel insights={data?.insights || []} />
-              <OfferAutomationRules rules={selectedOffer?.automationRules || []} />
-              <TemplatesPanel offers={offers} selectedOffer={selectedOffer} onPreview={(templateId) => setPreviewOffer({ ...selectedOffer, previewTemplateId: templateId })} />
-              <PreOnboardingWorkflow offer={selectedOffer} />
               {selectedOffer && (
-                <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <BadgeCheck className="h-5 w-5 text-cyan-500 dark:text-cyan-400 mt-1 shrink-0" strokeWidth={2} />
-                      <div>
-                        <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Offer Letter Preview</h2>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Review the selected candidate letter.</p>
-                      </div>
-                    </div>
-                    <Button onClick={() => setPreviewOffer(selectedOffer)} className="rounded-lg bg-cyan-600 dark:bg-cyan-500 text-white hover:bg-cyan-700 dark:hover:bg-cyan-600 transition-all shadow-sm hover:-translate-y-0.5">Preview Offer</Button>
+                <>
+                  <OfferLifecycleTracker offer={selectedOffer} />
+                  <div className="grid gap-6 2xl:grid-cols-[1.05fr_0.95fr]">
+                    <OfferApprovalTimeline offer={selectedOffer} onAction={handleAction} canWrite={canApproveOffers} />
+                    <CompensationBreakdownCard offer={selectedOffer} />
                   </div>
-                </section>
+                  <div className="grid gap-6 2xl:grid-cols-[0.95fr_1.05fr]">
+                    <NegotiationTimeline offer={selectedOffer} onAction={handleAction} canWrite={canApproveOffers} />
+                    <NotificationCenter notifications={data?.notifications || []} />
+                  </div>
+                  <div className="grid gap-6 2xl:grid-cols-[1fr_1fr]">
+                    <HiringActivityFeed activity={data?.activity || []} />
+                    <CandidateComparisonPanel offers={offers} />
+                  </div>
+                  <OfferInsightsPanel insights={data?.insights || []} />
+                  <OfferAutomationRules rules={selectedOffer?.automationRules || []} />
+                  <TemplatesPanel offers={offers} selectedOffer={selectedOffer} onPreview={(templateId) => setPreviewOffer({ ...selectedOffer, previewTemplateId: templateId })} />
+                  <PreOnboardingWorkflow offer={selectedOffer} />
+                  <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <BadgeCheck className="h-5 w-5 text-primary mt-1 shrink-0" strokeWidth={2} />
+                        <div>
+                          <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Offer Letter Preview</h2>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Review the selected candidate letter.</p>
+                        </div>
+                      </div>
+                      <Button onClick={() => setPreviewOffer(selectedOffer)} className="rounded-lg bg-cyan-600 dark:bg-cyan-500 text-white hover:bg-cyan-700 dark:hover:bg-cyan-600 transition-all shadow-sm hover:-translate-y-0.5">Preview Offer</Button>
+                    </div>
+                  </section>
+                </>
               )}
-            </>
+            </div>
           )}
         </>
       )}
@@ -618,21 +609,19 @@ export default OfferOperations;
 
 function FilterSelect({ label, value, onChange, options = [] }) {
   return (
-    <label className="relative block w-full">
-      <span className="sr-only">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="appearance-none h-9 w-full rounded-md border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-[3px] focus:ring-ring/50 cursor-pointer"
-      >
-        <option value={options[0]}>{options[0]}</option>
-        {options.slice(1).map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-2 top-2.5 h-4 w-4 text-muted-foreground" />
-    </label>
+    <div className="relative block w-full">
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="h-9 w-full bg-background text-sm">
+          <SelectValue placeholder={options[0]} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option} value={option}>
+              {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

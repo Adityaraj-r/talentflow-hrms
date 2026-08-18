@@ -160,7 +160,7 @@ const Careers = () => {
               placeholder="Search jobs by title, skill, or keyword..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-full pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full text-[14px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-slate-400"
+              className="w-full h-full pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full text-[14px] focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all placeholder-slate-400"
             />
           </div>
           
@@ -168,7 +168,7 @@ const Careers = () => {
             <select 
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="w-full h-full appearance-none pl-4 pr-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full text-[14px] font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer truncate"
+              className="w-full h-full appearance-none pl-4 pr-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full text-[14px] font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all cursor-pointer truncate"
             >
               {departments.map(dept => <option key={dept} value={dept}>{dept === "All" ? "Department" : dept}</option>)}
             </select>
@@ -179,7 +179,7 @@ const Careers = () => {
             <select 
               value={employmentTypeFilter}
               onChange={(e) => setEmploymentTypeFilter(e.target.value)}
-              className="w-full h-full appearance-none pl-4 pr-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full text-[14px] font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer truncate"
+              className="w-full h-full appearance-none pl-4 pr-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full text-[14px] font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all cursor-pointer truncate"
             >
               {employmentTypes.map(type => <option key={type} value={type}>{type === "All" ? "Employment Type" : type}</option>)}
             </select>
@@ -190,7 +190,7 @@ const Careers = () => {
 
           <button 
             onClick={clearFilters}
-            className="h-[44px] px-2 flex items-center justify-center gap-1.5 text-[14px] font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400 transition-colors whitespace-nowrap"
+            className="h-[44px] px-2 flex items-center justify-center gap-1.5 text-[14px] font-semibold text-purple-600 hover:text-purple-700 dark:text-purple-500 dark:hover:text-purple-400 transition-colors whitespace-nowrap"
           >
             <RefreshCcw size={14} /> Reset
           </button>
@@ -199,7 +199,7 @@ const Careers = () => {
         {/* Job Cards Container */}
         {loading ? (
           <div className="py-20 flex justify-center items-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
           </div>
         ) : filteredJobs.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 w-full">
@@ -337,7 +337,7 @@ const Careers = () => {
                     {/* Buttons */}
                     <div className="flex justify-center pt-4">
                       <button 
-                        className="px-10 h-[40px] bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-[14px] transition-all shadow-sm shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        className="px-10 h-[40px] bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl text-[14px] transition-all shadow-sm shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                         disabled={inactive}
                         onClick={() => {
                           if(!inactive) navigate(`/apply/${job._id}?roleId=${firstRole?._id || ""}`)
@@ -368,7 +368,7 @@ const Careers = () => {
                   Clear Filters
                 </button>
               ) : null}
-              <button className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-[14px] transition-colors shadow-sm">
+              <button className="h-11 px-6 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl text-[14px] transition-colors shadow-sm">
                 Join Talent Pool
               </button>
             </div>
@@ -389,9 +389,9 @@ const Careers = () => {
           <div>
             <h4 className="font-semibold mb-4 text-[15px]">Quick Links</h4>
             <ul className="space-y-2 text-[14px] text-slate-600 dark:text-slate-400">
-              <li><a href="#" className="hover:text-blue-600 transition-colors">Careers Home</a></li>
-              <li><a href="#" className="hover:text-blue-600 transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-blue-600 transition-colors">Terms & Conditions</a></li>
+              <li><a href="#" className="hover:text-purple-600 transition-colors">Careers Home</a></li>
+              <li><a href="#" className="hover:text-purple-600 transition-colors">Privacy Policy</a></li>
+              <li><a href="#" className="hover:text-purple-600 transition-colors">Terms & Conditions</a></li>
             </ul>
           </div>
           <div>

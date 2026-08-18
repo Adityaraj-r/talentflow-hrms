@@ -62,9 +62,9 @@ const HRDashboard = ({ stats = {}, isLoading = false }) => {
       type: 'recruitment',
       title: 'Open Positions',
       desc: `${stats?.openPositions || 5} active job postings need attention.`,
-      icon: <Briefcase className="w-4 h-4 text-blue-600" />,
-      bg: 'bg-blue-50 border-blue-100',
-      iconBg: 'bg-blue-100'
+      icon: <Briefcase className="w-4 h-4 text-purple-600" />,
+      bg: 'bg-purple-50 border-purple-100',
+      iconBg: 'bg-purple-100'
     }
   ];
 

@@ -28,6 +28,8 @@ import { Pagination } from "@/components/ui/pagination";
 import apiClient from "@/services/apiClient";
 import SkeletonCard from "@/components/reports/SkeletonCard";
 import { performanceApi } from "@/services/performanceApi";
+import { StatsCard } from "@/components/ui/stats-card";
+import { DataTable } from "@/components/ui/data-table";
 import { toast } from "sonner";
 import { formatWorkflowStageLabel } from "@/lib/pmsDisplay";
 
@@ -62,7 +64,6 @@ const PerformanceAnalytics = () => {
   const [dashboard, setDashboard] = useState(null);
   const [ratingTrend, setRatingTrend] = useState([]);
   const [pageCycleRows, setPageCycleRows] = useState(1);
-  const [pageTopPerformers, setPageTopPerformers] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -175,67 +176,10 @@ const PerformanceAnalytics = () => {
   return (
     <div className="space-y-6 max-w-full">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-y border-r border-slate-200 dark:border-slate-800 border-l-4 border-l-blue-500 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
-          <CardContent className="p-6">
-            <div className="mb-2 flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-500" />
-              <span className="text-sm font-medium text-muted-foreground">
-                Total Employees
-              </span>
-            </div>
-            <div className="text-3xl font-bold text-blue-500">
-              {kpis.totalEmployees}
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Active employee accounts (HR stats scope)
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="border-y border-r border-slate-200 dark:border-slate-800 border-l-4 border-l-green-500 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
-          <CardContent className="p-6">
-            <div className="mb-2 flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-green-500" />
-              <span className="text-sm font-medium text-muted-foreground">
-                Org Avg Rating
-              </span>
-            </div>
-            <div className="text-3xl font-bold text-green-500">
-              {(kpis.overallAvgRating || 0).toFixed(1)}/5
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              From completed / terminal reviews
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="border-y border-r border-slate-200 dark:border-slate-800 border-l-4 border-l-purple-500 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
-          <CardContent className="p-6">
-            <div className="mb-2 flex items-center gap-2">
-              <Target className="h-5 w-5 text-purple-500" />
-              <span className="text-sm font-medium text-muted-foreground">
-                Active Cycles
-              </span>
-            </div>
-            <div className="text-3xl font-bold text-purple-500">
-              {kpis.activeCycles}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-y border-r border-slate-200 dark:border-slate-800 border-l-4 border-l-amber-500 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
-          <CardContent className="p-6">
-            <div className="mb-2 flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-amber-500" />
-              <span className="text-sm font-medium text-muted-foreground">
-                Open pipeline
-              </span>
-            </div>
-            <div className="text-3xl font-bold text-amber-600">
-              {kpis.pendingPipelineCount}
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Reviews not yet finalized
-            </p>
-          </CardContent>
-        </Card>
+        <StatsCard title="Total Employees" value={kpis.totalEmployees} icon={Users} variant="purple" />
+        <StatsCard title="Org Avg Rating" value={(kpis.overallAvgRating || 0).toFixed(1) + "/5"} icon={TrendingUp} variant="emerald" />
+        <StatsCard title="Active Cycles" value={kpis.activeCycles} icon={Target} variant="purple" />
+        <StatsCard title="Open pipeline" value={kpis.pendingPipelineCount} icon={ClipboardList} variant="amber" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -280,7 +224,7 @@ const PerformanceAnalytics = () => {
         <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-indigo-500" />
+              <BarChart3 className="h-5 w-5 text-purple-500" />
               Rating histogram (1–5)
             </CardTitle>
             <p className="text-sm text-muted-foreground">
@@ -427,75 +371,32 @@ const PerformanceAnalytics = () => {
           </p>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">
-                    Rank
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">
-                    Employee
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">
-                    Department
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">
-                    Rating
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">
-                    Visual
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {topPerformers.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="px-6 py-12 text-center text-muted-foreground"
-                    >
-                      No finalized ratings yet — complete reviews to populate this
-                      table.
-                    </td>
-                  </tr>
-                ) : (
-                  topPerformers.slice((pageTopPerformers - 1) * 10, pageTopPerformers * 10).map((performer, index) => (
-                    <tr key={performer.reviewId || index} className="hover:bg-muted/50">
-                      <td className="px-6 py-4">
-                        <span className="font-bold">#{index + 1}</span>
-                      </td>
-                      <td className="px-6 py-4 font-medium">{performer.name}</td>
-                      <td className="px-6 py-4 text-muted-foreground">
-                        {performer.department}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-lg font-bold text-orange-600">
-                          {(performer.rating || 0).toFixed(1)}/5
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="h-2 w-full rounded-full bg-muted">
-                          <div
-                            className="h-2 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500"
-                            style={{
-                              width: `${((performer.rating || 0) / 5) * 100}%`,
-                            }}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-            {topPerformers.length > 0 && (
-              <Pagination
-                currentPage={pageTopPerformers}
-                totalPages={Math.ceil(topPerformers.length / 10)}
-                totalItems={topPerformers.length}
-                itemsPerPage={10}
-                onPageChange={setPageTopPerformers}
+          <div className="p-4">
+            {topPerformers.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground">
+                No finalized ratings yet — complete reviews to populate this table.
+              </div>
+            ) : (
+              <DataTable 
+                columns={[
+                  { header: "Rank", accessorKey: "rank", cell: ({ row }) => <span className="font-bold">#{row.original.rank}</span> },
+                  { header: "Employee", accessorKey: "name", cell: ({ row }) => <span className="font-medium">{row.original.name}</span> },
+                  { header: "Department", accessorKey: "department", cell: ({ row }) => <span className="text-muted-foreground">{row.original.department}</span> },
+                  { header: "Rating", accessorKey: "rating", cell: ({ row }) => <span className="text-lg font-bold text-orange-600">{(row.original.rating || 0).toFixed(1)}/5</span> },
+                  { header: "Visual", cell: ({ row }) => (
+                    <div className="h-2 w-full rounded-full bg-muted min-w-[100px]">
+                      <div
+                        className="h-2 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500"
+                        style={{
+                          width: `${((row.original.rating || 0) / 5) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  ) }
+                ]} 
+                data={topPerformers.map((p, i) => ({ ...p, rank: i + 1 }))} 
+                defaultPageSize={10} 
+                searchable={false} 
               />
             )}
           </div>

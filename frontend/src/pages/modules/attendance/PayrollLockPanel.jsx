@@ -236,7 +236,7 @@ const PayrollLockPanel = ({ onLockChange }) => {
                   onClick={() => applyMonthPreset(offset)}
                   className={`px-3 py-1 text-xs rounded-full transition-colors font-medium border ${
                     isActive
-                      ? "bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30"
+                      ? "bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30"
                       : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-transparent dark:border-transparent dark:text-slate-400 dark:hover:bg-slate-800"
                   }`}
                 >
@@ -273,7 +273,7 @@ const PayrollLockPanel = ({ onLockChange }) => {
 
           {lastAction && (
             <div className="flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400">
-              <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-indigo-500 dark:text-indigo-400" />
+              <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-purple-500 dark:text-purple-400" />
               <span>
                 Last action: <span className="font-medium text-slate-900 dark:text-slate-200 capitalize">{lastAction.type}</span> by <span className="font-medium text-slate-900 dark:text-slate-200">{lastAction.by}</span> on {formatDisplayDate(lastAction.date)}
               </span>

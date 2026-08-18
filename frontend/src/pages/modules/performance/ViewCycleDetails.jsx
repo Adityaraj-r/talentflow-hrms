@@ -18,7 +18,9 @@ import {
   FileText,
   BarChart3,
   Plus,
-  Clock
+  Clock,
+  Eye,
+  Pencil
 } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
@@ -27,6 +29,9 @@ import { reviewApi } from "@/services/reviewApi";
 import AssignReviewModal from "@/components/performance/AssignReviewModal";
 import { displayDepartment, displayPersonName } from "@/lib/pmsDisplay";
 import SubmitReviewModal from "@/components/performance/SubmitReviewModal";
+import { StatsCard } from "@/components/ui/stats-card";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
 
 const ViewCycleDetails = () => {
   const navigate = useNavigate();
@@ -37,7 +42,6 @@ const ViewCycleDetails = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedReview, setSelectedReview] = useState(null);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -154,7 +158,7 @@ const ViewCycleDetails = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-950">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
         <span className="ml-2 text-lg text-gray-900 dark:text-white">Loading cycle details...</span>
       </div>
     );
@@ -180,6 +184,36 @@ const ViewCycleDetails = () => {
     );
   }
 
+  const columns = React.useMemo(() => [
+    { header: "Employee", id: "employee", cell: ({ row }) => <span className="font-medium text-gray-900 dark:text-white">{getEmployeeName(row.original)}</span> },
+    { header: "Department", id: "department", cell: ({ row }) => <span className="text-gray-500 dark:text-gray-400">{getEmployeeDept(row.original)}</span> },
+    { header: "Status", id: "status", cell: ({ row }) => (
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 w-fit ${getStatusStyle(row.original.status)}`}>
+        {getStatusIcon(row.original.status)}
+        {row.original.status?.replace("-", " ").toUpperCase()}
+      </span>
+    ) },
+    { header: "Rating", id: "rating", cell: ({ row }) => (
+      <span className="font-semibold">
+        {row.original.overallRating > 0 ? <span className="text-orange-600 dark:text-orange-400">{row.original.overallRating}/5</span> : <span className="text-gray-400">—</span>}
+      </span>
+    ) },
+    { header: "Reviewer", id: "reviewer", cell: ({ row }) => <span className="text-gray-500 dark:text-gray-400">{getReviewerName(row.original)}</span> },
+    { header: "Submitted", id: "submittedAt", cell: ({ row }) => <span className="text-gray-500 dark:text-gray-400">{row.original.submittedAt ? new Date(row.original.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}</span> },
+    { id: "actions", header: () => <div className="text-right w-[100px] ml-auto">Actions</div>, cell: ({ row }) => {
+      const review = row.original;
+      return (
+        <div className="flex items-center justify-end gap-2 w-[100px] ml-auto">
+          {review.status === "pending" ? (
+            <ActionIcon icon={Pencil} tooltip="Start Review" onClick={() => { setSelectedReview(review); setShowSubmitModal(true); }} />
+          ) : (
+            <ActionIcon icon={Eye} tooltip="View Details" onClick={() => navigate(`/role/hr_manager/review/${review._id}`)} />
+          )}
+        </div>
+      );
+    } }
+  ], [navigate]);
+
   return (
     <div className="space-y-6 max-w-full pb-10">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -203,7 +237,7 @@ const ViewCycleDetails = () => {
             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${cycle.status === "active"
                 ? "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/30"
                 : cycle.status === "completed"
-                  ? "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30"
+                  ? "bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/30"
                   : "bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400 border border-gray-200 dark:border-gray-500/30"
               }`}>
               {cycle.status?.toUpperCase()}
@@ -222,49 +256,15 @@ const ViewCycleDetails = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-
-          <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-xl p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Cycle Period</span>
-            </div>
-            <div className="text-sm font-semibold text-gray-900 dark:text-white">
-              {new Date(cycle.startDate).toLocaleDateString("en-US", {
-                month: "short", day: "numeric", year: "numeric"
-              })}
-              {" — "}
-              {new Date(cycle.endDate).toLocaleDateString("en-US", {
-                month: "short", day: "numeric", year: "numeric"
-              })}
-            </div>
-          </div>
-
-          <div className="bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-xl p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Total Reviews</span>
-            </div>
-            <div className="text-3xl font-bold text-gray-900 dark:text-white">{totalReviews}</div>
-          </div>
-
-          <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Completion Rate</span>
-            </div>
-            <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{completionRate}%</div>
-            <Progress value={completionRate} className="h-2" />
-          </div>
-
-          <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 rounded-xl p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Average Rating</span>
-            </div>
-            <div className="text-3xl font-bold text-gray-900 dark:text-white">
-              {completedReviews > 0 ? `${avgRating.toFixed(1)}/5` : "—"}
-            </div>
-          </div>
+          <StatsCard 
+            title="Cycle Period" 
+            value={`${new Date(cycle.startDate).toLocaleDateString("en-US", {month: "short", day: "numeric", year: "numeric"})} — ${new Date(cycle.endDate).toLocaleDateString("en-US", {month: "short", day: "numeric", year: "numeric"})}`} 
+            icon={Calendar} 
+            variant="purple" 
+          />
+          <StatsCard title="Total Reviews" value={totalReviews} icon={Users} variant="purple" />
+          <StatsCard title="Completion Rate" value={`${completionRate}%`} icon={CheckCircle2} variant="emerald" />
+          <StatsCard title="Average Rating" value={completedReviews > 0 ? `${avgRating.toFixed(1)}/5` : "—"} icon={TrendingUp} variant="amber" />
         </div>
 
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
@@ -319,104 +319,21 @@ const ViewCycleDetails = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-800/50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Employee</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Department</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Rating</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Reviewer</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Submitted</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                {reviews.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                      No reviews assigned yet.
-                      {cycle.status === "active" && (
-                        <button
-                          onClick={() => setShowAssignModal(true)}
-                          className="ml-2 text-blue-600 dark:text-blue-400 underline font-medium"
-                        >
-                          Assign the first review
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ) : (
-                  reviews.slice((currentPage - 1) * 10, currentPage * 10).map((review) => (
-                    <tr
-                      key={review._id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                    >
-                      <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                        {getEmployeeName(review)}
-                      </td>
-                      <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
-                        {getEmployeeDept(review)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 w-fit ${getStatusStyle(review.status)}`}>
-                          {getStatusIcon(review.status)}
-                          {review.status?.replace("-", " ").toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 font-semibold">
-                        {review.overallRating > 0
-                          ? <span className="text-orange-600 dark:text-orange-400">{review.overallRating}/5</span>
-                          : <span className="text-gray-400">—</span>
-                        }
-                      </td>
-                      <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
-                        {getReviewerName(review)}
-                      </td>
-                      <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
-                        {review.submittedAt
-                          ? new Date(review.submittedAt).toLocaleDateString("en-US", {
-                            month: "short", day: "numeric", year: "numeric"
-                          })
-                          : "—"
-                        }
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        {review.status === "pending" ? (
-                          <button
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium transition-colors"
-                            onClick={() => {
-                              setSelectedReview(review);
-                              setShowSubmitModal(true);
-                            }}
-                          >
-                            Start Review
-                          </button>
-                        ) : (
-                          <button
-                            className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm font-medium transition-colors"
-                            onClick={() =>
-                              navigate(`/role/hr_manager/review/${review._id}`)
-                            }
-                          >
-                            View Details
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
+          <div className="p-4">
+            {reviews.length === 0 ? (
+              <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+                No reviews assigned yet.
+                {cycle.status === "active" && (
+                  <button
+                    onClick={() => setShowAssignModal(true)}
+                    className="ml-2 text-purple-600 dark:text-purple-400 underline font-medium"
+                  >
+                    Assign the first review
+                  </button>
                 )}
-              </tbody>
-            </table>
-            {reviews.length > 0 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={Math.ceil(reviews.length / 10)}
-                totalItems={reviews.length}
-                itemsPerPage={10}
-                onPageChange={setCurrentPage}
-              />
+              </div>
+            ) : (
+              <DataTable columns={columns} data={reviews} defaultPageSize={10} searchable={false} />
             )}
           </div>
         </div>

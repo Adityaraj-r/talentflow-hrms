@@ -185,7 +185,7 @@ const AttendanceAnalytics = () => {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />
+          <div className="w-10 h-10 rounded-full border-2 border-purple-600 border-t-transparent animate-spin" />
           <p className="text-sm text-muted-foreground">Loading analytics...</p>
         </div>
       </div>
@@ -235,7 +235,7 @@ const AttendanceAnalytics = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/20 dark:text-blue-300 dark:border-blue-800 px-2.5 py-1 text-xs">
+          <Badge className="bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800 px-2.5 py-1 text-xs">
             <Clock className="w-3.5 h-3.5 mr-1.5" />
             Today: {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" })}
           </Badge>
@@ -297,7 +297,7 @@ const AttendanceAnalytics = () => {
         <Card className="xl:col-span-2 border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader className="border-b border-slate-100 dark:border-slate-800 px-4 py-3">
             <CardTitle className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-indigo-500" />
+              <TrendingUp className="w-4 h-4 text-purple-500" />
               Weekly Attendance Trend
               <span className="ml-auto text-xs font-normal text-muted-foreground">Last 7 days</span>
             </CardTitle>
@@ -327,7 +327,7 @@ const AttendanceAnalytics = () => {
         <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader className="border-b border-slate-100 dark:border-slate-800 px-4 py-3">
             <CardTitle className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-indigo-500" />
+              <Activity className="w-4 h-4 text-purple-500" />
               Today's Summary
             </CardTitle>
           </CardHeader>
@@ -337,7 +337,7 @@ const AttendanceAnalytics = () => {
               { label: "Present", value: presentToday, color: "text-emerald-600 dark:text-emerald-400" },
               { label: "Late Arrivals", value: lateToday, color: lateToday > 0 ? "text-yellow-600 dark:text-yellow-400" : "text-slate-600 dark:text-slate-400" },
               { label: "Absent", value: absentToday, color: absentToday > 0 ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-400" },
-              { label: "On Approved Leave", value: onLeaveToday, color: "text-indigo-600 dark:text-indigo-400" },
+              { label: "On Approved Leave", value: onLeaveToday, color: "text-purple-600 dark:text-purple-400" },
               { label: "Leave Pending Approval", value: pendingLeaves, color: pendingLeaves > 0 ? "text-orange-600 dark:text-orange-400" : "text-slate-600 dark:text-slate-400" },
               { label: "OT Pending Approval", value: otPending.length, color: otPending.length > 0 ? "text-orange-600 dark:text-orange-400" : "text-slate-600 dark:text-slate-400" },
               { label: "Total OT Hours (Pending)", value: `${totalOtHours.toFixed(1)}h`, color: "text-orange-600 dark:text-orange-400" },
@@ -357,7 +357,7 @@ const AttendanceAnalytics = () => {
         <Card className="xl:col-span-2 border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader className="border-b border-slate-100 dark:border-slate-800 px-4 py-3">
             <CardTitle className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-indigo-500" />
+              <Building2 className="w-4 h-4 text-purple-500" />
               Department Breakdown — Today
             </CardTitle>
           </CardHeader>
@@ -387,7 +387,7 @@ const AttendanceAnalytics = () => {
         <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader className="border-b border-slate-100 dark:border-slate-800 px-4 py-3">
             <CardTitle className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-indigo-500" />
+              <CalendarDays className="w-4 h-4 text-purple-500" />
               Leave Distribution
               <span className="ml-auto text-xs font-normal text-muted-foreground">This month</span>
             </CardTitle>
@@ -439,7 +439,7 @@ const AttendanceAnalytics = () => {
         <Card className="xl:col-span-2 border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
           <CardHeader className="border-b border-slate-100 dark:border-slate-800 px-4 py-3">
             <CardTitle className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <Users className="w-4 h-4 text-indigo-500" />
+              <Users className="w-4 h-4 text-purple-500" />
               Department Headcount
               <span className="ml-auto text-xs font-normal text-muted-foreground">Today only</span>
             </CardTitle>

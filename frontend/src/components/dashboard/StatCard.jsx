@@ -30,11 +30,11 @@ const StatCard = ({
 
   const styles = {
     blue: {
-      card: "bg-blue-500/5 border-blue-500/30",
-      hover: "hover:border-blue-500/60",
-      active: "border-blue-500 bg-blue-500/10",
-      iconBg: "bg-blue-500/20",
-      text: "text-blue-400",
+      card: "bg-purple-500/5 border-purple-500/30",
+      hover: "hover:border-purple-500/60",
+      active: "border-purple-500 bg-purple-500/10",
+      iconBg: "bg-purple-500/20",
+      text: "text-purple-400",
     },
     amber: {
       card: "bg-amber-500/5 border-amber-500/30",

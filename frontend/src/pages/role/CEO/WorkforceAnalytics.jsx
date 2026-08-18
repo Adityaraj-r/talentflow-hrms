@@ -62,11 +62,11 @@ const WorkforceAnalytics = () => {
           icon={Users} 
           trend={kpis.headcountGrowth} 
           trendGood={isPositive(kpis.headcountGrowth)} 
-          color="text-blue-600" bg="bg-blue-100 dark:bg-blue-900/20" 
+          color="text-purple-600" bg="bg-purple-100 dark:bg-purple-900/20" 
         />
         <KPICard title="Active Today" value={kpis.activeToday ?? 0} icon={UserCheck} color="text-green-600" bg="bg-green-100 dark:bg-green-900/20" />
         <KPICard title="On Leave Today" value={kpis.onLeaveToday ?? 0} icon={Stethoscope} color="text-orange-500" bg="bg-orange-100 dark:bg-orange-900/20" />
-        <KPICard title="Open Requisitions" value={kpis.openRequisitions ?? 0} icon={Briefcase} color="text-indigo-600" bg="bg-indigo-100 dark:bg-indigo-900/20" />
+        <KPICard title="Open Requisitions" value={kpis.openRequisitions ?? 0} icon={Briefcase} color="text-purple-600" bg="bg-purple-100 dark:bg-purple-900/20" />
         
         <KPICard 
           title="Monthly Payroll Cost" 

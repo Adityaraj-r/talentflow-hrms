@@ -217,7 +217,7 @@ const ApplyLeaveModal = ({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CalendarDays className="w-5 h-5 text-blue-600" />
+            <CalendarDays className="w-5 h-5 text-purple-600" />
             Apply for Leave
           </DialogTitle>
           <DialogDescription>
@@ -258,7 +258,7 @@ const ApplyLeaveModal = ({
                 "flex items-center gap-2 p-3 rounded-lg border text-sm",
                 insufficientBalance && estimatedDays > 0
                   ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"
-                  : "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400"
+                  : "bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-400"
               )}
             >
               {insufficientBalance && estimatedDays > 0 ? (
@@ -335,7 +335,7 @@ const ApplyLeaveModal = ({
             <Button
               type="submit"
               disabled={loading || (insufficientBalance && estimatedDays > 0)}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               {loading ? "Submitting..." : "Submit Request"}
             </Button>
@@ -413,7 +413,7 @@ const EmployeeLeaveManagement = () => {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+          <div className="w-10 h-10 rounded-full border-2 border-purple-600 border-t-transparent animate-spin" />
           <p className="text-sm text-muted-foreground">Loading leave data...</p>
         </div>
       </div>

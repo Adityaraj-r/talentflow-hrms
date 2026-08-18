@@ -60,9 +60,9 @@ const Unauthorized = () => {
           </div>
 
           {/* Help Section */}
-          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">Need Access?</h4>
-            <p className="text-sm text-blue-800 dark:text-blue-200">
+          <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-purple-900 dark:text-purple-100 mb-2">Need Access?</h4>
+            <p className="text-sm text-purple-800 dark:text-purple-200">
               If you believe you should have access to this page, please contact your system administrator 
               or HR department to request the necessary permissions.
             </p>
@@ -81,7 +81,7 @@ const Unauthorized = () => {
             <Button
               onClick={() => navigate('/dashboard-redirect')}
               variant="outline"
-              className="flex-1 h-12 text-base font-medium border-2 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950"
+              className="flex-1 h-12 text-base font-medium border-2 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950"
             >
               <Home className="h-5 w-5 mr-2" />
               Go to Dashboard

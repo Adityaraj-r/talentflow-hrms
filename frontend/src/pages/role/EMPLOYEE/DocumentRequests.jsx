@@ -118,7 +118,7 @@ const RequestDocument = () => {
         {list.map((type, idx) => (
           <span
             key={idx}
-            className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-blue-100 dark:border-blue-800/40"
+            className="bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-purple-100 dark:border-purple-800/40"
           >
             {type}
           </span>
@@ -170,12 +170,12 @@ const RequestDocument = () => {
                     {docTypes.map((tag, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-2.5 py-0.5 rounded-md text-xs font-semibold border border-blue-100 dark:border-blue-800/20"
+                        className="inline-flex items-center gap-1 bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 px-2.5 py-0.5 rounded-md text-xs font-semibold border border-purple-100 dark:border-purple-800/20"
                       >
                         {tag}
                         <button
                           type="button"
-                          className="hover:text-blue-900 dark:hover:text-blue-200 ml-1 text-slate-400 font-bold focus:outline-none cursor-pointer text-sm"
+                          className="hover:text-purple-900 dark:hover:text-purple-200 ml-1 text-slate-400 font-bold focus:outline-none cursor-pointer text-sm"
                           onClick={() => handleRemoveDocType(idx)}
                         >
                           &times;
@@ -238,7 +238,7 @@ const RequestDocument = () => {
                       <tr key={req._id} className="hover:bg-muted/20">
                         <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">{req.requestId || "N/A"}</td>
                         <td className="px-4 py-3 font-medium flex items-center gap-2 whitespace-nowrap">
-                          <FileText className="w-4 h-4 text-blue-500" />
+                          <FileText className="w-4 h-4 text-purple-500" />
                           {req.documentType}
                         </td>
                         <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
@@ -247,7 +247,7 @@ const RequestDocument = () => {
                         <td className="px-4 py-3">{getStatusBadge(req.status)}</td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end items-center gap-2">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={() => setSelectedRequest(req)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-purple-600 hover:bg-purple-50" onClick={() => setSelectedRequest(req)}>
                               <Eye className="w-4 h-4" />
                             </Button>
                             {req.status === "Approved" && (
@@ -258,7 +258,7 @@ const RequestDocument = () => {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="h-8 px-2.5 text-xs font-semibold flex items-center gap-1.5 border-blue-200 bg-blue-50 hover:bg-blue-100/70 text-blue-700 dark:bg-blue-950/30 dark:border-blue-900/30 dark:text-blue-400"
+                                    className="h-8 px-2.5 text-xs font-semibold flex items-center gap-1.5 border-purple-200 bg-purple-50 hover:bg-purple-100/70 text-purple-700 dark:bg-purple-950/30 dark:border-purple-900/30 dark:text-purple-400"
                                     onClick={() => {
                                       setActiveReqAttachments(req);
                                       setAttachmentsModalOpen(true);
@@ -376,7 +376,7 @@ const RequestDocument = () => {
                       {getAttachments(selectedRequest).map((doc, idx) => (
                         <div key={idx} className="flex items-center justify-between gap-4 p-3 border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50/55 dark:bg-slate-900/30 transition-colors hover:border-slate-300 dark:hover:border-slate-700">
                           <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="p-2.5 bg-indigo-500/10 text-indigo-505 dark:text-indigo-400 rounded-lg shrink-0">
+                            <div className="p-2.5 bg-purple-500/10 text-purple-505 dark:text-purple-400 rounded-lg shrink-0">
                               <FileText className="h-5 w-5" />
                             </div>
                             <div className="flex flex-col min-w-0 text-left justify-center">
@@ -394,18 +394,12 @@ const RequestDocument = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                              onClick={() => setPreviewDoc(doc)}
-                            >
-                              <Eye className="h-3.5 w-3.5 mr-1" /> View
-                            </Button>
+                              className="h-8 px-3 text-xs font-semibold border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 rounded-lg transition-all duration-150 shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                              onClick={() => setPreviewDoc(doc)}> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
                             <Button
                               size="sm"
                               className="h-8 px-3 text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-150 shadow-sm focus:ring-2 focus:ring-green-500 focus:outline-none flex items-center gap-1"
-                              onClick={() => downloadFile(doc)}
-                            >
-                              <Download className="h-3.5 w-3.5 mr-1" /> Download
-                            </Button>
+                              onClick={() => downloadFile(doc)}> <span title="Download" className="flex items-center justify-center w-full h-full "><Download className="h-4 w-4" /><span className="sr-only">Download</span></span></Button>
                           </div>
                         </div>
                       ))}
