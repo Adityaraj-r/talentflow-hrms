@@ -192,9 +192,9 @@ export default function ReferralRewardManagement() {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="p-5 border border-purple-100 dark:border-purple-900/30 bg-purple-50/40 dark:bg-purple-950/20">
+      {/* Quick Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-5 border border-purple-100 dark:border-purple-900/30 bg-purple-50/40 dark:bg-purple-950/20 cursor-pointer hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-purple-700 dark:text-purple-300">Total Referrals Sent</p>
@@ -204,7 +204,7 @@ export default function ReferralRewardManagement() {
           </div>
         </Card>
 
-        <Card className="p-5 border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/40 dark:bg-emerald-950/20">
+        <Card className="p-5 border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/40 dark:bg-emerald-950/20 cursor-pointer hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Total Bonuses Paid</p>
@@ -214,7 +214,7 @@ export default function ReferralRewardManagement() {
           </div>
         </Card>
 
-        <Card className="p-5 border border-amber-100 dark:border-amber-900/30 bg-amber-50/40 dark:bg-amber-950/20">
+        <Card className="p-5 border border-amber-100 dark:border-amber-900/30 bg-amber-50/40 dark:bg-amber-950/20 cursor-pointer hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">Pending Approvals</p>
@@ -224,7 +224,7 @@ export default function ReferralRewardManagement() {
           </div>
         </Card>
 
-        <Card className="p-5 border border-blue-100 dark:border-blue-900/30 bg-blue-50/40 dark:bg-blue-950/20">
+        <Card className="p-5 border border-blue-100 dark:border-blue-900/30 bg-blue-50/40 dark:bg-blue-950/20 cursor-pointer hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">Referral-to-Hire Rate</p>
@@ -238,11 +238,11 @@ export default function ReferralRewardManagement() {
       {/* Main Table & Settings Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex flex-wrap gap-2">
-          <TabsTrigger value="all">All Rewards ({rewards.length})</TabsTrigger>
-          <TabsTrigger value="pending-hr">Pending HR Approval</TabsTrigger>
-          <TabsTrigger value="pending-finance">Pending Finance Release</TabsTrigger>
-          <TabsTrigger value="approved">Approved & Paid</TabsTrigger>
-          <TabsTrigger value="conflicts" className="relative">
+          <TabsTrigger value="all" className="cursor-pointer">All Rewards ({rewards.length})</TabsTrigger>
+          <TabsTrigger value="pending-hr" className="cursor-pointer">Pending HR Approval</TabsTrigger>
+          <TabsTrigger value="pending-finance" className="cursor-pointer">Pending Finance Release</TabsTrigger>
+          <TabsTrigger value="approved" className="cursor-pointer">Approved & Paid</TabsTrigger>
+          <TabsTrigger value="conflicts" className="relative cursor-pointer">
             Conflicts ({conflicts.length})
             {conflicts.length > 0 && (
               <span className="ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500 text-white font-bold">
@@ -250,10 +250,10 @@ export default function ReferralRewardManagement() {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-1">
+          <TabsTrigger value="analytics" className="flex items-center gap-1 cursor-pointer">
             <TrendingUp className="h-3.5 w-3.5" /> Operational Reports & SLA
           </TabsTrigger>
-          <TabsTrigger value="policy" className="flex items-center gap-1">
+          <TabsTrigger value="policy" className="flex items-center gap-1 cursor-pointer">
             <Settings className="h-3.5 w-3.5" /> Policy Settings
           </TabsTrigger>
         </TabsList>
