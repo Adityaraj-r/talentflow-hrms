@@ -17,7 +17,14 @@ import {
   RecruitmentPageHeader,
   RecruitmentStatusBadge,
 } from "@/components/recruitment/RecruitmentUI"
-import { Pagination } from "@/components/ui/pagination"
+import { DataTable } from "@/components/ui/data-table"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const JobOpenings = () => {
   const { user } = useUser()
@@ -55,8 +62,6 @@ const JobOpenings = () => {
   const [selectedRole, setSelectedRole] = useState("all")
   const [selectedDept, setSelectedDept] = useState("all")
   const [selectedLocation, setSelectedLocation] = useState("all")
-  const [currentPage, setCurrentPage] = useState(1)
-  const pageSize = 10
 
   const getHiringRoles = (job) => {
     if (Array.isArray(job?.hiringRoles) && job.hiringRoles.length > 0) {
@@ -276,16 +281,152 @@ const JobOpenings = () => {
     return matchesStatus && matchesSearch && matchesRole && matchesDept && matchesLocation
   })
 
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [activeFilter, selectedStatus, searchQuery, selectedRole, selectedDept, selectedLocation])
+  const columns = useMemo(() => [
+    {
+      accessorKey: "jobCode",
+      header: "Job ID",
+      cell: ({ row }) => {
+        const job = row.original
+        return (
+          <div className="font-semibold text-slate-800 dark:text-slate-200">
+            {job.jobCode || `JOB-${job._id?.slice(-4)}`}
+          </div>
+        )
+      }
+    },
+    {
+      accessorKey: "jobTitle",
+      header: "Job Title",
+      cell: ({ row }) => {
+        const job = row.original
+        return (
+          <button
+            onClick={() => navigate(`/dashboard/jobs/${job._id}`)}
+            className="font-medium hover:underline text-left cursor-pointer transition"
+          >
+            {job.jobTitle}
+          </button>
+        )
+      }
+    },
+    {
+      accessorKey: "department",
+      header: "Department",
+      cell: ({ row }) => <span className="text-slate-600 dark:text-slate-400 font-medium">{row.original.department}</span>
+    },
+    {
+      accessorKey: "positions",
+      header: "Positions",
+      cell: ({ row }) => <span className="text-slate-600 dark:text-slate-400 font-medium">{row.original.positions}</span>
+    },
+    {
+      accessorKey: "employmentType",
+      header: "Type",
+      cell: ({ row }) => <span className="text-slate-600 dark:text-slate-400 font-medium">{row.original.employmentType}</span>
+    },
+    {
+      accessorKey: "deadline",
+      header: "Deadline",
+      cell: ({ row }) => <span className="text-slate-600 dark:text-slate-400 font-medium">{row.original.deadline ? new Date(row.original.deadline).toLocaleDateString() : "N/A"}</span>
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const job = row.original
+        const isOpen = job.status === "Open" || (job.status === "Published" && !job.deadline)
+        return <RecruitmentStatusBadge status={isOpen ? "Open" : job.status} />
+      }
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right w-[140px] ml-auto">Actions</div>,
+      cell: ({ row }) => {
+        const job = row.original
+        
+        // View Button Logic
+        const canView = job.status !== "Draft"
+        const viewTooltip = canView ? "View Job" : "Drafts cannot be viewed"
 
-  const totalItems = filteredJobs.length
-  const totalPages = Math.ceil(totalItems / pageSize) || 1
-  const paginatedJobs = useMemo(() => {
-    const start = (currentPage - 1) * pageSize
-    return filteredJobs.slice(start, start + pageSize)
-  }, [filteredJobs, currentPage, pageSize])
+        // Close (Archive) Button Logic
+        const canClose = (job.status === "Published" || job.status === "Open") && canPublish
+        let closeTooltip = "Close Job"
+        if (!canPublish) closeTooltip = "No permission to close jobs"
+        else if (job.status === "Closed") closeTooltip = "Job is already closed"
+        else if (job.status === "Draft") closeTooltip = "Cannot close a draft"
+
+        // Delete Button Logic
+        const canDelete = (job.status === "Draft" && canWrite) || (job.status !== "Draft" && canPublish)
+        let deleteTooltip = "Delete Job & Related Data"
+        if (job.status === "Draft" && !canWrite) deleteTooltip = "No permission to delete drafts"
+        else if (job.status !== "Draft" && !canPublish) deleteTooltip = "No permission to delete jobs"
+
+        return (
+          <div className="w-[140px] ml-auto">
+            <TooltipProvider>
+              <div className="flex items-center justify-end gap-1">
+                
+                {/* View Button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground" 
+                        onClick={() => { setSelectedJob(job); setViewOpen(true) }}
+                        disabled={!canView}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>{viewTooltip}</TooltipContent>
+                </Tooltip>
+
+                {/* Close (Archive) Button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-8 w-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10" 
+                        onClick={() => closeJob(job._id)}
+                        disabled={!canClose}
+                      >
+                        <Archive className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>{closeTooltip}</TooltipContent>
+                </Tooltip>
+
+                {/* Delete Button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10" 
+                        onClick={() => handleDeleteClick(job)}
+                        disabled={!canDelete}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>{deleteTooltip}</TooltipContent>
+                </Tooltip>
+
+              </div>
+            </TooltipProvider>
+          </div>
+        )
+      }
+    }
+  ], [canWrite, canPublish, navigate, handleEditClick, handleDeleteClick, publishJob, setSelectedJob, setViewOpen, closeJob])
 
   return (
     <div className="space-y-6 max-w-full pb-10">
@@ -495,44 +636,48 @@ const JobOpenings = () => {
               />
             </div>
 
-            <select
-              value={selectedStatus}
-              onChange={(e) => handleStatusChange(e.target.value)}
-              className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer w-full sm:w-auto"
-            >
-              <option value="all">All Statuses</option>
-              <option value="Published">Published</option>
-              <option value="Open">Open</option>
-              <option value="Draft">Draft</option>
-              <option value="Closed">Closed</option>
-            </select>
+            <Select value={selectedStatus} onValueChange={handleStatusChange}>
+              <SelectTrigger className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer w-full sm:w-auto min-w-[130px]">
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="Published">Published</SelectItem>
+                <SelectItem value="Open">Open</SelectItem>
+                <SelectItem value="Draft">Draft</SelectItem>
+                <SelectItem value="Closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <select
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer w-full sm:w-auto"
-            >
-              <option value="all">All Roles</option>
-              {rolesOptions.map(role => <option key={role} value={role}>{role}</option>)}
-            </select>
+            <Select value={selectedRole} onValueChange={setSelectedRole}>
+              <SelectTrigger className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer w-full sm:w-auto min-w-[130px]">
+                <SelectValue placeholder="All Roles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                {rolesOptions.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}
+              </SelectContent>
+            </Select>
 
-            <select
-              value={selectedDept}
-              onChange={(e) => setSelectedDept(e.target.value)}
-              className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer w-full sm:w-auto"
-            >
-              <option value="all">All Departments</option>
-              {deptsOptions.map(dept => <option key={dept} value={dept}>{dept}</option>)}
-            </select>
+            <Select value={selectedDept} onValueChange={setSelectedDept}>
+              <SelectTrigger className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer w-full sm:w-auto min-w-[130px]">
+                <SelectValue placeholder="All Departments" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Departments</SelectItem>
+                {deptsOptions.map(dept => <SelectItem key={dept} value={dept}>{dept}</SelectItem>)}
+              </SelectContent>
+            </Select>
 
-            <select
-              value={selectedLocation}
-              onChange={(e) => setSelectedLocation(e.target.value)}
-              className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer w-full sm:w-auto"
-            >
-              <option value="all">All Locations</option>
-              {locationsOptions.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-            </select>
+            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+              <SelectTrigger className="h-10 rounded-lg border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer w-full sm:w-auto min-w-[130px]">
+                <SelectValue placeholder="All Locations" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Locations</SelectItem>
+                {locationsOptions.map(loc => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex gap-2 shrink-0">
             <Button variant="outline" size="sm" onClick={fetchJobs} disabled={loading} className="border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 hover:bg-slate-200/80 text-slate-900 dark:text-slate-100 cursor-pointer w-full lg:w-auto">
@@ -543,177 +688,26 @@ const JobOpenings = () => {
         </div>
 
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50/70 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/5 text-[10px] md:text-xs uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">
-              <tr>
-                <th className="px-6 py-3.5 font-bold tracking-wider text-xs">Job ID</th>
-                <th className="px-6 py-3.5 font-bold tracking-wider text-xs">Job Title</th>
-                <th className="px-6 py-3.5 font-bold tracking-wider text-xs">Department</th>
-                <th className="px-6 py-3.5 font-bold tracking-wider text-xs">Positions</th>
-                <th className="px-6 py-3.5 font-bold tracking-wider text-xs">Type</th>
-                <th className="px-6 py-3.5 font-bold tracking-wider text-xs">Deadline</th>
-                <th className="px-6 py-3.5 font-bold tracking-wider text-xs">Status</th>
-                <th className="px-6 py-3.5 font-bold tracking-wider text-xs text-right w-[140px]">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-              {loading ? (
-                Array.from({ length: 4 }).map((_, index) => (
-                  <tr key={index}>
-                    <td colSpan="8" className="p-4">
-                      <div className="h-10 w-full animate-pulse rounded bg-muted/50" />
-                    </td>
-                  </tr>
-                ))
-              ) : paginatedJobs.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="p-8">
-                    <RecruitmentEmptyState
-                      title={activeFilter === "all" ? "No job openings yet" : `No ${activeFilter} job openings`}
-                      description="Create a draft job, then publish it to start collecting applications."
-                      actionLabel={canWrite ? "Create Job" : undefined}
-                      onAction={() => setShowForm(true)}
-                    />
-                  </td>
-                </tr>
-              ) : paginatedJobs.map((job) => {
-                const isOpen = job.status === "Open" || (job.status === "Published" && !job.deadline)
-                return (
-                  <tr key={job._id} className="text-slate-700 dark:text-slate-300 hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-colors group">
-                    <td className="px-6 py-4 font-mono text-xs font-semibold text-cyan-700 dark:text-cyan-400">
-                      <span className="bg-cyan-50 dark:bg-cyan-950/50 px-2 py-1 rounded-md border border-cyan-200 dark:border-cyan-800/40">
-                        {job.jobCode || `JOB-${job._id?.slice(-4)}`}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => navigate(`/dashboard/jobs/${job._id}`)}
-                        className="font-bold text-cyan-600 dark:text-cyan-400 hover:underline hover:text-cyan-700 dark:hover:text-cyan-300 text-left cursor-pointer transition"
-                      >
-                        {job.jobTitle}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">{job.department}</td>
-                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">{job.positions}</td>
-                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">{job.employmentType}</td>
-                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">{job.deadline ? new Date(job.deadline).toLocaleDateString() : "N/A"}</td>
-                    <td className="px-6 py-4">
-                      <RecruitmentStatusBadge status={isOpen ? "Open" : job.status} />
-                    </td>
-                    <td className="px-6 py-4 w-[140px]">
-                        <TooltipProvider>
-                          <div className="flex items-center justify-end gap-1">
-                            {job.status === "Draft" && (
-                              <>
-                                {canWrite && (
-                                  <>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleEditClick(job)}>
-                                          <Pencil className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>Edit Draft</TooltipContent>
-                                    </Tooltip>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClick(job)}>
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>Delete Draft & Related Data</TooltipContent>
-                                    </Tooltip>
-                                  </>
-                                )}
-                                {canPublish && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10" onClick={() => publishJob(job._id)}>
-                                        <Rocket className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Publish Job</TooltipContent>
-                                  </Tooltip>
-                                )}
-                              </>
-                            )}
-                            {(job.status === "Published" || job.status === "Open") && (
-                              <>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { setSelectedJob(job); setViewOpen(true) }}>
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>View Job</TooltipContent>
-                                </Tooltip>
-                                {canPublish && (
-                                  <>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10" onClick={() => closeJob(job._id)}>
-                                          <Archive className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>Close Job</TooltipContent>
-                                    </Tooltip>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClick(job)}>
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>Delete Job & Related Data</TooltipContent>
-                                    </Tooltip>
-                                  </>
-                                )}
-                              </>
-                            )}
-                            {job.status === "Closed" && (
-                              <>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { setSelectedJob(job); setViewOpen(true) }}>
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>View Job</TooltipContent>
-                                </Tooltip>
-                                {canPublish && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClick(job)}>
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Delete Job & Related Data</TooltipContent>
-                                  </Tooltip>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </TooltipProvider>
-                      </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination Footer */}
-        {totalItems > 0 && (
-          <div className="px-6 py-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/30">
-            <Pagination 
-              currentPage={currentPage} 
-              totalPages={totalPages} 
-              totalItems={totalItems} 
-              itemsPerPage={pageSize}
-              onPageChange={(page) => setCurrentPage(page)} 
-            />
+          <div className="overflow-x-auto p-4 md:p-6">
+            {loading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="h-10 w-full animate-pulse rounded bg-muted/50" />
+                ))}
+              </div>
+            ) : filteredJobs.length === 0 ? (
+              <div className="p-8">
+                <RecruitmentEmptyState
+                  title={activeFilter === "all" ? "No job openings yet" : `No ${activeFilter} job openings`}
+                  description="Create a draft job, then publish it to start collecting applications."
+                  actionLabel={canWrite ? "Create Job" : undefined}
+                  onAction={() => setShowForm(true)}
+                />
+              </div>
+            ) : (
+              <DataTable columns={columns} data={filteredJobs} searchable={false} defaultPageSize={10} />
+            )}
           </div>
-        )}
         </CardContent>
       </Card>
 

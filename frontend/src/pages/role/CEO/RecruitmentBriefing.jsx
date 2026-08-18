@@ -81,8 +81,8 @@ const RecruitmentBriefing = () => {
           <CardContent className="p-5 xl:p-6">
             <div className="flex items-start justify-between gap-2 mb-2">
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Open requisitions</p>
-              <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg">
-                <Briefcase className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-2 bg-purple-50 dark:bg-purple-500/10 rounded-lg">
+                <Briefcase className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
             <p className="text-2xl xl:text-3xl font-bold dark:text-white">{openReqs}</p>
@@ -157,7 +157,7 @@ const RecruitmentBriefing = () => {
         </Card>
       </div>
 
-      <Card className="dark:bg-slate-900 dark:border-slate-800 border-l-4 border-l-blue-600 dark:border-l-blue-500 shadow-sm">
+      <Card className="dark:bg-slate-900 dark:border-slate-800 border-l-4 border-l-purple-600 dark:border-l-purple-500 shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">Summary</CardTitle>
         </CardHeader>

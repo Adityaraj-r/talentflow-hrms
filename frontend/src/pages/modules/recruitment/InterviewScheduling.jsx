@@ -8,13 +8,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { RecruitmentPageHeader } from "@/components/recruitment/RecruitmentUI"
+import { ActionIcon } from "@/components/ui/action-icon"
+import { StatsCard } from "@/components/ui/stats-card"
+import { DataTable } from "@/components/ui/data-table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Pagination } from "@/components/ui/pagination"
-import { Search, Calendar, Loader2, Video, Clock3, MapPin, CheckCircle2, XCircle, UserCheck, UserX, Clock, Map, Building, Phone, Send, Info, Eye, ExternalLink, CalendarDays } from "lucide-react"
+import { Search, Calendar, Loader2, Video, Clock3, MapPin, CheckCircle2, XCircle, UserCheck, UserX, Clock, Map, Building, Phone, Send, Info, Eye, ExternalLink, CalendarDays, X, Users, CalendarClock } from "lucide-react"
 import { format, isValid, parse } from "date-fns"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 const InterviewScheduling = () => {
   const { user } = useUser()
@@ -48,7 +52,6 @@ const InterviewScheduling = () => {
     officeAddress: "",
     customAddress: "",
   })
-  const [processingId, setProcessingId] = useState(null)
   const todayDate = format(new Date(), "yyyy-MM-dd")
 
   const [decisionModal, setDecisionModal] = useState({
@@ -135,7 +138,6 @@ const InterviewScheduling = () => {
     try {
       const data = await apiClient.get("/employees")
       const allEmps = Array.isArray(data) ? data : []
-      // Do not include ADMIN, SUPER ADMIN, or test/demo users
       const filtered = allEmps.filter((emp) => {
         const r = String(emp.role || "").toUpperCase().replace(/\s+/g, "_")
         const email = String(emp.email || "").toLowerCase()
@@ -173,6 +175,15 @@ const InterviewScheduling = () => {
   const baseApplications = useMemo(() => {
     return applications.filter((a) => ["Shortlisted", "Interview", "Applied", "HR Screening", "Under Review"].includes(a.status))
   }, [applications])
+
+  const { totalCandidates, pendingAssignment, readyToSchedule, todayInterviews } = useMemo(() => {
+    return {
+      totalCandidates: baseApplications.length,
+      pendingAssignment: baseApplications.filter(a => a.assignmentStatus !== "Cleared").length,
+      readyToSchedule: baseApplications.filter(a => a.status === "Shortlisted").length,
+      todayInterviews: 0 // Placeholder logic
+    }
+  }, [baseApplications])
 
   const roleOptions = useMemo(() => {
     const roles = baseApplications.map(a => a.selectedPositionTitle || a.hiringRoleName || a.jobId?.jobTitle).filter(Boolean)
@@ -370,10 +381,13 @@ const InterviewScheduling = () => {
 
   return (
     <div className="space-y-6 max-w-full pb-10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">Interview Scheduling</h1>
-        </div>
+      <RecruitmentPageHeader title="Interview Scheduling" />
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard title="Interview Workflow" value={totalCandidates} icon={Users} variant="blue" />
+        <StatsCard title="Assignments Pending" value={pendingAssignment} icon={Clock} variant="amber" />
+        <StatsCard title="Ready to Schedule" value={readyToSchedule} icon={UserCheck} variant="emerald" />
+        <StatsCard title="Today's Interviews" value={todayInterviews} icon={CalendarClock} variant="purple" />
       </div>
 
       <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
@@ -389,227 +403,120 @@ const InterviewScheduling = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Filter by Role */}
-            <div className="w-36 sm:w-44">
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-full bg-background text-xs h-9">
-                  <SelectValue placeholder="Role: All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">All Roles</SelectItem>
-                  {roleOptions.filter(r => r !== "All").map(role => (
-                    <SelectItem key={role} value={role}>{role}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <SelectTrigger className="w-40"><SelectValue placeholder="All Roles" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Roles</SelectItem>
+                {roleOptions.filter(r => r !== "All").map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}
+              </SelectContent>
+            </Select>
 
-            {/* Filter by Stage */}
-            <div className="w-32 sm:w-36">
-              <Select value={stageFilter} onValueChange={setStageFilter}>
-                <SelectTrigger className="w-full bg-background text-xs h-9">
-                  <SelectValue placeholder="Stage: All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">All Stages</SelectItem>
-                  {stageOptions.filter(s => s !== "All").map(stage => (
-                    <SelectItem key={stage} value={stage}>{stage}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={stageFilter} onValueChange={setStageFilter}>
+              <SelectTrigger className="w-36"><SelectValue placeholder="All Stages" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Stages</SelectItem>
+                {stageOptions.filter(s => s !== "All").map(stage => <SelectItem key={stage} value={stage}>{stage}</SelectItem>)}
+              </SelectContent>
+            </Select>
 
-            {/* Filter by Location */}
-            <div className="w-36 sm:w-44">
-              <Select value={locationFilter} onValueChange={setLocationFilter}>
-                <SelectTrigger className="w-full bg-background text-xs h-9">
-                  <SelectValue placeholder="Location: All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">All Locations</SelectItem>
-                  {locationOptions.filter(l => l !== "All").map(loc => (
-                    <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {(roleFilter !== "All" || stageFilter !== "All" || locationFilter !== "All" || search) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  setSearch("")
-                  setRoleFilter("All")
-                  setStageFilter("All")
-                  setLocationFilter("All")
-                }}
-              >
-                Reset
-              </Button>
-            )}
+            <Select value={locationFilter} onValueChange={setLocationFilter}>
+              <SelectTrigger className="w-40"><SelectValue placeholder="All Locations" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Locations</SelectItem>
+                {locationOptions.filter(l => l !== "All").map(loc => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-muted/50 text-muted-foreground border-b border-border">
-                <tr>
-                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Candidate Name</th>
-                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Email</th>
-                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Job ID</th>
-                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Applied Role</th>
-                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Location</th>
-                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Assignment Status</th>
-                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Interview Round</th>
-                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Current Stage</th>
-                  <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {candidates.length === 0 ? (
-                  <tr>
-                    <td colSpan="9" className="p-8 text-center text-sm text-muted-foreground">
-                      No candidates match the selected filters.
-                    </td>
-                  </tr>
-                ) : candidates.slice((currentPage - 1) * 10, currentPage * 10).map((c) => (
-                  <tr key={c._id} className="hover:bg-muted/30 transition-colors group">
-                    <td className="px-6 py-4 font-medium text-foreground">{c.name}</td>
-                    <td className="px-6 py-4 text-muted-foreground">{c.email}</td>
-                    <td className="px-6 py-4 font-mono text-xs font-semibold text-cyan-600 dark:text-cyan-400 whitespace-nowrap">
-                      {c.jobId?.jobCode || (c.jobId?._id ? `JOB-${c.jobId._id.slice(-4)}` : "N/A")}
-                    </td>
-                    <td className="px-6 py-4 text-muted-foreground">{c.selectedPositionTitle || c.hiringRoleName || c.jobId?.jobTitle || "Role"}</td>
-                    <td className="px-6 py-4 text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-                        <span>{c.currentLocation || c.jobId?.officeLocation || c.jobId?.location || "N/A"}</span>
-                      </div>
-                    </td>
-
-                    {/* Assignment Status */}
-                    <td className="px-6 py-4">
-                      {c.jobId?.hasAssignment || (c.jobId?.workflow?.stages && c.jobId.workflow.stages.some(s => s.type === "assignment")) ? (
+          {candidates.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">No candidates match the selected filters.</div>
+          ) : (
+            <DataTable
+              columns={[
+                { accessorKey: "name", header: "Candidate Name" },
+                { accessorKey: "email", header: "Email" },
+                {
+                  accessorKey: "jobId",
+                  header: "Job ID",
+                  cell: ({ row }) => {
+                    const c = row.original;
+                    return <span className="font-mono text-xs font-semibold text-primary whitespace-nowrap">{c.jobId?.jobCode || (c.jobId?._id ? `JOB-${c.jobId._id.slice(-4)}` : "N/A")}</span>
+                  }
+                },
+                { accessorKey: "role", header: "Applied Role", cell: ({ row }) => { const c = row.original; return c.selectedPositionTitle || c.hiringRoleName || c.jobId?.jobTitle || "Role" } },
+                { accessorKey: "location", header: "Location", cell: ({ row }) => { const c = row.original; return <div className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" /><span>{c.currentLocation || c.jobId?.officeLocation || c.jobId?.location || "N/A"}</span></div> } },
+                {
+                  accessorKey: "assignment",
+                  header: "Assignment Status",
+                  cell: ({ row }) => {
+                    const c = row.original;
+                    if (c.jobId?.hasAssignment || (c.jobId?.workflow?.stages && c.jobId.workflow.stages.some(s => s.type === "assignment"))) {
+                      return (
                         <button
                           type="button"
                           onClick={() => handleToggleAssignment(c)}
-                          title="Click to toggle Assignment Cleared / Pending"
                           className={cn(
                             "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition cursor-pointer shadow-xs",
                             (c.assignmentCleared || c.assignmentStatus === "Cleared")
-                              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
-                              : "bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25"
+                              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                              : "bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400"
                           )}
                         >
-                          {(c.assignmentCleared || c.assignmentStatus === "Cleared") ? (
-                            <>
-                              <UserCheck className="h-3.5 w-3.5 text-emerald-500" />
-                              Assignment Cleared
-                            </>
-                          ) : (
-                            <>
-                              <Clock className="h-3.5 w-3.5 text-amber-500" />
-                              Assignment Pending
-                            </>
-                          )}
+                          {(c.assignmentCleared || c.assignmentStatus === "Cleared") ? <><UserCheck className="h-3.5 w-3.5 text-emerald-500" /> Assignment Cleared</> : <><Clock className="h-3.5 w-3.5 text-amber-500" /> Assignment Pending</>}
                         </button>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs text-muted-foreground border border-white/10 bg-muted/30">
-                          N/A
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Interview Round */}
-                    <td className="px-6 py-4">
-                      <select
+                      );
+                    }
+                    return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs text-muted-foreground border border-white/10 bg-muted/30">N/A</span>;
+                  }
+                },
+                {
+                  accessorKey: "round",
+                  header: "Interview Round",
+                  cell: ({ row }) => {
+                    const c = row.original;
+                    return (
+                      <Select
                         value={c.currentRound || (c.jobId?.interviewRounds?.[0] || "Round 1")}
-                        onChange={(e) => handleUpdateRound(c, e.target.value)}
-                        className="appearance-none h-7 pl-2.5 pr-6 text-xs font-semibold rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 outline-none hover:bg-cyan-500/20 transition cursor-pointer"
+                        onValueChange={(val) => handleUpdateRound(c, val)}
                       >
-                        {(c.jobId?.interviewRounds?.length ? c.jobId.interviewRounds : ["Round 1 - Technical", "Round 2 - Coding", "Round 3 - HR", "Final Round"]).map((r) => (
-                          <option key={r} value={r} className="bg-slate-900 text-slate-100">{r}</option>
-                        ))}
-                      </select>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center rounded-full border border-white/10 px-2.5 py-0.5 text-xs font-semibold bg-muted/50 text-muted-foreground">
-                        {c.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {canWrite && (
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelected(c)
-                              setForm({
-                                interviewDate: "",
-                                startHour: "",
-                                startMinute: "",
-                                startPeriod: "AM",
-                                endHour: "",
-                                endMinute: "",
-                                endPeriod: "AM",
-                                mode: "",
-                                location: "",
-                                meetingLink: "",
-                                instructionsText: "",
-                                interviewerName: "",
-                                interviewerDesignation: "",
-                                officeAddress: "",
-                                customAddress: "",
-                              })
-                              setOpen(true)
-                            }}
-                          >
-                            <Calendar className="mr-1.5 h-3.5 w-3.5" />
-                            Schedule
-                          </Button>
-
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 font-medium"
-                            onClick={() => openDecisionModal(c, "Selected")}
-                            title="Accept Candidate"
-                          >
-                            <UserCheck className="h-3.5 w-3.5 mr-1" />
-                            Accept
-                          </Button>
-
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-rose-500/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-medium"
-                            onClick={() => openDecisionModal(c, "Rejected")}
-                            title="Reject Candidate"
-                          >
-                            <UserX className="h-3.5 w-3.5 mr-1" />
-                            Reject
-                          </Button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {candidates.length > 0 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={Math.ceil(candidates.length / 10)}
-                totalItems={candidates.length}
-                itemsPerPage={10}
-                onPageChange={setCurrentPage}
-              />
-            )}
-          </div>
+                        <SelectTrigger className="h-8 w-[160px]"><SelectValue placeholder="Round" /></SelectTrigger>
+                        <SelectContent>
+                          {(c.jobId?.interviewRounds?.length ? c.jobId.interviewRounds : ["Round 1 - Technical", "Round 2 - Coding", "Round 3 - HR", "Final Round"]).map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    );
+                  }
+                },
+                {
+                  accessorKey: "status",
+                  header: "Current Stage",
+                  cell: ({ row }) => <span className="inline-flex items-center rounded-full border border-white/10 px-2.5 py-0.5 text-xs font-semibold bg-muted/50 text-muted-foreground">{row.original.status}</span>
+                },
+                {
+                  id: "actions",
+                  header: "Action",
+                  cell: ({ row }) => {
+                    const c = row.original;
+                    return canWrite ? (
+                      <div className="flex items-center justify-end gap-2">
+                        <ActionIcon
+                          icon={CalendarClock}
+                          tooltip="Schedule Interview"
+                          onClick={() => {
+                            setSelected(c);
+                            setOpen(true);
+                          }}
+                        />
+                      </div>
+                    ) : null;
+                  }
+                }
+              ]}
+              data={candidates}
+              searchable={false}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -624,12 +531,7 @@ const InterviewScheduling = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <Label>Date</Label>
-                <Input
-                  type="date"
-                  min={todayDate}
-                  value={form.interviewDate}
-                  onChange={(e) => setField("interviewDate", e.target.value)}
-                />
+                <Input type="date" min={todayDate} value={form.interviewDate} onChange={(e) => setField("interviewDate", e.target.value)} />
               </div>
               <div>
                 <Label>Mode</Label>

@@ -6,8 +6,10 @@ const badgeVariants = {
   secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
   destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
   outline: "text-foreground",
-  success: "border-transparent bg-green-500 text-white hover:bg-green-600",
-  warning: "border-transparent bg-yellow-500 text-white hover:bg-yellow-600",
+  success: "border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-400 hover:bg-emerald-200",
+  warning: "border-transparent bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-400 hover:bg-amber-200",
+  danger: "border-transparent bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-400 hover:bg-rose-200",
+  info: "border-transparent bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-400 hover:bg-purple-200",
 }
 
 function Badge({ className = "", variant = "default", children, ...props }) {

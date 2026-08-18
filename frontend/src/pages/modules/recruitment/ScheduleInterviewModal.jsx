@@ -77,7 +77,7 @@ const ScheduleInterviewModal = ({ isOpen, onClose, candidateEmail, jobTitle }) =
       <DialogContent className="sm:max-w-[750px] p-8">
         <DialogHeader className="mb-2">
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <Video className="h-5 w-5 text-blue-600" />
+            <Video className="h-5 w-5 text-primary" />
             Schedule Interview
           </DialogTitle>
         </DialogHeader>

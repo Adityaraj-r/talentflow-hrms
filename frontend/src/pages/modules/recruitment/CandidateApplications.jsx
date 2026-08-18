@@ -17,11 +17,21 @@ import {
   CandidateAvatar,
   ProgressBar,
   RecruitmentEmptyState,
-  RecruitmentKpiCard,
   RecruitmentPageHeader,
   RecruitmentStatusBadge,
   RecruitmentTable,
 } from "@/components/recruitment/RecruitmentUI"
+import { DataTable } from "@/components/ui/data-table"
+import { StatsCard } from "@/components/ui/stats-card"
+import { ActionIcon } from "@/components/ui/action-icon"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { CheckCircle2 } from "lucide-react"
 
 const applicationStages = {
   applied: { label: "Applied", progress: 18 },
@@ -80,12 +90,6 @@ const CandidateApplications = () => {
   const [viewOpen, setViewOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  // Pagination state
-  const [pageNew, setPageNew] = useState(1)
-  const [pageCompleted, setPageCompleted] = useState(1)
-  const ITEMS_PER_PAGE = 10
-
-
   // Filters for Section 1 - New Applicants
   const [searchNew, setSearchNew] = useState("")
   const [filterRoleNew, setFilterRoleNew] = useState("All Roles")
@@ -105,10 +109,6 @@ const CandidateApplications = () => {
   const [filterDecisionDateCompleted, setFilterDecisionDateCompleted] = useState("")
   const [filterOfferStatusCompleted, setFilterOfferStatusCompleted] = useState("All")
   const [sortByCompleted, setSortByCompleted] = useState("Newest First")
-
-  // Reset pagination on filter change
-  useEffect(() => setPageNew(1), [searchNew, filterStatusNew, filterRoleNew, filterHiringRoleNew, filterDeptNew, filterAIMatchNew, filterAppliedDateNew, sortByNew])
-  useEffect(() => setPageCompleted(1), [searchCompleted, filterStatusCompleted, filterRoleCompleted, filterHiringRoleCompleted, filterDeptCompleted, filterDecisionDateCompleted, filterOfferStatusCompleted, sortByCompleted])
 
   const uploadBaseUrl = useMemo(
     () => (import.meta.env.VITE_API_URL || "http://localhost:5001/api").replace(/\/api\/?$/, ""),
@@ -350,16 +350,253 @@ const CandidateApplications = () => {
     })
   }, [filteredCompleted, sortByCompleted])
 
-  
-  const paginatedNew = useMemo(() => {
-    const start = (pageNew - 1) * ITEMS_PER_PAGE
-    return rankedNew.slice(start, start + ITEMS_PER_PAGE)
-  }, [rankedNew, pageNew])
+  const newColumns = useMemo(() => [
+    {
+      id: "serial",
+      header: "S.No.",
+      cell: ({ row }) => <span className="text-muted-foreground">{row.index + 1}</span>,
+    },
+    {
+      accessorKey: "candidate",
+      header: "Candidate",
+      cell: ({ row }) => {
+        const app = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <CandidateAvatar name={app.name} />
+            <div className="min-w-0">
+              <div className="font-semibold text-foreground truncate">{app.name}</div>
+              <div className="text-xs text-muted-foreground truncate">{app.email}</div>
+            </div>
+          </div>
+        );
+      }
+    },
+    {
+      accessorKey: "jobId",
+      header: "Job ID",
+      cell: ({ row }) => {
+        const app = row.original;
+        return (
+          <span className="font-mono text-xs font-semibold text-primary whitespace-nowrap">
+            {app.jobId?.jobCode || (app.jobId?._id ? `JOB-${app.jobId._id.slice(-4)}` : "N/A")}
+          </span>
+        );
+      }
+    },
+    {
+      accessorKey: "appliedPosition",
+      header: "Applied Position",
+      cell: ({ row }) => {
+        const app = row.original;
+        return <span className="text-muted-foreground">{app.jobId?.jobTitle || app.hiringRoleName || 'Unassigned'}</span>;
+      }
+    },
+    {
+      accessorKey: "experience",
+      header: "Experience",
+      cell: ({ row }) => {
+        const app = row.original;
+        return <span className="text-muted-foreground">{app.yearsOfExperience || 0} yrs</span>;
+      }
+    },
+    {
+      accessorKey: "source",
+      header: "Source",
+      cell: ({ row }) => {
+        const app = row.original;
+        return (
+          <div className="whitespace-nowrap">
+            {app.source === "Employee Referral" ? (
+              <div>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                  Employee Referral
+                </span>
+                {app.referredByEmployeeId && (
+                  <div className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[140px]" title={`Referred by ${app.referredByEmployeeId.name}`}>
+                    By: {app.referredByEmployeeId.name}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                Career Portal
+              </span>
+            )}
+          </div>
+        );
+      }
+    },
+    {
+      accessorKey: "matchScore",
+      header: "Match Score",
+      cell: ({ row }) => {
+        const app = row.original;
+        const score = Number(app.aiFitScore || app.matchScore || 0);
+        return (
+          <span className={`font-semibold text-slate-700 dark:text-slate-300`}>
+            {score}%
+          </span>
+        );
+      }
+    },
+    {
+      accessorKey: "appliedDate",
+      header: "Applied Date",
+      cell: ({ row }) => {
+        const app = row.original;
+        return <span className="text-muted-foreground whitespace-nowrap">{new Date(app.createdAt).toLocaleDateString()}</span>;
+      }
+    },
+    {
+      accessorKey: "hiringStage",
+      header: "Hiring Stage",
+      cell: ({ row }) => {
+        const app = row.original;
+        return <RecruitmentStatusBadge status={app.status} />;
+      }
+    },
+    {
+      accessorKey: "resume",
+      header: "Resume PDF",
+      cell: ({ row }) => {
+        const app = row.original;
+        return app.resume ? (
+          <a href={getResumeUrl(app.resume)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline cursor-pointer">
+            <Eye className="h-3.5 w-3.5" /> View
+          </a>
+        ) : <span className="text-xs text-muted-foreground">N/A</span>;
+      }
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const app = row.original;
+        return (
+          <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+            <ActionIcon icon={Eye} tooltip="Quick View" onClick={() => { setSelectedApplication(app); setViewOpen(true) }} className="text-purple-500 hover:text-primary hover:bg-purple-500/10" />
+            {canWrite && (
+              <>
+                <ActionIcon icon={CheckCircle2} tooltip="Shortlist" onClick={() => handleShortlist(app._id)} disabled={normalizeApplicationStage(app.status) !== 'applied'} className="text-slate-500 hover:text-emerald-600 hover:bg-emerald-50" />
+                <ActionIcon icon={XCircle} tooltip="Reject" onClick={() => handleReject(app._id)} disabled={['selected','rejected'].includes(normalizeApplicationStage(app.status))} className="text-slate-500 hover:text-rose-600 hover:bg-rose-50" />
+              </>
+            )}
+          </div>
+        );
+      }
+    }
+  ], [canWrite, setSelectedApplication, setViewOpen, handleShortlist, handleReject]);
 
-  const paginatedCompleted = useMemo(() => {
-    const start = (pageCompleted - 1) * ITEMS_PER_PAGE
-    return rankedCompleted.slice(start, start + ITEMS_PER_PAGE)
-  }, [rankedCompleted, pageCompleted])
+  const completedColumns = useMemo(() => [
+    {
+      id: "serial",
+      header: "S.No.",
+      cell: ({ row }) => <span className="text-muted-foreground">{row.index + 1}</span>,
+    },
+    {
+      accessorKey: "candidate",
+      header: "Candidate",
+      cell: ({ row }) => {
+        const app = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <CandidateAvatar name={app.name} />
+            <div className="min-w-0">
+              <div className="font-semibold text-foreground truncate">{app.name}</div>
+              <div className="text-xs text-muted-foreground truncate">{app.email}</div>
+            </div>
+          </div>
+        );
+      }
+    },
+    {
+      accessorKey: "jobId",
+      header: "Job ID",
+      cell: ({ row }) => {
+        const app = row.original;
+        return (
+          <span className="font-mono text-xs font-semibold text-primary whitespace-nowrap">
+            {app.jobId?.jobCode || (app.jobId?._id ? `JOB-${app.jobId._id.slice(-4)}` : "N/A")}
+          </span>
+        );
+      }
+    },
+    {
+      accessorKey: "appliedPosition",
+      header: "Applied Position",
+      cell: ({ row }) => {
+        const app = row.original;
+        return <span className="text-muted-foreground">{app.jobId?.jobTitle || app.hiringRoleName || 'Unassigned'}</span>;
+      }
+    },
+    {
+      accessorKey: "experience",
+      header: "Experience",
+      cell: ({ row }) => {
+        const app = row.original;
+        return <span className="text-muted-foreground">{app.yearsOfExperience || 0} yrs</span>;
+      }
+    },
+    {
+      accessorKey: "matchScore",
+      header: "Match Score",
+      cell: ({ row }) => {
+        const app = row.original;
+        const score = Number(app.aiFitScore || app.matchScore || 0);
+        return (
+          <span className={`font-semibold text-slate-700 dark:text-slate-300`}>
+            {score}%
+          </span>
+        );
+      }
+    },
+    {
+      accessorKey: "decisionDate",
+      header: "Decision Date",
+      cell: ({ row }) => {
+        const app = row.original;
+        return <span className="text-muted-foreground whitespace-nowrap">{new Date(app.updatedAt || app.createdAt).toLocaleDateString()}</span>;
+      }
+    },
+    {
+      accessorKey: "finalStatus",
+      header: "Final Status",
+      cell: ({ row }) => {
+        const app = row.original;
+        return <RecruitmentStatusBadge status={app.status} />;
+      }
+    },
+    {
+      accessorKey: "resume",
+      header: "Resume PDF",
+      cell: ({ row }) => {
+        const app = row.original;
+        return app.resume ? (
+          <a href={getResumeUrl(app.resume)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline cursor-pointer">
+            <Eye className="h-3.5 w-3.5" /> View
+          </a>
+        ) : <span className="text-xs text-muted-foreground">N/A</span>;
+      }
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const app = row.original;
+        return (
+          <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+            <ActionIcon icon={Eye} tooltip="Quick View" onClick={() => { setSelectedApplication(app); setViewOpen(true) }} className="text-purple-500 hover:text-primary hover:bg-purple-500/10" />
+            {!(app.status || "").toLowerCase().includes("reject") && (
+              <Link to="/dashboard/offer-management" title="Offer Management" onClick={(e) => e.stopPropagation()}>
+                <ActionIcon icon={FileText} tooltip="Offer Management" className="text-purple-500 hover:text-primary hover:bg-purple-500/10" />
+              </Link>
+            )}
+          </div>
+        );
+      }
+    }
+  ], [setSelectedApplication, setViewOpen]);
 
   const stats = useMemo(() => {
     const result = { total: applications.length, applied: 0, shortlisted: 0, interview: 0, selected: 0, rejected: 0 }
@@ -381,8 +618,6 @@ const CandidateApplications = () => {
     } else {
       setFilterStatusNew(stageKey === "applied" ? "Applied" : stageKey === "shortlisted" ? "Shortlisted" : "Interview")
     }
-    setPageNew(1)
-    setPageCompleted(1)
   }
 
   const percentOfTotal = (count) => stats.total ? Math.round((count / stats.total) * 100) : 0
@@ -394,7 +629,7 @@ const CandidateApplications = () => {
       icon: Users,
       trend: 100,
       helper: `${stats.total} total candidates`,
-      accent: "sky",
+      accent: "blue",
     },
     {
       stageKey: "applied",
@@ -403,7 +638,7 @@ const CandidateApplications = () => {
       icon: FileText,
       trend: percentOfTotal(stats.applied),
       helper: stats.applied === 0 ? "All applications reviewed" : "Candidates awaiting first review",
-      accent: "cyan",
+      accent: "purple",
     },
     {
       stageKey: "shortlisted",
@@ -412,7 +647,7 @@ const CandidateApplications = () => {
       icon: UserCheck,
       trend: percentOfTotal(stats.shortlisted),
       helper: "Ready for interview planning",
-      accent: "violet",
+      accent: "purple",
     },
     {
       stageKey: "interview",
@@ -451,13 +686,13 @@ const CandidateApplications = () => {
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         {stageCards.map((card) => (
-          <RecruitmentKpiCard
+          <StatsCard
             key={card.title}
             title={card.title}
             value={card.value}
             icon={card.icon}
-            accent={card.accent}
-            active={activeKpiFilter === card.stageKey}
+            variant={card.accent}
+            isActive={activeKpiFilter === card.stageKey}
             onClick={() => handleKpiCardClick(card.stageKey)}
           />
         ))}
@@ -505,107 +740,20 @@ const CandidateApplications = () => {
 
         {/* NEW APPLICANTS TABLE */}
         <div className="rounded-lg border border-border bg-card/80 shadow-sm overflow-hidden flex flex-col">
-          <table className="w-full text-sm table-auto">
-            <thead className="bg-muted/95 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 text-left font-semibold w-[50px]">S.No.</th>
-                <th className="px-4 py-3 text-left font-semibold">Candidate</th>
-                <th className="px-4 py-3 text-left font-semibold">Job ID</th>
-                <th className="px-4 py-3 text-left font-semibold">Applied Position</th>
-                <th className="px-4 py-3 text-left font-semibold">Experience</th>
-                <th className="px-4 py-3 text-left font-semibold">Source</th>
-                <th className="px-4 py-3 text-left font-semibold">Match Score</th>
-                <th className="px-4 py-3 text-left font-semibold">Applied Date</th>
-                <th className="px-4 py-3 text-left font-semibold">Hiring Stage</th>
-                <th className="px-4 py-3 text-left font-semibold">Resume PDF</th>
-                <th className="px-4 py-3 text-right font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {loading ? (
-                <tr>
-                  <td colSpan={10} className="p-5 text-center text-sm text-muted-foreground">Loading applications...</td>
-                </tr>
-              ) : filteredNew.length === 0 ? (
-                <tr>
-                  <td colSpan={10} className="p-5">
-                    <RecruitmentEmptyState title="No active applications" description="No new or active candidates match the filters." />
-                  </td>
-                </tr>
-              ) : (
-                paginatedNew.map((app, index) => (
-                  <tr key={app._id} onClick={() => navigate(`/dashboard/applications/${app._id}`)} className="transition-colors hover:bg-muted/30 cursor-pointer">
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{(pageNew - 1) * ITEMS_PER_PAGE + index + 1}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <CandidateAvatar name={app.name} />
-                        <div className="min-w-0">
-                          <div className="font-semibold text-foreground truncate">{app.name}</div>
-                          <div className="text-xs text-muted-foreground truncate">{app.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-600 dark:text-blue-400 whitespace-nowrap">
-                      {app.jobId?.jobCode || (app.jobId?._id ? `JOB-${app.jobId._id.slice(-4)}` : "N/A")}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{app.jobId?.jobTitle || app.hiringRoleName || 'Unassigned'}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{app.yearsOfExperience || 0} yrs</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {app.source === "Employee Referral" ? (
-                        <div>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-300 border border-purple-200 dark:border-purple-500/20">
-                            Employee Referral
-                          </span>
-                          {app.referredByEmployeeId && (
-                            <div className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[140px]" title={`Referred by ${app.referredByEmployeeId.name}`}>
-                              By: {app.referredByEmployeeId.name}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300 border border-blue-200 dark:border-blue-500/20">
-                          Career Portal
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-sm font-bold ${Number(app.aiFitScore || app.matchScore || 0) >= 75 ? 'text-emerald-600 dark:text-emerald-400' : Number(app.aiFitScore || app.matchScore || 0) >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
-                        {Number(app.aiFitScore || app.matchScore || 0)}%
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{new Date(app.createdAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-3"><RecruitmentStatusBadge status={app.status} /></td>
-                    <td className="px-4 py-3">
-                      {app.resume ? (
-                        <a href={getResumeUrl(app.resume)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer">
-                          <Eye className="h-3.5 w-3.5" /> View
-                        </a>
-                      ) : <span className="text-xs text-muted-foreground">N/A</span>}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 cursor-pointer" onClick={() => { setSelectedApplication(app); setViewOpen(true) }} title="Quick View">
-                          <Eye className="h-3.5 w-3.5" />
-                        </Button>
-                        {canWrite && (
-                          <>
-                            <Button variant="ghost" size="icon" onClick={() => handleShortlist(app._id)} disabled={normalizeApplicationStage(app.status) !== 'applied'} className="h-7 w-7 text-green-500 hover:text-green-600 hover:bg-green-500/10 cursor-pointer" title="Shortlist">
-                              <CheckCircle className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleReject(app._id)} disabled={['selected','rejected'].includes(normalizeApplicationStage(app.status))} className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-500/10 cursor-pointer" title="Reject">
-                              <XCircle className="h-3.5 w-3.5" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-          {filteredNew.length > 0 && (
-            <Pagination totalItems={filteredNew.length} itemsPerPage={ITEMS_PER_PAGE} currentPage={pageNew} onPageChange={setPageNew} />
+          {loading ? (
+            <div className="p-5 text-center text-sm text-muted-foreground">Loading applications...</div>
+          ) : filteredNew.length === 0 ? (
+            <div className="p-5">
+              <RecruitmentEmptyState title="No active applications" description="No new or active candidates match the filters." />
+            </div>
+          ) : (
+            <DataTable 
+              columns={newColumns} 
+              data={rankedNew} 
+              searchable={false} 
+              defaultPageSize={10} 
+              onRowClick={(app) => navigate(`/dashboard/applications/${app._id}`)} 
+            />
           )}
         </div>
       </div>
@@ -652,85 +800,20 @@ const CandidateApplications = () => {
 
         {/* COMPLETED APPLICATIONS TABLE */}
         <div className="rounded-lg border border-border bg-card/80 shadow-sm overflow-hidden flex flex-col">
-          <table className="w-full text-sm table-auto">
-            <thead className="bg-muted/95 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 text-left font-semibold w-[50px]">S.No.</th>
-                <th className="px-4 py-3 text-left font-semibold">Candidate</th>
-                <th className="px-4 py-3 text-left font-semibold">Job ID</th>
-                <th className="px-4 py-3 text-left font-semibold">Applied Position</th>
-                <th className="px-4 py-3 text-left font-semibold">Experience</th>
-                <th className="px-4 py-3 text-left font-semibold">Match Score</th>
-                <th className="px-4 py-3 text-left font-semibold">Decision Date</th>
-                <th className="px-4 py-3 text-left font-semibold">Final Status</th>
-                <th className="px-4 py-3 text-left font-semibold">Resume PDF</th>
-                <th className="px-4 py-3 text-right font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {loading ? (
-                <tr>
-                  <td colSpan={10} className="p-5 text-center text-sm text-muted-foreground">Loading applications...</td>
-                </tr>
-              ) : filteredCompleted.length === 0 ? (
-                <tr>
-                  <td colSpan={10} className="p-5">
-                    <RecruitmentEmptyState title="No completed applications" description="No candidates reached a final decision yet." />
-                  </td>
-                </tr>
-              ) : (
-                paginatedCompleted.map((app, index) => (
-                  <tr key={app._id} onClick={() => navigate(`/dashboard/applications/${app._id}`)} className="transition-colors hover:bg-muted/30 cursor-pointer">
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{(pageCompleted - 1) * ITEMS_PER_PAGE + index + 1}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <CandidateAvatar name={app.name} />
-                        <div className="min-w-0">
-                          <div className="font-semibold text-foreground truncate">{app.name}</div>
-                          <div className="text-xs text-muted-foreground truncate">{app.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-600 dark:text-blue-400 whitespace-nowrap">
-                      {app.jobId?.jobCode || (app.jobId?._id ? `JOB-${app.jobId._id.slice(-4)}` : "N/A")}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{app.jobId?.jobTitle || app.hiringRoleName || 'Unassigned'}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{app.yearsOfExperience || 0} yrs</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-sm font-bold ${Number(app.aiFitScore || app.matchScore || 0) >= 75 ? 'text-emerald-600 dark:text-emerald-400' : Number(app.aiFitScore || app.matchScore || 0) >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
-                        {Number(app.aiFitScore || app.matchScore || 0)}%
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{new Date(app.updatedAt || app.createdAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-3"><RecruitmentStatusBadge status={app.status} /></td>
-                    <td className="px-4 py-3">
-                      {app.resume ? (
-                        <a href={getResumeUrl(app.resume)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer">
-                          <Eye className="h-3.5 w-3.5" /> View
-                        </a>
-                      ) : <span className="text-xs text-muted-foreground">N/A</span>}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 cursor-pointer" onClick={() => { setSelectedApplication(app); setViewOpen(true) }} title="Quick View">
-                          <Eye className="h-3.5 w-3.5" />
-                        </Button>
-                        {!(app.status || "").toLowerCase().includes("reject") && (
-                          <Link to="/dashboard/offer-management" title="Offer Management">
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 cursor-pointer">
-                              <FileText className="h-3.5 w-3.5" />
-                            </Button>
-                          </Link>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-          {filteredCompleted.length > 0 && (
-            <Pagination totalItems={filteredCompleted.length} itemsPerPage={ITEMS_PER_PAGE} currentPage={pageCompleted} onPageChange={setPageCompleted} />
+          {loading ? (
+            <div className="p-5 text-center text-sm text-muted-foreground">Loading applications...</div>
+          ) : filteredCompleted.length === 0 ? (
+            <div className="p-5">
+              <RecruitmentEmptyState title="No completed applications" description="No candidates reached a final decision yet." />
+            </div>
+          ) : (
+            <DataTable 
+              columns={completedColumns} 
+              data={rankedCompleted} 
+              searchable={false} 
+              defaultPageSize={10} 
+              onRowClick={(app) => navigate(`/dashboard/applications/${app._id}`)} 
+            />
           )}
         </div>
       </div>
@@ -819,7 +902,7 @@ const CandidateApplications = () => {
                     <div className="truncate text-sm" title={selectedApplication.resume}>{selectedApplication.resume}</div>
                   </div>
                   <a href={getResumeUrl(selectedApplication.resume)} target="_blank" rel="noreferrer">
-                    <Button className="bg-blue-600 text-white hover:bg-blue-700">Open Resume</Button>
+                    <Button className="bg-purple-600 text-white hover:bg-purple-700">Open Resume</Button>
                   </a>
                 </div>
               ) : (
@@ -839,75 +922,20 @@ export default CandidateApplications
 
 function FilterSelect({ label, value, onChange, options = [] }) {
   return (
-    <label className="relative block w-full">
-      <span className="sr-only">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="appearance-none h-9 w-full rounded-md border border-input bg-background px-3 pr-8 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-[3px] focus:ring-ring/50 cursor-pointer"
-      >
-        <option value={options[0]}>{options[0]}</option>
-        {options.slice(1).map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-2 top-2.5 h-4 w-4 text-muted-foreground" />
-    </label>
+    <div className="relative block w-full">
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="h-9 w-full">
+          <SelectValue placeholder={options[0]} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option} value={option}>
+              {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
-function Pagination({ totalItems, itemsPerPage, currentPage, onPageChange }) {
-  const totalPages = Math.ceil(totalItems / itemsPerPage)
-  if (totalPages <= 1) return null
-
-  const startItem = (currentPage - 1) * itemsPerPage + 1
-  const endItem = Math.min(currentPage * itemsPerPage, totalItems)
-
-  const getPages = () => {
-    const pages = []
-    for (let i = 1; i <= totalPages; i++) {
-      if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-        pages.push(i)
-      } else if (pages[pages.length - 1] !== "...") {
-        pages.push("...")
-      }
-    }
-    return pages
-  }
-
-  return (
-    <div className="flex items-center justify-between border-t border-border px-4 py-3 sm:px-6 bg-card rounded-b-lg">
-      <div className="flex flex-1 justify-between sm:hidden">
-        <Button variant="outline" size="sm" onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>Previous</Button>
-        <Button variant="outline" size="sm" onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}>Next</Button>
-      </div>
-      <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            Showing <span className="font-medium text-foreground">{startItem}</span> to <span className="font-medium text-foreground">{endItem}</span> of <span className="font-medium text-foreground">{totalItems}</span> Candidates
-          </p>
-        </div>
-        <div>
-          <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-            <Button variant="outline" className="rounded-l-md rounded-r-none border-r-0" size="sm" onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>Previous</Button>
-            {getPages().map((page, idx) => (
-              <Button
-                key={idx}
-                variant={currentPage === page ? "default" : "outline"}
-                className={`rounded-none border-r-0 ${currentPage === page ? "z-10" : ""}`}
-                size="sm"
-                disabled={page === "..."}
-                onClick={() => page !== "..." && onPageChange(page)}
-              >
-                {page}
-              </Button>
-            ))}
-            <Button variant="outline" className="rounded-r-md rounded-l-none" size="sm" onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}>Next</Button>
-          </nav>
-        </div>
-      </div>
-    </div>
-  )
-}

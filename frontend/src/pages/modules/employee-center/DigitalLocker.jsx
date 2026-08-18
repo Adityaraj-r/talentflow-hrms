@@ -6,7 +6,8 @@ import {
   Trash2, Eye, CheckCircle, Clock, XCircle, ArrowLeft, Calendar, Building, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -107,8 +108,7 @@ const DigitalLocker = () => {
     try {
       await apiClient.post("/documents/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
-        timeout: 30000,
-      });
+        timeout: 30000});
       toast.success("Document uploaded successfully");
       setUploadOpen(false);
       setFile(null);
@@ -196,13 +196,13 @@ const DigitalLocker = () => {
                   if (cat.name !== "Onboarding") setTargetEmployeeId("");
                   if (cat.name === "Onboarding") { setTargetEmployeeId(""); setSearchQuery(""); }
                 }}
-                className={`flex-shrink-0 flex items-center justify-between rounded-md text-sm font-medium transition-colors cursor-pointer gap-3 px-3 py-2 lg:w-full lg:px-4 lg:py-2.5 ${selectedCategory === cat.name ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white" : "text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/50"}`}
+                className={`flex-shrink-0 flex items-center justify-between rounded-md text-sm font-medium transition-colors cursor-pointer gap-3 px-3 py-2 lg:w-full lg:px-4 lg:py-2.5 ${selectedCategory === cat.name ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary" : "text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/50"}`}
               >
                 <div className="flex items-center gap-2">
-                  <Folder className={`w-4 h-4 lg:w-5 lg:h-5 ${selectedCategory === cat.name ? "fill-slate-900 text-slate-900 dark:fill-white dark:text-white" : "text-slate-400"}`} />
+                  <Folder className={`w-4 h-4 lg:w-5 lg:h-5 ${selectedCategory === cat.name ? "fill-primary text-primary" : "text-slate-400"}`} />
                   <span className="whitespace-nowrap">{cat.label}</span>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full min-w-[1.5rem] text-center ${selectedCategory === cat.name ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white" : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"}`}>
+                <span className={`text-xs px-2 py-0.5 rounded-full min-w-[1.5rem] text-center ${selectedCategory === cat.name ? "bg-white text-primary shadow-sm dark:bg-slate-800 dark:text-primary" : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"}`}>
                   {count}
                 </span>
               </button>
@@ -315,58 +315,73 @@ const DigitalLocker = () => {
           <div className="flex-1 overflow-y-auto p-5 bg-slate-50/50 dark:bg-slate-900/30">
             {selectedCategory === "Onboarding" && !targetEmployeeId && canSeeOnboarding ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg border overflow-hidden">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/30">
-                        <TableHead className="px-4 py-3 font-medium text-gray-500 whitespace-nowrap">Employee</TableHead>
-                        <TableHead className="px-4 py-3 font-medium text-gray-500 hidden md:table-cell">Department</TableHead>
-                        <TableHead className="px-4 py-3 font-medium text-gray-500 hidden sm:table-cell">Date</TableHead>
-                        <TableHead className="px-4 py-3 font-medium text-gray-500">Status</TableHead>
-                        <TableHead className="px-4 py-3 font-medium text-gray-500 text-right">Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginatedEmployees.length > 0 ? paginatedEmployees.map((emp) => (
-                        <TableRow key={emp._id} className="hover:bg-muted/10">
-                          <TableCell className="px-4 py-3">
+                <DataTable
+                  columns={[
+                    {
+                      accessorKey: "employee",
+                      header: "Employee",
+                      cell: ({ row }) => {
+                        const emp = row.original;
+                        return (
+                          <div>
                             <div className="font-medium whitespace-nowrap">{emp.firstName} {emp.lastName}</div>
                             <div className="text-xs text-gray-500">{emp.employeeCode || "N/A"}</div>
-                          </TableCell>
-                          <TableCell className="px-4 py-3 hidden md:table-cell">
-                            <div className="flex items-center gap-2 whitespace-nowrap">
-                              <Building className="w-3 h-3 text-gray-400" />
-                              {emp.department || "General"}
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-4 py-3 hidden sm:table-cell whitespace-nowrap">
-                            <div className="flex items-center gap-2 text-gray-500">
-                              <Calendar className="w-3 h-3" />
-                              {new Date(emp.createdAt).toLocaleDateString()}
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${emp.onboardingStatus === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                              {emp.onboardingStatus || 'Pending'}
-                            </span>
-                          </TableCell>
-                          <TableCell className="px-4 py-3 text-right">
+                          </div>
+                        );
+                      }
+                    },
+                    {
+                      accessorKey: "department",
+                      header: "Department",
+                      cell: ({ row }) => (
+                        <div className="flex items-center gap-2 whitespace-nowrap">
+                          <Building className="w-3 h-3 text-gray-400" />
+                          {row.original.department || "General"}
+                        </div>
+                      )
+                    },
+                    {
+                      accessorKey: "createdAt",
+                      header: "Date",
+                      cell: ({ row }) => (
+                        <div className="flex items-center gap-2 text-gray-500 whitespace-nowrap">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(row.original.createdAt).toLocaleDateString()}
+                        </div>
+                      )
+                    },
+                    {
+                      accessorKey: "onboardingStatus",
+                      header: "Status",
+                      cell: ({ row }) => (
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${row.original.onboardingStatus === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                          {row.original.onboardingStatus || 'Pending'}
+                        </span>
+                      )
+                    },
+                    {
+                      id: "actions",
+                      header: () => <div className="text-right">Action</div>,
+                      cell: ({ row }) => {
+                        const emp = row.original;
+                        return (
+                          <div className="text-right">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => { setTargetEmployeeId(emp.employeeCode || emp._id); setSearchQuery(""); }}
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                             >
                               <Eye className="w-4 h-4 mr-2" /> View Docs
                             </Button>
-                          </TableCell>
-                        </TableRow>
-                      )) : (
-                        <TableRow><TableCell colSpan="5" className="px-4 py-8 text-center text-gray-500">No employees found.</TableCell></TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                          </div>
+                        );
+                      }
+                    }
+                  ]}
+                  data={paginatedEmployees}
+                  searchable={false}
+                />
               </div>
             ) : filteredDocs.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-400">
@@ -388,7 +403,7 @@ const DigitalLocker = () => {
                     <h3 className="font-medium truncate text-sm" title={doc.originalName}>{doc.originalName}</h3>
                     <div className="text-xs text-gray-500 mt-1 flex justify-between"><span>{doc.fileSize}</span><span>{new Date(doc.uploadDate).toLocaleDateString()}</span></div>
                     <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 bg-blue-50 hover:bg-blue-100" onClick={() => setSelectedDoc(doc)}><Eye className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-purple-600 bg-purple-50 hover:bg-purple-100" onClick={() => setSelectedDoc(doc)}><Eye className="w-4 h-4" /></Button>
                       {canDelete && (
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 bg-red-50 hover:bg-red-100" onClick={() => handleDelete(doc._id)}><Trash2 className="w-4 h-4" /></Button>
                       )}
@@ -410,64 +425,78 @@ const DigitalLocker = () => {
               </>
             ) : (
               <div className="bg-white dark:bg-gray-800 rounded-lg border overflow-hidden">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/30">
-                        <TableHead className="px-4 py-3 font-medium text-gray-500 whitespace-nowrap">Name</TableHead>
-                        <TableHead className="px-4 py-3 font-medium text-gray-500 hidden md:table-cell">Category</TableHead>
-                        <TableHead className="px-4 py-3 font-medium text-gray-500 whitespace-nowrap hidden sm:table-cell">Date</TableHead>
-                        <TableHead className="px-4 py-3 font-medium text-gray-500">Status</TableHead>
-                        <TableHead className="px-4 py-3 font-medium text-gray-500 text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginatedDocs.map((doc) => (
-                        <TableRow key={doc._id} className="hover:bg-muted/10">
-                          <TableCell className="px-4 py-3 max-w-[140px] sm:max-w-[180px] lg:max-w-[250px]">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded shrink-0"><FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" /></div>
-                              <span className="truncate font-medium text-slate-700 dark:text-slate-200 block w-full">{doc.originalName}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-4 py-3 hidden md:table-cell">
-                            <span className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-md text-xs font-medium border dark:border-gray-700 whitespace-nowrap">
-                              {doc.category === "Personal" ? "Personal IDs" : (doc.category || "Uncategorized")}
-                            </span>
-                          </TableCell>
-                          <TableCell className="px-4 py-3 hidden sm:table-cell text-gray-500 whitespace-nowrap">
-                            {new Date(doc.uploadDate).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            {canVerify ? (
-                              <select
-                                className={`text-xs px-2 py-1 rounded-md border font-medium outline-none cursor-pointer appearance-none ${doc.status === 'Verified' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:border-green-800' :
-                                  doc.status === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:border-red-800' :
-                                  'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:border-yellow-800'}`}
-                                value={doc.status}
-                                onChange={(e) => handleStatusChange(doc._id, e.target.value)}
-                              >
-                                <option value="Pending">Pending</option>
-                                <option value="Verified">Verified</option>
-                                <option value="Rejected">Rejected</option>
-                              </select>
-                            ) : (
-                              <BadgeStatus status={doc.status} />
-                            )}
-                          </TableCell>
-                          <TableCell className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-blue-600" onClick={() => setSelectedDoc(doc)}><Eye className="w-4 h-4" /></Button>
-                              {canDelete && (
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-red-600" onClick={() => handleDelete(doc._id)}><Trash2 className="w-4 h-4" /></Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                <DataTable
+                  columns={[
+                    {
+                      accessorKey: "originalName",
+                      header: "Name",
+                      cell: ({ row }) => {
+                        const doc = row.original;
+                        return (
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="p-1.5 bg-purple-50 dark:bg-purple-900/20 rounded shrink-0"><FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" /></div>
+                            <span className="truncate font-medium text-slate-700 dark:text-slate-200 block w-full">{doc.originalName}</span>
+                          </div>
+                        );
+                      }
+                    },
+                    {
+                      accessorKey: "category",
+                      header: "Category",
+                      cell: ({ row }) => (
+                        <span className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-md text-xs font-medium border dark:border-gray-700 whitespace-nowrap">
+                          {row.original.category === "Personal" ? "Personal IDs" : (row.original.category || "Uncategorized")}
+                        </span>
+                      )
+                    },
+                    {
+                      accessorKey: "uploadDate",
+                      header: "Date",
+                      cell: ({ row }) => <span className="text-gray-500 whitespace-nowrap">{new Date(row.original.uploadDate).toLocaleDateString()}</span>
+                    },
+                    {
+                      accessorKey: "status",
+                      header: "Status",
+                      cell: ({ row }) => {
+                        const doc = row.original;
+                        return canVerify ? (
+                          <Select
+                            value={doc.status}
+                            onValueChange={(value) => handleStatusChange(doc._id, value)}
+                          >
+                            <SelectTrigger className={`h-7 text-xs px-2 py-1 rounded-md border font-medium outline-none cursor-pointer w-fit ${doc.status === 'Verified' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:border-green-800' :
+                              doc.status === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:border-red-800' :
+                              'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:border-yellow-800'}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Pending">Pending</SelectItem>
+                              <SelectItem value="Verified">Verified</SelectItem>
+                              <SelectItem value="Rejected">Rejected</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <BadgeStatus status={doc.status} />
+                        );
+                      }
+                    },
+                    {
+                      id: "actions",
+                      header: () => <div className="text-right">Actions</div>,
+                      cell: ({ row }) => {
+                        const doc = row.original;
+                        return (
+                          <div className="flex justify-end gap-2">
+                            <ActionIcon icon={Eye} tooltip="View Document" onClick={() => setSelectedDoc(doc)} />
+                            {canDelete && <ActionIcon icon={Trash2} tooltip="Delete Document" onClick={() => handleDelete(doc._id)} />}
+                          </div>
+                        );
+                      }
+                    }
+                  ]}
+                  data={paginatedDocs}
+                  searchable={false}
+                />
                 {totalDocs > 0 && (
                   <div className="mt-4">
                     <Pagination

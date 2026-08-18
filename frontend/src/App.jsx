@@ -46,6 +46,7 @@ import JobOpenings from "./pages/modules/recruitment/JobOpenings"
 import CreateJob from "./pages/modules/recruitment/CreateJob"
 import JobDetail from "./pages/modules/recruitment/JobDetail"
 import ApplyJob from "./pages/ApplyJob"
+import ReferralApplyLandingPage from "./pages/ReferralApplyLandingPage"
 import CandidateApplications from "./pages/modules/recruitment/CandidateApplications"
 import CandidateDetail from "./pages/modules/recruitment/CandidateDetail"
 import RecruitmentPipeline from "./pages/modules/recruitment/RecruitmentPipeline"
@@ -60,6 +61,8 @@ import Payroll from "./pages/modules/payroll/Payroll"
 import Tickets from "./pages/modules/payroll/Tickets"
 import Indemnity from "./pages/modules/payroll/Indemnity"
 import SalarySlip from "./pages/modules/payroll/SalarySlip"
+import ReferralRewardManagement from "./pages/modules/payroll/ReferralRewardManagement"
+import ReferralAnalyticsDashboard from "./pages/modules/payroll/ReferralAnalyticsDashboard"
 import PayrollPolicyManagement from "./pages/modules/administration/PayrollPolicyManagement"
 
 // Transfer and Promotion Module
@@ -201,7 +204,7 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission, requiredPe
     return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-950">
         <div className="text-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
+          <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto" />
           <p className="text-lg font-semibold text-gray-900 dark:text-white">
             {permLoading ? "Verifying permissions..." : "Loading..."}
           </p>
@@ -219,7 +222,7 @@ const ProtectedRoute = ({ children, allowedRoles, requiredPermission, requiredPe
   if (needsMatrixGate) {
     if (hasPermission === null) return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-950">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
       </div>
     )
     return hasPermission ? children : <Navigate to="/unauthorized" replace />
@@ -250,7 +253,7 @@ const DashboardRouter = () => {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white dark:bg-gray-950">
         <div className="text-center space-y-4">
-          <Loader2 className="h-16 w-16 animate-spin text-blue-600 mx-auto" />
+          <Loader2 className="h-16 w-16 animate-spin text-purple-600 mx-auto" />
           <p className="text-lg font-semibold text-gray-900 dark:text-white">Loading Dashboard...</p>
           <p className="text-sm text-gray-500">Please wait</p>
         </div>
@@ -296,6 +299,7 @@ function App() {
 
             <Route path="/careers" element={<Careers />} />
             <Route path="/apply/:id" element={<ApplyJob />} />
+            <Route path="/referral/apply/:token" element={<ReferralApplyLandingPage />} />
             <Route path="/application-status" element={<ApplicationStatus />} />
 
             <Route
@@ -643,6 +647,31 @@ function App() {
             <Route path="/payroll/salary-slip" element={
               <ProtectedRoute requiredPermission={{ module: "payroll", action: "read" }}>
                 <DashboardLayout><SalarySlip /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/payroll/referrals" element={
+              <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER ADMIN", "CEO", "FINANCE_MANAGER"]}>
+                <DashboardLayout><ReferralRewardManagement /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/referrals/analytics" element={
+              <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER ADMIN", "CEO", "FINANCE_MANAGER"]}>
+                <DashboardLayout><ReferralAnalyticsDashboard /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/employee-referral/analytics" element={
+              <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER ADMIN", "CEO", "FINANCE_MANAGER"]}>
+                <DashboardLayout><ReferralAnalyticsDashboard /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/recruitment/referrals/analytics" element={
+              <ProtectedRoute allowedRoles={["HR_MANAGER", "HR_OFFICER", "ADMIN", "SUPER ADMIN", "CEO", "FINANCE_MANAGER"]}>
+                <DashboardLayout><ReferralAnalyticsDashboard /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/employee-center/referrals" element={
+              <ProtectedRoute allowedRoles={["EMPLOYEE", "DIRECT_MANAGER", "DEPARTMENT_MANAGER", "PROJECT_MANAGER", "OPERATIONS_MANAGER", "FINANCE_MANAGER", "HR_MANAGER", "HR_OFFICER", "PAYROLL_OFFICER", "ADMIN", "SUPER ADMIN"]}>
+                <DashboardLayout><EmployeeReferrals /></DashboardLayout>
               </ProtectedRoute>
             } />
 

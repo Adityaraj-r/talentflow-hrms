@@ -9,6 +9,13 @@ import {
   MapPin, Building, GraduationCap, DollarSign, Eye, Loader2, ChevronDown, Check, Plus, Zap
 } from "lucide-react"
 import WorkflowBuilder from "@/components/recruitment/WorkflowBuilder"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api"
 const DRAFT_KEY = "hr_job_draft"
@@ -40,7 +47,7 @@ const TagInput = ({ tags, setTags, suggestions, placeholder, error, onChange }) 
 
   return (
     <div className="relative">
-      <div className={`flex flex-wrap gap-2 items-center p-2 min-h-[44px] border ${error ? 'border-red-400 focus-within:border-red-500 focus-within:ring-red-500/20' : 'border-slate-300 dark:border-slate-700 focus-within:border-blue-500 focus-within:ring-blue-500/20'} rounded-xl bg-white dark:bg-slate-900 focus-within:ring-2 transition-all`}>
+      <div className={`flex flex-wrap gap-2 items-center p-2 min-h-[44px] border ${error ? 'border-red-400 focus-within:border-red-500 focus-within:ring-red-500/20' : 'border-slate-300 dark:border-slate-700 focus-within:border-purple-500 focus-within:ring-purple-500/20'} rounded-xl bg-white dark:bg-slate-900 focus-within:ring-2 transition-all`}>
         {tags.map(tag => (
           <span key={tag} className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700">
             {tag}
@@ -76,7 +83,7 @@ const TagInput = ({ tags, setTags, suggestions, placeholder, error, onChange }) 
                 onMouseDown={(e) => { e.preventDefault(); addTag(s) }}
               >
                 {s}
-                <Plus size={14} className="opacity-0 group-hover:opacity-100 text-blue-500" />
+                <Plus size={14} className="opacity-0 group-hover:opacity-100 text-purple-500" />
               </div>
             ))}
         </div>
@@ -308,7 +315,7 @@ export default function CreateJob() {
   }
 
   // Base input classes for UI consistency
-  const inputBase = "w-full h-11 px-3 bg-white dark:bg-slate-900 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-slate-400 shadow-sm"
+  const inputBase = "w-full h-11 px-3 bg-white dark:bg-slate-900 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all placeholder-slate-400 shadow-sm"
 
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-gray-950 p-6 font-sans text-slate-900 dark:text-slate-100">
@@ -329,7 +336,7 @@ export default function CreateJob() {
         <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 lg:p-6">
           <div className="border-b border-slate-100 dark:border-slate-800 pb-3 mb-5">
             <h2 className="text-lg font-bold flex items-center gap-2">
-              <Briefcase className="text-blue-500" size={20} /> Basic Information
+              <Briefcase className="text-purple-500" size={20} /> Basic Information
             </h2>
           </div>
           
@@ -347,13 +354,16 @@ export default function CreateJob() {
             <div>
               <label className="block text-sm font-semibold mb-1.5">Department <span className="text-red-500">*</span></label>
               <div className="relative">
-                <select name="department" value={formData.department} onChange={handleInputChange} className={`${inputBase} appearance-none pr-10 ${errors.department ? 'border-red-400' : 'border-slate-300 dark:border-slate-700'}`}>
-                  <option value="">Select Department</option>
-                  {departmentsList.map(d => (
-                    <option key={d._id || d.id || d.name} value={d.name}>{d.name}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" size={16} />
+                <Select value={formData.department} onValueChange={(val) => handleInputChange({ target: { name: 'department', value: val } })}>
+                  <SelectTrigger className={`${inputBase} ${errors.department ? 'border-red-400' : 'border-slate-300 dark:border-slate-700'}`}>
+                    <SelectValue placeholder="Select Department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departmentsList.map(d => (
+                      <SelectItem key={d._id || d.id || d.name} value={d.name}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               {errors.department && <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1"><AlertCircle size={12}/> {errors.department}</p>}
             </div>
@@ -374,24 +384,32 @@ export default function CreateJob() {
               <div>
                 <label className="block text-sm font-semibold mb-1.5">Employment Type</label>
                 <div className="relative">
-                  <select name="employmentType" value={formData.employmentType} onChange={handleInputChange} className={`${inputBase} appearance-none pr-10 border-slate-300 dark:border-slate-700`}>
-                    <option value="Full-time">Full-time</option>
-                    <option value="Part-time">Part-time</option>
-                    <option value="Contract">Contract</option>
-                    <option value="Internship">Internship</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" size={16} />
+                  <Select value={formData.employmentType} onValueChange={(val) => handleInputChange({ target: { name: 'employmentType', value: val } })}>
+                    <SelectTrigger className={`${inputBase} border-slate-300 dark:border-slate-700`}>
+                      <SelectValue placeholder="Employment Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Full-time">Full-time</SelectItem>
+                      <SelectItem value="Part-time">Part-time</SelectItem>
+                      <SelectItem value="Contract">Contract</SelectItem>
+                      <SelectItem value="Internship">Internship</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1.5">Work Mode</label>
                 <div className="relative">
-                  <select name="workMode" value={formData.workMode} onChange={handleInputChange} className={`${inputBase} appearance-none pr-10 border-slate-300 dark:border-slate-700`}>
-                    <option value="Remote">Remote</option>
-                    <option value="Hybrid">Hybrid</option>
-                    <option value="On-site">On-site</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" size={16} />
+                  <Select value={formData.workMode} onValueChange={(val) => handleInputChange({ target: { name: 'workMode', value: val } })}>
+                    <SelectTrigger className={`${inputBase} border-slate-300 dark:border-slate-700`}>
+                      <SelectValue placeholder="Work Mode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Remote">Remote</SelectItem>
+                      <SelectItem value="Hybrid">Hybrid</SelectItem>
+                      <SelectItem value="On-site">On-site</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -439,13 +457,17 @@ export default function CreateJob() {
             <div>
               <label className="block text-sm font-semibold mb-1.5">Currency</label>
               <div className="relative">
-                <select name="currency" value={formData.currency} onChange={handleInputChange} className={`${inputBase} appearance-none pr-10 border-slate-300 dark:border-slate-700`}>
-                  <option value="INR">INR (₹)</option>
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" size={16} />
+                <Select value={formData.currency} onValueChange={(val) => handleInputChange({ target: { name: 'currency', value: val } })}>
+                  <SelectTrigger className={`${inputBase} border-slate-300 dark:border-slate-700`}>
+                    <SelectValue placeholder="Currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="INR">INR (₹)</SelectItem>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                    <SelectItem value="GBP">GBP (£)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -480,7 +502,7 @@ export default function CreateJob() {
         <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 lg:p-6">
           <div className="border-b border-slate-100 dark:border-slate-800 pb-3 mb-5 flex items-center justify-between">
             <h2 className="text-lg font-bold flex items-center gap-2">
-              <FileText className="text-orange-500" size={20} /> Job Description
+              <FileText className="text-primary" size={20} /> Job Description
             </h2>
           </div>
           
@@ -501,7 +523,7 @@ export default function CreateJob() {
                   value={formData[field.name]}
                   onChange={handleInputChange}
                   placeholder={field.placeholder}
-                  className="w-full p-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-y shadow-sm"
+                  className="w-full p-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-y shadow-sm"
                 ></textarea>
               </div>
             ))}
@@ -520,52 +542,66 @@ export default function CreateJob() {
             <div>
               <label className="block text-sm font-semibold mb-1.5">Hiring Manager <span className="text-red-500">*</span></label>
               <div className="relative">
-                <select name="hiringManager" required value={formData.hiringManager} onChange={handleInputChange} className={`${inputBase} appearance-none pr-10 ${errors.hiringManager ? 'border-red-400' : 'border-slate-300 dark:border-slate-700'}`}>
-                  <option value="">Select Manager</option>
-                  {usersList
-                    .filter(u => u.role && u.role.toUpperCase().includes("MANAGER"))
-                    .map(u => (
-                    <option key={u._id} value={formatUserName(u)}>{formatUserName(u)}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" size={16} />
+                <Select required value={formData.hiringManager} onValueChange={(val) => handleInputChange({ target: { name: 'hiringManager', value: val } })}>
+                  <SelectTrigger className={`${inputBase} ${errors.hiringManager ? 'border-red-400' : 'border-slate-300 dark:border-slate-700'}`}>
+                    <SelectValue placeholder="Select Manager" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {usersList
+                      .filter(u => u.role && u.role.toUpperCase().includes("MANAGER"))
+                      .map(u => (
+                      <SelectItem key={u._id} value={formatUserName(u)}>{formatUserName(u)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div>
               <label className="block text-sm font-semibold mb-1.5">Recruiter</label>
               <div className="relative">
-                <select name="recruiter" value={formData.recruiter} onChange={handleInputChange} className={`${inputBase} appearance-none pr-10 border-slate-300 dark:border-slate-700`}>
-                  <option value="">Select Recruiter</option>
-                  {usersList
-                    .filter(u => u.role && u.role.toUpperCase().includes("HR"))
-                    .map(u => (
-                    <option key={u._id} value={formatUserName(u)}>{formatUserName(u)}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" size={16} />
+                <Select value={formData.recruiter} onValueChange={(val) => handleInputChange({ target: { name: 'recruiter', value: val } })}>
+                  <SelectTrigger className={`${inputBase} border-slate-300 dark:border-slate-700`}>
+                    <SelectValue placeholder="Select Recruiter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {usersList
+                      .filter(u => u.role && u.role.toUpperCase().includes("HR"))
+                      .map(u => (
+                      <SelectItem key={u._id} value={formatUserName(u)}>{formatUserName(u)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             
             <div>
               <label className="block text-sm font-semibold mb-1.5">Priority</label>
               <div className="relative">
-                <select name="priority" value={formData.priority} onChange={handleInputChange} className={`${inputBase} appearance-none pr-10 border-slate-300 dark:border-slate-700`}>
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                  <option value="Urgent">Urgent</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" size={16} />
+                <Select value={formData.priority} onValueChange={(val) => handleInputChange({ target: { name: 'priority', value: val } })}>
+                  <SelectTrigger className={`${inputBase} border-slate-300 dark:border-slate-700`}>
+                    <SelectValue placeholder="Priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Low">Low</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="High">High</SelectItem>
+                    <SelectItem value="Urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div>
               <label className="block text-sm font-semibold mb-1.5">Vacancy Type</label>
               <div className="relative">
-                <select name="vacancyType" value={formData.vacancyType} onChange={handleInputChange} className={`${inputBase} appearance-none pr-10 border-slate-300 dark:border-slate-700`}>
-                  <option value="New Position">New Position</option>
-                  <option value="Replacement">Replacement</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-3.5 text-slate-400 pointer-events-none" size={16} />
+                <Select value={formData.vacancyType} onValueChange={(val) => handleInputChange({ target: { name: 'vacancyType', value: val } })}>
+                  <SelectTrigger className={`${inputBase} border-slate-300 dark:border-slate-700`}>
+                    <SelectValue placeholder="Vacancy Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="New Position">New Position</SelectItem>
+                    <SelectItem value="Replacement">Replacement</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -600,7 +636,7 @@ export default function CreateJob() {
         <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 lg:p-6">
           <div className="border-b border-slate-100 dark:border-slate-800 pb-3 mb-5">
             <h2 className="text-lg font-bold flex items-center gap-2">
-              <Zap className="text-blue-500" size={20} /> Post-Hiring & Interview Process Setup
+              <Zap className="text-purple-500" size={20} /> Post-Hiring & Interview Process Setup
             </h2>
             <p className="text-xs text-slate-500 mt-1">Configure whether candidates need a practical assignment and set up the interview rounds for this job.</p>
           </div>
@@ -615,7 +651,7 @@ export default function CreateJob() {
                       type="checkbox"
                       checked={hasAssignment}
                       onChange={(e) => setHasAssignment(e.target.checked)}
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-purple-500"
                     />
                     Requires Practical Assignment / Assessment Task
                   </label>
@@ -644,8 +680,8 @@ export default function CreateJob() {
               <label className="block text-sm font-semibold">Interview Rounds for this Role</label>
               <div className="flex flex-wrap gap-2 items-center min-h-[44px] p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/30">
                 {interviewRounds.map((round, idx) => (
-                  <span key={idx} className="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 text-xs font-semibold rounded-lg border border-blue-200 dark:border-blue-800/50 shadow-xs">
-                    <span className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full">{idx + 1}</span>
+                  <span key={idx} className="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-slate-900 text-primary text-xs font-semibold rounded-lg border border-purple-200 dark:border-purple-800/50 shadow-xs">
+                    <span className="text-[10px] bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded-full">{idx + 1}</span>
                     {round}
                     <button type="button" onClick={() => setInterviewRounds(interviewRounds.filter((_, i) => i !== idx))} className="text-slate-400 hover:text-red-500 ml-1">
                       <X size={14} />
@@ -679,7 +715,7 @@ export default function CreateJob() {
                       setNewRoundInput("")
                     }
                   }}
-                  className="px-3 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition"
+                  className="px-3 h-9 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold transition"
                 >
                   + Add Round
                 </button>
@@ -723,13 +759,13 @@ export default function CreateJob() {
                   <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".pdf,.doc,.docx" onChange={(e) => handleFileUpload(e, setUploadJd)} />
                   {uploadJd ? (
                     <div className="flex flex-col items-center">
-                      <FileText className="text-blue-500 mb-2" size={24} />
+                      <FileText className="text-purple-500 mb-2" size={24} />
                       <p className="text-sm font-semibold truncate max-w-[150px]">{uploadJd.name}</p>
                     </div>
                   ) : (
                     <>
                       <UploadCloud className="text-slate-400 mb-2" size={24} />
-                      <p className="text-sm font-medium text-blue-600">Browse Files</p>
+                      <p className="text-sm font-medium text-primary">Browse Files</p>
                     </>
                   )}
                 </div>
@@ -741,13 +777,13 @@ export default function CreateJob() {
                   <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".pdf,.zip" onChange={(e) => handleFileUpload(e, setSupportingDocuments)} />
                   {supportingDocuments ? (
                     <div className="flex flex-col items-center">
-                      <FileText className="text-blue-500 mb-2" size={24} />
+                      <FileText className="text-purple-500 mb-2" size={24} />
                       <p className="text-sm font-semibold truncate max-w-[150px]">{supportingDocuments.name}</p>
                     </div>
                   ) : (
                     <>
                       <UploadCloud className="text-slate-400 mb-2" size={24} />
-                      <p className="text-sm font-medium text-blue-600">Browse Files</p>
+                      <p className="text-sm font-medium text-primary">Browse Files</p>
                     </>
                   )}
                 </div>
@@ -772,7 +808,7 @@ export default function CreateJob() {
         {/* Hiring Workflow Configuration */}
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Zap className="h-5 w-5 text-cyan-600" />
+            <Zap className="h-5 w-5 text-primary" />
             Hiring Workflow Configuration
           </h2>
           <p className="text-sm text-slate-500">Configure the hiring pipeline for this job role. Select a template or build a custom workflow.</p>
@@ -802,7 +838,7 @@ export default function CreateJob() {
 
             <button 
               type="button"
-              className="flex-1 md:flex-none px-8 h-11 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"
+              className="flex-1 md:flex-none px-8 h-11 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-500 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"
               onClick={() => handleSubmit("Published")}
               disabled={loading || publishLoading}
             >

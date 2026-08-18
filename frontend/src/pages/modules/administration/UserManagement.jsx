@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { Pagination } from "@/components/ui/pagination"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DataTable } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { SearchableRoleSelect } from "@/components/ui/searchable-role-select"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -15,7 +14,7 @@ import {
 } from "@/components/ui/dialog"
 import {
   Search, Plus, Upload, Edit, Power, UserCheck, ShieldAlert,
-  FileSpreadsheet, UploadCloud, Users, RefreshCw, Trash2
+  FileSpreadsheet, UploadCloud, Users, RefreshCw, Trash2, Download, Loader2
 } from "lucide-react"
 import { toast } from "sonner"
 import adminService from "@/services/adminService"
@@ -24,6 +23,7 @@ import { useUser } from "@/contexts/UserContext"
 import { ROLES } from "@/constants/roles"
 import { cn } from "@/lib/utils"
 import { StatsCard } from "@/components/ui/stats-card"
+import { ActionIcon } from "@/components/ui/action-icon"
 
 const EMPTY_FORM = {
   firstName: '', lastName: '', email: '', password: '',
@@ -54,9 +54,10 @@ const UserManagement = () => {
   const [isDeleting, setIsDeleting] = useState(false)
   const [formData, setFormData] = useState(EMPTY_FORM)
   const [activeCard, setActiveCard] = useState("total")
-  const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
   const [onboardedList, setOnboardedList] = useState([])
+  const [isExporting, setIsExporting] = useState(false)
+
+  const exportToCSV = () => {}
 
   useEffect(() => {
     const fetchOnboarded = async () => {
@@ -279,7 +280,108 @@ const UserManagement = () => {
     return res;
   }, [users, activeCard]);
 
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const columns = useMemo(() => [
+    {
+      accessorKey: "employee",
+      header: "Employee",
+      cell: ({ row }) => {
+        const user = row.original
+        return (
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary border border-primary/20">
+              {user.avatar}
+            </div>
+            <div className="flex flex-col">
+              <span className="font-semibold text-sm">{user.name}</span>
+              <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">{user.employeeCode}</span>
+              <span className="text-xs text-muted-foreground">{user.email}</span>
+            </div>
+          </div>
+        )
+      }
+    },
+    {
+      accessorKey: "employeeCode",
+      header: () => <span className="hidden md:table-cell">Employee ID</span>,
+      cell: ({ row }) => (
+        <span className="hidden md:table-cell font-mono text-sm text-muted-foreground">
+          {row.original.employeeCode}
+        </span>
+      )
+    },
+    {
+      accessorKey: "department",
+      header: "Department",
+      cell: ({ row }) => row.original.department || '—'
+    },
+    {
+      accessorKey: "role",
+      header: "Access Role",
+      cell: ({ row }) => (
+        <Badge variant="outline" className="font-semibold text-xs tracking-wide">
+          {row.original.role}
+        </Badge>
+      )
+    },
+    {
+      accessorKey: "gender",
+      header: "Gender",
+      cell: ({ row }) => <span className="capitalize">{row.original.gender || '—'}</span>
+    },
+    {
+      accessorKey: "status",
+      header: "Account Status",
+      cell: ({ row }) => {
+        const status = row.original.status
+        return (
+          <div className={cn(
+            "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
+            status === 'Active'
+              ? "bg-green-500/10 text-green-600 border-green-200"
+              : "bg-orange-500/10 text-orange-600 border-orange-200"
+          )}>
+            <span className={cn("h-1.5 w-1.5 rounded-full",
+              status === 'Active' ? "bg-green-600" : "bg-orange-600")} />
+            {status}
+          </div>
+        )
+      }
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const user = row.original
+        return (
+          <div className="flex justify-end gap-1">
+            {canWriteSettings && (
+              <ActionIcon
+                icon={Edit}
+                tooltip="Edit User"
+                onClick={() => openEditModal(user)}
+              />
+            )}
+            {canWriteSettings && (
+              <ActionIcon
+                icon={Power}
+                tooltip={user.status === 'Active' ? 'Deactivate' : 'Activate'}
+                onClick={() => handleToggleStatus(user.id, user.status)}
+                className={user.status === 'Active' ? "hover:text-orange-500" : "hover:text-green-500"}
+              />
+            )}
+            {canDeleteSettings && (
+              <ActionIcon
+                icon={Trash2}
+                tooltip="Delete User"
+                onClick={() => openDeleteModal(user)}
+                className="hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
+              />
+            )}
+          </div>
+        )
+      }
+    }
+  ], [canWriteSettings, canDeleteSettings])
 
   const renderSalarySection = () => (
     <div className="space-y-3 border rounded-lg p-4 bg-muted/20">
@@ -415,12 +517,12 @@ const UserManagement = () => {
                 <DialogDescription>Create a single employee record in the system.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateUser} autoComplete="off" className="space-y-4 py-4">
-                <div className="mb-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-lg">
-                  <Label className="text-blue-700 dark:text-blue-400 font-semibold mb-2 block">
+                <div className="mb-4 p-3 bg-purple-50/50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800 rounded-lg">
+                  <Label className="text-purple-700 dark:text-purple-400 font-semibold mb-2 block">
                     Link Onboarded Candidate (Optional)
                   </Label>
                   <Select onValueChange={handleSelectEmployee}>
-                    <SelectTrigger className="bg-white dark:bg-background border-blue-200 dark:border-blue-800">
+                    <SelectTrigger className="bg-white dark:bg-background border-purple-200 dark:border-purple-800">
                       <SelectValue placeholder="Select a newly onboarded employee to auto-fill..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -724,111 +826,17 @@ const UserManagement = () => {
             </TooltipProvider>
         </div>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30">
-                <TableHead className="font-bold">Employee</TableHead>
-                <TableHead className="font-bold hidden md:table-cell">Employee ID</TableHead>
-                <TableHead className="font-bold">Department</TableHead>
-                <TableHead className="font-bold">Access Role</TableHead>
-                <TableHead className="font-bold w-[120px]">Gender</TableHead>
-                <TableHead className="font-bold">Account Status</TableHead>
-                <TableHead className="text-right font-bold">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-64 text-center text-muted-foreground">
-                    Refreshing employee records...
-                  </TableCell>
-                </TableRow>
-              ) : filteredUsers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-64 text-center text-muted-foreground">
-                    No matching records found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((user) => (
-                  <TableRow key={user.id} className="hover:bg-muted/10 transition-colors">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary border border-primary/20">
-                          {user.avatar}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-sm">{user.name}</span>
-                          <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">{user.employeeCode}</span>
-                          <span className="text-xs text-muted-foreground">{user.email}</span>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
-                      {user.employeeCode}
-                    </TableCell>
-                      <TableCell>{user.department || '—'}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-semibold text-xs tracking-wide">
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="capitalize">{user.gender || '—'}</TableCell>
-                    <TableCell>
-                      <div className={cn(
-                        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
-                        user.status === 'Active'
-                          ? "bg-green-500/10 text-green-600 border-green-200"
-                          : "bg-orange-500/10 text-orange-600 border-orange-200"
-                      )}>
-                        <span className={cn("h-1.5 w-1.5 rounded-full",
-                          user.status === 'Active' ? "bg-green-600" : "bg-orange-600")} />
-                        {user.status}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        {canWriteSettings && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary"
-                            onClick={() => openEditModal(user)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {canWriteSettings && (
-                          <Button
-                            variant="ghost" size="icon"
-                            className={cn("h-8 w-8", user.status === 'Active' ? "hover:text-orange-500" : "hover:text-green-500")}
-                            onClick={() => handleToggleStatus(user.id, user.status)}
-                          >
-                            <Power className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {canDeleteSettings && (
-                          <Button
-                            variant="ghost" size="icon"
-                            className="h-8 w-8 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
-                            onClick={() => openDeleteModal(user)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-          {filteredUsers.length > 0 && (
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={filteredUsers.length}
-                itemsPerPage={itemsPerPage}
-                onPageChange={(page) => setCurrentPage(page)}
-              />
+          {isLoading ? (
+            <div className="h-64 flex items-center justify-center text-muted-foreground">
+              Refreshing employee records...
             </div>
+          ) : (
+            <DataTable 
+              columns={columns} 
+              data={filteredUsers} 
+              searchable={false} 
+              defaultPageSize={10} 
+            />
           )}
         </CardContent>
       </Card>

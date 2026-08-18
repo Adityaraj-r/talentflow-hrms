@@ -9,7 +9,7 @@ export function PriorityDot({ priority, className }) {
     p === "MEDIUM" ? "bg-orange-500" :
     p === "LOW" ? "bg-green-500" :
     p === "SUCCESS" ? "bg-emerald-500" :
-    "bg-blue-500";
+    "bg-purple-500";
     
   return (
     <TooltipProvider delayDuration={200}>

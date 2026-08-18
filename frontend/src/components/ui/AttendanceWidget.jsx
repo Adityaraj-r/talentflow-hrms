@@ -167,7 +167,7 @@ const AttendanceWidget = ({ employeeName }) => {
       case "NOT_STARTED":
         return (
           <Button 
-            className="w-full h-auto min-h-[3rem] py-2 px-4 text-base sm:text-lg bg-blue-600 hover:bg-blue-700 whitespace-normal flex items-center justify-center leading-snug" 
+            className="w-full h-auto min-h-[3rem] py-2 px-4 text-base sm:text-lg bg-purple-600 hover:bg-purple-700 whitespace-normal flex items-center justify-center leading-snug" 
             onClick={handleClockIn}
           >
             <LogIn className="mr-2 h-5 w-5 shrink-0" /> Clock In
@@ -226,11 +226,11 @@ const AttendanceWidget = ({ employeeName }) => {
   const badge = getBadgeDetails();
 
   return (
-    <Card className={`shadow-md transition-colors duration-300 border-t-4 w-full ${attendanceState === 'ON_BREAK' ? 'border-t-orange-500' : 'border-t-blue-600'}`}>
+    <Card className={`shadow-md transition-colors duration-300 border-t-4 w-full ${attendanceState === 'ON_BREAK' ? 'border-t-orange-500' : 'border-t-purple-600'}`}>
       <CardHeader className="pb-2 px-4 sm:px-6">
         <div className="flex flex-wrap gap-2 justify-between items-start sm:items-center">
           <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2">
-            <Clock className="h-5 w-5 text-blue-600 shrink-0" />
+            <Clock className="h-5 w-5 text-purple-600 shrink-0" />
             <span className="truncate">Daily Attendance</span>
           </CardTitle>
           <Badge className={`${badge.color} whitespace-nowrap shrink-0`} variant="outline">
@@ -253,7 +253,7 @@ const AttendanceWidget = ({ employeeName }) => {
           <div className={`flex flex-wrap justify-center items-center gap-2 font-mono text-xl sm:text-2xl font-bold py-3 px-2 rounded-lg mb-4 transition-all ${
             attendanceState === "ON_BREAK" 
               ? "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" 
-              : "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+              : "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400"
           }`}>
             <Timer className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" />
             <span>{workDuration}</span>

@@ -8,18 +8,18 @@ const apiClient = axios.create({
   withCredentials: true, // send/receive the httpOnly accessToken/refreshToken cookies
   headers: {
     "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
   },
 });
 
-// Plain axios instance with NO interceptors, used only for the refresh/logout
-// calls themselves — keeps them from ever recursing back into this same
-// response interceptor. Still needs withCredentials so the refresh cookie
-// actually gets sent.
 const refreshClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
   withCredentials: true,
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
+  },
 });
 
 apiClient.interceptors.request.use(
@@ -60,13 +60,11 @@ const forceLogout = async () => {
   localStorage.removeItem("idToken");
   localStorage.removeItem("userRole");
 
-  // Guard against a redirect loop: if we're already sitting on /login with
-  // no session (the normal case for a first-time visitor), this 401 →
-  // refresh-fails → forceLogout chain would otherwise redirect to /login,
-  // which reloads the page, which re-mounts AuthContext, which calls
-  // /auth/profile again — repeating forever. Only redirect if we're
-  // actually somewhere that requires a session.
-  if (!window.location.pathname.startsWith("/login")) {
+  // Guard against a redirect loop or kicking external candidates on public pages to /login.
+  const publicCandidatePaths = ["/login", "/careers", "/apply", "/referral/apply", "/application-status"];
+  const isPublicCandidatePath = publicCandidatePaths.some((p) => window.location.pathname.startsWith(p));
+
+  if (!isPublicCandidatePath) {
     window.location.href = "/login";
   }
 };

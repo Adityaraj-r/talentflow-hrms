@@ -21,6 +21,7 @@ import {
 } from "@/services/recruitmentSuggestionService"
 import { Navigate } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
+import { DataTable } from "@/components/ui/data-table"
 
 const contextOptions = [
   { value: "general", label: "General" },
@@ -165,34 +166,37 @@ export default function AdminRecruitmentSuggestions() {
           <CardTitle>Your recent suggestions</CardTitle>
           <CardDescription>Status updates when HR Manager acknowledges.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : mine.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No suggestions yet.</p>
+            <div className="p-6 text-sm text-muted-foreground">Loading…</div>
           ) : (
-            <ul className="space-y-3">
-              {mine.map((s) => (
-                <li
-                  key={s._id}
-                  className="rounded-lg border p-3 text-sm space-y-1"
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{s.subject}</span>
-                    <Badge variant={s.status === "open" ? "default" : "secondary"}>
-                      {s.status}
-                    </Badge>
-                  </div>
-                  <p className="text-muted-foreground whitespace-pre-wrap">{s.message}</p>
-                  {s.hrNote && (
-                    <p className="text-xs border-t pt-2 mt-2">
-                      <span className="font-medium">HR note: </span>
-                      {s.hrNote}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
+            <div className="p-4">
+              <DataTable 
+                data={mine}
+                columns={[
+                  {
+                    accessorKey: "subject",
+                    header: "Subject",
+                    cell: ({ row }) => <span className="font-medium">{row.original.subject}</span>
+                  },
+                  {
+                    accessorKey: "status",
+                    header: "Status",
+                    cell: ({ row }) => <Badge variant={row.original.status === "open" ? "default" : "secondary"}>{row.original.status}</Badge>
+                  },
+                  {
+                    accessorKey: "message",
+                    header: "Message",
+                    cell: ({ row }) => <span className="text-muted-foreground whitespace-pre-wrap">{row.original.message}</span>
+                  },
+                  {
+                    accessorKey: "hrNote",
+                    header: "HR Note",
+                    cell: ({ row }) => row.original.hrNote ? <span className="text-xs">{row.original.hrNote}</span> : <span className="text-muted-foreground">-</span>
+                  }
+                ]}
+              />
+            </div>
           )}
         </CardContent>
       </Card>

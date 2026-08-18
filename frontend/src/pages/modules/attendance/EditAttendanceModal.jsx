@@ -112,7 +112,7 @@ const EditAttendanceModal = ({ open, onClose, record, onSuccess }) => {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-indigo-600" />
+            <Clock className="w-5 h-5 text-purple-600" />
             Edit Attendance Record
           </DialogTitle>
         </DialogHeader>
@@ -220,7 +220,7 @@ const EditAttendanceModal = ({ open, onClose, record, onSuccess }) => {
             {record.totalHours != null && (
               <>
                 <span className="ml-1">Hours on record:</span>
-                <span className="font-medium text-indigo-600 dark:text-indigo-400">
+                <span className="font-medium text-purple-600 dark:text-purple-400">
                   {record.totalHours}h
                 </span>
               </>
@@ -239,7 +239,7 @@ const EditAttendanceModal = ({ open, onClose, record, onSuccess }) => {
             <Button
               type="submit"
               disabled={loading || record.isLocked}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               {loading ? "Saving..." : "Save Changes"}
             </Button>

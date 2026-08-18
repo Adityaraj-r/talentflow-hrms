@@ -107,7 +107,7 @@ const PolicyFormModal = ({ open, onClose, onSave, editPolicy, loading }) => {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-indigo-600" />
+            <ShieldCheck className="w-5 h-5 text-purple-600" />
             {editPolicy ? "Edit Leave Policy" : "Create Leave Policy"}
           </DialogTitle>
           <DialogDescription>
@@ -210,7 +210,7 @@ const PolicyFormModal = ({ open, onClose, onSave, editPolicy, loading }) => {
               id="carryForward"
               checked={form.carryForward}
               onChange={handleChange}
-              className="w-4 h-4 accent-blue-600"
+              className="w-4 h-4 accent-purple-600"
             />
             <label
               htmlFor="carryForward"
@@ -232,7 +232,7 @@ const PolicyFormModal = ({ open, onClose, onSave, editPolicy, loading }) => {
             <Button
               type="submit"
               disabled={loading}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               {loading
                 ? "Saving..."
@@ -368,7 +368,7 @@ const LeavePolicyManagement = () => {
           )}
           <Button
             onClick={() => { setEditPolicy(null); setModalOpen(true); }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
+            className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
           >
             <Plus className="w-4 h-4" /> Add Policy
           </Button>
@@ -405,7 +405,7 @@ const LeavePolicyManagement = () => {
       <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader className="border-b p-4">
           <CardTitle className="text-base flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-indigo-600" />
+            <ShieldCheck className="w-4 h-4 text-purple-600" />
             Configured Leave Policies
           </CardTitle>
           <CardDescription>
@@ -458,7 +458,7 @@ const LeavePolicyManagement = () => {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                        <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">
                           {policy.annualLimit} days
                         </span>
                       </TableCell>
@@ -479,7 +479,7 @@ const LeavePolicyManagement = () => {
                               ? "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300"
                               : policy.applicableTo === "Female"
                               ? "bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/20 dark:text-pink-400"
-                              : "bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-400"
+                              : "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400"
                           }
                         >
                           {policy.applicableTo}
@@ -502,7 +502,7 @@ const LeavePolicyManagement = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => { setEditPolicy(policy); setModalOpen(true); }}
-                            className="h-8 w-8 p-0 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                            className="h-8 w-8 p-0 text-slate-500 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>

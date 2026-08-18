@@ -1,4 +1,4 @@
-import express from 'express'; //
+import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -52,6 +52,7 @@ import notificationRoutes from './routes/notification.routes';
 import offerRoutes from './routes/offer.routes';
 import disciplinaryRoutes from './routes/disciplinary.routes';
 import referralRoutes from './routes/referral.routes';
+import referralRewardRoutes from './routes/referralReward.routes';
 import meetingRoutes from './routes/meeting.routes';
 import User from './models/User.model';
 import { initCronJobs } from './scripts/cronJobs';
@@ -64,13 +65,37 @@ const MONGODB_URI = process.env.MONGODB_URI || '';
 
 initCronJobs();
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.NGROK_URL ? process.env.NGROK_URL.trim().replace(/\/$/, '') : null,
+  process.env.FRONTEND_URL ? process.env.FRONTEND_URL.trim().replace(/\/$/, '') : null,
+].filter(Boolean) as string[];
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    return callback(null, origin);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'x-requested-with', 'Accept'],
   exposedHeaders: ['Content-Disposition']
 }));
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Access-Control-Allow-Credentials", "true");
+  }
+  if (req.method === "OPTIONS") {
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, ngrok-skip-browser-warning, x-requested-with, Accept");
+    return res.sendStatus(204);
+  }
+  next();
+});
 
 app.use(cookieParser());
 app.use(express.json());
@@ -195,6 +220,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/disciplinary', disciplinaryRoutes);
 app.use('/api/referrals', referralRoutes);
+app.use('/api/referral-rewards', referralRewardRoutes);
 
 app.use((req, res) => {
   console.warn(`\x1b[33m[404] Route not found: ${req.method} ${req.path}\x1b[0m`);

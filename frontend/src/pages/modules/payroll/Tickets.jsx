@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { FileText, Check, X, Search, Loader2, Eye } from "lucide-react";
+import { FileText, Check, X, Search, Loader2, Eye, CheckCircle2, XCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
 import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -239,7 +240,7 @@ const TicketForm = ({ onSuccess }) => {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="submit" disabled={submitting} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button type="submit" disabled={submitting} className="bg-purple-600 hover:bg-purple-700 text-white">
               {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : "Submit Request"}
             </Button>
           </div>
@@ -284,9 +285,95 @@ const TicketListTable = ({ mode }) => {
 
   if (loading) return (
     <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900"><CardContent className="flex justify-center py-12">
-      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
     </CardContent></Card>
   );
+
+  const columns = [
+    {
+      accessorKey: "employee",
+      header: "Employee",
+      cell: ({ row }) => (
+        <div className="w-full flex flex-col items-center justify-center text-center">
+          <span className="font-medium">{row.original.employeeName}</span>
+          <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">{row.original.employeeCode || "N/A"}</span>
+        </div>
+      )
+    },
+    {
+      accessorKey: "employeeId",
+      header: "Employee ID",
+      cell: ({ row }) => <div className="w-full flex justify-center text-center font-mono text-sm text-muted-foreground">{row.original.employeeCode || "-"}</div>
+    },
+    {
+      accessorKey: "type",
+      header: "Type",
+      cell: ({ row }) => (
+        <div className="w-full flex justify-center text-center">
+          <Badge variant="outline" className={row.original.type === "advance" ? "text-sky-600" : "text-violet-600"}>
+            {row.original.type === "advance" ? "Salary Advance" : "Travel Ticket"}
+          </Badge>
+        </div>
+      )
+    },
+    {
+      id: "details",
+      header: "Details",
+      cell: ({ row }) => {
+        const t = row.original;
+        return t.type === "advance" ? (
+          <div className="w-full flex justify-center text-center">
+            <span className="text-black dark:text-white">₹{Number(t.amount || 0).toLocaleString()}</span>
+          </div>
+        ) : (
+          <div className="w-full flex flex-col items-center justify-center text-center">
+            <span className="text-sm">{t.destination || "—"}</span>
+            <span className="text-xs text-muted-foreground">
+              {t.ticketClass ? t.ticketClass.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ") : "—"}
+            </span>
+          </div>
+        );
+      }
+    },
+    {
+      accessorKey: "reason",
+      header: "Reason",
+      cell: ({ row }) => (
+        <div className="w-full flex justify-center text-center text-sm">
+          <div className="max-w-[200px] truncate" title={row.original.reason}>
+            {row.original.reason}
+          </div>
+        </div>
+      )
+    },
+    ...(mode === "all" ? [{
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <div className="w-full flex justify-center text-center">
+          <Badge variant="outline" className={STATUS_COLORS[row.original.status] || ""}>{row.original.status}</Badge>
+        </div>
+      )
+    }] : []),
+    {
+      accessorKey: "date",
+      header: "Date",
+      cell: ({ row }) => (
+        <div className="w-full flex justify-center text-center text-sm text-muted-foreground whitespace-nowrap">
+          {row.original.createdAt ? new Date(row.original.createdAt).toLocaleDateString() : "—"}
+        </div>
+      )
+    },
+    ...(mode === "pending" ? [{
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <div className="w-full flex justify-center text-center">
+          <PendingRowActions ticket={row.original} onDone={load} />
+        </div>
+      )
+    }] : [])
+  ];
 
   return (
     <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
@@ -304,114 +391,7 @@ const TicketListTable = ({ mode }) => {
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-center"><div className="w-full flex justify-center">Employee</div></TableHead>
-              <TableHead className="hidden md:table-cell text-center"><div className="w-full flex justify-center">Employee ID</div></TableHead>
-              <TableHead className="text-center"><div className="w-full flex justify-center">Type</div></TableHead>
-              <TableHead className="text-center"><div className="w-full flex justify-center">Details</div></TableHead>
-              <TableHead className="text-center"><div className="w-full flex justify-center">Reason</div></TableHead>
-              {mode === "all" && <TableHead className="text-center"><div className="w-full flex justify-center">Status</div></TableHead>}
-              <TableHead className="text-center"><div className="w-full flex justify-center">Date</div></TableHead>
-              {mode === "pending" && <TableHead className="text-center"><div className="w-full flex justify-center">Actions</div></TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={mode === "all" ? 7 : 7} className="text-center py-8 text-muted-foreground">
-                  No records found.
-                </TableCell>
-              </TableRow>
-            ) : filtered.slice((currentPage - 1) * 10, currentPage * 10).map(t => (
-              <TableRow key={t._id}>
-                <TableCell className="align-middle text-center">
-                  <div className="w-full flex flex-col items-center justify-center">
-                    <span className="font-medium">{t.employeeName}</span>
-                    <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
-                      {t.employeeCode || "N/A"}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground align-middle text-center">
-                  <div className="w-full flex justify-center">
-                    {t.employeeCode || "-"}
-                  </div>
-                </TableCell>
-                <TableCell className="align-middle text-center">
-                  <div className="w-full flex justify-center">
-                    <Badge variant="outline" className={t.type === "advance"
-                      ?"text-sky-600"
-                          : "text-violet-600"}>
-                      {t.type === "advance" ? "Salary Advance" : "Travel Ticket"}
-                    </Badge>
-                  </div>
-                </TableCell>
-              <TableCell className="align-middle text-center">
-  {t.type === "advance" ? (
-    <div className="w-full flex justify-center">
-      <span className="text-black dark:text-white">
-        ₹{Number(t.amount || 0).toLocaleString()}
-      </span>
-    </div>
-  ) : (
-    <div className="w-full flex flex-col items-center justify-center">
-      <span className="text-sm text-center">
-        {t.destination || "—"}
-      </span>
-      <span className="text-xs text-muted-foreground text-center">
-        {t.ticketClass
-          ? t.ticketClass
-              .split("-")
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(" ")
-          : "—"}
-      </span>
-    </div>
-  )}
-</TableCell>
-                <TableCell className="text-sm align-middle text-center">
-                  <div className="w-full flex justify-center">
-                    <div className="max-w-[200px] truncate text-center" title={t.reason}>
-                      {t.reason}
-                    </div>
-                  </div>
-                </TableCell>
-                {mode === "all" && (
-                  <TableCell className="align-middle text-center">
-                    <div className="w-full flex justify-center">
-                      <Badge variant="outline" className={STATUS_COLORS[t.status] || ""}>
-                        {t.status}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                )}
-                <TableCell className="text-sm text-muted-foreground align-middle whitespace-nowrap text-center">
-                  <div className="w-full flex justify-center">
-                    {t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "—"}
-                  </div>
-                </TableCell>
-                {mode === "pending" && (
-                  <TableCell className="align-middle text-center">
-                    <div className="w-full flex justify-center">
-                      <PendingRowActions ticket={t} onDone={load} />
-                    </div>
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        {filtered.length > 0 && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={Math.ceil(filtered.length / 10)}
-            totalItems={filtered.length}
-            itemsPerPage={10}
-            onPageChange={setCurrentPage}
-          />
-        )}
+        <DataTable columns={columns} data={filtered} />
       </CardContent>
     </Card>
   );
@@ -457,50 +437,40 @@ if (
 return (
 <>
   <div className="inline-flex gap-1 justify-center">
-    <Button
-      size="icon"
-      variant="outline"
-      className="h-8 w-8 text-blue-600 border-blue-200 hover:bg-blue-50"
+    <ActionIcon
+      icon={Eye}
+      tooltip="View Details"
       onClick={() => setViewOpen(true)}
-      title="View Details"
-    >
-      <Eye className="h-4 w-4" />
-    </Button>
+      className="text-purple-600"
+    />
 
-    <Button
-      size="icon"
-      variant="outline"
-      className="h-8 w-8 text-green-600"
-     onClick={async () => {
-  try {
-
-    await payrollService.updateTicketStatus(
-      ticket._id,
-      "Approved"
-    );
-
-    toast.success("Sent to Payroll Approval");
-    onDone();
-
-  } catch (err) {
-    toast.error(
-      err?.response?.data?.error || "Approval failed"
-    );
-  }
-}}
-    >
-      <Check className="h-4 w-4" />
-    </Button>
+    <ActionIcon
+      icon={CheckCircle2}
+      tooltip="Approve"
+      className="text-green-600"
+      onClick={async () => {
+        try {
+          await payrollService.updateTicketStatus(
+            ticket._id,
+            "Approved"
+          );
+          toast.success("Sent to Payroll Approval");
+          onDone();
+        } catch (err) {
+          toast.error(
+            err?.response?.data?.error || "Approval failed"
+          );
+        }
+      }}
+    />
 
 
-    <Button
-      size="icon"
-      variant="outline"
-      className="h-8 w-8 text-red-600"
+    <ActionIcon
+      icon={XCircle}
+      tooltip="Reject"
       onClick={() => setRejectOpen(true)}
-    >
-      <X className="h-4 w-4" />
-    </Button>
+      className="text-red-600"
+    />
 
   </div>
 
@@ -621,58 +591,40 @@ return (
 
 
         <div className="inline-flex gap-1 justify-center">
-          <Button
-            size="icon"
-            variant="outline"
-            className="h-8 w-8 text-blue-600 border-blue-200 hover:bg-blue-50"
+          <ActionIcon
+            icon={Eye}
+            tooltip="View Details"
             onClick={() => setViewOpen(true)}
-            title="View Details"
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
+            className="text-purple-600"
+          />
 
-          <Button
-            size="icon"
-            variant="outline"
-            className="h-8 w-8 text-green-600"
+          <ActionIcon
+            icon={CheckCircle2}
+            tooltip="Approve"
+            className="text-green-600"
             onClick={async () => {
-
-             try {
-
- await payrollService.updateTicketStatus(
-   ticket._id,
-   "Approved"
- );
-
- toast.success("Ticket Approved Successfully");
-
- onDone();
-
-} catch(err){
-
- toast.error(
-  err?.response?.data?.error || "Approval failed"
- );
-
-}
-
-              toast.success("Approved");
-              onDone();
-
+              try {
+                await payrollService.updateTicketStatus(
+                  ticket._id,
+                  "Approved"
+                );
+                toast.success("Ticket Approved Successfully");
+                onDone();
+              } catch(err){
+                toast.error(
+                  err?.response?.data?.error || "Approval failed"
+                );
+              }
             }}
-          >
-            <Check className="h-4 w-4" />
-          </Button>
+          />
 
 
-          <Button
-            size="icon"
-            variant="outline"
-            className="h-8 w-8 text-red-600"
+          <ActionIcon
+            icon={XCircle}
+            tooltip="Reject"
             onClick={() => setRejectOpen(true)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+            className="text-red-600"
+          />
 
 
         </div>
@@ -799,7 +751,7 @@ return (
         <Button
           size="icon"
           variant="outline"
-          className="h-8 w-8 text-blue-600 border-blue-200 hover:bg-blue-50"
+          className="h-8 w-8 text-purple-600 border-purple-200 hover:bg-purple-50"
           onClick={() => setViewOpen(true)}
           title="View Details"
         >
@@ -862,7 +814,7 @@ return (
       <Button
         size="icon"
         variant="outline"
-        className="h-8 w-8 text-blue-600 border-blue-200 hover:bg-blue-50"
+        className="h-8 w-8 text-purple-600 border-purple-200 hover:bg-purple-50"
         onClick={() => setViewOpen(true)}
         title="View Details"
       >

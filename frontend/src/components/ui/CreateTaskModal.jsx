@@ -184,7 +184,7 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate }) => {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="LOW">
-                    <span className="text-blue-600 font-medium">Low</span>
+                    <span className="text-purple-600 font-medium">Low</span>
                   </SelectItem>
                   <SelectItem value="MEDIUM">
                     <span className="text-yellow-600 font-medium">Medium</span>

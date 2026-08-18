@@ -150,7 +150,7 @@ const AppraisalHistory = () => {
   const getStatusStyle = (status) => {
     const s = status?.toLowerCase()
     if (s === "approved" || s === "completed" || s === "feedback_released") return "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-    if (s === "manager review done" || s === "hr reviewed") return "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+    if (s === "manager review done" || s === "hr reviewed") return "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
     if (s === "self assessment done") return "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
     return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
   }

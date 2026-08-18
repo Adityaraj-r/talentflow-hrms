@@ -1,16 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
-import { Search, Users, Briefcase, Clock, AlertCircle, ChevronLeft, ChevronRight, Filter, RotateCcw } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Search, Users, Briefcase, Clock, AlertCircle, Calendar, Pencil, RotateCcw } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
+import { ActionIcon } from "@/components/ui/action-icon";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AssignShiftModal from "@/components/dashboard/AssignShiftModal";
 import apiClient from "@/services/apiClient";
 import shiftService from "@/services/shiftService";
 import { toast } from "sonner";
 import { useUser } from "@/contexts/UserContext";
-import { Pagination } from "@/components/ui/pagination";
 
 const ShiftRoster = () => {
   const { user } = useUser();
@@ -78,35 +79,77 @@ const ShiftRoster = () => {
     return matchesSearch && matchesDept && matchesShift;
   });
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedDepartment, selectedShift]);
-
-  const totalItems = filteredEmployees.length;
-  const totalPages = Math.ceil(totalItems / pageSize) || 1;
-  const paginatedEmployees = filteredEmployees.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  const columns = [
+    {
+      accessorKey: "employee",
+      header: "Employee",
+      cell: ({ row }) => {
+        const emp = row.original;
+        return (
+          <div className="flex flex-col">
+            <span className="font-medium text-sm text-slate-900 dark:text-white">
+              {emp.firstName} {emp.lastName}
+            </span>
+            <span className="text-xs text-muted-foreground">{emp.email}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "employeeCode",
+      header: "Employee ID",
+      cell: ({ row }) => <span className="font-mono text-sm text-muted-foreground">{row.original.employeeCode || "-"}</span>,
+    },
+    {
+      accessorKey: "department",
+      header: "Department",
+      cell: ({ row }) => <span className="text-sm text-slate-600 dark:text-slate-300">{row.original.department || "-"}</span>,
+    },
+    {
+      accessorKey: "currentShift",
+      header: "Shift",
+      cell: ({ row }) => {
+        const shift = getShiftDetails(row.original.currentShift);
+        return shift ? (
+          <span className="font-medium text-sm text-slate-900 dark:text-white">{shift.name}</span>
+        ) : (
+          <span className="text-sm text-muted-foreground flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" /> Unassigned</span>
+        );
+      },
+    },
+    {
+      accessorKey: "workingHours",
+      header: "Working Hours",
+      cell: ({ row }) => {
+        const shift = getShiftDetails(row.original.currentShift);
+        return shift ? (
+          <div className="flex items-center gap-1.5 text-sm text-purple-600 dark:text-purple-400">
+            <Clock className="w-3.5 h-3.5" /> {shift.startTime} - {shift.endTime}
+          </div>
+        ) : "-";
+      },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <ActionIcon 
+          icon={Pencil} 
+          onClick={() => setIsAssignModalOpen(true)} 
+          className="text-amber-500" 
+        />
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6 max-w-full pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white text-[28px] text-2xl">
-            Employee Shift Roster
-          </h1>
-          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">
-            View current shift assignments and reassign employees to different working hours.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Employee Shift Roster</h1>
+          <p className="text-[15px] text-slate-500 dark:text-slate-400 mt-1">View and reassign employee shifts.</p>
         </div>
-        <Button
-          onClick={() => setIsAssignModalOpen(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
-        >
+        <Button onClick={() => setIsAssignModalOpen(true)} className="bg-purple-600 hover:bg-purple-700 text-white">
           <Users className="w-4 h-4 mr-2" /> Assign Shifts
         </Button>
       </div>
@@ -114,162 +157,52 @@ const ShiftRoster = () => {
       <Card className="border border-slate-200 dark:border-slate-800 shadow-sm rounded-[16px] overflow-hidden bg-white dark:bg-slate-900">
         <CardHeader className="border-b p-4">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <CardTitle className="text-lg flex items-center gap-2 shrink-0">
-              <Briefcase className="w-5 h-5 text-indigo-600" />
-              Current Assignments
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-purple-600" /> Current Assignments
             </CardTitle>
-
             <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by Name, ID, Dept..."
-                  className="pl-8 bg-background h-9 text-xs"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-
-              {/* Department Filter */}
-              <select
-                value={selectedDepartment}
-                onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-ring cursor-pointer w-full sm:w-auto"
-              >
-                <option value="all">All Departments</option>
-                {departmentsOptions.map((dept) => (
-                  <option key={dept} value={dept}>{dept}</option>
-                ))}
-              </select>
-
-              {/* Shift Filter */}
-              <select
-                value={selectedShift}
-                onChange={(e) => setSelectedShift(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-ring cursor-pointer w-full sm:w-auto"
-              >
-                <option value="all">All Shifts</option>
-                <option value="unassigned">⚠️ Unassigned</option>
-                {shifts.map((s) => (
-                  <option key={s._id} value={s._id}>{s.name} ({s.startTime} - {s.endTime})</option>
-                ))}
-              </select>
-
-              {(searchTerm || selectedDepartment !== "all" || selectedShift !== "all") && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSearchTerm("");
-                    setSelectedDepartment("all");
-                    setSelectedShift("all");
-                  }}
-                  className="h-9 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
-                </Button>
-              )}
+              <Input
+                placeholder="Search..."
+                className="w-full sm:w-64 h-9 text-xs"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                <SelectTrigger className="w-full sm:w-[180px] h-9 text-xs"><SelectValue placeholder="Departments" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departmentsOptions.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={selectedShift} onValueChange={setSelectedShift}>
+                <SelectTrigger className="w-full sm:w-[180px] h-9 text-xs"><SelectValue placeholder="Shifts" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Shifts</SelectItem>
+                  <SelectItem value="unassigned">⚠️ Unassigned</SelectItem>
+                  {shifts.map((s) => <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button variant="ghost" size="sm" onClick={() => {setSearchTerm(""); setSelectedDepartment("all"); setSelectedShift("all");}} className="h-9 text-xs">
+                <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
+              </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="relative w-full overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead className="hidden md:table-cell">Employee ID</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Assigned Shift</TableHead>
-                  <TableHead>Working Hours</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                      Loading roster...
-                    </TableCell>
-                  </TableRow>
-                ) : paginatedEmployees.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                      No employees found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedEmployees.map((emp) => {
-                    const shift = getShiftDetails(emp.currentShift);
-                    return (
-                      <TableRow key={emp._id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium text-sm text-slate-900 dark:text-white">
-                              {emp.firstName} {emp.lastName}
-                            </span>
-                            <span className="text-[11px] font-mono font-medium text-primary/70 md:hidden">
-                              {emp.employeeCode || "N/A"}
-                            </span>
-                            <span className="text-xs text-muted-foreground">{emp.email}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell font-mono text-sm text-muted-foreground">
-                          {emp.employeeCode || "-"}
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-slate-600 dark:text-slate-300">
-                            {emp.department || "-"}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {shift ? (
-                            <span className="font-medium text-sm text-slate-900 dark:text-white">
-                              {shift.name}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground flex items-center gap-1.5">
-                              <AlertCircle className="w-3.5 h-3.5" /> Unassigned
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {shift ? (
-                            <div className="flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400">
-                              <Clock className="w-3.5 h-3.5" />
-                              {shift.startTime} - {shift.endTime}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {emp.isActive ? (
-                            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 font-normal px-2 py-0">
-                              Active
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-muted-foreground font-normal px-2 py-0">
-                              Inactive
-                            </Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination Footer */}
-          {totalItems > 0 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              itemsPerPage={pageSize}
-              onPageChange={(page) => setCurrentPage(page)}
+          {loading ? (
+            <div className="text-center py-10 text-muted-foreground">
+              Loading roster...
+            </div>
+          ) : filteredEmployees.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground">
+              No employees found.
+            </div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={filteredEmployees}
+              searchable={false}
+              defaultPageSize={10}
             />
           )}
         </CardContent>

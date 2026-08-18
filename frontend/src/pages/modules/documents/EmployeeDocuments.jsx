@@ -13,8 +13,8 @@ const getDocumentIcon = (category) => {
     case 'Personal': return <User className="h-8 w-8 text-green-500" />
     case 'Education': return <GraduationCap className="h-8 w-8 text-purple-500" />
     case 'Employment': return <Briefcase className="h-8 w-8 text-orange-500" />
-    case 'Onboarding': return <ShieldCheck className="h-8 w-8 text-blue-500" />
-    case 'Payroll': return <FileDigit className="h-8 w-8 text-indigo-500" />
+    case 'Onboarding': return <ShieldCheck className="h-8 w-8 text-purple-500" />
+    case 'Payroll': return <FileDigit className="h-8 w-8 text-purple-500" />
     case 'Requested': return <FileText className="h-8 w-8 text-rose-500" />
     default: return <FileText className="h-8 w-8 text-gray-500" />
   }
@@ -138,17 +138,11 @@ const EmployeeDocuments = () => {
             <Button 
               variant="outline" 
               className="w-full flex items-center justify-center gap-2"
-              onClick={() => setSelectedDoc(doc)}
-            >
-              <Eye className="h-4 w-4" /> View
-            </Button>
+              onClick={() => setSelectedDoc(doc)}> <span title="View" className="flex items-center justify-center w-full h-full text-slate-600 hover:text-slate-800"><Eye className="h-4 w-4" /><span className="sr-only">View</span></span></Button>
             <Button 
               variant="default" 
               className="w-full flex items-center justify-center gap-2"
-              onClick={() => downloadFile(doc)}
-            >
-              <Download className="h-4 w-4" /> Download
-            </Button>
+              onClick={() => downloadFile(doc)}> <span title="Download" className="flex items-center justify-center w-full h-full "><Download className="h-4 w-4" /><span className="sr-only">Download</span></span></Button>
           </CardFooter>
         </Card>
       ))}
@@ -299,7 +293,7 @@ const EmployeeDocuments = () => {
                 {onboardingDocs.length > 0 && (
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
-                      <ShieldCheck className="h-5 w-5 text-blue-500" /> Onboarding Documents
+                      <ShieldCheck className="h-5 w-5 text-purple-500" /> Onboarding Documents
                     </h3>
                     {renderDocumentGrid(onboardingDocs)}
                   </div>

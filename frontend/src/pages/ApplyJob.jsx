@@ -6,7 +6,7 @@ import {
   UploadCloud, FileText, CheckCircle, Share2, 
   Users, Calendar, ChevronDown, ChevronUp,
   User, Mail, Phone, Map, BookOpen, Search, Link, Github,
-  HelpCircle, Trash2
+  HelpCircle, Trash2, Sparkles, UserCheck
 } from "lucide-react"
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api"
@@ -76,7 +76,9 @@ const ApplyJob = () => {
   useEffect(() => {
     // Verify Referral Token if present
     if (referralToken) {
-      axios.get(`${API_BASE}/referrals/verify-token?token=${referralToken}`)
+      axios.get(`${API_BASE}/referrals/verify-token?token=${referralToken}`, {
+        headers: { "ngrok-skip-browser-warning": "true" }
+      })
         .then(res => {
           if (res.data?.success && res.data?.data) {
             const refData = res.data.data;
@@ -104,7 +106,9 @@ const ApplyJob = () => {
 
     const fetchJob = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/job-openings/published`)
+        const res = await axios.get(`${API_BASE}/job-openings/published`, {
+          headers: { "ngrok-skip-browser-warning": "true" }
+        })
         const foundJob = res.data.find(j => j._id === id || j.id === id)
         if (foundJob) {
           setJob(foundJob)
@@ -224,7 +228,12 @@ const ApplyJob = () => {
       const res = await axios.post(
         `${API_BASE}/applications/apply`,
         formPayload,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            "ngrok-skip-browser-warning": "true"
+          }
+        }
       )
 
       const created = res.data
@@ -243,7 +252,7 @@ const ApplyJob = () => {
   if (loadingJob) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
       </div>
     )
   }
@@ -256,7 +265,7 @@ const ApplyJob = () => {
         <div className="max-w-7xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between">
           <button
             onClick={() => navigate('/careers')}
-            className="flex items-center text-sm font-semibold text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
+            className="flex items-center text-sm font-semibold text-slate-600 hover:text-purple-600 dark:text-slate-400 dark:hover:text-purple-400 transition-colors"
           >
             <ArrowLeft size={16} className="mr-2" />
             Back to Careers
@@ -275,6 +284,15 @@ const ApplyJob = () => {
           
           {/* Left Column: Job Details (55%) */}
           <div className="lg:w-[55%]">
+            {referredByInfo && (
+              <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-purple-50 via-cyan-50 to-blue-50 dark:from-slate-900 dark:to-cyan-950/40 border border-cyan-200 dark:border-cyan-800 text-slate-800 dark:text-slate-200 flex items-center gap-3 shadow-sm">
+                <Sparkles className="h-5 w-5 text-cyan-600 dark:text-cyan-400 shrink-0" />
+                <div className="text-xs md:text-sm font-medium">
+                  <span className="font-bold text-slate-900 dark:text-white">Referred Opportunity:</span> You were referred for this position by <strong className="underline text-cyan-700 dark:text-cyan-300">{referredByInfo.name}</strong>. Referral credit will be automatically attached upon submission.
+                </div>
+              </div>
+            )}
+
             <div className="mb-8">
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 mb-4 border border-slate-200 dark:border-slate-700">
                 {job?.department || "General"}
@@ -303,7 +321,7 @@ const ApplyJob = () => {
                 {(job?.primarySkills?.length > 0 || job?.secondarySkills?.length > 0) && (
                   <div className="mb-4 flex flex-wrap gap-2">
                     {job?.primarySkills?.map((skill, idx) => (
-                      <span key={`primary-${idx}`} className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-semibold rounded-md border border-blue-100 dark:border-blue-800">
+                      <span key={`primary-${idx}`} className="px-3 py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-xs font-semibold rounded-md border border-purple-100 dark:border-purple-800">
                         {skill}
                       </span>
                     ))}
@@ -439,7 +457,7 @@ const ApplyJob = () => {
                         <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><User size={16} /></div>
                         <input
                           type="text" required name="name" value={formData.name} onChange={handleInputChange}
-                          className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-slate-400"
+                          className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all placeholder-slate-400"
                           placeholder="e.g. Jane Doe"
                         />
                       </div>
@@ -452,7 +470,7 @@ const ApplyJob = () => {
                           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><Mail size={16} /></div>
                           <input
                             type="email" required name="email" value={formData.email} onChange={handleInputChange}
-                            className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-slate-400"
+                            className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all placeholder-slate-400"
                             placeholder="jane@example.com"
                           />
                         </div>
@@ -463,7 +481,7 @@ const ApplyJob = () => {
                           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><Phone size={16} /></div>
                           <input
                             type="tel" required name="phone" maxLength={10} value={formData.phone} onChange={handleInputChange}
-                            className={`w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border ${phoneError ? 'border-red-400' : 'border-slate-300 dark:border-slate-700'} rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-slate-400`}
+                            className={`w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border ${phoneError ? 'border-red-400' : 'border-slate-300 dark:border-slate-700'} rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all placeholder-slate-400`}
                             placeholder="9876543210"
                           />
                         </div>
@@ -477,7 +495,7 @@ const ApplyJob = () => {
                         <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><Map size={16} /></div>
                         <input
                           type="text" required name="currentLocation" value={formData.currentLocation} onChange={handleInputChange}
-                          className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-slate-400"
+                          className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all placeholder-slate-400"
                           placeholder="City, State, Country"
                         />
                       </div>
@@ -495,7 +513,7 @@ const ApplyJob = () => {
                           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><BookOpen size={16} /></div>
                           <select
                             required name="highestEducation" value={formData.highestEducation} onChange={handleInputChange}
-                            className="w-full h-11 pl-10 pr-8 appearance-none bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                            className="w-full h-11 pl-10 pr-8 appearance-none bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
                           >
                             <option value="">Select Education</option>
                             <option value="High School">High School</option>
@@ -513,7 +531,7 @@ const ApplyJob = () => {
                           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><Briefcase size={16} /></div>
                           <input
                             type="number" required min="0" step="0.5" name="yearsOfExperience" value={formData.yearsOfExperience} onChange={handleInputChange}
-                            className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-slate-400"
+                            className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all placeholder-slate-400"
                             placeholder="e.g. 5"
                           />
                         </div>
@@ -527,7 +545,7 @@ const ApplyJob = () => {
                           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><Building size={16} /></div>
                           <input
                             type="text" name="currentCompany" value={formData.currentCompany} onChange={handleInputChange}
-                            className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-slate-400"
+                            className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all placeholder-slate-400"
                             placeholder="Company Name"
                           />
                         </div>
@@ -538,7 +556,7 @@ const ApplyJob = () => {
                           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><User size={16} /></div>
                           <input
                             type="text" name="currentDesignation" value={formData.currentDesignation} onChange={handleInputChange}
-                            className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-slate-400"
+                            className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all placeholder-slate-400"
                             placeholder="Job Title"
                           />
                         </div>
@@ -549,14 +567,14 @@ const ApplyJob = () => {
                       <div>
                         <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 group">
                           Notice Period * 
-                          <div className="relative cursor-help text-slate-400 hover:text-blue-500"><HelpCircle size={14} />
+                          <div className="relative cursor-help text-slate-400 hover:text-purple-500"><HelpCircle size={14} />
                             <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-slate-800 text-white text-[10px] p-2 rounded-lg text-center z-10 shadow-lg">Time required to join after offer acceptance.</span>
                           </div>
                         </label>
                         <div className="relative">
                           <select
                             required name="noticePeriod" value={formData.noticePeriod} onChange={handleInputChange}
-                            className="w-full h-11 pl-4 pr-8 appearance-none bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                            className="w-full h-11 pl-4 pr-8 appearance-none bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
                           >
                             <option value="">Select Notice Period</option>
                             <option value="Immediate">Immediate</option>
@@ -573,7 +591,7 @@ const ApplyJob = () => {
                         <div className="relative">
                           <select
                             required name="employmentTypePreference" value={formData.employmentTypePreference} onChange={handleInputChange}
-                            className="w-full h-11 pl-4 pr-8 appearance-none bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                            className="w-full h-11 pl-4 pr-8 appearance-none bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
                           >
                             <option value="Full-time">Full-time</option>
                             <option value="Contract">Contract</option>
@@ -594,7 +612,7 @@ const ApplyJob = () => {
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Current CTC</label>
                         <input
                           type="text" name="currentCtc" value={formData.currentCtc} onChange={handleInputChange}
-                          className="w-full h-11 px-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-slate-400"
+                          className="w-full h-11 px-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all placeholder-slate-400"
                           placeholder="e.g. $80,000"
                         />
                       </div>
@@ -602,7 +620,7 @@ const ApplyJob = () => {
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Expected CTC</label>
                         <input
                           type="text" name="expectedCtc" value={formData.expectedCtc} onChange={handleInputChange}
-                          className="w-full h-11 px-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-slate-400"
+                          className="w-full h-11 px-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all placeholder-slate-400"
                           placeholder="e.g. $100,000"
                         />
                       </div>
@@ -616,10 +634,10 @@ const ApplyJob = () => {
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">LinkedIn Profile</label>
                         <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-blue-500"><Link size={16} /></div>
+                          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-purple-500"><Link size={16} /></div>
                           <input
                             type="url" name="linkedin" value={formData.linkedin} onChange={handleInputChange}
-                            className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-slate-400"
+                            className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all placeholder-slate-400"
                             placeholder="https://linkedin.com/in/..."
                           />
                         </div>
@@ -630,7 +648,7 @@ const ApplyJob = () => {
                           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-700 dark:text-slate-300"><Github size={16} /></div>
                           <input
                             type="url" name="githubProfile" value={formData.githubProfile} onChange={handleInputChange}
-                            className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-slate-400"
+                            className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all placeholder-slate-400"
                             placeholder="https://github.com/..."
                           />
                         </div>
@@ -640,7 +658,7 @@ const ApplyJob = () => {
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Portfolio Website</label>
                       <input
                         type="url" name="portfolio" value={formData.portfolio} onChange={handleInputChange}
-                        className="w-full h-11 px-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-slate-400"
+                        className="w-full h-11 px-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all placeholder-slate-400"
                         placeholder="https://yourwebsite.com"
                       />
                     </div>
@@ -653,7 +671,7 @@ const ApplyJob = () => {
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Resume / CV *</label>
                       <div 
-                        className={`relative border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all cursor-pointer ${resumeDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                        className={`relative border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all cursor-pointer ${resumeDragActive ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                         onDragEnter={(e) => handleDrag(e, setResumeDragActive)}
                         onDragLeave={(e) => handleDrag(e, setResumeDragActive)}
                         onDragOver={(e) => handleDrag(e, setResumeDragActive)}
@@ -666,7 +684,7 @@ const ApplyJob = () => {
                         />
                         {resume ? (
                           <div className="flex flex-col items-center">
-                            <FileText size={28} className="text-blue-500 mb-2" />
+                            <FileText size={28} className="text-purple-500 mb-2" />
                             <p className="text-sm font-semibold truncate max-w-[250px]">{resume.name}</p>
                             <p className="text-xs text-slate-500 mt-0.5">{(resume.size / 1024 / 1024).toFixed(2)} MB</p>
                             <button 
@@ -680,7 +698,7 @@ const ApplyJob = () => {
                         ) : (
                           <>
                             <UploadCloud size={28} className="text-slate-400 mb-2" />
-                            <p className="text-sm font-semibold mb-1 text-blue-600 dark:text-blue-400">Click to upload <span className="text-slate-600 dark:text-slate-400 font-normal">or drag and drop</span></p>
+                            <p className="text-sm font-semibold mb-1 text-purple-600 dark:text-purple-400">Click to upload <span className="text-slate-600 dark:text-slate-400 font-normal">or drag and drop</span></p>
                             <p className="text-xs text-slate-500">PDF, DOC, DOCX up to 5MB</p>
                           </>
                         )}
@@ -690,7 +708,7 @@ const ApplyJob = () => {
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Additional Documents <span className="text-slate-400 font-normal">(Optional)</span></label>
                       <div 
-                        className={`relative border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all cursor-pointer ${addDocDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                        className={`relative border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all cursor-pointer ${addDocDragActive ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                         onDragEnter={(e) => handleDrag(e, setAddDocDragActive)}
                         onDragLeave={(e) => handleDrag(e, setAddDocDragActive)}
                         onDragOver={(e) => handleDrag(e, setAddDocDragActive)}
@@ -730,7 +748,7 @@ const ApplyJob = () => {
                       </div>
                       <textarea
                         rows="4" name="coverLetter" maxLength={1000} value={formData.coverLetter} onChange={handleInputChange}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none placeholder-slate-400"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all resize-none placeholder-slate-400"
                         placeholder="Why are you a great fit for this role?..."
                       ></textarea>
                     </div>
@@ -744,7 +762,7 @@ const ApplyJob = () => {
                         className="mt-0.5 w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 dark:bg-slate-800 dark:border-slate-600 transition-all cursor-pointer"
                       />
                       <label htmlFor="privacyConsent" className="text-sm text-slate-600 dark:text-slate-400 cursor-pointer leading-relaxed">
-                        I acknowledge that I have read and agree to the <a href="#" className="text-blue-600 dark:text-blue-400 font-medium hover:underline">Privacy Policy</a> and consent to the processing of my personal data. *
+                        I acknowledge that I have read and agree to the <a href="#" className="text-purple-600 dark:text-purple-400 font-medium hover:underline">Privacy Policy</a> and consent to the processing of my personal data. *
                       </label>
                     </div>
                     <div className="flex items-start gap-3">
@@ -753,7 +771,7 @@ const ApplyJob = () => {
                         className="mt-0.5 w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 dark:bg-slate-800 dark:border-slate-600 transition-all cursor-pointer"
                       />
                       <label htmlFor="termsConsent" className="text-sm text-slate-600 dark:text-slate-400 cursor-pointer leading-relaxed">
-                        I agree to the <a href="#" className="text-blue-600 dark:text-blue-400 font-medium hover:underline">Terms & Conditions</a> regarding background checks and employment verification. *
+                        I agree to the <a href="#" className="text-purple-600 dark:text-purple-400 font-medium hover:underline">Terms & Conditions</a> regarding background checks and employment verification. *
                       </label>
                     </div>
                   </div>

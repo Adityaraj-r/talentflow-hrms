@@ -74,7 +74,7 @@ export const usePayrollDashboard = () => {
       const totalDeductions = totals.statutory || 0;
       
       const deductionTypes = [
-        { type: "Taxes (TDS)", amount: totals.tds || 0, count: complianceData.employeeLines || 0, color: "bg-blue-500" },
+        { type: "Taxes (TDS)", amount: totals.tds || 0, count: complianceData.employeeLines || 0, color: "bg-purple-500" },
         { type: "PF", amount: totals.pf || 0, count: complianceData.employeeLines || 0, color: "bg-green-500" },
         { type: "ESI", amount: totals.esi || 0, count: complianceData.employeeLines || 0, color: "bg-yellow-500" },
         { type: "PT", amount: totals.pt || 0, count: complianceData.employeeLines || 0, color: "bg-purple-500" },

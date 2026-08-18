@@ -7,8 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { DataTable } from "@/components/ui/data-table";
 import { toast } from "sonner";
 import attendanceService from "@/services/attendanceService";
 import apiClient from "@/services/apiClient";
@@ -230,6 +230,38 @@ const ManualAttendance = () => {
       }
     });
   };
+
+  const columns = [
+    {
+      accessorKey: "email",
+      header: "Email",
+      cell: ({ row }) => <span className="font-medium text-sm">{row.original.email}</span>,
+    },
+    {
+      accessorKey: "date",
+      header: "Date",
+      cell: ({ row }) => <span className="text-sm">{row.original.date}</span>,
+    },
+    {
+      accessorKey: "clockIn",
+      header: "Clock In",
+      cell: ({ row }) => <span className="text-sm">{row.original.clockIn}</span>,
+    },
+    {
+      accessorKey: "clockOut",
+      header: "Clock Out",
+      cell: ({ row }) => <span className="text-sm">{row.original.clockOut}</span>,
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge variant="outline" className={getStatusBadgeClasses(row.original.status)}>
+          {row.original.status}
+        </Badge>
+      ),
+    },
+  ];
 
   const totalPages = Math.ceil(previewData.length / itemsPerPage);
 
@@ -475,47 +507,16 @@ const ManualAttendance = () => {
               {previewData.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-                    <AlertCircle className="w-4 h-4 text-indigo-500" /> Data Preview
+                    <AlertCircle className="w-4 h-4 text-purple-500" /> Data Preview
                   </div>
-                  <div className="border rounded-md overflow-hidden dark:border-slate-800 max-h-[300px] overflow-y-auto">
-                    <Table>
-                      <TableHeader className="bg-slate-50 dark:bg-[#131b2c]">
-                        <TableRow className="dark:border-slate-800">
-                          <TableHead>Email</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Clock In</TableHead>
-                          <TableHead>Clock Out</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {previewData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((row) => (
-                          <TableRow key={row.id} className="dark:border-slate-800">
-                            <TableCell className="font-medium text-sm">{row.email}</TableCell>
-                            <TableCell className="text-sm">{row.date}</TableCell>
-                            <TableCell className="text-sm">{row.clockIn}</TableCell>
-                            <TableCell className="text-sm">{row.clockOut}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={getStatusBadgeClasses(row.status)}>
-                                {row.status}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                  <div className="border rounded-md overflow-hidden dark:border-slate-800">
+                    <DataTable
+                      columns={columns}
+                      data={previewData}
+                      searchable={false}
+                      defaultPageSize={10}
+                    />
                   </div>
-                  {previewData.length > 0 && (
-                    <div className="p-2 border-t border-slate-200 dark:border-slate-800">
-                      <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        totalItems={previewData.length}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={(page) => setCurrentPage(page)}
-                      />
-                    </div>
-                  )}
                 </div>
               )}
 

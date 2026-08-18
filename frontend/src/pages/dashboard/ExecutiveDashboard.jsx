@@ -90,7 +90,7 @@ const ExecutiveDashboard = () => {
             <div className="bg-white dark:bg-slate-900 rounded-[20px] p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-slate-800 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer" onClick={() => navigate('/all-employees')}>
                 <div className="flex justify-between items-start mb-2">
                     <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Headcount</span>
-                    <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
                         <Users className="w-4 h-4" />
                     </div>
                 </div>
@@ -206,7 +206,7 @@ const ExecutiveDashboard = () => {
             
             <div className="bg-white dark:bg-slate-900 rounded-[20px] p-6 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-2 mb-4">
-                    <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center">
                         <ActivitySquare className="h-4 w-4" />
                     </div>
                     <h4 className="font-bold text-[15px] text-slate-900 dark:text-white">Monthly Summary</h4>
