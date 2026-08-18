@@ -546,9 +546,8 @@ const getNextStatus = (task) => {
                                 String(task.priority).slice(1).toLowerCase()
                                 : "Low"}
                             </span>
-                          </td>
-
-                                                    {/* STATUS */}
+                        </td>
+                        {/* STATUS */}
                           <td className="px-5 py-4 align-middle">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
