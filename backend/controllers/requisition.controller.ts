@@ -1,0 +1,299 @@
+import Requisition from "../models/Requisition.model";
+import Job from "../models/job.model";
+import { Request, Response } from "express";
+
+const parseMaxSalary = (salaryRange?: string): number => {
+  if (!salaryRange) return 0;
+  const numbers = salaryRange
+    .toString()
+    .match(/\d+(?:\.\d+)?/g)
+    ?.map((n) => Number(n))
+    .filter((n) => Number.isFinite(n)) || [];
+  if (numbers.length === 0) return 0;
+  return Math.max(...numbers);
+};
+
+const isExecutivePosition = (position?: string): boolean => {
+  const text = (position || "").toLowerCase();
+  return /(chief|cxo|vp|vice president|director|head)/i.test(text);
+};
+
+const needsCeoFinalApproval = (requisition: any): boolean => {
+  const salaryThreshold = Number(process.env.CEO_REQUISITION_SALARY_THRESHOLD || 250000);
+  const maxSalary = parseMaxSalary(requisition?.salaryRange);
+  const urgency = (requisition?.urgency || "").toString().toLowerCase();
+  return maxSalary >= salaryThreshold || urgency === "high" || isExecutivePosition(requisition?.position);
+};
+
+const normalizeRole = (role?: string) =>
+  (role || "").toString().toUpperCase().replace(/\s+/g, "_");
+
+const normalizeUrgency = (raw?: string): "High" | "Normal" | "Low" => {
+  const u = (raw || "normal").toString().toLowerCase();
+  if (u === "high" || u === "critical") return "High";
+  if (u === "low") return "Low";
+  return "Normal";
+};
+
+export const createRequisition = async (req: Request, res: Response) => {
+  try {
+    const {
+      position,
+      department,
+      experience,
+      salaryRange,
+      reason,
+      urgency,
+      numberOfPositions,
+      hiringRoles,
+      jobDescription,
+      requirements,
+      applicationDeadline,
+    } = req.body;
+
+    if (!applicationDeadline) {
+      return res.status(400).json({ message: "Application deadline is required" });
+    }
+    const selectedDate = new Date(applicationDeadline);
+    selectedDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate < today) {
+      return res.status(400).json({ message: "Application deadline cannot be in the past" });
+    }
+
+    const requisition = await Requisition.create({
+      position,
+      department,
+      experience,
+      salaryRange,
+      reason,
+      urgency: normalizeUrgency(urgency),
+      numberOfPositions: numberOfPositions ? Number(numberOfPositions) : 1,
+      hiringRoles: hiringRoles || [],
+      jobDescription,
+      requirements,
+      applicationDeadline: selectedDate,
+      requestedBy: (req as any).user?.id,
+    });
+
+    res.status(201).json(requisition);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to create requisition" });
+  }
+};
+
+export const addRequisitionRecommendation = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const text = (req.body?.text || "").toString().trim();
+
+    if (!text) {
+      return res.status(400).json({ message: "Recommendation text is required" });
+    }
+
+    const userId = (req as any).user?.id;
+    const role = ((req as any).user?.role || "").toString();
+
+    const updated = await Requisition.findByIdAndUpdate(
+      id,
+      {
+        $push: {
+          recommendations: {
+            text,
+            createdBy: userId,
+            createdByRole: role,
+            createdAt: new Date(),
+          },
+        },
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Requisition not found" });
+    }
+
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to add recommendation" });
+  }
+};
+export const getPendingRequisitions = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const requisitions = await Requisition.find({
+      status: "Pending",
+    });
+
+    res.json(requisitions);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch pending requisitions" });
+  }
+};
+export const getRequisitionHistory = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const history = await Requisition.find({
+      status: { $ne: "Pending" }  
+    });
+
+    res.json(history);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch history" });
+  }
+};
+
+export const approveRequisition = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { id } = req.params;
+    const role = normalizeRole((req as any).user?.role);
+
+    const requisition = await Requisition.findById(id);
+
+    if (!requisition) {
+      return res.status(404).json({ message: "Requisition not found" });
+    }
+
+    const requiresFinalApproval = needsCeoFinalApproval(requisition);
+
+    requisition.status = "Approved";
+    requisition.approvalDate = new Date();
+    requisition.approvedBy = (req as any).user?.id;
+    requisition.finalApprovalRequired = requiresFinalApproval;
+    requisition.finalApprovedBy = role === "HR_MANAGER" ? (req as any).user?.id : undefined;
+    requisition.finalApprovalDate = role === "HR_MANAGER" ? new Date() : undefined;
+
+    requisition.approvalHistory = requisition.approvalHistory || [];
+    requisition.approvalHistory.push({
+      action: "approved",
+      at: new Date(),
+      userId: (req as any).user?.id,
+      role: (req as any).user?.role,
+    });
+
+    await requisition.save();
+
+    // Automatically create or update the Job Opening from the approved Requisition
+    const existingJob = await Job.findOne({ requisitionId: requisition._id });
+    if (!existingJob) {
+      const jobTitle = requisition.position;
+      const department = requisition.department;
+      const positions = requisition.numberOfPositions || 1;
+      
+      const hiringRoles = (requisition.hiringRoles || []).map((role: any) => ({
+        roleName: role.roleName,
+        openings: role.openings,
+        minSalary: role.minSalary,
+        maxSalary: role.maxSalary,
+        experience: role.experience,
+        skills: role.skills,
+        filled: 0,
+        status: "Open",
+      }));
+
+      // Fallback for Single Role where hiringRoles array might be empty
+      if (hiringRoles.length === 0) {
+        hiringRoles.push({
+          roleName: jobTitle,
+          openings: positions,
+          minSalary: requisition.salaryRange ? Number(requisition.salaryRange.split("-")[0]) || 0 : 0,
+          maxSalary: requisition.salaryRange ? Number(requisition.salaryRange.split("-")[1]) || 0 : 0,
+          experience: requisition.experience || "",
+          skills: requisition.requirements || "",
+          filled: 0,
+          status: "Open",
+        });
+      }
+
+      await Job.create({
+        jobTitle,
+        requisitionId: requisition._id,
+        department,
+        positions,
+        hiringRoles,
+        employmentType: requisition.experience || "Full-Time",
+        description: requisition.jobDescription || "",
+        deadline: requisition.applicationDeadline,
+        status: "Published",
+      });
+    } else {
+      existingJob.deadline = requisition.applicationDeadline;
+      await existingJob.save();
+    }
+
+    res.json(requisition);
+
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const rejectRequisition = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { id } = req.params;
+
+    const requisition = await Requisition.findById(id);
+
+    if (!requisition) {
+      return res.status(404).json({ message: "Requisition not found" });
+    }
+
+    requisition.status = "Rejected";
+    requisition.approvalDate = new Date();
+    requisition.approvedBy = (req as any).user?.id;
+
+    requisition.approvalHistory = requisition.approvalHistory || [];
+    requisition.approvalHistory.push({
+      action: "rejected",
+      at: new Date(),
+      userId: (req as any).user?.id,
+      role: (req as any).user?.role,
+    });
+
+    await requisition.save();
+
+    res.json({ message: "Requisition rejected successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to reject requisition" });
+  }
+};
+
+export const getRequisitionStats = async (req: Request, res: Response) => {
+  try {
+    const totalOpen = await Requisition.countDocuments({
+      status: { $in: ["Pending", "Approved"] },
+    });
+
+    const pending = await Requisition.countDocuments({
+      status: "Pending",
+    });
+
+    const approved = await Requisition.countDocuments({
+      status: "Approved",
+    });
+
+    const rejected = await Requisition.countDocuments({
+      status: "Rejected",
+    });
+
+    res.json({
+      totalOpen,
+      pending,
+      approved,
+      rejected,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch stats" });
+  }
+};

@@ -1,0 +1,160 @@
+import mongoose, { Schema, Document } from 'mongoose';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+export interface IUser extends Document {
+  email: string;
+  password: string;
+  role: string;
+  firstName: string;
+  lastName?: string;
+  department?: string;
+  designation?: string;
+  profilePhoto?: string;
+  phoneNumber?: string;
+  gender?: string;
+  employeeId?: mongoose.Types.ObjectId;
+  employeeCode?: string;
+  currentShift?: mongoose.Types.ObjectId;
+  isActive: boolean;
+  isDeleted: boolean;                      
+  isEmailVerified: boolean;
+  lastLogin?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  comparePassword(candidatePassword: string): Promise<boolean>;
+  getSignedJwtToken(): string;
+}
+
+const UserSchema = new Schema<IUser>(
+  {
+    email: {
+      type: String,
+      required: [true, 'Email is required'],
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+      minlength: [6, 'Password must be at least 6 characters'],
+      select: false,
+    },
+    role: {
+      type: String,
+      required: [true, 'User role is required'],
+      enum: [
+        'CEO',
+        'COUNTRY_MANAGER',
+        'HR_MANAGER',
+        'HR_OFFICER',
+        'INTERVIEWER',
+        'DEPARTMENT_MANAGER',
+        'DIRECT_MANAGER',
+        'PAYROLL_OFFICER',
+        'PROJECT_MANAGER',
+        'OPERATIONS_MANAGER',
+        'FINANCE_MANAGER',
+        'ADMIN',
+        'SUPER_ADMIN',
+        'EMPLOYEE',
+      ],
+    },
+    firstName: {
+      type: String,
+      required: [true, 'First name is required'],
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    phoneNumber: {
+      type: String,
+      default: null,
+    },
+    department: {
+      type: String,
+      default: null,
+    },
+    designation: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    profilePhoto: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    gender: {
+      type: String,
+      enum: ['Male', 'Female', 'Other'],
+      default: null,
+    },
+    employeeId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Employee',
+      default: null,
+    },
+    employeeCode: {
+      type: String,
+      trim: true,
+    },
+    currentShift: {
+      type: Schema.Types.ObjectId,
+      ref: 'Shift',
+      default: null,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    isDeleted: {                          
+      type: Boolean,
+      default: false,
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    lastLogin: {
+      type: Date,
+      default: null,
+    },
+  },
+  { timestamps: true }
+);
+
+// Unique only when a non-empty code is set — avoids E11000 when many users omit employeeCode (null was indexed with sparse+unique).
+UserSchema.index(
+  { employeeCode: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      employeeCode: { $exists: true, $type: 'string', $gt: '' },
+    },
+  }
+);
+
+UserSchema.methods.comparePassword = async function (
+  candidatePassword: string
+): Promise<boolean> {
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch {
+    return false;
+  }
+};
+
+UserSchema.methods.getSignedJwtToken = function (): string {
+  return jwt.sign(
+    { id: this._id, email: this.email, role: this.role },
+    (process.env.JWT_SECRET as jwt.Secret) || 'fallback_secret',
+    { expiresIn: process.env.JWT_EXPIRE || '30d' } as jwt.SignOptions
+  );
+};
+
+export default mongoose.model<IUser>('User', UserSchema);
