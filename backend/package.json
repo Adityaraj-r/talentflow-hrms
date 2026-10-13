@@ -10,6 +10,7 @@
     "migrate:employees": "ts-node-dev --transpile-only scripts/migrateEmployees.ts",
     "check:payroll": "ts-node --transpile-only scripts/payroll-module-check.ts",
     "seed:payroll-sample": "ts-node --transpile-only scripts/runSeedPayrollSample.ts",
+    "bootstrap:admin": "ts-node --transpile-only scripts/bootstrapInitialAdmin.ts",
     "test": "vitest run"
   },
   "vitest": {

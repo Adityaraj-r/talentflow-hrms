@@ -214,7 +214,7 @@ async function seedSampleTicketIfEmpty(userIds: string[]): Promise<void> {
 }
 
 export async function seedPayrollSampleData(): Promise<void> {
-  if (process.env.SEED_PAYROLL_SAMPLE === "0") return
+  if (process.env.SEED_PAYROLL_SAMPLE !== "1") return
   if (mongoose.connection.readyState !== 1) return
 
   await ensureSalariesForPayrollSample(5)

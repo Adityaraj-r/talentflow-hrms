@@ -2,12 +2,24 @@ import bcrypt from 'bcryptjs';
 import User from '../models/User.model';
 
 /**
- * Ensures a Finance Manager account exists (same pattern as other seeded HRMS users).
- * Defaults: finance@hrms.com — override with FINANCE_MANAGER_SEED_EMAIL / FINANCE_MANAGER_SEED_PASSWORD in any environment.
+ * Optionally ensures a Finance Manager account exists when both local seed
+ * credentials are explicitly configured. No account or default password is
+ * created when those credentials are absent.
  */
 export const seedFinanceManagerUser = async (): Promise<void> => {
-  const email = (process.env.FINANCE_MANAGER_SEED_EMAIL || 'finance@hrms.com').toLowerCase();
-  const password = process.env.FINANCE_MANAGER_SEED_PASSWORD || '123456';
+  const configuredEmail = process.env.FINANCE_MANAGER_SEED_EMAIL?.trim();
+  const password = process.env.FINANCE_MANAGER_SEED_PASSWORD;
+
+  if (!configuredEmail && !password) {
+    console.log('Finance Manager seed skipped; explicit seed credentials are not configured.');
+    return;
+  }
+
+  if (!configuredEmail || !password) {
+    throw new Error('Set both FINANCE_MANAGER_SEED_EMAIL and FINANCE_MANAGER_SEED_PASSWORD to seed a Finance Manager.');
+  }
+
+  const email = configuredEmail.toLowerCase();
 
   const existing = await User.findOne({ email });
   if (existing) {
@@ -28,5 +40,5 @@ export const seedFinanceManagerUser = async (): Promise<void> => {
     isActive: true,
   });
 
-  console.log(`Seeded Finance Manager user: ${email}`);
+  console.log('Seeded the explicitly configured Finance Manager account.');
 };

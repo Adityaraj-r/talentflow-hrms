@@ -30,6 +30,6 @@ router.post("/", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), requireRec
 router.put("/:id", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), requireRecruitmentOperator, upload.fields([{ name: "uploadJd", maxCount: 1 }, { name: "supportingDocuments", maxCount: 1 }]), updateJob);
 router.put("/:id/publish", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), requireRecruitmentApprover, publishJob);
 router.put("/:id/close", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), requireRecruitmentApprover, closeJob);
-router.delete("/:id", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "write"), requireRecruitmentOperator, deleteJob);
+router.delete("/:id", authorizeByMatrix(MODULE_KEYS.RECRUITMENT, "delete"), requireRecruitmentOperator, deleteJob);
 
 export default router;

@@ -1,6 +1,6 @@
 import Role from '../models/Role.model';
 
-const enterpriseRoles = [
+export const enterpriseRoles = [
   {
     name: "ADMIN",
     isSystemRole: true,
@@ -214,70 +214,22 @@ const enterpriseRoles = [
 ];
 
 export const seedRoles = async () => {
-  try {
-    console.log('Checking role definitions...');
+  const operations = enterpriseRoles.map((roleDef) => ({
+    updateOne: {
+      filter: { name: roleDef.name },
+      update: {
+        $setOnInsert: {
+          name: roleDef.name,
+          isSystemRole: roleDef.isSystemRole,
+          permissions: roleDef.permissions,
+        },
+      },
+      upsert: true,
+    },
+  }));
 
-    for (const roleDef of enterpriseRoles) {
-      const existingRole = await Role.findOne({ name: roleDef.name });
-
-      if (!existingRole) {
-        console.log(`Creating missing role: ${roleDef.name}`);
-        await Role.create(roleDef);
-      } else {
-        console.log(`Role already exists (skipping): ${roleDef.name}`);
-        if (roleDef.name === 'ADMIN') {
-          await Role.updateOne(
-            { name: 'ADMIN' },
-            {
-              $set: {
-                'permissions.recruitment': { read: true, write: false, delete: false }
-              }
-            }
-          );
-          console.log('ADMIN recruitment permissions synced to read-only (write/delete false).');
-        }
-      }
-    }
-
-    for (const roleDef of enterpriseRoles) {
-      const recruitment = (roleDef.permissions as { recruitment?: { read: boolean; write: boolean; delete: boolean } }).recruitment;
-      if (recruitment) {
-        await Role.updateOne({ name: roleDef.name }, { $set: { "permissions.recruitment": recruitment } });
-      }
-    }
-    console.log("Recruitment permissions synced on system roles.");
-
-    for (const roleDef of enterpriseRoles) {
-      const p = (roleDef.permissions as { payroll?: { read: boolean; write: boolean; delete: boolean } }).payroll;
-      if (p) {
-        await Role.updateOne({ name: roleDef.name }, { $set: { "permissions.payroll": p } });
-      }
-    }
-    console.log("Payroll permissions synced on system roles.");
-
-    for (const roleDef of enterpriseRoles) {
-      const a = (roleDef.permissions as { audit: { read: boolean; write: boolean; delete: boolean } }).audit;
-      await Role.updateOne({ name: roleDef.name }, { $set: { "permissions.audit": a } });
-    }
-    console.log("Audit permissions synced on system roles.");
-
-    for (const roleDef of enterpriseRoles) {
-      const s = (roleDef.permissions as { settings: { read: boolean; write: boolean; delete: boolean } }).settings;
-      await Role.updateOne({ name: roleDef.name }, { $set: { "permissions.settings": s } });
-    }
-    console.log("Settings permissions synced on system roles.");
-
-    for (const roleDef of enterpriseRoles) {
-      const perf = (roleDef.permissions as { performance?: { read: boolean; write: boolean; delete: boolean } }).performance;
-      if (perf) {
-        await Role.updateOne({ name: roleDef.name }, { $set: { "permissions.performance": perf } });
-      }
-    }
-    console.log("Performance (PMS) permissions synced on system roles.");
-
-    console.log('Role seeder check complete.');
-  } catch (error) {
-    console.error('Role seeding failed:', error);
-  }
-
+  const result = await Role.bulkWrite(operations as any);
+  console.log(
+    `Canonical roles ensured (${enterpriseRoles.length}; inserted ${result.upsertedCount ?? 0}).`
+  );
 };

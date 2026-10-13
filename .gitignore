@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 HRMSApp/
+
+# Firebase service account credentials must be provided outside the repository.
+backend/config/serviceAccountKey.json

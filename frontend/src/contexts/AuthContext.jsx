@@ -43,6 +43,7 @@ export const AuthProvider = ({ children }) => {
   // users on public pages does not trigger global forceLogout to /login.
   useEffect(() => {
     axios.get(`${API_BASE_URL}/auth/profile`, {
+      timeout: 10000,
       withCredentials: true,
       headers: { "ngrok-skip-browser-warning": "true" }
     })

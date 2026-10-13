@@ -1,21 +1,28 @@
 import Employee from "../models/Employee.model";
 import { Request, Response } from "express";
 import User from '../models/User.model';
+import { buildEmployeeManagerScope, employeeMatchesManagerScope, filterEmployeeSensitiveFields } from "../utils/authorizationScope.util";
+
+const getManagerIdentity = async (requestingUser: any) => {
+  if (!["DIRECT_MANAGER", "DEPARTMENT_MANAGER"].includes(requestingUser?.role)) return {};
+  const employee = await Employee.findOne({ userId: requestingUser.id }).select("employeeCode department");
+  const user = (!employee?.employeeCode || !employee?.department)
+    ? await User.findById(requestingUser.id).select("employeeCode department")
+    : null;
+  return {
+    employeeCode: employee?.employeeCode || user?.employeeCode,
+    department: employee?.department || user?.department || requestingUser.department,
+  };
+};
+
+const applyScopeAnd = (scope: Record<string, unknown>, filters: Record<string, unknown>[]) =>
+  ({ $and: [scope, ...filters] });
 
 export const getAllEmployees = async (req: Request, res: Response) => {
   try {
     const requestingUser = (req as any).user;
-    let filter: any = {};
-
-    if (requestingUser?.role === "DIRECT_MANAGER") {
-      filter = { 
-        reportingManagerId: requestingUser.employeeCode,
-        role: "EMPLOYEE" 
-      };
-    } 
-    else if (requestingUser?.role === "DEPARTMENT_MANAGER") {
-      filter = { department: requestingUser.department };
-    }
+    const identity = await getManagerIdentity(requestingUser);
+    const filter = buildEmployeeManagerScope(requestingUser?.role, identity.department, identity.employeeCode) || {};
 
     const employees = await Employee.find(filter).sort({ createdAt: -1 });
     res.status(200).json(employees);
@@ -63,17 +70,6 @@ export const getEmployeeById = async (req: Request, res: Response) => {
     const id = req.params.id as string;
     const requestingUser = (req as any).user;
 
-    if (requestingUser?.role === "EMPLOYEE") {
-      const ownId =
-        requestingUser.employeeId?.toString() ||
-        requestingUser._id?.toString();
-      if (id !== ownId) {
-        return res
-          .status(403)
-          .json({ success: false, message: "Access denied" });
-      }
-    }
-
     let employee = null;
     if (id.match(/^[0-9a-fA-F]{24}$/)) {
       employee = await Employee.findById(id);
@@ -86,14 +82,25 @@ export const getEmployeeById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Employee not found" });
     }
 
-    const data = employee.toObject() as Record<string, any>;
-
-    if (!["ADMIN", "HR_MANAGER", "DEPARTMENT_MANAGER", "PAYROLL_OFFICER", "FINANCE_MANAGER"].includes(requestingUser?.role)) {
-      delete data.bankDetails;
-      delete data.kycDetails;
+    const role = requestingUser?.role;
+    if (role === "EMPLOYEE") {
+      const ownProfile = await Employee.findOne({
+        $or: [{ userId: requestingUser.id }, { email: requestingUser.email }],
+      }).select("_id");
+      if (!ownProfile || String(employee._id) !== String(ownProfile._id)) {
+        return res.status(403).json({ success: false, message: "Access denied" });
+      }
+    } else if (role === "DIRECT_MANAGER" || role === "DEPARTMENT_MANAGER") {
+      const identity = await getManagerIdentity(requestingUser);
+      const scope = buildEmployeeManagerScope(role, identity.department, identity.employeeCode);
+      if (!scope || !employeeMatchesManagerScope(role, employee, identity)) {
+        return res.status(403).json({ success: false, message: "Access denied" });
+      }
     }
 
-    res.json(data);
+    const data = employee.toObject() as Record<string, any>;
+
+    res.json(filterEmployeeSensitiveFields(data, role));
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
@@ -172,34 +179,24 @@ export const offboardEmployee = async (req: Request, res: Response) => {
 
 export const getEmployeeDirectory = async (req: Request, res: Response) => {
     try {
-        const { role, search, statusFilter, page = 1, limit = 10 } = req.query;
+        const { role: roleFilter, search, statusFilter, page = 1, limit = 10 } = req.query;
         const skipNum = (Number(page) - 1) * Number(limit);
         const limitNum = Number(limit);
 
         // Compute base query respecting role access (like getAllEmployees)
         const requestingUser = (req as any).user;
-        let baseQuery: any = {};
-
-        if (requestingUser?.role === "DIRECT_MANAGER") {
-            baseQuery = { 
-                reportingManagerId: requestingUser.employeeCode,
-                role: "EMPLOYEE" 
-            };
-        } else if (requestingUser?.role === "DEPARTMENT_MANAGER") {
-            baseQuery = { department: requestingUser.department };
-        }
+        const identity = await getManagerIdentity(requestingUser);
+        const baseQuery = buildEmployeeManagerScope(requestingUser?.role, identity.department, identity.employeeCode) || {};
 
         // Dashboard Stats calculation
+        const countInScope = (filter: Record<string, unknown>) =>
+            Employee.countDocuments(Object.keys(baseQuery).length ? applyScopeAnd(baseQuery, [filter]) : filter);
         const [totalStaffCount, activeCount, onNoticeCount, exitedCount, rolesAssignedCount] = await Promise.all([
-            Employee.countDocuments({ ...baseQuery, status: { $in: ['Active', 'On Notice Period', 'Pending Manager Approval', 'Pending HR Approval', 'Pending Country Manager Approval', 'Pending CEO Approval'] } }),
-            Employee.countDocuments({ ...baseQuery, status: { $in: ['Active', 'Pending Manager Approval', 'Pending HR Approval', 'Pending Country Manager Approval', 'Pending CEO Approval'] } }),
-            Employee.countDocuments({ ...baseQuery, status: 'On Notice Period' }),
-            Employee.countDocuments({ ...baseQuery, status: { $in: ['Exited', 'Terminated'] } }),
-            Employee.countDocuments({ 
-                ...baseQuery, 
-                role: { $nin: [null, ''] }, 
-                status: 'Active' 
-            })
+            countInScope({ status: { $in: ['Active', 'On Notice Period', 'Pending Manager Approval', 'Pending HR Approval', 'Pending Country Manager Approval', 'Pending CEO Approval'] } }),
+            countInScope({ status: { $in: ['Active', 'Pending Manager Approval', 'Pending HR Approval', 'Pending Country Manager Approval', 'Pending CEO Approval'] } }),
+            countInScope({ status: 'On Notice Period' }),
+            countInScope({ status: { $in: ['Exited', 'Terminated'] } }),
+            countInScope({ role: { $nin: [null, ''] }, status: 'Active' })
         ]);
 
         const stats = {
@@ -211,34 +208,33 @@ export const getEmployeeDirectory = async (req: Request, res: Response) => {
         };
 
         // Filter based on statusFilter (from frontend dashboard cards)
-        let query = { ...baseQuery };
+        const filters: Record<string, unknown>[] = [];
         if (statusFilter === 'total' || !statusFilter) {
-            query.status = { $in: ['Active', 'On Notice Period', 'Pending Manager Approval', 'Pending HR Approval', 'Pending Country Manager Approval', 'Pending CEO Approval'] };
+            filters.push({ status: { $in: ['Active', 'On Notice Period', 'Pending Manager Approval', 'Pending HR Approval', 'Pending Country Manager Approval', 'Pending CEO Approval'] } });
         } else if (statusFilter === 'active') {
-            query.status = { $in: ['Active', 'Pending Manager Approval', 'Pending HR Approval', 'Pending Country Manager Approval', 'Pending CEO Approval'] };
+            filters.push({ status: { $in: ['Active', 'Pending Manager Approval', 'Pending HR Approval', 'Pending Country Manager Approval', 'Pending CEO Approval'] } });
         } else if (statusFilter === 'onNotice') {
-            query.status = 'On Notice Period';
+            filters.push({ status: 'On Notice Period' });
         } else if (statusFilter === 'exited') {
-            query.status = { $in: ['Exited', 'Terminated'] };
+            filters.push({ status: { $in: ['Exited', 'Terminated'] } });
         } else if (statusFilter === 'rolesAssigned') {
-            query.role = { $nin: [null, ''] };
-            query.status = 'Active';
+            filters.push({ role: { $nin: [null, ''] }, status: 'Active' });
         }
 
         // Apply role filter from dropdown
-        if (role && role !== 'all') {
-            query.role = role;
-        }
+        if (roleFilter && roleFilter !== 'all') filters.push({ role: roleFilter });
 
         // Apply search
         if (search) {
-            query.$or = [
+            filters.push({ $or: [
                 { firstName: { $regex: search, $options: 'i' } },
                 { lastName:  { $regex: search, $options: 'i' } },
                 { email:     { $regex: search, $options: 'i' } },
                 { employeeCode: { $regex: search, $options: 'i' } }
-            ];
+            ] });
         }
+
+        const query = Object.keys(baseQuery).length ? applyScopeAnd(baseQuery, filters) : (filters.length ? { $and: filters } : {});
 
         const [employees, totalCount] = await Promise.all([
             Employee.find(query).sort({ createdAt: -1 }).skip(skipNum).limit(limitNum).lean(),

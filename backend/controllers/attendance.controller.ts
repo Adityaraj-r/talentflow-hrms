@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import Attendance from "../models/Attendance.model";
 import CorrectionRequest from "../models/CorrectionRequest.model";
 import User from "../models/User.model";
+import Employee from "../models/Employee.model";
+import { buildAttendanceQuery } from "../utils/authorizationScope.util";
 import { notifyOvertimeApproved, notifyCorrectionRequestApproved, notifyCorrectionRequestRejected } from "../services/notification.service";
 
 const OFFICE_LAT = 19.8767;
@@ -373,10 +375,42 @@ export const runAutoCheckout = async (req: Request, res: Response) => {
 export const getAllAttendance = async (req: Request, res: Response) => {
   try {
     const { date, userId } = req.query;
-    const query: any = {};
+    const requestingUser = (req as any).user;
+    let scopedUserIds: string[] | undefined;
 
-    if (date) query.date = date;
-    if (userId) query.userId = userId;
+    if (["DIRECT_MANAGER", "DEPARTMENT_MANAGER"].includes(requestingUser?.role || "")) {
+      const managerProfile = await Employee.findOne({ userId: requestingUser?.id }).select("employeeCode department");
+      const managerAccount = (!managerProfile?.employeeCode || !managerProfile?.department)
+        ? await User.findById(requestingUser?.id).select("employeeCode department")
+        : null;
+      const department = managerProfile?.department || managerAccount?.department || requestingUser?.department;
+      const employeeCode = managerProfile?.employeeCode || managerAccount?.employeeCode;
+
+      if (requestingUser?.role === "DIRECT_MANAGER" && !employeeCode) {
+        return res.status(403).json({ success: false, message: "Manager employee profile is required" });
+      }
+      if (requestingUser?.role === "DEPARTMENT_MANAGER" && !department) {
+        return res.status(403).json({ success: false, message: "Manager department is required" });
+      }
+
+      const employeeFilter = requestingUser?.role === "DIRECT_MANAGER"
+        ? { reportingManagerId: employeeCode, role: "EMPLOYEE" }
+        : { department };
+      const team = await Employee.find(employeeFilter).select("userId email");
+      const linkedUserIds = team.map((employee: any) => employee.userId).filter(Boolean);
+      const linkedEmails = team.map((employee: any) => employee.email).filter(Boolean);
+      if (linkedEmails.length) {
+        const users = await User.find({
+          email: { $in: linkedEmails },
+          isActive: true,
+          isDeleted: { $ne: true },
+        }).select("_id");
+        linkedUserIds.push(...users.map((user: any) => user._id));
+      }
+      scopedUserIds = [...new Set(linkedUserIds.map((id: any) => id.toString()))];
+    }
+
+    const query = buildAttendanceQuery({ date, requestedUserId: userId, scopedUserIds });
 
     const records = await Attendance.find(query)
       .populate("userId", "firstName lastName email employeeCode department")

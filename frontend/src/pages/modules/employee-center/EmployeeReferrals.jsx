@@ -37,7 +37,6 @@ import { DataTable } from "@/components/ui/data-table";
 import { ActionIcon } from "@/components/ui/action-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { RecruitmentKpiCard, RecruitmentEmptyState } from "@/components/recruitment/RecruitmentUI";
 import ReferralProgressDrawer from "@/components/recruitment/ReferralProgressDrawer";
 
 export default function EmployeeReferrals() {
@@ -537,20 +536,24 @@ export default function EmployeeReferrals() {
             </DialogHeader>
 
             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 text-xs md:text-sm text-slate-700 dark:text-slate-300">
+
               {selectedJobForDetail.aboutRole && (
-                <div>
-                  <span className="text-slate-500 font-medium">Min Experience:</span>
-                  <p className="font-semibold text-slate-900 dark:text-slate-100 mt-0.5">
-                    {selectedJobForDetail.minExperience ? `${selectedJobForDetail.minExperience}+ years` : "Open"}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-slate-500 font-medium">Positions Open:</span>
-                  <p className="font-semibold text-slate-900 dark:text-slate-100 mt-0.5">
-                    {selectedJobForDetail.positions || 1}
-                  </p>
-                </div>
-              </div>
+                <>
+                  <div>
+                    <span className="text-slate-500 font-medium">Min Experience:</span>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100 mt-0.5">
+                      {selectedJobForDetail.minExperience ? `${selectedJobForDetail.minExperience}+ years` : "Open"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-medium">Positions Open:</span>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100 mt-0.5">
+                      {selectedJobForDetail.positions || 1}
+                    </p>
+                  </div>
+                </>
+              )}
+
 
               {selectedJobForDetail.description && (
                 <div>
@@ -561,7 +564,6 @@ export default function EmployeeReferrals() {
                 </div>
               )}
             </div>
-          )}
 
           <DialogFooter className="border-t border-slate-100 dark:border-slate-800 pt-3">
             <Button variant="outline" size="sm" className="text-xs cursor-pointer" onClick={() => setSelectedJobForDetail(null)}>
@@ -581,6 +583,7 @@ export default function EmployeeReferrals() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      )}
 
       {/* Referral Submission Modal */}
       <Dialog open={!!selectedJobForReferral} onOpenChange={() => setSelectedJobForReferral(null)}>
@@ -668,7 +671,6 @@ export default function EmployeeReferrals() {
             </form>
           </DialogContent>
         </Dialog>
-      )}
     </div>
   );
 }
