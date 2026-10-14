@@ -36,7 +36,7 @@ README.md   Project documentation
 - A MongoDB database and connection URI
 - Optional service credentials for integrations you plan to use, such as SMTP, Cloudinary, or Google OAuth
 
-## Local setup
+## Local setup 
 
 Install dependencies in each application folder:
 
